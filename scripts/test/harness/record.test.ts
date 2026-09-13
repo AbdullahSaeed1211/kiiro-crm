@@ -58,9 +58,11 @@ describe('recordAttempt classification', () => {
       runner: 'lead',
       run,
       base: 'm5-ui',
+      confirmed: ['CONTRACT_DRIFT', 'CONTRACT_DRIFT'],
       now: FIXED_NOW,
     })
     expect(result.data.suggestedClasses).toEqual(['AUTHZ_GAP', 'SCOPE_VIOLATION'])
+    expect(result.data.confirmedClasses).toEqual(['CONTRACT_DRIFT'])
     expect(result.data.scopeViolations).toEqual(['tenants/a.jsonc', 'docs/x.md'])
     expect(result.data.filesChanged).toBe(3)
     expect(result.data.gates[0]?.failingLines).toEqual(['FAIL permissions.test.ts > denies'])
