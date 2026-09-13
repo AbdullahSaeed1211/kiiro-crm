@@ -11,11 +11,13 @@ export interface UnitOfWork {
 export interface StageStore {
   loadRecord(ref: RecordRef): Promise<StageTrackedRecord | undefined>
   loadWorkflow(id: Id): Promise<Workflow | undefined>
+  /** Writes the stage only while the record still has `expectedUpdatedAt`; `undefined` means it changed meanwhile. */
   saveStage(input: {
     readonly ref: RecordRef
     readonly stageId: Id
     readonly stageEnteredAt: number
-  }): Promise<StageTrackedRecord>
+    readonly expectedUpdatedAt: number
+  }): Promise<StageTrackedRecord | undefined>
   addTransition(transition: StageTransition): Promise<void>
   addActivity(entry: {
     readonly record: RecordRef

@@ -26,12 +26,24 @@ export interface Actor {
   readonly active: boolean
 }
 
-/** The ownership facts the policy needs about a record, or only its type for create checks. */
+/** The ownership facts the policy needs about a record, or only its type for create checks; `role` is the target user's role for `manage_members`. */
 export interface AccessResource {
   readonly type: string
   readonly ownerId?: Id
   readonly assigneeIds?: readonly Id[]
   readonly groupId?: Id
+  readonly role?: Role
+}
+
+/** Extra staff-scope branch contributed by a module, such as membership of a parent record (spec §9.10). */
+export type ScopeExtension = (actor: Actor) => FilterNode
+
+/** Adapter field names that carry ownership for one record type; each absent field adds no scope branch. */
+export interface ScopeDefinition {
+  readonly ownerField?: string
+  readonly assigneesField?: string
+  readonly groupField?: string
+  readonly extensions?: readonly ScopeExtension[]
 }
 
 /** Pure permission check. */

@@ -6,8 +6,17 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@ops/kernel": "workspace:*",
+    "@ops/platform": "workspace:*"
+  },
+  "peerDependencies": {
+    "payload": "3.89.0"
+  },
   "devDependencies": {
     "@types/node": "22.20.2",
+    "graphql": "16.14.2",
+    "payload": "3.89.0",
     "typescript": "6.0.3"
   }
 }
