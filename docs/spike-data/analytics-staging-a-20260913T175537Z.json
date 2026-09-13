@@ -1,0 +1,49 @@
+{
+  "metric": "analytics",
+  "env": "staging-a",
+  "measuredAt": "2026-09-13T17:55:37.542Z",
+  "window": {
+    "start": "2026-09-13T17:45:00Z",
+    "end": "2026-09-13T17:55:37Z"
+  },
+  "targets": {
+    "script": "ops-staging-a",
+    "databaseId": "526fa120-3eb8-4fb6-851b-fa732dccdbe6",
+    "bucket": "ops-staging-a"
+  },
+  "endpoint": "https://api.cloudflare.com/client/v4/graphql",
+  "docs": [
+    "https://developers.cloudflare.com/analytics/graphql-api/tutorials/querying-workers-metrics/",
+    "https://developers.cloudflare.com/d1/observability/metrics-analytics/",
+    "https://developers.cloudflare.com/r2/platform/metrics-analytics/",
+    "https://developers.cloudflare.com/analytics/graphql-api/getting-started/querying-basics/",
+    "https://developers.cloudflare.com/analytics/graphql-api/getting-started/authentication/api-token-auth/"
+  ],
+  "workers": {
+    "groups": 1,
+    "requests": 201,
+    "errors": 0,
+    "subrequests": 1,
+    "cpuTimeP50": 4592,
+    "cpuTimeP99": 47417,
+    "quantilesByGroup": [
+      {
+        "cpuTimeP50": 4592,
+        "cpuTimeP99": 47417
+      }
+    ]
+  },
+  "d1": {
+    "hours": [
+      "2026-09-13T17:00:00Z"
+    ],
+    "readQueries": 391,
+    "writeQueries": 0,
+    "rowsRead": 618,
+    "rowsWritten": 0
+  },
+  "r2": {
+    "requests": 0,
+    "byActionType": {}
+  }
+}
