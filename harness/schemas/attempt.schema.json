@@ -2,7 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Work package attempt",
   "type": "object",
-  "required": ["wp", "milestone", "attempt", "runner", "startedAt", "finishedAt", "gates", "scopeViolations", "filesChanged", "suggestedClasses", "confirmedClasses", "leadTookOver"],
+  "required": [
+    "wp",
+    "milestone",
+    "attempt",
+    "runner",
+    "startedAt",
+    "finishedAt",
+    "gates",
+    "scopeViolations",
+    "filesChanged",
+    "suggestedClasses",
+    "confirmedClasses",
+    "leadTookOver"
+  ],
   "additionalProperties": false,
   "properties": {
     "wp": { "type": "string", "pattern": "^M\\d+-[LWX]\\d+[a-z]?$" },

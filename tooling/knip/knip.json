@@ -1,14 +1,15 @@
 {
   "workspaces": {
-    ".": { "entry": ["scripts/**/*.ts"] },
-    "apps/web": {
-      "entry": ["worker.ts", "src/payload.config.ts", "src/proxy.ts", "src/app/**/*.{ts,tsx}"],
-      "ignore": ["src/payload-types.ts", "src/migrations/**", "cloudflare-env.d.ts"]
+    ".": {
+      "entry": ["scripts/**/*.ts"],
+      "ignore": ["scripts/fixtures/**"],
+      "ignoreDependencies": ["@axe-core/playwright"]
     },
-    "apps/mail-router": { "entry": ["src/index.ts"] },
-    "packages/*": { "entry": ["src/index.ts"] },
-    "packages/modules/*": { "entry": ["src/index.ts"] },
-    "packages/adapters/*": { "entry": ["src/index.ts"] }
-  },
-  "ignore": ["packages/ui/src/components/ui/**", "scripts/fixtures/**", "harness/selftest/**"]
+    "apps/web": {
+      "entry": ["open-next.config.ts", "src/app/**/*.{ts,tsx}"],
+      "ignore": ["src/migrations/**", "src/payload-types.ts"],
+      "ignoreDependencies": ["@payloadcms/ui"],
+      "payload": false
+    }
+  }
 }

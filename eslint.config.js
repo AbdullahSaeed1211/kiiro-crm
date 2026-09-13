@@ -28,7 +28,11 @@ export default defineConfig(
   tseslint.configs.stylisticTypeChecked,
   sonarjs.configs.recommended,
   { languageOptions: { parserOptions: { projectService: true } } },
-  { plugins: { boundaries }, settings: { 'boundaries/elements': boundaryElements }, rules: { ...gatedRules, ...boundaryRules } },
+  {
+    plugins: { boundaries },
+    settings: { 'boundaries/elements': boundaryElements },
+    rules: { ...gatedRules, ...boundaryRules },
+  },
   { files: ['**/*.tsx'], rules: tsxOverrides },
   {
     files: ['packages/adapters/payload/src/collections/**'],

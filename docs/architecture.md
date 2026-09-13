@@ -3,6 +3,7 @@
 The authoritative specification is `docs/spec.md`. This page is the short map.
 
 ## Layers
+
 ```mermaid
 flowchart TD
   app[apps/web: Next.js + Payload composition root] --> adapters
@@ -14,6 +15,7 @@ flowchart TD
 ```
 
 ## Per-tenant deployment
+
 ```mermaid
 flowchart LR
   browser[Browser] --> worker[Worker ops-slug]
@@ -24,4 +26,5 @@ flowchart LR
 ```
 
 ## Request lifecycle
+
 Browser request → Worker (OpenNext) → Next.js route or Server Action → session actor → module command through ports → Payload adapter (access filter, unit of work) → D1/R2 → activity and events → response.

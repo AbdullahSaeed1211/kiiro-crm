@@ -2,7 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Harness lesson front matter",
   "type": "object",
-  "required": ["id", "milestone", "class", "severity", "status", "affectedPaths", "countermeasure", "eval", "sourceAttempts"],
+  "required": [
+    "id",
+    "milestone",
+    "class",
+    "severity",
+    "status",
+    "affectedPaths",
+    "countermeasure",
+    "eval",
+    "sourceAttempts"
+  ],
   "additionalProperties": false,
   "properties": {
     "id": { "type": "string", "pattern": "^L-\\d{8}-M\\d+-[LWX]\\d+[a-z]?-[0-9a-f]{6}$" },
