@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { isStringList } from '../../src/collections/fields'
+import { isCurrencyCode, isOptionalMinorUnits, isStringList } from '../../src/collections/fields'
 import { isOptionalHexColor, isTimeZone } from '../../src/collections/settings'
 
 describe('field validators', () => {
+  it('accepts only three-letter uppercase currency codes', () => {
+    expect(isCurrencyCode('USD')).toBe(true)
+    expect(isCurrencyCode('usd')).toBe(false)
+    expect(isCurrencyCode('US')).toBe(false)
+    expect(isCurrencyCode('USDX')).toBe(false)
+    expect(isCurrencyCode(840)).toBe(false)
+  })
+
+  it('accepts an empty amount or whole minor units of zero or more', () => {
+    expect(isOptionalMinorUnits(0)).toBe(true)
+    expect(isOptionalMinorUnits(125_000)).toBe(true)
+    expect(isOptionalMinorUnits(null)).toBe(true)
+    expect(isOptionalMinorUnits(undefined)).toBe(true)
+    expect(isOptionalMinorUnits(-1)).toBe(false)
+    expect(isOptionalMinorUnits(10.5)).toBe(false)
+    expect(isOptionalMinorUnits('100')).toBe(false)
+  })
+
   it('accepts only lists of strings for recipient fields', () => {
     expect(isStringList(['a@example.com', 'b@example.com'])).toBe(true)
     expect(isStringList([])).toBe(true)

@@ -1,11 +1,10 @@
 import type { GlobalConfig } from 'payload'
 import { SETTINGS_ACCESS } from '../access/spike-access'
 import { SETTINGS_GLOBAL } from '../contracts/names'
-import { ADMIN_GROUPS, epochMs, selectOf, textField } from './fields'
+import { ADMIN_GROUPS, currencyField, epochMs, selectOf, textField } from './fields'
 import { LOCALE_VALUES, RADIUS_VALUES, SENDER_STATUS_VALUES } from './values'
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
-const CURRENCY_CODE = /^[A-Z]{3}$/
 
 /** True when `value` is an IANA time zone the runtime knows. */
 export function isTimeZone(value: unknown): boolean {
@@ -38,12 +37,7 @@ export const settingsGlobal: GlobalConfig = {
       validate: (value: unknown) => isTimeZone(value) || 'Enter an IANA time zone such as Europe/London.',
     },
     selectOf('locale', LOCALE_VALUES, { required: true, defaultValue: 'en' }),
-    {
-      ...textField('currency', { required: true }),
-      defaultValue: 'USD',
-      validate: (value: unknown) =>
-        (typeof value === 'string' && CURRENCY_CODE.test(value)) || 'Enter an ISO 4217 code.',
-    },
+    { ...currencyField('currency', { required: true }), defaultValue: 'USD' },
     {
       name: 'weekStartsOn',
       type: 'number',
