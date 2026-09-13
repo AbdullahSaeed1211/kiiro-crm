@@ -9,6 +9,7 @@ export default defineConfig(
     ignores: [
       '**/node_modules/**',
       '.claude/**',
+      '.codex/**',
       'scripts/fixtures/**',
       'harness/selftest/**',
       '**/.open-next/**',
