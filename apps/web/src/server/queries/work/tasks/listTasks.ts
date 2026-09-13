@@ -1,0 +1,54 @@
+import { TASK_FIXTURES } from './fixtures'
+import type { TaskListItem, TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'
+
+// Every list page shows 50 rows with server pagination (decision D-34).
+const PAGE_SIZE = 50
+const DEFAULT_SORT: TaskSort = { key: 'dueAt', desc: false }
+const SORT_KEYS: readonly TaskSortKey[] = ['title', 'stage', 'priority', 'dueAt']
+const PRIORITY_RANK = { none: 0, low: 1, medium: 2, high: 3, urgent: 4 } as const
+const NO_DUE_DATE = Number.MAX_SAFE_INTEGER
+
+type Compare = (a: TaskListItem, b: TaskListItem) => number
+
+const COMPARE: Record<TaskSortKey, Compare> = {
+  title: (a, b) => a.title.localeCompare(b.title),
+  stage: (a, b) => a.stage.position - b.stage.position,
+  priority: (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+  dueAt: (a, b) => (a.dueAt ?? NO_DUE_DATE) - (b.dueAt ?? NO_DUE_DATE),
+}
+
+/** Parses the `sort` URL value (`key` ascending, `-key` descending); unknown values fall back to due date ascending. */
+export function parseTaskSort(value: string | undefined): TaskSort {
+  const desc = value?.startsWith('-') ?? false
+  const key = desc ? value?.slice(1) : value
+  const match = SORT_KEYS.find((candidate) => candidate === key)
+  return match === undefined ? DEFAULT_SORT : { key: match, desc }
+}
+
+/** Formats a sort as its `sort` URL value. */
+export function formatTaskSort(sort: TaskSort): string {
+  return sort.desc ? `-${sort.key}` : sort.key
+}
+
+/** Parses the 1-based `page` URL value; anything other than a positive integer yields page 1. */
+export function parseTaskPage(value: string | undefined): number {
+  const page = Number(value)
+  return Number.isInteger(page) && page > 0 ? page : 1
+}
+
+/**
+ * Reads one page of tasks in the requested order, with the id as tie-breaker so pages never overlap.
+ * Spike implementation over fixture rows; M1-L3 swaps in the Payload-backed read model behind the same signature.
+ */
+export function listTasks(query: TaskListQuery): Promise<TaskListResult> {
+  const direction = query.sort.desc ? -1 : 1
+  const compare = COMPARE[query.sort.key]
+  const sorted = [...TASK_FIXTURES].sort((a, b) => direction * compare(a, b) || a.id.localeCompare(b.id))
+  const start = (query.page - 1) * PAGE_SIZE
+  return Promise.resolve({
+    items: sorted.slice(start, start + PAGE_SIZE),
+    total: sorted.length,
+    page: query.page,
+    pageSize: PAGE_SIZE,
+  })
+}
