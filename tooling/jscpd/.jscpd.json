@@ -6,6 +6,8 @@
   "ignore": [
     "**/node_modules/**",
     ".claude/**",
+    "scripts/fixtures/**",
+    "harness/selftest/**",
     "**/test/**",
     "**/*.test.ts",
     "packages/templates/**",

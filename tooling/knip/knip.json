@@ -10,5 +10,5 @@
     "packages/modules/*": { "entry": ["src/index.ts"] },
     "packages/adapters/*": { "entry": ["src/index.ts"] }
   },
-  "ignore": ["packages/ui/src/components/ui/**"]
+  "ignore": ["packages/ui/src/components/ui/**", "scripts/fixtures/**", "harness/selftest/**"]
 }
