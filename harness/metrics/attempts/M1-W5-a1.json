@@ -1,0 +1,49 @@
+{
+  "wp": "M1-W5",
+  "milestone": "M1",
+  "attempt": 1,
+  "runner": "worker",
+  "startedAt": "2026-09-13T13:55:08.840Z",
+  "finishedAt": "2026-09-13T13:55:28.307Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1005,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 4229,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 13662,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --changed",
+      "exitCode": 0,
+      "durationMs": 238,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 279,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [
+    "apps/web/src/server/work/set-task-dates.ts"
+  ],
+  "filesChanged": 12,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}
