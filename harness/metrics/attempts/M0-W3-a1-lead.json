@@ -1,0 +1,57 @@
+{
+  "wp": "M0-W3",
+  "milestone": "M0",
+  "attempt": 1,
+  "runner": "lead",
+  "startedAt": "2026-09-13T11:57:54.080Z",
+  "finishedAt": "2026-09-13T11:58:11.994Z",
+  "gates": [
+    {
+      "name": "pnpm vitest run scripts/test/harness",
+      "exitCode": 0,
+      "durationMs": 756,
+      "failingLines": []
+    },
+    {
+      "name": "pnpm harness:brief M0-W1",
+      "exitCode": 0,
+      "durationMs": 362,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1130,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 4443,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 10372,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --changed",
+      "exitCode": 0,
+      "durationMs": 458,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 325,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 2,
+  "suggestedClasses": [],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}
