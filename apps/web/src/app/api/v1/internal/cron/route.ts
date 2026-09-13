@@ -1,5 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { handleCronRequest } from '../handlers'
+import { handleCronRequest } from '@ops/adapter-cloudflare'
 
 /** Receives the cron trigger the Worker entry forwards and runs the registered background jobs (spec §13). */
 export async function POST(request: Request): Promise<Response> {

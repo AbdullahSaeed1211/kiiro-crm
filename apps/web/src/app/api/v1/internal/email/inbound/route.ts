@@ -1,5 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { createLoggingInboundSink, handleInboundEmailRequest } from '../../handlers'
+import { createLoggingInboundSink, handleInboundEmailRequest } from '@ops/adapter-cloudflare'
 
 /** Receives raw inbound email the Worker entry forwards and hands it to the inbound sink (spec §14.4). */
 export async function POST(request: Request): Promise<Response> {
