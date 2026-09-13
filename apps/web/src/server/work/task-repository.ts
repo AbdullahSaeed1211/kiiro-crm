@@ -1,10 +1,10 @@
 import type { Clock, Id } from '@ops/kernel'
 import type { Actor, Can, StageStore, UnitOfWork, Workflow } from '@ops/platform'
 
-/** Task priority levels (spec §10.2). */
+/** Task priority (spec §10.2). */
 export type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
 
-/** A task as the board and timeline read it; timestamps are UTC epoch milliseconds (decision D-09). */
+/** A task as the board and timeline read it; times are epoch ms. */
 export interface TaskRecord {
   readonly id: Id
   readonly title: string
@@ -18,7 +18,7 @@ export interface TaskRecord {
   readonly dueAt: number | null
 }
 
-/** Input of {@link TaskRepository.saveDates}. */
+/** Input of `saveDates`. */
 export interface TaskDatesInput {
   readonly id: Id
   readonly startAt: number | null
@@ -26,17 +26,15 @@ export interface TaskDatesInput {
   readonly expectedUpdatedAt: number
 }
 
-/** Task persistence for the board and timeline; the inherited stage methods serve platform `changeStage`. */
+/** Task persistence; the stage methods come from platform `StageStore`. */
 export interface TaskRepository extends StageStore {
-  /** The workflow tasks follow; the spike has one task workflow per tenant. */
   loadTaskWorkflow(): Promise<Workflow>
-  /** Every task of the tenant, in no particular order. */
   listTasks(): Promise<readonly TaskRecord[]>
-  /** Writes both dates only while the task still has `expectedUpdatedAt`; `undefined` when it changed or does not exist. */
+  /** Returns `undefined` when the task changed since `expectedUpdatedAt` or does not exist. */
   saveDates(input: TaskDatesInput): Promise<TaskRecord | undefined>
 }
 
-/** Everything work features need per request. */
+/** Per-request dependencies of work features. */
 export interface WorkDeps {
   readonly actor: Actor
   readonly can: Can
