@@ -85,7 +85,8 @@ export default buildConfig({
   graphQL: { disable: true },
   defaultDepth: 0,
   maxDepth: 2,
-  db: sqliteD1Adapter({ binding: env.D1, idType: 'uuid' }),
+  // Committed migrations are the only schema source (spec §11), so development schema push is off.
+  db: sqliteD1Adapter({ binding: env.D1, idType: 'uuid', push: false }),
   email: payloadEmailAdapter({ sender: mailSender, fromAddress: env.MAIL_FROM_ADDRESS, fromName: env.MAIL_FROM_NAME }),
   ...(isProduction ? { logger: cloudflareLogger } : {}),
   plugins: [r2Storage({ bucket: env.R2, collections: { [COLLECTIONS.attachments]: true } })],
