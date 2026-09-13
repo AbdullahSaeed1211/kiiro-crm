@@ -1,0 +1,50 @@
+/* Unlayered on purpose: the library stylesheet is unlayered, so Tailwind utilities could not override it. */
+.ops-gantt .wx-willow-theme {
+  --wx-font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --wx-font-size: 0.875rem;
+  --wx-font-size-sm: 0.75rem;
+  --wx-color-font: var(--foreground);
+  --wx-color-font-alt: var(--muted-foreground);
+  --wx-color-primary: var(--primary);
+  --wx-background: var(--background);
+  --wx-background-alt: var(--muted);
+  --wx-background-hover: var(--accent);
+  --wx-border-color: var(--border);
+  --wx-border: 1px solid var(--border);
+  --wx-icon-color: var(--muted-foreground);
+  --wx-table-border: 1px solid var(--border);
+  --wx-table-header-background: var(--background);
+  --wx-table-select-background: var(--accent);
+  --wx-table-select-border: inset 3px 0 var(--primary);
+  --wx-grid-header-font-color: var(--muted-foreground);
+  --wx-timescale-font-color: var(--muted-foreground);
+  --wx-gantt-border-color: var(--border);
+  --wx-gantt-border: 1px solid var(--border);
+  --wx-gantt-select-color: var(--accent);
+  --wx-gantt-task-color: var(--primary);
+  --wx-gantt-task-fill-color: var(--primary);
+  --wx-gantt-task-border-color: var(--primary);
+  --wx-gantt-task-font-color: var(--primary-foreground);
+  --wx-gantt-bar-border-radius: calc(var(--radius) * 0.6);
+  --wx-gantt-bar-shadow: none;
+  --wx-gantt-holiday-background: var(--muted);
+  --wx-gantt-holiday-color: var(--muted-foreground);
+  height: 100%;
+}
+
+.ops-gantt .wx-scale .ops-gantt-today {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.ops-gantt .wx-gantt-holidays .ops-gantt-today {
+  position: absolute;
+  height: 100%;
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+/* Links and progress are not persisted in this view. */
+.ops-gantt .wx-bar .wx-link,
+.ops-gantt .wx-progress-marker {
+  display: none;
+}
