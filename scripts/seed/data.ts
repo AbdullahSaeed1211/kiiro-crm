@@ -23,11 +23,12 @@ export interface StageSeed {
   readonly name: string
   readonly category: string
   readonly color: string
+  readonly probability?: number
 }
 
 /** A seeded workflow; its first stage is the default. */
 export interface WorkflowSeed {
-  readonly recordType: 'project' | 'task'
+  readonly recordType: 'project' | 'task' | 'lead' | 'deal'
   readonly name: string
   readonly stages: readonly StageSeed[]
 }

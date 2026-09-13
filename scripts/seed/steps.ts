@@ -10,10 +10,10 @@ import {
   type RecordContext,
   type WorkflowRef,
 } from './build'
+import { CRM_WORKFLOWS } from './crm-data'
 import {
   APP_SETTINGS,
   GROUPS,
-  ORGANIZATION,
   PROJECT_WORKFLOW,
   PROJECTS,
   TASK_WORKFLOW,
@@ -21,37 +21,17 @@ import {
   USERS,
   type WorkflowSeed,
 } from './data'
-import { LOCAL, type Doc, type SeedPayload } from './payload'
+import { seedCrm } from './crm-steps'
+import { type Data, equals, type Tally, upsert } from './common'
+import { LOCAL, type SeedPayload } from './payload'
 
-type Data = Record<string, unknown>
-
-/** Created and existing counts per collection, in seed order. */
-export type Tally = Map<string, { created: number; existing: number }>
-
-interface UpsertSpec {
-  readonly collection: string
-  readonly where: Data
-  readonly data: () => Data
-}
-
-function count(tally: Tally, name: string, existed: boolean): void {
-  const { created, existing } = tally.get(name) ?? { created: 0, existing: 0 }
-  tally.set(name, existed ? { created, existing: existing + 1 } : { created: created + 1, existing })
-}
-
-async function upsert(payload: SeedPayload, spec: UpsertSpec, tally: Tally): Promise<Doc> {
-  const { docs } = await payload.find({ ...LOCAL, collection: spec.collection, where: spec.where, limit: 1 })
-  const found = docs[0]
-  count(tally, spec.collection, found !== undefined)
-  return found ?? payload.create({ ...LOCAL, collection: spec.collection, data: spec.data() })
-}
-
-const equals = (value: string): Data => ({ equals: value })
+/** Created and existing counts per collection. */
+export type { Tally } from './common'
 
 async function seedSettings(payload: SeedPayload, tally: Tally): Promise<void> {
   const current = await payload.findGlobal({ ...LOCAL, slug: SETTINGS_GLOBAL })
   const matches = current['appName'] === APP_SETTINGS.appName && current['timezone'] === APP_SETTINGS.timezone
-  count(tally, SETTINGS_GLOBAL, matches)
+  tally.set(SETTINGS_GLOBAL, matches ? { created: 0, existing: 1 } : { created: 1, existing: 0 })
   if (!matches) await payload.updateGlobal({ ...LOCAL, slug: SETTINGS_GLOBAL, data: { ...APP_SETTINGS } })
 }
 
@@ -85,12 +65,6 @@ async function seedWorkflow(payload: SeedPayload, seed: WorkflowSeed, tally: Tal
   return { id: doc.id, stageIds: stageIdsOf(doc) }
 }
 
-async function seedOrganization(payload: SeedPayload, users: IdMap, tally: Tally): Promise<string> {
-  const data = (): Data => ({ ...ORGANIZATION, owner: idOf(users, 'manager') })
-  const where = { name: equals(ORGANIZATION.name) }
-  return (await upsert(payload, { collection: COLLECTIONS.organizations, where, data }, tally)).id
-}
-
 async function seedProjects(
   payload: SeedPayload,
   context: RecordContext & { readonly organization: string },
@@ -120,7 +94,31 @@ async function seedTasks(
   }
 }
 
-/** Upserts the whole development data set in dependency order and returns the counts. */
+async function seedWork(
+  payload: SeedPayload,
+  input: {
+    readonly now: number
+    readonly users: IdMap
+    readonly taskWorkflow: WorkflowRef
+    readonly projectWorkflow: WorkflowRef
+    readonly organization: string
+    readonly groups: IdMap
+    readonly tally: Tally
+  },
+): Promise<void> {
+  const projects = await seedProjects(
+    payload,
+    { now: input.now, users: input.users, workflow: input.projectWorkflow, organization: input.organization },
+    input.tally,
+  )
+  await seedTasks(
+    payload,
+    { now: input.now, users: input.users, workflow: input.taskWorkflow, groups: input.groups, projects },
+    input.tally,
+  )
+}
+
+/** Upserts the complete local development data set in dependency order. */
 export async function seedAll(payload: SeedPayload, now: number): Promise<Tally> {
   const tally: Tally = new Map()
   await seedSettings(payload, tally)
@@ -128,9 +126,20 @@ export async function seedAll(payload: SeedPayload, now: number): Promise<Tally>
   const users = await seedUsers(payload, groups, tally)
   const taskWorkflow = await seedWorkflow(payload, TASK_WORKFLOW, tally)
   const projectWorkflow = await seedWorkflow(payload, PROJECT_WORKFLOW, tally)
-  const organization = await seedOrganization(payload, users, tally)
-  const projects = await seedProjects(payload, { now, users, workflow: projectWorkflow, organization }, tally)
-  await seedTasks(payload, { now, users, workflow: taskWorkflow, groups, projects }, tally)
+  const [leadSeed, dealSeed] = CRM_WORKFLOWS
+  if (leadSeed === undefined || dealSeed === undefined) throw new Error('CRM workflows are incomplete')
+  const leadWorkflow = await seedWorkflow(payload, leadSeed, tally)
+  const dealWorkflow = await seedWorkflow(payload, dealSeed, tally)
+  const organizations = await seedCrm(payload, { now, users, leadWorkflow, dealWorkflow, tally })
+  await seedWork(payload, {
+    now,
+    users,
+    taskWorkflow,
+    projectWorkflow,
+    organization: idOf(organizations, 'example'),
+    groups,
+    tally,
+  })
   return tally
 }
 

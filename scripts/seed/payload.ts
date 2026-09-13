@@ -17,6 +17,7 @@ interface Access {
 export interface SeedPayload {
   find(args: Access & { collection: string; where: Data; limit: number }): Promise<{ docs: Doc[] }>
   create(args: Access & { collection: string; data: Data }): Promise<Doc>
+  update(args: Access & { collection: string; id: string; data: Data }): Promise<Doc>
   findGlobal(args: Access & { slug: string }): Promise<Data>
   updateGlobal(args: Access & { slug: string; data: Data }): Promise<Data>
   destroy(): Promise<void>
