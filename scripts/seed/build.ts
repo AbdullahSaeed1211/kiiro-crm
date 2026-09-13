@@ -1,4 +1,5 @@
 import { DEV_PASSWORD, type ProjectSeed, type TaskSeed, type UserSeed, type WorkflowSeed } from './data'
+import type { ContactSeed, DealSeed, LeadSeed, OrganizationSeed } from './crm-data'
 
 type Data = Record<string, unknown>
 
@@ -66,7 +67,8 @@ const stageData = (context: RecordContext, stage: string): Data => ({
   stageEnteredAt: context.now,
 })
 
-const atDay = (now: number, day: number): number => now + day * DAY_MS
+/** Returns a UTC epoch offset from the seed clock. */
+export const atDay = (now: number, day: number): number => now + day * DAY_MS
 
 /** Project document owned by the manager inside `organization`. */
 export function projectData(seed: ProjectSeed, context: RecordContext & { readonly organization: string }): Data {
@@ -97,5 +99,86 @@ export function taskData(
     startAt: atDay(context.now, seed.startDay),
     dueAt: atDay(context.now, seed.dueDay),
     rank: rankAt(index),
+  }
+}
+
+/** Organization document with an optional lead source. */
+export function organizationData(seed: OrganizationSeed, users: IdMap, sources: IdMap): Data {
+  return {
+    name: seed.name,
+    website: seed.website,
+    phone: seed.phone,
+    email: seed.email,
+    owner: idOf(users, 'manager'),
+    source: seed.source === undefined ? null : idOf(sources, seed.source),
+    customData: {},
+  }
+}
+
+/** Contact document linked to a seeded organization and manager. */
+export function contactData(seed: ContactSeed, organizations: IdMap, users: IdMap): Data {
+  return {
+    firstName: seed.firstName,
+    lastName: seed.lastName,
+    email: seed.email,
+    phone: seed.phone,
+    organization: idOf(organizations, seed.organization),
+    owner: idOf(users, 'manager'),
+    customData: {},
+  }
+}
+
+/** Lead document; convertedDeal is filled in during the relationship pass. */
+export function leadData(
+  seed: LeadSeed,
+  context: RecordContext & { readonly organizations: IdMap; readonly sources: IdMap; readonly lostReasons: IdMap },
+): Data {
+  return {
+    title: seed.title,
+    firstName: seed.firstName,
+    lastName: seed.lastName,
+    email: seed.email,
+    phone: seed.phone,
+    companyName: seed.companyName,
+    organization: idOf(context.organizations, seed.organization),
+    source: idOf(context.sources, seed.source),
+    owner: idOf(context.users, seed.owner),
+    assignees: seed.assignees.map((key) => idOf(context.users, key)),
+    ...stageData(context, seed.stage),
+    lostReason: seed.lostReason === undefined ? null : idOf(context.lostReasons, seed.lostReason),
+    lostNote: seed.lostNote ?? null,
+    convertedAt: seed.stage === 'Converted' ? atDay(context.now, -1) : null,
+    convertedDeal: null,
+    customData: { service: seed.service, budget: seed.budget },
+  }
+}
+
+/** Deal document linked to organizations, contacts, users and an optional source lead. */
+export function dealData(
+  seed: DealSeed,
+  context: RecordContext & {
+    readonly organizations: IdMap
+    readonly contacts: IdMap
+    readonly leads: IdMap
+    readonly lostReasons: IdMap
+  },
+): Data {
+  const terminal = seed.stage === 'Won' || seed.stage === 'Lost'
+  return {
+    title: seed.title,
+    organization: idOf(context.organizations, seed.organization),
+    contacts: seed.contacts.map((key) => idOf(context.contacts, key)),
+    primaryContact: idOf(context.contacts, seed.primaryContact),
+    valueAmountMinor: seed.valueAmountMinor,
+    valueCurrency: 'USD',
+    expectedCloseAt: atDay(context.now, seed.expectedCloseDay),
+    closedAt: terminal ? atDay(context.now, seed.expectedCloseDay) : null,
+    owner: idOf(context.users, seed.owner),
+    assignees: seed.assignees.map((key) => idOf(context.users, key)),
+    ...stageData(context, seed.stage),
+    sourceLead: seed.sourceLead === undefined ? null : idOf(context.leads, seed.sourceLead),
+    lostReason: seed.lostReason === undefined ? null : idOf(context.lostReasons, seed.lostReason),
+    lostNote: seed.lostNote ?? null,
+    customData: { serviceLines: [...seed.serviceLines] },
   }
 }
