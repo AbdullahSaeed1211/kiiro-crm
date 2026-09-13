@@ -1,7 +1,7 @@
 {
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.ts"],
+      "entry": ["scripts/**/*.ts", "harness/selftest/**/*.ts"],
       "ignore": ["scripts/fixtures/**"],
       "ignoreDependencies": ["@axe-core/playwright"]
     },

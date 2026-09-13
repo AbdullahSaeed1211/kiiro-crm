@@ -39,14 +39,15 @@ export const boundaryElements = [
   { type: 'app', pattern: 'apps/*' },
 ]
 
-const allow = (from, to) => ({ from: { type: from }, allow: { to: { type: to } } })
+const element = (type) => ({ element: Array.isArray(type) ? { types: { anyOf: type } } : { type } })
+const allow = (from, to) => ({ from: element(from), allow: { to: element(to) } })
 
 export const boundaryRules = {
   'boundaries/dependencies': [
     'error',
     {
       default: 'disallow',
-      rules: [
+      policies: [
         allow('platform', 'kernel'),
         allow('module', ['kernel', 'platform']),
         allow('adapter', ['kernel', 'platform', 'module']),
