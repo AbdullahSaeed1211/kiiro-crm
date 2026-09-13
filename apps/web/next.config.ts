@@ -6,6 +6,8 @@ interface WebpackConfig {
 }
 
 const nextConfig: NextConfig = {
+  // `next dev` would otherwise write AGENTS.md and CLAUDE.md into the app directory.
+  agentRules: false,
   // Workspace packages ship TypeScript source.
   transpilePackages: ['@ops/ui', '@ops/adapter-cloudflare', '@ops/kernel', '@ops/platform'],
   // Packages with Cloudflare Workers (workerd) specific code: https://opennext.js.org/cloudflare/howtos/workerd

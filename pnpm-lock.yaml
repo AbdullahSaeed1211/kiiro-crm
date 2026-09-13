@@ -74,6 +74,12 @@ importers:
       '@ops/adapter-cloudflare':
         specifier: workspace:*
         version: link:../../packages/adapters/cloudflare
+      '@ops/kernel':
+        specifier: workspace:*
+        version: link:../../packages/kernel
+      '@ops/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
       '@ops/ui':
         specifier: workspace:*
         version: link:../../packages/ui
