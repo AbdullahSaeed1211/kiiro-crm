@@ -20,6 +20,15 @@ describe('CRM stage invariants', () => {
       error: { code: 'FORBIDDEN' },
     })
   })
+
+  it('rejects stale markLost without changing the record or audit rows', async () => {
+    const context = makeDeps()
+    const result = await markLost(context, { id: seedLead.id, expectedUpdatedAt: 4_999, lostReasonId: 'reason-budget' })
+    expect(result).toMatchObject({ ok: false, error: { code: 'CONFLICT' } })
+    expect(await context.repo.get('lead', seedLead.id)).toMatchObject({ stageId: 'lead-open', lostReasonId: null })
+    expect(context.repo.transitions).toHaveLength(0)
+    expect(context.repo.activities).toHaveLength(0)
+  })
 })
 
 describe('CRM terminal behavior', () => {

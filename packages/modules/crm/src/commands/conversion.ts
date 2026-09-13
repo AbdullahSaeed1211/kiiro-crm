@@ -57,6 +57,8 @@ async function markLostWork(deps: CrmDeps, input: unknown): Promise<CrmResult<Le
   const value = parsed.value
   const found = await findPipelineRecord(deps, asId(value.id))
   if (!found.ok) return found
+  if (found.value.record.updatedAt !== value.expectedUpdatedAt)
+    return failure('CONFLICT', `${found.value.type} was updated by someone else`)
   const destination = await validateLostRequest(deps, found.value, asId(value.lostReasonId))
   if (!destination.ok) return destination
   const saved = await deps.repo.update(

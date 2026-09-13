@@ -4,7 +4,8 @@ const id = z.string().trim().min(1)
 const optionalId = id.nullable().optional()
 const optionalText = z.string().trim().max(10_000).nullable().optional()
 const optionalEmail = z.string().trim().pipe(z.email()).nullable().optional()
-const optionalNumber = z.number().nullable().optional()
+const epoch = z.number().nonnegative()
+const optionalEpoch = epoch.nullable().optional()
 const idList = z.array(id).default([])
 const customData = z.record(z.string(), z.unknown()).optional()
 
@@ -34,7 +35,7 @@ export const createOrganizationSchema = z
 export const updateOrganizationSchema = z
   .object({
     id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     patch: z
       .object({
         name: z.string().trim().min(1).max(300).optional(),
@@ -64,7 +65,7 @@ export const createContactSchema = z
 export const updateContactSchema = z
   .object({
     id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     patch: z
       .object({
         firstName: z.string().trim().min(1).max(200).optional(),
@@ -100,7 +101,7 @@ export const createLeadSchema = z.object(pipelineFields).strict()
 export const updateLeadSchema = z
   .object({
     id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     patch: z
       .object({
         title: z.string().trim().min(1).max(300).optional(),
@@ -126,7 +127,7 @@ export const createDealSchema = z
     contactIds: idList,
     primaryContactId: optionalId,
     value: moneySchema.nullable().optional(),
-    expectedCloseAt: optionalNumber,
+    expectedCloseAt: optionalEpoch,
     ownerId: optionalId,
     assigneeIds: idList,
     workflowId: optionalId,
@@ -139,7 +140,7 @@ export const createDealSchema = z
 export const updateDealSchema = z
   .object({
     id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     patch: z
       .object({
         title: z.string().trim().min(1).max(300).optional(),
@@ -147,7 +148,7 @@ export const updateDealSchema = z
         contactIds: z.array(id).optional(),
         primaryContactId: optionalId,
         value: moneySchema.nullable().optional(),
-        expectedCloseAt: optionalNumber,
+        expectedCloseAt: optionalEpoch,
         ownerId: optionalId,
         assigneeIds: z.array(id).optional(),
         sourceLeadId: optionalId,
@@ -161,7 +162,7 @@ export const moveLeadSchema = z
   .object({
     leadId: id,
     toStageId: id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     reason: z.string().trim().max(5_000).optional(),
   })
   .strict()
@@ -170,7 +171,7 @@ export const moveDealSchema = z
   .object({
     dealId: id,
     toStageId: id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     reason: z.string().trim().max(5_000).optional(),
   })
   .strict()
@@ -178,7 +179,7 @@ export const moveDealSchema = z
 export const markLostSchema = z
   .object({
     id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     lostReasonId: id,
     lostNote: z.string().trim().max(5_000).nullable().optional(),
   })
@@ -187,7 +188,7 @@ export const markLostSchema = z
 export const convertLeadSchema = z
   .object({
     leadId: id,
-    expectedUpdatedAt: z.number(),
+    expectedUpdatedAt: epoch,
     organization: z
       .union([
         z.object({ existingId: id }).strict(),
