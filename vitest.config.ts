@@ -1,4 +1,6 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
+
+const SPIKE_TESTS = 'packages/**/test/spike/**'
 
 export default defineConfig({
   test: {
@@ -8,6 +10,18 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['packages/**/test/**/*.test.ts', 'apps/web/test/**/*.test.ts', 'scripts/test/**/*.test.ts'],
+          exclude: [...configDefaults.exclude, SPIKE_TESTS],
+        },
+      },
+      {
+        // Starts Payload on a local D1 copy through Wrangler (no network), so it runs alone and with long hooks.
+        test: {
+          name: 'integration',
+          environment: 'node',
+          include: [`${SPIKE_TESTS}/*.test.ts`],
+          hookTimeout: 180_000,
+          testTimeout: 60_000,
+          fileParallelism: false,
         },
       },
     ],

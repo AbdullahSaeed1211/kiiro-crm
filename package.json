@@ -29,7 +29,8 @@
     "harness:record": "tsx scripts/harness/record.ts",
     "harness:retro": "tsx scripts/harness/retro.ts",
     "harness:evals": "tsx scripts/harness/evals.ts",
-    "test": "vitest run --coverage",
+    "test": "vitest run --project unit --coverage",
+    "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "size": "tsx scripts/check-size.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
@@ -37,8 +38,8 @@
     "tenant:provision": "tsx scripts/provision-tenant.ts",
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",
     "tenants:deploy": "tsx scripts/deploy-tenants.ts",
-    "verify:fast": "pnpm format:check && pnpm typecheck && pnpm lint && vitest run --changed",
-    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm harness:evals && pnpm test && pnpm build && pnpm size"
+    "verify:fast": "pnpm format:check && pnpm typecheck && pnpm lint && vitest run --project unit --changed",
+    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm harness:evals && pnpm test && pnpm test:integration && pnpm build && pnpm size"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

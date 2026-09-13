@@ -13,12 +13,12 @@ In the repository today:
 - Tooling, quality gates, CI and the execution harness (milestone M0).
 - Payload 3 on D1 with the spike collections (users, groups, organizations, projects, tasks, workflows, activity, attachments, notifications, email messages, job runs, settings), their access rules and an initial migration.
 - Platform permissions (`can`, scope filters) and the `changeStage` command; Payload repositories with compare-and-set writes.
-- Product pages `/tasks/board` (drag and drop) and `/timeline` (Gantt), reading and writing tasks through Payload; the `/tasks` table still reads fixture rows.
+- Product pages `/tasks` (table), `/tasks/board` (drag and drop) and `/timeline` (Gantt), all reading and writing tasks through Payload with the signed-in user access.
 - A 15-minute cron dispatcher with a due-soon reminder job, an inbound email route, and outbound mail senders.
 - Local seed data, local database reset, `GET /api/v1/health`, and measurement scripts for the spike report.
 - Both spike tenants deployed from one build, with Worker startup times of 48 ms and 33 ms against the 1 s limit; the tenant isolation proof has passed over HTTP.
 
-Next in M1: the email round-trip proof, spike tests (permission scope per role, conflicts, duplicate cron runs, Playwright smoke), the measurements, and the spike report with the GO or FALLBACK decision. Later milestones are listed in spec §21.2.
+Next in M1: the lost-update fix (M1-W10) and closing the spike report, which recommends GO ([`docs/reports/m1-spike.md`](docs/reports/m1-spike.md)). The live email round trip waits for email onboarding (E-019) and signed-in page checks on Cloudflare wait for Workers Paid (E-018). Later milestones are listed in spec §21.2.
 
 ## Stack
 
@@ -106,7 +106,7 @@ Sign in at `/admin/login`; product login pages do not exist yet, and the board a
 
 | Path             | Content                                             |
 | ---------------- | --------------------------------------------------- |
-| `/tasks`         | task table over fixture rows                        |
+| `/tasks`         | task table                                          |
 | `/tasks/board`   | task board with drag and drop                       |
 | `/timeline`      | Gantt timeline with date drag                       |
 | `/admin`         | Payload admin                                       |
@@ -123,7 +123,8 @@ Run from the repository root.
 | `pnpm preview`                              | OpenNext build, then the Worker in the local workerd runtime                 |
 | `pnpm verify`                               | every quality gate, tests, build and bundle size (see below)                 |
 | `pnpm verify:fast`                          | format check, typecheck, lint and tests for changed files                    |
-| `pnpm test`                                 | Vitest unit and integration tests with coverage                              |
+| `pnpm test`                                 | Vitest unit tests with coverage                                              |
+| `pnpm test:integration`                     | Payload on a local D1 copy: scope, conflicts, duplicates (no network)        |
 | `pnpm test:e2e`                             | Playwright tests under `tests/e2e`                                           |
 | `pnpm typecheck`                            | `tsc --noEmit` in every workspace package                                    |
 | `pnpm lint`                                 | ESLint with zero warnings allowed                                            |
