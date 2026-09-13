@@ -14,7 +14,7 @@ import { Handshake, LayoutGrid, Search } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DealCreateDialog } from './DealCreateDialog'
-import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
+import { filterDeals, formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
 
 const APP_NAME = 'Workspace'
@@ -92,13 +92,23 @@ function columns(): DataTableColumn[] {
     { id: 'expectedCloseAt', header: 'Expected close' },
   ]
 }
-function pagination(page: number, total: number): DataTablePaginationState {
+function pagination(
+  input: Readonly<{ page: number; total: number; query: string; stageId: string | undefined }>,
+): DataTablePaginationState {
+  const { page, total, query, stageId } = input
+  const href = (nextPage: number) => {
+    const params = new URLSearchParams()
+    if (query !== '') params.set('q', query)
+    if (stageId !== undefined) params.set('stage', stageId)
+    params.set('page', String(nextPage))
+    return `?${params.toString()}`
+  }
   return {
     page,
     pageSize: 50,
     total,
-    ...(page > 1 ? { previousHref: `?page=${String(page - 1)}` } : {}),
-    ...(page * 50 < total ? { nextHref: `?page=${String(page + 1)}` } : {}),
+    ...(page > 1 ? { previousHref: href(page - 1) } : {}),
+    ...(page * 50 < total ? { nextHref: href(page + 1) } : {}),
   }
 }
 
@@ -107,11 +117,10 @@ export default async function DealsPage({
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const params = await searchParams
   const data = await getDealListData()
-  const query = first(params.q)?.trim().toLowerCase() ?? ''
-  const filtered =
-    query === ''
-      ? data.items
-      : data.items.filter((item) => `${item.deal.title} ${item.organizationName ?? ''}`.toLowerCase().includes(query))
+  const rawQuery = first(params.q)?.trim() ?? ''
+  const query = rawQuery.toLowerCase()
+  const stageId = first(params.stage)
+  const filtered = filterDeals(data.items, query, stageId)
   const page = Math.max(1, Number(first(params.page) ?? 1) || 1)
   const visible = filtered.slice((page - 1) * 50, page * 50)
   return (
@@ -145,12 +154,25 @@ export default async function DealsPage({
             placeholder="Search deals"
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />
+          <select
+            name="stage"
+            defaultValue={stageId ?? ''}
+            aria-label="Filter by stage"
+            className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
+          >
+            <option value="">All stages</option>
+            {data.workflow.stages.map((stage) => (
+              <option key={stage.id} value={stage.id}>
+                {stage.name}
+              </option>
+            ))}
+          </select>
         </form>
         <DataTable
           key={`${query}:${String(page)}`}
           columns={columns()}
           rows={visible.map(rowOf)}
-          pagination={pagination(page, filtered.length)}
+          pagination={pagination({ page, total: filtered.length, query: rawQuery, stageId })}
           labels={LABELS}
           emptyState={
             <EmptyState

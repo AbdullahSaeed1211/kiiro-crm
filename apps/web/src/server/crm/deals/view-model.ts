@@ -58,6 +58,19 @@ export function formatDate(value: number | null): string {
   return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(value)
 }
 
+export function filterDeals(
+  items: readonly DealListItem[],
+  query: string,
+  stageId: string | undefined,
+): readonly DealListItem[] {
+  return items.filter((item) => {
+    const matchesQuery =
+      query === '' || `${item.deal.title} ${item.organizationName ?? ''}`.toLowerCase().includes(query)
+    const matchesStage = stageId === undefined || item.deal.stageId === stageId
+    return matchesQuery && matchesStage
+  })
+}
+
 export function organizationName(deal: DealRecord, organizations: readonly OrganizationRecord[]): string | null {
   return organizations.find((organization) => organization.id === deal.organizationId)?.name ?? null
 }

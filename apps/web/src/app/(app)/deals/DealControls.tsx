@@ -24,11 +24,14 @@ function useDealAction() {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const run = (task: () => Promise<DealActionResult>) => {
+  const run = (task: () => Promise<DealActionResult>, onFailure?: () => void) => {
     startTransition(async () => {
       const result = await task()
-      if (!result.ok) setError(result.message)
-      else {
+      if (!result.ok) {
+        setError(result.message)
+        onFailure?.()
+        router.refresh()
+      } else {
         setError(null)
         router.refresh()
       }
@@ -41,24 +44,31 @@ type ActionProps = Readonly<{
   deal: Deal
   pending: boolean
   setError: (value: string) => void
-  run: (task: () => Promise<DealActionResult>) => void
+  run: (task: () => Promise<DealActionResult>, onFailure?: () => void) => void
 }>
 
 function StagePicker({ deal, stages, pending, setError, run }: ActionProps & Readonly<{ stages: readonly Stage[] }>) {
+  const [selectedStage, setSelectedStage] = useState(deal.stageId)
   function changeStage(stageId: string) {
     const destination = stages.find((stage) => stage.id === stageId)
     if (destination?.category === 'done_failure') {
       setError('Choose a lost reason and use Mark lost to close this deal.')
       return
     }
-    run(() => moveDealAction({ dealId: deal.id, toStageId: stageId, expectedUpdatedAt: deal.updatedAt }))
+    setSelectedStage(stageId)
+    run(
+      () => moveDealAction({ dealId: deal.id, toStageId: stageId, expectedUpdatedAt: deal.updatedAt }),
+      () => {
+        setSelectedStage(deal.stageId)
+      },
+    )
   }
   return (
     <div className="grid gap-2">
       <Label htmlFor="deal-stage">Stage</Label>
       <select
         id="deal-stage"
-        defaultValue={deal.stageId}
+        value={selectedStage}
         onChange={(event) => {
           changeStage(event.target.value)
         }}
@@ -83,12 +93,16 @@ function ValueEditor({ deal, pending, setError, run }: ActionProps) {
       setError('Enter a valid deal value.')
       return
     }
-    run(() =>
-      updateDealAction({
-        id: deal.id,
-        expectedUpdatedAt: deal.updatedAt,
-        patch: { value: amountMinor === null ? null : { amountMinor, currency: deal.value?.currency ?? 'USD' } },
-      }),
+    run(
+      () =>
+        updateDealAction({
+          id: deal.id,
+          expectedUpdatedAt: deal.updatedAt,
+          patch: { value: amountMinor === null ? null : { amountMinor, currency: deal.value?.currency ?? 'USD' } },
+        }),
+      () => {
+        setValue(deal.value === null ? '' : String(deal.value.amountMinor / 100))
+      },
     )
   }
   return (
@@ -126,17 +140,28 @@ function ContactPicker({ deal, contacts, pending, run }: ActionProps & Readonly<
     setSelected(next)
     const nextPrimary = next.includes(primary ?? '') ? primary : (next[0] ?? null)
     setPrimary(nextPrimary)
-    run(() =>
-      updateDealAction({
-        id: deal.id,
-        expectedUpdatedAt: deal.updatedAt,
-        patch: { contactIds: next, primaryContactId: nextPrimary },
-      }),
+    run(
+      () =>
+        updateDealAction({
+          id: deal.id,
+          expectedUpdatedAt: deal.updatedAt,
+          patch: { contactIds: next, primaryContactId: nextPrimary },
+        }),
+      () => {
+        setSelected(deal.contactIds)
+        setPrimary(deal.primaryContactId)
+      },
     )
   }
   function makePrimary(id: string) {
+    const previous = primary
     setPrimary(id)
-    run(() => updateDealAction({ id: deal.id, expectedUpdatedAt: deal.updatedAt, patch: { primaryContactId: id } }))
+    run(
+      () => updateDealAction({ id: deal.id, expectedUpdatedAt: deal.updatedAt, patch: { primaryContactId: id } }),
+      () => {
+        setPrimary(previous)
+      },
+    )
   }
   return (
     <div className="grid gap-2">
@@ -179,11 +204,13 @@ export function DealControls({
   stages,
   lostReasons,
   contacts,
+  stageCategory,
 }: Readonly<{
   deal: Deal
   stages: readonly Stage[]
   lostReasons: readonly Readonly<{ id: string; name: string }>[]
   contacts: readonly Contact[]
+  stageCategory: string
 }>) {
   const { pending, error, setError, run } = useDealAction()
   return (
@@ -195,6 +222,7 @@ export function DealControls({
         deal={deal}
         stages={stages}
         lostReasons={lostReasons}
+        stageCategory={stageCategory}
         pending={pending}
         setError={setError}
         run={run}

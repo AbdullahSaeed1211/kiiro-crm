@@ -1,6 +1,8 @@
 import { asId } from '@ops/kernel'
-import { describe, expect, it } from 'vitest'
-import { aggregateStageTotals, formatMoney } from '../src/server/crm/deals/view-model'
+import { describe, expect, it, vi } from 'vitest'
+import { loadActivity } from '../src/server/crm/deals/activity'
+import type { RequestContext } from '../src/server/work/deps'
+import { aggregateStageTotals, filterDeals, formatMoney } from '../src/server/crm/deals/view-model'
 
 const workflow = {
   id: asId('deal-workflow'),
@@ -48,5 +50,35 @@ describe('deal view model', () => {
   it('formats minor units as tenant-facing currency text', () => {
     expect(formatMoney({ amountMinor: 125000, currency: 'USD' })).toContain('$1,250.00')
     expect(formatMoney(null)).toBe('—')
+  })
+
+  it('filters by search text and workflow stage', () => {
+    const items = [
+      {
+        deal: deal('website', 'qualified', 100),
+        stage: workflow.stages[0],
+        organizationName: 'Acme',
+        primaryContactName: null,
+      },
+      {
+        deal: deal('retainer', 'won', 200),
+        stage: workflow.stages[1],
+        organizationName: 'Beta',
+        primaryContactName: null,
+      },
+    ]
+    expect(filterDeals(items, 'acme', 'qualified').map((item) => item.deal.id)).toEqual(['website'])
+    expect(filterDeals(items, '', 'won').map((item) => item.deal.id)).toEqual(['retainer'])
+  })
+
+  it('passes the authenticated request into activity reads', async () => {
+    const user = { id: 'staff-1' }
+    const find = vi.fn().mockResolvedValue({ docs: [] })
+    const context = {
+      payload: { find } as unknown as RequestContext['payload'],
+      req: { user } as RequestContext['req'],
+    }
+    await loadActivity(context, 'deal-1')
+    expect(find).toHaveBeenCalledWith(expect.objectContaining({ overrideAccess: false, user, req: context.req }))
   })
 })

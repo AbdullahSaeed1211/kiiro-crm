@@ -21,7 +21,7 @@ function ClosingActions({
   won: Stage | undefined
   reopen: Stage | undefined
   pending: boolean
-  run: (task: () => Promise<DealActionResult>) => void
+  run: (task: () => Promise<DealActionResult>, onFailure?: () => void) => void
 }>) {
   return (
     <>
@@ -55,6 +55,7 @@ export function ClosingControls({
   deal,
   stages,
   lostReasons,
+  stageCategory,
   pending,
   setError,
   run,
@@ -62,14 +63,18 @@ export function ClosingControls({
   deal: Deal
   stages: readonly Stage[]
   lostReasons: readonly Readonly<{ id: string; name: string }>[]
+  stageCategory: string
   pending: boolean
   setError: (value: string) => void
   run: (task: () => Promise<DealActionResult>) => void
 }>) {
   const [reason, setReason] = useState(lostReasons[0]?.id ?? '')
   const [note, setNote] = useState('')
-  const won = stages.find((stage) => stage.category === 'done_success')
-  const reopen = stages.find((stage) => !['done_success', 'done_failure', 'cancelled'].includes(stage.category))
+  const terminal = ['done_success', 'done_failure', 'cancelled'].includes(stageCategory)
+  const won = stageCategory === 'done_success' ? undefined : stages.find((stage) => stage.category === 'done_success')
+  const reopen = terminal
+    ? stages.find((stage) => !['done_success', 'done_failure', 'cancelled'].includes(stage.category))
+    : undefined
   function markLost() {
     if (reason === '') {
       setError('A lost reason is required.')
@@ -104,15 +109,17 @@ export function ClosingControls({
         }}
         placeholder="Optional note"
       />
-      <Button
-        variant="destructive"
-        onClick={() => {
-          markLost()
-        }}
-        disabled={pending}
-      >
-        Mark lost
-      </Button>
+      {terminal ? null : (
+        <Button
+          variant="destructive"
+          onClick={() => {
+            markLost()
+          }}
+          disabled={pending}
+        >
+          Mark lost
+        </Button>
+      )}
       <ClosingActions deal={deal} won={won} reopen={reopen} pending={pending} run={run} />
     </div>
   )

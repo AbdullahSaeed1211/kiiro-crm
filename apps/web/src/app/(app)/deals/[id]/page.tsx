@@ -106,6 +106,7 @@ function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
           deal={data.deal}
           stages={data.workflow.stages}
           lostReasons={data.lostReasons}
+          stageCategory={data.stage.category}
           contacts={data.allContacts.map((contact) => ({
             id: contact.id,
             name: [contact.firstName, contact.lastName].filter(Boolean).join(' '),

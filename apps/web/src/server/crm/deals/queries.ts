@@ -1,8 +1,11 @@
 import { asId } from '@ops/kernel'
+import { systemClock } from '@ops/kernel'
+import { createCrmRepository, createUnitOfWork } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
-import type { Workflow } from '@ops/platform'
+import { can, type Workflow } from '@ops/platform'
 import { getRequestContext } from '../../work/deps'
 import { getCrmDeps } from '../deps'
+import { loadActivity, type ActivityItem } from './activity'
 import { displayName, organizationName, stageForDeal, type DealListItem } from './view-model'
 
 export interface DealListData {
@@ -11,13 +14,6 @@ export interface DealListData {
   readonly contacts: readonly ContactRecord[]
   readonly workflow: Workflow
   readonly total: number
-}
-export interface ActivityItem {
-  readonly id: string
-  readonly verb: string
-  readonly occurredAt: number
-  readonly actorName: string | null
-  readonly data: Record<string, unknown>
 }
 export interface DealDetailData {
   readonly deal: DealRecord
@@ -31,27 +27,7 @@ export interface DealDetailData {
   readonly activity: readonly ActivityItem[]
 }
 
-async function loadActivity(
-  payload: Awaited<ReturnType<typeof getRequestContext>>['payload'],
-  id: string,
-): Promise<readonly ActivityItem[]> {
-  const page = await payload.find({
-    collection: 'activity',
-    where: { and: [{ recordType: { equals: 'deal' } }, { recordId: { equals: id } }] },
-    sort: '-occurredAt',
-    limit: 30,
-    pagination: false,
-    depth: 0,
-    overrideAccess: false,
-  })
-  return page.docs.map((item) => ({
-    id: item.id,
-    verb: typeof item.verb === 'string' ? item.verb : 'activity.updated',
-    occurredAt: typeof item.occurredAt === 'number' ? item.occurredAt : new Date(String(item.occurredAt)).getTime(),
-    actorName: null,
-    data: typeof item.data === 'object' && item.data !== null ? (item.data as Record<string, unknown>) : {},
-  }))
-}
+export type { ActivityItem } from './activity'
 
 export async function getDealListData(): Promise<DealListData> {
   const deps = await getCrmDeps()
@@ -71,8 +47,14 @@ export async function getDealListData(): Promise<DealListData> {
 }
 
 export async function getDealDetailData(id: string): Promise<DealDetailData | null> {
-  const { payload } = await getRequestContext()
-  const deps = await getCrmDeps()
+  const context = await getRequestContext()
+  const deps = {
+    actor: context.actor,
+    can,
+    repo: createCrmRepository(context.req),
+    uow: createUnitOfWork(context.req),
+    clock: systemClock,
+  }
   const deal = await deps.repo.get('deal', asId(id))
   if (deal === undefined) return null
   const [workflow, organization, organizations, allContacts, lostReasons, activity] = await Promise.all([
@@ -81,7 +63,7 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
     deps.repo.list('organization'),
     deps.repo.list('contact'),
     deps.repo.listLookups('lostReason'),
-    loadActivity(payload, id),
+    loadActivity(context, id),
   ])
   if (workflow === undefined) return null
   return {
