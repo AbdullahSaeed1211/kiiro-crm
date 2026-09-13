@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ops/ui/components/ui/avatar'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
-import { AppShell } from '@ops/ui/composites/AppShell'
-import { AppSidebar, type NavGroup } from '@ops/ui/composites/AppSidebar'
+import { PageContent } from '@ops/ui/composites/AppShell'
 import {
   DataTable,
   type DataTableColumn,
@@ -11,21 +10,8 @@ import {
 } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import {
-  CalendarDays,
-  ChartGantt,
-  CircleAlert,
-  CircleCheckBig,
-  LayoutDashboard,
-  ListTodo,
-  Minus,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
-  type LucideIcon,
-} from 'lucide-react'
+import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import type {
   TaskListItem,
@@ -39,31 +25,10 @@ import type {
 // Default product name until settings.appName exists (decision D-05).
 const APP_NAME = 'Workspace'
 const PAGE_TITLE = 'Tasks'
-// The vendored shadcn sidebar persists its open state in this cookie.
-const SIDEBAR_COOKIE = 'sidebar_state'
 const AVATAR_LIMIT = 3
 
 /** Browser tab title, `{page} · {appName}` (spec §17). */
 export const metadata: Metadata = { title: `${PAGE_TITLE} · ${APP_NAME}` }
-
-const NAV: readonly NavGroup[] = [
-  {
-    id: 'general',
-    items: [
-      { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-      { label: 'My tasks', href: '/my-tasks', icon: CircleCheckBig },
-    ],
-  },
-  {
-    id: 'work',
-    label: 'Work',
-    items: [
-      { label: PAGE_TITLE, href: '/tasks', icon: ListTodo, active: true },
-      { label: 'Calendar', href: '/calendar', icon: CalendarDays },
-      { label: 'Timeline', href: '/timeline', icon: ChartGantt },
-    ],
-  },
-]
 
 const LABELS: DataTableLabels = {
   selectAll: 'Select all',
@@ -214,37 +179,35 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
-/** Tasks list (spec §17.5); renders the application shell itself until M1-L3 moves it into the layout. */
+/** Tasks list (spec §17.5). */
 export default async function TasksPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const { sort: sortParam, page: pageParam } = await searchParams
   const sort = parseTaskSort(firstValue(sortParam))
   const result = await listTasks({ page: parseTaskPage(firstValue(pageParam)), sort })
-  const sidebarOpen = (await cookies()).get(SIDEBAR_COOKIE)?.value !== 'false'
   return (
-    <AppShell
-      defaultOpen={sidebarOpen}
-      sidebar={<AppSidebar appName={APP_NAME} groups={NAV} />}
-      header={<AppHeader breadcrumbs={[{ label: PAGE_TITLE }]} />}
-    >
-      <PageHeader title={PAGE_TITLE} count={result.total} />
-      <DataTable
-        // A new sort or page remounts the table, so row selection does not carry over to other rows.
-        key={`${formatTaskSort(sort)}:${String(result.page)}`}
-        columns={taskColumns(sort)}
-        rows={result.items.map(toRow)}
-        sort={{ id: sort.key, desc: sort.desc }}
-        pagination={paginationOf(result, sort)}
-        labels={LABELS}
-        emptyState={
-          <EmptyState
-            icon={ListTodo}
-            title="No tasks yet"
-            description="Tasks you create or are assigned to show up here."
-          />
-        }
-      />
-    </AppShell>
+    <>
+      <AppHeader breadcrumbs={[{ label: PAGE_TITLE }]} />
+      <PageContent>
+        <PageHeader title={PAGE_TITLE} count={result.total} />
+        <DataTable
+          // A new sort or page remounts the table, so row selection does not carry over to other rows.
+          key={`${formatTaskSort(sort)}:${String(result.page)}`}
+          columns={taskColumns(sort)}
+          rows={result.items.map(toRow)}
+          sort={{ id: sort.key, desc: sort.desc }}
+          pagination={paginationOf(result, sort)}
+          labels={LABELS}
+          emptyState={
+            <EmptyState
+              icon={ListTodo}
+              title="No tasks yet"
+              description="Tasks you create or are assigned to show up here."
+            />
+          }
+        />
+      </PageContent>
+    </>
   )
 }

@@ -1,25 +1,10 @@
-import { Toaster } from '@ops/ui/components/ui/sonner'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
-import { AppShell } from '@ops/ui/composites/AppShell'
-import { AppSidebar, type NavGroup } from '@ops/ui/composites/AppSidebar'
+import { PageContent } from '@ops/ui/composites/AppShell'
 import type { KanbanBoardLabels, KanbanCard, KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Workflow } from '@ops/platform'
-import {
-  CalendarDays,
-  ChartGantt,
-  CircleAlert,
-  CircleCheckBig,
-  LayoutDashboard,
-  ListTodo,
-  Minus,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
-  type LucideIcon,
-} from 'lucide-react'
+import { CalendarDays, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
 import { getWorkDeps } from '../../../../server/work/deps'
 import type { TaskPriority, TaskRecord } from '../../../../server/work/task-repository'
 import { TaskBoard } from './TaskBoard'
@@ -27,32 +12,12 @@ import { TaskBoard } from './TaskBoard'
 // Default product name until settings.appName exists (decision D-05).
 const APP_NAME = 'Workspace'
 const SECTION = 'Tasks'
-const SIDEBAR_COOKIE = 'sidebar_state'
 
 /** Browser tab title, `{page} · {appName}` (spec §17). */
 export const metadata: Metadata = { title: `Task board · ${APP_NAME}` }
 
 /** Reads per-request task data. */
 export const dynamic = 'force-dynamic'
-
-const NAV: readonly NavGroup[] = [
-  {
-    id: 'general',
-    items: [
-      { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-      { label: 'My tasks', href: '/my-tasks', icon: CircleCheckBig },
-    ],
-  },
-  {
-    id: 'work',
-    label: 'Work',
-    items: [
-      { label: SECTION, href: '/tasks', icon: ListTodo, active: true },
-      { label: 'Calendar', href: '/calendar', icon: CalendarDays },
-      { label: 'Timeline', href: '/timeline', icon: ChartGantt },
-    ],
-  },
-]
 
 const LABELS: KanbanBoardLabels = {
   expand: 'Expand {name}',
@@ -112,20 +77,17 @@ function toCard(task: TaskRecord): KanbanCard {
   return { id, stageId, title, updatedAt, meta: <TaskMeta task={task} /> }
 }
 
-/** Task board (spec §17.5); renders the application shell itself until M1-L3 moves it into the layout. */
+/** Task board (spec §17.5). */
 export default async function TaskBoardPage() {
-  const sidebarOpen = (await cookies()).get(SIDEBAR_COOKIE)?.value !== 'false'
   const { tasks } = await getWorkDeps()
   const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])
   return (
-    <AppShell
-      defaultOpen={sidebarOpen}
-      sidebar={<AppSidebar appName={APP_NAME} groups={NAV} />}
-      header={<AppHeader breadcrumbs={[{ label: SECTION, href: '/tasks' }, { label: 'Board' }]} />}
-    >
-      <PageHeader title={SECTION} count={records.length} />
-      <TaskBoard stages={toStages(workflow)} cards={records.map(toCard)} labels={LABELS} />
-      <Toaster />
-    </AppShell>
+    <>
+      <AppHeader breadcrumbs={[{ label: SECTION, href: '/tasks' }, { label: 'Board' }]} />
+      <PageContent>
+        <PageHeader title={SECTION} count={records.length} />
+        <TaskBoard stages={toStages(workflow)} cards={records.map(toCard)} labels={LABELS} />
+      </PageContent>
+    </>
   )
 }

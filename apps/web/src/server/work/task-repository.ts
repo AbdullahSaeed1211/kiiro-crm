@@ -2,7 +2,7 @@ import type { Clock } from '@ops/kernel'
 import type { TaskRepository } from '@ops/module-work'
 import type { Actor, Can, UnitOfWork } from '@ops/platform'
 
-export type { TaskDatesInput, TaskPriority, TaskRecord, TaskRepository } from '@ops/module-work'
+export type { TaskPriority, TaskRecord, TaskRepository } from '@ops/module-work'
 
 /** Per-request dependencies of work features. */
 export interface WorkDeps {
