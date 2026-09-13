@@ -1,10 +1,12 @@
 import { asId } from '@ops/kernel'
-import { describe, expect, it } from 'vitest'
+import { Forbidden } from 'payload'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTaskRepository } from '../../src/repositories'
 import { fakeRequest, type Handlers } from './fake-payload'
 
 const USER = { id: 'u1', role: 'staff', active: true }
 const UPDATED = '2026-09-13T10:00:00.000Z'
+const NEXT = '2026-09-13T10:00:00.001Z'
 const UPDATED_MS = Date.parse(UPDATED)
 const CREATED = '2026-09-01T00:00:00.000Z'
 const TASK_REF = { type: 'task', id: asId('t1') }
@@ -119,34 +121,47 @@ describe('createTaskRepository workflows', () => {
 })
 
 describe('createTaskRepository compare-and-set writes', () => {
-  it('saves the stage by id and expected updatedAt with the user access', async () => {
-    const saved = taskDoc({ stageId: 's-done', stageEnteredAt: 5000, updatedAt: '2026-09-13T10:00:01.000Z' })
-    const { repository, calls } = setup({ update: () => ({ docs: [saved], errors: [] }) })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('checks update access, writes once on id and expected updatedAt, then reads as the user', async () => {
+    // A clock at the expected version still moves the version forward by one millisecond.
+    vi.spyOn(Date, 'now').mockReturnValue(UPDATED_MS)
+    const saved = taskDoc({ stageId: 's-done', stageEnteredAt: 5000, updatedAt: NEXT })
+    const { repository, calls } = setup({ write: () => [{ id: 't1' }], find: () => ({ docs: [saved] }) })
     const input = { ref: TASK_REF, stageId: asId('s-done'), stageEnteredAt: 5000, expectedUpdatedAt: UPDATED_MS }
-    expect(await repository.saveStage(input)).toMatchObject({ stageId: 's-done', updatedAt: UPDATED_MS + 1000 })
-    expect(calls[0]?.args).toMatchObject({
-      collection: 'tasks',
-      where: GUARD,
-      data: { stageId: 's-done', stageEnteredAt: 5000 },
-      overrideAccess: false,
-      user: USER,
+    expect(await repository.saveStage(input)).toMatchObject({ stageId: 's-done', updatedAt: UPDATED_MS + 1 })
+    expect(calls.map((call) => call.method)).toEqual(['access', 'count', 'write', 'find'])
+    expect(calls[0]?.args).toMatchObject({ id: 't1' })
+    expect(calls[1]?.args).toMatchObject({ collection: 'tasks', where: { and: [GUARD] }, overrideAccess: true })
+    expect(calls[2]?.args).toMatchObject({
+      values: { stageId: 's-done', stageEnteredAt: 5000, updatedAt: NEXT },
+      where: { and: [{ id: 't1' }, { updatedAt: UPDATED }] },
     })
+    expect(calls[3]?.args).toMatchObject({ collection: 'tasks', where: { id: { equals: 't1' } }, ...SCOPED_READ })
   })
 
-  it('returns undefined when the compare-and-set matches no document', async () => {
-    const { repository, calls } = setup()
+  it('returns undefined when the version is outside the update access or the conditional write changes no row', async () => {
+    const scope = { group: { equals: 'g1' } }
+    const hidden = setup({ access: () => scope, count: () => ({ totalDocs: 0 }) })
     const dates = { id: asId('t1'), startAt: 1, dueAt: 2, expectedUpdatedAt: UPDATED_MS }
-    expect(await repository.saveDates(dates)).toBeUndefined()
-    expect(calls[0]?.args).toMatchObject({ where: GUARD, data: { startAt: 1, dueAt: 2 } })
+    expect(await hidden.repository.saveDates(dates)).toBeUndefined()
+    expect(hidden.calls.map((call) => call.method)).toEqual(['access', 'count'])
+    expect(hidden.calls[1]?.args).toMatchObject({ where: { and: [GUARD, scope] } })
+    const raced = setup()
+    expect(await raced.repository.saveDates(dates)).toBeUndefined()
+    expect(raced.calls.map((call) => call.method)).toEqual(['access', 'count', 'write'])
     const invalid = { ref: TASK_REF, stageId: asId('s'), stageEnteredAt: 1, expectedUpdatedAt: Number.NaN }
-    expect(await repository.saveStage(invalid)).toBeUndefined()
-    expect(calls).toHaveLength(1)
+    expect(await raced.repository.saveStage(invalid)).toBeUndefined()
+    expect(raced.calls).toHaveLength(3)
   })
 
-  it('rethrows per-document update failures', async () => {
-    const { repository } = setup({ update: () => ({ docs: [], errors: [{ id: 't1', message: 'invalid dueAt' }] }) })
-    const input = { id: asId('t1'), startAt: null, dueAt: -1, expectedUpdatedAt: UPDATED_MS }
-    await expect(repository.saveDates(input)).rejects.toThrow('tasks update failed: invalid dueAt')
+  it('throws Forbidden when the update access denies the user', async () => {
+    const { repository, calls } = setup({ access: () => false })
+    const dates = { id: asId('t1'), startAt: null, dueAt: 2, expectedUpdatedAt: UPDATED_MS }
+    await expect(repository.saveDates(dates)).rejects.toThrow(Forbidden)
+    expect(calls.map((call) => call.method)).toEqual(['access'])
   })
 })
 

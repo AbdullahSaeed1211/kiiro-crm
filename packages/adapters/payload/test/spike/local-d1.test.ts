@@ -31,17 +31,10 @@ const GROUPS: readonly (readonly [string, readonly SpikeCase[]])[] = [
   ['spike: duplicate inbound email on local D1', INBOUND_CASES],
 ]
 
-// Known product gap (D-36, E-017): update-by-where is not a single conditional write, so both racers succeed.
-// `it.fails` keeps the suite green and turns red once M1-W10 closes the gap.
-const KNOWN_FAILURES: ReadonlySet<string> = new Set([
-  'two concurrent saveDates with the same expectedUpdatedAt: exactly one succeeds',
-])
-
 for (const [name, cases] of GROUPS) {
   describe(name, { timeout: CASE_TIMEOUT_MS }, () => {
     for (const [title, run] of cases) {
-      const test = KNOWN_FAILURES.has(title) ? it.fails : it
-      test(title, async () => {
+      it(title, async () => {
         await expect(run(stack())).resolves.toBeUndefined()
       })
     }
