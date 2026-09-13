@@ -50,3 +50,8 @@ Run on 2026-09-13 against local D1 (`getPlatformProxy`, isolated persistence dir
 - M1-W9 (new): seed data, local database reset and the health route move out of M1-L3 into a worker package, because M1-W6 tests, the measurements and the deploy smoke all need them.
 - `check:brand` skips the generated `apps/web/wrangler.jsonc`, because it carries tenant hostnames from `tenants/`, where names are allowed.
 - M1-W4 review: the lead moved `runMoveTask` out of the `'use server'` file into `apps/web/src/server/work/move-task.ts`, because every export of an action file is client-callable; M1-W5 scope adds `apps/web/src/server/work/set-task-dates.ts` for the same reason.
+
+### M1-L3 progress (lead, in progress)
+- Done: collections, R2 storage and the initial migration wired; Payload email adapter over the M1-W3 senders; internal cron route runs the due-soon job on Payload repositories and the inbound route stores `emailMessages`, both authenticating before any database access; `getWorkDeps` uses the Payload session (admin login until M5), `createLocalReq` and the M1-W8 task repository; the in-memory repository is removed.
+- D-36 input from M1-W8: Payload update-by-where finds matching ids and then writes by id, so a write landing between the two can still be lost; decide in M1-L3 whether the spike accepts that window or uses a conditional `payload.db` update.
+- Open: shell into `(app)/layout.tsx` after M1-W5, deploy `staging-a`/`staging-b`, isolation proof, email proof on `spike.sprintmediadesign.com` (E-015; the wrangler token still lacks email scopes).

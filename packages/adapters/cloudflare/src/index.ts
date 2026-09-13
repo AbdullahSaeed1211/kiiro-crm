@@ -4,6 +4,7 @@ export type { InboundEmailMessage, InternalForwardEnv, RequestTarget } from './c
 export { bridgeInboundEmail, MAX_INBOUND_BYTES } from './worker/bridge-inbound-email'
 export { dispatchCron } from './worker/dispatch-cron'
 export { handleCronRequest, type CronRequestDeps } from './internal/cron-request'
+export { rejectUnauthorized } from './internal/internal-secret'
 export { handleInboundEmailRequest, type InboundEmailRequestDeps } from './internal/inbound-email-request'
 export { CloudflareMailSender } from './mail/cloudflare-mail-sender'
 export { ConsoleMailSender } from './mail/console-mail-sender'
