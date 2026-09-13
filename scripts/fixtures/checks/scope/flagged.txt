@@ -1,0 +1,5 @@
+scripts/check-brand.ts
+scripts/test/checks/brand.test.ts
+scripts/lib/files.ts
+harness/metrics/attempts/M0-W1-a1.json
+docs/orchestration/m0/reports/M0-W1.md
