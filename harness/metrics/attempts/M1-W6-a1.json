@@ -1,0 +1,80 @@
+{
+  "wp": "M1-W6",
+  "milestone": "M1",
+  "attempt": 1,
+  "runner": "worker",
+  "startedAt": "2026-09-13T18:05:33.599Z",
+  "finishedAt": "2026-09-13T18:06:15.632Z",
+  "gates": [
+    {
+      "name": "pnpm test",
+      "exitCode": 1,
+      "durationMs": 7900,
+      "failingLines": [
+        "❯ |unit| packages/adapters/payload/test/spike/local-d1.test.ts (17 tests | 1 failed) 6249ms",
+        "× two concurrent saveDates with the same expectedUpdatedAt: exactly one succeeds 153ms",
+        "Failed to parse file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/packages/ui/src/theme/ThemeProvider.tsx. Excluding it from coverage.",
+        "Error [RolldownError]: Parse failed with 1 error:",
+        "at error (file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown/dist/shared/logs-DmYCAKcW.mjs:159:24)",
+        "Failed to parse file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/packages/ui/src/composites/AppShell/AppShell.tsx. Excluding it from coverage.",
+        "Error [RolldownError]: Parse failed with 1 error:",
+        "at error (file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown/dist/shared/logs-DmYCAKcW.mjs:159:24)",
+        "Failed to parse file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/packages/ui/src/composites/AppSidebar/AppSidebar.tsx. Excluding it from coverage.",
+        "Error [RolldownError]: Parse failed with 1 error:",
+        "at error (file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown/dist/shared/logs-DmYCAKcW.mjs:159:24)",
+        "Failed to parse file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/packages/ui/src/composites/AppHeader/AppHeader.tsx. Excluding it from coverage.",
+        "Error [RolldownError]: Parse failed with 1 error:",
+        "at error (file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown/dist/shared/logs-DmYCAKcW.mjs:159:24)",
+        "Failed to parse file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/packages/ui/src/composites/EmptyState/EmptyState.tsx. Excluding it from coverage.",
+        "Error [RolldownError]: Parse failed with 1 error:",
+        "at error (file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown/dist/shared/logs-DmYCAKcW.mjs:159:24)",
+        "Failed to parse file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/packages/ui/src/composites/KanbanBoard/KanbanBoard.tsx. Excluding it from coverage.",
+        "Error [RolldownError]: Parse failed with 1 error:",
+        "at error (file:///Users/abdullahsaeed/freelance/mirchmedia-projects/crm/ops-platform/.claude/worktrees/agent-ae8c9a1a7bf205bd0/node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown/dist/shared/logs-DmYCAKcW.mjs:159:24)"
+      ]
+    },
+    {
+      "name": "pnpm test:e2e --grep spike",
+      "exitCode": 0,
+      "durationMs": 13120,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1584,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 3752,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 15085,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --changed",
+      "exitCode": 0,
+      "durationMs": 255,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 280,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 7,
+  "suggestedClasses": [
+    "MISSING_TEST"
+  ],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}
