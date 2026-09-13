@@ -1,0 +1,8 @@
+# Open questions
+
+| ID | Milestone | Question | Options | Recommended | Blocking |
+|---|---|---|---|---|---|
+| Q-001 | before first client data | License of this codebase and IP ownership between maintainer and customers (spec D-30) | proprietary · MIT · AGPL · source-available | proprietary until decided | no (blocks public release) |
+| Q-002 | M1 | Which Cloudflare account is the platform operator's? The logged-in Wrangler account belongs to a customer (first customer tenant), which conflicts with D-50 | create a neutral operator account · use a maintainer-owned account · temporarily accept the customer account for the spike only | create a neutral operator account | yes, for M1 deploys |
+| Q-003 | M6 | Register `PLATFORM_DOMAIN` (neutral, no customer name) on Cloudflare DNS in the operator account | — | register before M6; spike uses workers.dev (E-003) | no for M0–M5 |
+| Q-004 | M0 CI | GitHub organization/repository for the product and GitHub CLI access for CI setup | operator GitHub org · maintainer account | operator GitHub org | no for local M0 |

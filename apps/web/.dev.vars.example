@@ -1,0 +1,9 @@
+PAYLOAD_SECRET=dev-only-replace-with-32-random-bytes
+INTERNAL_SECRET=dev-internal-secret
+TENANT_SECRET=dev-tenant-secret
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+TURNSTILE_HOSTNAMES=localhost
+MAIL_TRANSPORT=console
+APP_ORIGIN=http://localhost:3000
+TENANT_SLUG=dev
+INBOUND_DOMAIN=in.localhost

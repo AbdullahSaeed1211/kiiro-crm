@@ -1,0 +1,26 @@
+version: 1
+concurrency:
+  maxParallelWorkers: 6 # use what the runtime supports, never more than this
+retry:
+  workerAttempts: 2 # attempt 2 receives lead findings; then the lead finishes or re-plans
+promotion:
+  severeClasses: [AUTHZ_GAP, TENANT_ISOLATION, SECRET_EXPOSURE, DATA_LOSS, DESTRUCTIVE_DEPLOY]
+  ordinaryInMilestone: 2
+  ordinaryCumulative: 3
+retirement:
+  quietMilestones: 3
+gateClassMap:
+  'check:scope': SCOPE_VIOLATION
+  'check:brand': BRAND_OR_VOCAB_LEAK
+  'check:vocab': BRAND_OR_VOCAB_LEAK
+  'check:disables': GATE_FAILURE
+  'check:docs': DOC_GAP
+  'format:check': GATE_FAILURE
+  typecheck: GATE_FAILURE
+  lint: GATE_FAILURE
+  depcruise: GATE_FAILURE
+  knip: GATE_FAILURE
+  jscpd: DUPLICATE_ABSTRACTION
+  'test:permissions': AUTHZ_GAP
+  'test:isolation': TENANT_ISOLATION
+  test: MISSING_TEST

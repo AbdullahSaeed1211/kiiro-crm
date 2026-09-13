@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness eval manifest",
+  "type": "object",
+  "required": ["lesson", "repro", "fixed"],
+  "additionalProperties": false,
+  "properties": {
+    "lesson": { "type": "string" },
+    "repro": { "$ref": "#/$defs/step" },
+    "fixed": { "$ref": "#/$defs/step" }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["cwd", "command", "expectExitCode"],
+      "additionalProperties": false,
+      "properties": {
+        "cwd": { "type": "string" },
+        "command": { "type": "string" },
+        "expectExitCode": { "enum": ["zero", "nonzero"] },
+        "expectOutput": { "type": "string" }
+      }
+    }
+  }
+}

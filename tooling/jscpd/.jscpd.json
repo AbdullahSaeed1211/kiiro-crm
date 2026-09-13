@@ -1,0 +1,20 @@
+{
+  "threshold": 2,
+  "minTokens": 60,
+  "reporters": ["console"],
+  "gitignore": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/test/**",
+    "**/*.test.ts",
+    "packages/templates/**",
+    "packages/ui/src/components/ui/**",
+    "apps/web/src/migrations/**",
+    "apps/web/src/payload-types.ts",
+    "apps/web/cloudflare-env.d.ts",
+    "apps/web/src/app/(payload)/**",
+    "**/.open-next/**",
+    "**/.next/**",
+    "docs/**"
+  ]
+}

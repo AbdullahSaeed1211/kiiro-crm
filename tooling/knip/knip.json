@@ -1,0 +1,14 @@
+{
+  "workspaces": {
+    ".": { "entry": ["scripts/**/*.ts"] },
+    "apps/web": {
+      "entry": ["worker.ts", "src/payload.config.ts", "src/proxy.ts", "src/app/**/*.{ts,tsx}"],
+      "ignore": ["src/payload-types.ts", "src/migrations/**", "cloudflare-env.d.ts"]
+    },
+    "apps/mail-router": { "entry": ["src/index.ts"] },
+    "packages/*": { "entry": ["src/index.ts"] },
+    "packages/modules/*": { "entry": ["src/index.ts"] },
+    "packages/adapters/*": { "entry": ["src/index.ts"] }
+  },
+  "ignore": ["packages/ui/src/components/ui/**"]
+}
