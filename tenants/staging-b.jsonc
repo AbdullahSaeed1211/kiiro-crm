@@ -16,7 +16,7 @@
     "inboundDomain": "in.example.test",
     "inboundLocalPrefix": "staging-b--",
   },
-  "d1": { "name": "ops-staging-b" },
+  "d1": { "name": "ops-staging-b", "id": "0adc086b-cd3e-4d7a-9d53-ac39c1c9335f" },
   "r2": { "bucket": "ops-staging-b" },
   "rateLimitNamespaces": { "intake": "1011", "auth": "1012" },
   "intake": { "allowedOrigins": [], "turnstileHostnames": [] },

@@ -65,7 +65,8 @@
       "d1_databases": [
         {
           "binding": "D1",
-          "database_name": "ops-staging-a"
+          "database_name": "ops-staging-a",
+          "database_id": "526fa120-3eb8-4fb6-851b-fa732dccdbe6"
         }
       ],
       "r2_buckets": [
@@ -124,7 +125,8 @@
       "d1_databases": [
         {
           "binding": "D1",
-          "database_name": "ops-staging-b"
+          "database_name": "ops-staging-b",
+          "database_id": "0adc086b-cd3e-4d7a-9d53-ac39c1c9335f"
         }
       ],
       "r2_buckets": [
