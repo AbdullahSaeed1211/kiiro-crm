@@ -1,9 +1,10 @@
 // Spike tenant (E-003, E-007): workers.dev hostname, throwaway resources deleted after the M1 spike report.
-// `host` and `d1.id` are filled by the lead when the resources are created.
+// `host` is the account's workers.dev hostname; `d1.id` is filled by the lead when the database is created.
 {
   "slug": "staging-b",
   "displayName": "Staging Beta",
   "hostType": "workers_dev",
+  "host": "ops-staging-b.mirchmedia01.workers.dev",
   "template": "agency",
   "timezone": "Europe/London",
   "locale": "en",

@@ -105,6 +105,7 @@
       ],
       "vars": {
         "TENANT_SLUG": "staging-a",
+        "APP_ORIGIN": "https://ops-staging-a.mirchmedia01.workers.dev",
         "INBOUND_DOMAIN": "in.example.test",
         "TURNSTILE_HOSTNAMES": "",
         "MAIL_TRANSPORT": "cloudflare"
@@ -161,6 +162,7 @@
       ],
       "vars": {
         "TENANT_SLUG": "staging-b",
+        "APP_ORIGIN": "https://ops-staging-b.mirchmedia01.workers.dev",
         "INBOUND_DOMAIN": "in.example.test",
         "TURNSTILE_HOSTNAMES": "",
         "MAIL_TRANSPORT": "cloudflare"
