@@ -7,7 +7,6 @@ import {
   accessDenied,
   cleanNullable,
   createActivity,
-  draftWithCustomData,
   executeCommand,
   failure,
   id,
@@ -40,6 +39,7 @@ function contactPatch(value: UpdateContactInput['patch']): Partial<CrmDrafts['co
   }) as unknown as Partial<CrmDrafts['contact']>
 }
 
+/** Creates a CRM record and its `record.created` activity in one unit of work. */
 export async function createWithActivity<T extends keyof CrmRecords>(
   deps: CrmDeps,
   type: T,
@@ -65,14 +65,12 @@ async function createOrganizationWork(deps: CrmDeps, input: unknown): Promise<Cr
     email: cleanNullable(value.email),
     ownerId: id(value.ownerId),
     sourceId: id(value.sourceId),
-  } as unknown as CrmDrafts['organization']
-  return createWithActivity(
-    deps,
-    'organization',
-    draftWithCustomData(draft, value.customData) as CrmDrafts['organization'],
-  )
+    customData: value.customData ?? {},
+  } satisfies CrmDrafts['organization']
+  return createWithActivity(deps, 'organization', draft)
 }
 
+/** Validates and creates an organization. */
 export function createOrganization(deps: CrmDeps, input: unknown): Promise<CrmResult<OrganizationRecord>> {
   return executeCommand(deps, input, createOrganizationWork)
 }
@@ -90,6 +88,7 @@ async function updateOrganizationWork(deps: CrmDeps, input: unknown): Promise<Cr
   return saved === undefined ? failure('CONFLICT', 'organization was updated by someone else') : ok(saved)
 }
 
+/** Validates and conditionally updates an organization. */
 export function updateOrganization(deps: CrmDeps, input: unknown): Promise<CrmResult<OrganizationRecord>> {
   return executeCommand(deps, input, updateOrganizationWork)
 }
@@ -107,10 +106,12 @@ async function createContactWork(deps: CrmDeps, input: unknown): Promise<CrmResu
     phone: cleanNullable(value.phone),
     organizationId: id(value.organizationId),
     ownerId: id(value.ownerId),
+    customData: value.customData ?? {},
   }
-  return createWithActivity(deps, 'contact', draftWithCustomData(draft, value.customData) as CrmDrafts['contact'])
+  return createWithActivity(deps, 'contact', draft)
 }
 
+/** Validates and creates a contact. */
 export function createContact(deps: CrmDeps, input: unknown): Promise<CrmResult<ContactRecord>> {
   return executeCommand(deps, input, createContactWork)
 }
@@ -128,6 +129,7 @@ async function updateContactWork(deps: CrmDeps, input: unknown): Promise<CrmResu
   return saved === undefined ? failure('CONFLICT', 'contact was updated by someone else') : ok(saved)
 }
 
+/** Validates and conditionally updates a contact. */
 export function updateContact(deps: CrmDeps, input: unknown): Promise<CrmResult<ContactRecord>> {
   return executeCommand(deps, input, updateContactWork)
 }

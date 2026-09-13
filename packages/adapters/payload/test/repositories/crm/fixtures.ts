@@ -59,6 +59,7 @@ export const LEAD_RECORD = {
   stageEnteredAt: MS.createdAt,
   lostReasonId: null,
   lostNote: null,
+  customData: {},
   ...MS,
 }
 
@@ -103,6 +104,7 @@ export const DEAL_RECORD = {
   stageEnteredAt: 5000,
   lostReasonId: 'lr-budget',
   lostNote: 'Budget cut',
+  customData: {},
   ...MS,
 }
 

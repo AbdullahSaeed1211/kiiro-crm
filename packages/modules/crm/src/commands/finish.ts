@@ -3,6 +3,7 @@ import type { DealRecord, LeadRecord } from '../ports/records'
 import { createActivity, failure, type CrmResult } from '../domain/helpers'
 import type { Workflow } from '@ops/platform'
 
+/** Marks a converted lead and writes the conversion activities after its deal exists. */
 export async function finishConversion(input: {
   readonly deps: CrmDeps
   readonly lead: LeadRecord

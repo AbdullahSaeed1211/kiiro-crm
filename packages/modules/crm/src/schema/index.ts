@@ -9,7 +9,7 @@ const optionalEpoch = epoch.nullable().optional()
 const idList = z.array(id).default([])
 const customData = z.record(z.string(), z.unknown()).optional()
 
-export const moneySchema = z
+const moneySchema = z
   .object({
     amountMinor: z.number().int(),
     currency: z
@@ -207,15 +207,8 @@ export const convertLeadSchema = z
   })
   .strict()
 
-export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>
 export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>
-export type CreateContactInput = z.infer<typeof createContactSchema>
 export type UpdateContactInput = z.infer<typeof updateContactSchema>
-export type CreateLeadInput = z.infer<typeof createLeadSchema>
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>
-export type CreateDealInput = z.infer<typeof createDealSchema>
 export type UpdateDealInput = z.infer<typeof updateDealSchema>
-export type MoveLeadInput = z.infer<typeof moveLeadSchema>
-export type MoveDealInput = z.infer<typeof moveDealSchema>
-export type MarkLostInput = z.infer<typeof markLostSchema>
 export type ConvertLeadInput = z.infer<typeof convertLeadSchema>

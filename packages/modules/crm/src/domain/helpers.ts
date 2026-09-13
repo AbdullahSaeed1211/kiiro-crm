@@ -1,22 +1,23 @@
 import { asId, domainError, err, ok, type DomainError, type Id, type Result } from '@ops/kernel'
 import { changeStage, type Stage, type Workflow } from '@ops/platform'
 import type { CrmDeps } from '../ports/repository'
-import type { CrmDrafts, CrmRecordType, CrmRecords, DealRecord, LeadRecord, OrganizationRecord } from '../ports/records'
+import type { CrmCustomData, CrmRecordType, DealRecord, LeadRecord, OrganizationRecord } from '../ports/records'
 
 export type CrmResult<T> = Result<T>
 
-export type CustomData = Readonly<Record<string, unknown>>
+type CustomData = CrmCustomData
 
-export interface CrmFieldDefinition {
+interface CrmFieldDefinition {
   readonly key: string
   readonly type: string
   readonly recordType?: string
 }
 
 interface RecordWithCustomData {
-  readonly customData?: CustomData
+  readonly customData: CustomData
 }
 
+/** Creates a failed CRM result with a stable domain error. */
 export function failure<T = never>(
   code: DomainError['code'],
   message: string,
@@ -25,6 +26,7 @@ export function failure<T = never>(
   return err(domainError(code, message, details))
 }
 
+/** Parses unknown command input into a CRM result. */
 export function parse<T>(
   schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
   input: unknown,
@@ -33,20 +35,24 @@ export function parse<T>(
   return result.success ? ok(result.data) : failure('VALIDATION', 'invalid CRM input')
 }
 
+/** Converts an optional external id into the branded kernel id. */
 export function id(value: string | null | undefined): Id | null {
   return value === null || value === undefined ? null : asId(value)
 }
 
+/** Converts optional external ids into branded kernel ids. */
 export function ids(values: readonly string[] | undefined): readonly Id[] {
   return (values ?? []).map(asId)
 }
 
+/** Trims optional text and normalizes an empty value to null. */
 export function cleanNullable(value: string | null | undefined): string | null {
   if (value === undefined || value === null) return null
   const trimmed = value.trim()
   return trimmed === '' ? null : trimmed
 }
 
+/** Returns a forbidden result when the actor cannot perform the CRM action. */
 export function accessDenied<T>(input: {
   readonly type: CrmRecordType
   readonly deps: CrmDeps
@@ -68,11 +74,11 @@ export function accessDenied<T>(input: {
     : failure('FORBIDDEN', `not allowed to ${action} this ${type}`)
 }
 
-export function internalFailure<T>(error: unknown): CrmResult<T> {
+function internalFailure<T>(error: unknown): CrmResult<T> {
   return failure('INTERNAL', 'CRM operation failed', error instanceof Error ? { cause: error.message } : undefined)
 }
 
-export async function withErrors<T>(work: () => Promise<CrmResult<T>>): Promise<CrmResult<T>> {
+async function withErrors<T>(work: () => Promise<CrmResult<T>>): Promise<CrmResult<T>> {
   try {
     return await work()
   } catch (error) {
@@ -80,34 +86,15 @@ export async function withErrors<T>(work: () => Promise<CrmResult<T>>): Promise<
   }
 }
 
-export async function workflowFor(
-  deps: CrmDeps,
-  recordType: 'lead' | 'deal',
-  workflowId: string | null | undefined,
-): Promise<CrmResult<Workflow>> {
-  const workflow =
-    workflowId === undefined || workflowId === null
-      ? await deps.repo.loadDefaultWorkflow(recordType)
-      : await deps.repo.loadWorkflow(asId(workflowId))
-  return workflow === undefined ? failure('NOT_FOUND', `${recordType} workflow not found`) : ok(workflow)
-}
-
-export function stageIn(workflow: Workflow, stageId: Id): Stage | undefined {
+function stageIn(workflow: Workflow, stageId: Id): Stage | undefined {
   return workflow.stages.find((stage) => stage.id === stageId)
 }
 
-export function recordCustomData(record: RecordWithCustomData): CustomData {
-  return record.customData ?? {}
+function recordCustomData(record: RecordWithCustomData): CustomData {
+  return record.customData
 }
 
-export function draftWithCustomData<T extends CrmRecordType>(
-  draft: CrmDrafts[T],
-  customData: CustomData | undefined,
-): CrmDrafts[T] {
-  if (customData === undefined) return draft
-  return { ...draft, customData }
-}
-
+/** Runs a validated command and converts unexpected exceptions into domain failures. */
 export async function executeCommand<T, I>(
   deps: CrmDeps,
   input: I,
@@ -184,11 +171,13 @@ async function finalizeDealMove<T>(input: {
   return saved === undefined ? failure('CONFLICT', 'deal changed during the stage update') : ok(saved as T)
 }
 
+/** Validates and persists a lead or deal stage move through the platform workflow service. */
 export async function movePipeline<T extends LeadRecord | DealRecord>(input: PipelineMoveInput): Promise<CrmResult<T>> {
   const validated = await validatePipelineMove(input)
   return validated.ok ? persistPipelineMove<T>(validated.value) : err(validated.error)
 }
 
+/** Writes one CRM activity entry for the current actor. */
 export async function createActivity(input: {
   readonly deps: CrmDeps
   readonly record: { readonly type: CrmRecordType; readonly id: Id }
@@ -199,6 +188,7 @@ export async function createActivity(input: {
   await deps.repo.addActivity({ record, verb, actorId: deps.actor.id, data, occurredAt: deps.clock.now() })
 }
 
+/** Finds the deal already created from a lead during conversion recovery. */
 export async function findExistingDeal(deps: CrmDeps, sourceLeadId: Id): Promise<DealRecord | undefined> {
   const candidateRepo = deps.repo as CrmDeps['repo'] & {
     findDealBySourceLead?: (leadId: Id) => Promise<DealRecord | undefined>
@@ -208,11 +198,13 @@ export async function findExistingDeal(deps: CrmDeps, sourceLeadId: Id): Promise
   return deals.find((deal) => deal.sourceLeadId === sourceLeadId)
 }
 
+/** Finds an organization by its normalized name during lead conversion. */
 export async function findExistingOrganization(deps: CrmDeps, name: string): Promise<OrganizationRecord | undefined> {
   const organizations = await deps.repo.list('organization')
   return organizations.find((organization) => organization.name.trim().toLowerCase() === name.trim().toLowerCase())
 }
 
+/** Selects lead custom values whose field key and type also exist on deals. */
 export async function dealCustomData(
   deps: CrmDeps,
   lead: LeadRecord & RecordWithCustomData,
@@ -252,5 +244,3 @@ export async function dealCustomData(
     ),
   )
 }
-
-export type AnyCrmRecord = CrmRecords[CrmRecordType]

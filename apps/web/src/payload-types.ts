@@ -70,10 +70,16 @@ export interface Config {
     users: User;
     groups: Group;
     organizations: Organization;
+    contacts: Contact;
+    leads: Lead;
+    deals: Deal;
     projects: Project;
     tasks: Task;
     workflows: Workflow;
+    sources: Source;
+    lostReasons: LostReason;
     activity: Activity;
+    stageTransitions: StageTransition;
     attachments: Attachment;
     notifications: Notification;
     emailMessages: EmailMessage;
@@ -88,10 +94,16 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     groups: GroupsSelect<false> | GroupsSelect<true>;
     organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
+    contacts: ContactsSelect<false> | ContactsSelect<true>;
+    leads: LeadsSelect<false> | LeadsSelect<true>;
+    deals: DealsSelect<false> | DealsSelect<true>;
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
+    sources: SourcesSelect<false> | SourcesSelect<true>;
+    lostReasons: LostReasonsSelect<false> | LostReasonsSelect<true>;
     activity: ActivitySelect<false> | ActivitySelect<true>;
+    stageTransitions: StageTransitionsSelect<false> | StageTransitionsSelect<true>;
     attachments: AttachmentsSelect<false> | AttachmentsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
@@ -190,6 +202,157 @@ export interface Organization {
   phone?: string | null;
   email?: string | null;
   owner?: (string | null) | User;
+  source?: (string | null) | Source;
+  customData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sources".
+ */
+export interface Source {
+  id: string;
+  name: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contacts".
+ */
+export interface Contact {
+  id: string;
+  firstName: string;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  organization?: (string | null) | Organization;
+  owner?: (string | null) | User;
+  customData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads".
+ */
+export interface Lead {
+  id: string;
+  title: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  companyName?: string | null;
+  organization?: (string | null) | Organization;
+  source?: (string | null) | Source;
+  owner?: (string | null) | User;
+  assignees?: (string | User)[] | null;
+  workflow?: (string | null) | Workflow;
+  stageId?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  stageEnteredAt?: number | null;
+  lostReason?: (string | null) | LostReason;
+  lostNote?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  convertedAt?: number | null;
+  convertedDeal?: (string | null) | Deal;
+  customData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflows".
+ */
+export interface Workflow {
+  id: string;
+  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
+  name: string;
+  stages?:
+    | {
+        id?: string | null;
+        name: string;
+        category: 'backlog' | 'open' | 'active' | 'waiting' | 'done_success' | 'done_failure' | 'cancelled';
+        color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink';
+        position: number;
+        probability?: number | null;
+      }[]
+    | null;
+  defaultStageId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lostReasons".
+ */
+export interface LostReason {
+  id: string;
+  name: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deals".
+ */
+export interface Deal {
+  id: string;
+  title: string;
+  organization?: (string | null) | Organization;
+  contacts?: (string | Contact)[] | null;
+  primaryContact?: (string | null) | Contact;
+  valueAmountMinor?: number | null;
+  valueCurrency?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  expectedCloseAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  closedAt?: number | null;
+  owner?: (string | null) | User;
+  assignees?: (string | User)[] | null;
+  workflow?: (string | null) | Workflow;
+  stageId?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  stageEnteredAt?: number | null;
+  sourceLead?: (string | null) | Lead;
+  lostReason?: (string | null) | LostReason;
+  lostNote?: string | null;
   customData?:
     | {
         [k: string]: unknown;
@@ -236,28 +399,6 @@ export interface Project {
     | number
     | boolean
     | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "workflows".
- */
-export interface Workflow {
-  id: string;
-  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
-  name: string;
-  stages?:
-    | {
-        id?: string | null;
-        name: string;
-        category: 'backlog' | 'open' | 'active' | 'waiting' | 'done_success' | 'done_failure' | 'cancelled';
-        color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink';
-        position: number;
-        probability?: number | null;
-      }[]
-    | null;
-  defaultStageId?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -342,6 +483,28 @@ export interface Activity {
    * UTC time in milliseconds since 1970-01-01
    */
   occurredAt: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stageTransitions".
+ */
+export interface StageTransition {
+  id: string;
+  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
+  recordId: string;
+  workflow: string | Workflow;
+  fromStageId: string;
+  toStageId: string;
+  fromCategory: 'backlog' | 'open' | 'active' | 'waiting' | 'done_success' | 'done_failure' | 'cancelled';
+  toCategory: 'backlog' | 'open' | 'active' | 'waiting' | 'done_success' | 'done_failure' | 'cancelled';
+  changedBy?: (string | null) | User;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  changedAt: number;
+  durationMs: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -515,6 +678,18 @@ export interface PayloadLockedDocument {
         value: string | Organization;
       } | null)
     | ({
+        relationTo: 'contacts';
+        value: string | Contact;
+      } | null)
+    | ({
+        relationTo: 'leads';
+        value: string | Lead;
+      } | null)
+    | ({
+        relationTo: 'deals';
+        value: string | Deal;
+      } | null)
+    | ({
         relationTo: 'projects';
         value: string | Project;
       } | null)
@@ -527,8 +702,20 @@ export interface PayloadLockedDocument {
         value: string | Workflow;
       } | null)
     | ({
+        relationTo: 'sources';
+        value: string | Source;
+      } | null)
+    | ({
+        relationTo: 'lostReasons';
+        value: string | LostReason;
+      } | null)
+    | ({
         relationTo: 'activity';
         value: string | Activity;
+      } | null)
+    | ({
+        relationTo: 'stageTransitions';
+        value: string | StageTransition;
       } | null)
     | ({
         relationTo: 'attachments';
@@ -634,6 +821,73 @@ export interface OrganizationsSelect<T extends boolean = true> {
   phone?: T;
   email?: T;
   owner?: T;
+  source?: T;
+  customData?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contacts_select".
+ */
+export interface ContactsSelect<T extends boolean = true> {
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  phone?: T;
+  organization?: T;
+  owner?: T;
+  customData?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads_select".
+ */
+export interface LeadsSelect<T extends boolean = true> {
+  title?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  phone?: T;
+  companyName?: T;
+  organization?: T;
+  source?: T;
+  owner?: T;
+  assignees?: T;
+  workflow?: T;
+  stageId?: T;
+  stageEnteredAt?: T;
+  lostReason?: T;
+  lostNote?: T;
+  convertedAt?: T;
+  convertedDeal?: T;
+  customData?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deals_select".
+ */
+export interface DealsSelect<T extends boolean = true> {
+  title?: T;
+  organization?: T;
+  contacts?: T;
+  primaryContact?: T;
+  valueAmountMinor?: T;
+  valueCurrency?: T;
+  expectedCloseAt?: T;
+  closedAt?: T;
+  owner?: T;
+  assignees?: T;
+  workflow?: T;
+  stageId?: T;
+  stageEnteredAt?: T;
+  sourceLead?: T;
+  lostReason?: T;
+  lostNote?: T;
   customData?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -705,6 +959,24 @@ export interface WorkflowsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sources_select".
+ */
+export interface SourcesSelect<T extends boolean = true> {
+  name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lostReasons_select".
+ */
+export interface LostReasonsSelect<T extends boolean = true> {
+  name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "activity_select".
  */
 export interface ActivitySelect<T extends boolean = true> {
@@ -714,6 +986,24 @@ export interface ActivitySelect<T extends boolean = true> {
   actor?: T;
   data?: T;
   occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stageTransitions_select".
+ */
+export interface StageTransitionsSelect<T extends boolean = true> {
+  recordType?: T;
+  recordId?: T;
+  workflow?: T;
+  fromStageId?: T;
+  toStageId?: T;
+  fromCategory?: T;
+  toCategory?: T;
+  changedBy?: T;
+  changedAt?: T;
+  durationMs?: T;
   updatedAt?: T;
   createdAt?: T;
 }

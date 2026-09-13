@@ -4,7 +4,7 @@ import type { CrmDeps, CrmRepository } from '../src/ports/repository'
 import type { ContactRecord, CrmDrafts, CrmRecordType, CrmRecords, DealRecord, LeadRecord } from '../src/ports/records'
 import type { LookupRecord } from '../src/ports/records'
 
-export const leadWorkflow: Workflow = {
+const leadWorkflow: Workflow = {
   id: asId('workflow-lead'),
   recordType: 'lead',
   name: 'Lead pipeline',

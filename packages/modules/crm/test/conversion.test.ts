@@ -1,7 +1,7 @@
 import { asId } from '@ops/kernel'
 import { describe, expect, it } from 'vitest'
 import { convertLead } from '../src/commands'
-import type { ContactRecord, DealRecord } from '../src/ports/records'
+import type { ContactRecord } from '../src/ports/records'
 import { convertInput, makeDeps, MemoryCrm, seedLead } from './memory-crm'
 
 describe('CRM conversion basics', () => {
@@ -33,6 +33,7 @@ describe('CRM conversion basics', () => {
       phone: null,
       organizationId: null,
       ownerId: asId('owner-1'),
+      customData: {},
       createdAt: 1,
       updatedAt: 1,
     }
@@ -47,8 +48,8 @@ describe('CRM custom conversion fields', () => {
   it('T-CRM-4 copies only same-typed custom fields to the deal', async () => {
     const context = makeDeps()
     expect((await convertLead(context, convertInput)).ok).toBe(true)
-    const deal = (await context.repo.list('deal'))[0] as DealRecord & { customData?: Record<string, unknown> }
-    expect(deal.customData).toEqual({ budget: 10 })
+    const [deal] = await context.repo.list('deal')
+    expect(deal?.customData).toEqual({ budget: 10 })
   })
 })
 

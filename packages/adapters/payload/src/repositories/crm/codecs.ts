@@ -38,6 +38,15 @@ export const requiredRef = <F extends string>(field: F) => single(field, (doc, k
 export const optionalRef = <F extends string>(field: F) =>
   single(field, (doc, key) => relationId(fieldOf(doc, key)) ?? null)
 
+/** JSON object normalized to an empty object when absent or malformed. */
+export const jsonObject = <F extends string>(field: F) =>
+  single<Readonly<Record<string, unknown>>, F>(field, (doc, key) => {
+    const value = fieldOf(doc, key)
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Readonly<Record<string, unknown>>)
+      : {}
+  })
+
 /** Has-many relationship ids. */
 export const refList = <F extends string>(field: F) =>
   single<readonly Id[], F>(field, (doc, key) => {

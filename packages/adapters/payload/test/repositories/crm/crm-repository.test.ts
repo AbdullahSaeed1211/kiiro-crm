@@ -23,6 +23,8 @@ const ORGANIZATION_DOC = {
   website: null,
   email: 'hi@acme.test',
   owner: { id: 'u2' },
+  source: 'src-referral',
+  customData: { tier: 'gold' },
   ...TIMES,
 }
 const CONTACT_DOC = { id: 7, firstName: 'Ada', email: CONTACT_EMAIL, organization: ORGANIZATION_ID, ...TIMES }
@@ -38,6 +40,8 @@ describe('createCrmRepository get', () => {
       phone: null,
       email: 'hi@acme.test',
       ownerId: 'u2',
+      sourceId: 'src-referral',
+      customData: { tier: 'gold' },
       ...MS,
     })
     expect(await repo.get('contact', asId('7'))).toEqual({
@@ -48,6 +52,7 @@ describe('createCrmRepository get', () => {
       phone: null,
       organizationId: ORGANIZATION_ID,
       ownerId: null,
+      customData: {},
       ...MS,
     })
     expect(await repo.get('lead', asId('l1'))).toEqual(LEAD_RECORD)
@@ -98,6 +103,7 @@ describe('createCrmRepository create', () => {
       stageEnteredAt: 5000,
       lostReason: 'lr-budget',
       lostNote: 'Budget cut',
+      customData: {},
     })
   })
 
@@ -110,18 +116,26 @@ describe('createCrmRepository create', () => {
 describe('createCrmRepository update', () => {
   it('writes only the patched fields through compare-and-set and maps the saved document', async () => {
     const saved = dealDoc({ valueAmountMinor: null, valueCurrency: null, lostNote: 'Too expensive' })
-    const { repo, calls } = setup({ update: () => ({ docs: [saved], errors: [] }) })
+    const { repo, calls } = setup({ write: () => [{ id: 'd1' }], find: () => ({ docs: [saved] }) })
     const patch = { value: null, lostNote: 'Too expensive' }
     const record = await repo.update('deal', asId('d1'), patch, MS.updatedAt)
     expect(record).toEqual({ ...DEAL_RECORD, ...patch })
-    expect(calls[0]?.args).toMatchObject({ collection: 'deals', where: guard('d1'), overrideAccess: false, user: USER })
-    expect(calls[0]?.args['data']).toEqual({ valueAmountMinor: null, valueCurrency: null, lostNote: 'Too expensive' })
+    expect(calls.find((call) => call.method === 'count')?.args).toMatchObject({
+      collection: 'deals',
+      where: { and: [guard('d1')] },
+      overrideAccess: true,
+    })
+    expect(calls.find((call) => call.method === 'write')?.args['values']).toMatchObject({
+      valueAmountMinor: null,
+      valueCurrency: null,
+      lostNote: 'Too expensive',
+    })
   })
 
   it('returns undefined when the record changed meanwhile', async () => {
-    const { repo, calls } = setup()
+    const { repo, calls } = setup({ write: () => [] })
     expect(await repo.update('organization', asId(ORGANIZATION_ID), { name: 'Acme Ltd' }, MS.updatedAt)).toBeUndefined()
-    expect(calls[0]?.args).toMatchObject({ collection: 'organizations', data: { name: 'Acme Ltd' } })
+    expect(calls.find((call) => call.method === 'write')?.args['values']).toMatchObject({ name: 'Acme Ltd' })
   })
 })
 

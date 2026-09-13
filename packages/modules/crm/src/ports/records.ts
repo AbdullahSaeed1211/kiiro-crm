@@ -3,6 +3,9 @@ import type { Id, Money } from '@ops/kernel'
 /** CRM record types (spec §10.1). */
 export type CrmRecordType = 'organization' | 'contact' | 'lead' | 'deal'
 
+/** Tenant-defined values stored against a CRM record. */
+export type CrmCustomData = Readonly<Record<string, unknown>>
+
 /** A client organization. */
 export interface OrganizationRecord {
   readonly id: Id
@@ -11,6 +14,8 @@ export interface OrganizationRecord {
   readonly phone: string | null
   readonly email: string | null
   readonly ownerId: Id | null
+  readonly sourceId: Id | null
+  readonly customData: CrmCustomData
   readonly createdAt: number
   readonly updatedAt: number
 }
@@ -24,6 +29,7 @@ export interface ContactRecord {
   readonly phone: string | null
   readonly organizationId: Id | null
   readonly ownerId: Id | null
+  readonly customData: CrmCustomData
   readonly createdAt: number
   readonly updatedAt: number
 }
@@ -37,6 +43,7 @@ export interface PipelineFields {
   readonly stageEnteredAt: number
   readonly lostReasonId: Id | null
   readonly lostNote: string | null
+  readonly customData: CrmCustomData
   readonly createdAt: number
   readonly updatedAt: number
 }

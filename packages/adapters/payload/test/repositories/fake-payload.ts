@@ -27,8 +27,41 @@ interface FakeColumn {
   readonly key: string
 }
 
-const COLUMN_KEYS = ['id', 'updatedAt', 'stageId', 'stageEnteredAt', 'startAt', 'dueAt']
+const COLUMN_KEYS = [
+  'id',
+  'updatedAt',
+  'stageId',
+  'stageEnteredAt',
+  'startAt',
+  'dueAt',
+  'name',
+  'website',
+  'phone',
+  'email',
+  'owner',
+  'source',
+  'customData',
+  'firstName',
+  'lastName',
+  'organization',
+  'title',
+  'companyName',
+  'assignees',
+  'workflow',
+  'lostReason',
+  'lostNote',
+  'convertedAt',
+  'convertedDeal',
+  'contacts',
+  'primaryContact',
+  'valueAmountMinor',
+  'valueCurrency',
+  'expectedCloseAt',
+  'closedAt',
+  'sourceLead',
+]
 const TABLE = Object.fromEntries(COLUMN_KEYS.map((key): [string, FakeColumn] => [key, { key }]))
+const COLLECTIONS = ['tasks', 'projects', 'organizations', 'contacts', 'leads', 'deals'] as const
 
 function fakeDrizzle(write: (args: Args) => Promise<unknown>) {
   const statement = (table: unknown, values: Args) => ({
@@ -40,8 +73,8 @@ function fakeDrizzle(write: (args: Args) => Promise<unknown>) {
 // The Drizzle members `writeIfUnchanged` uses; conditions become plain objects so tests can compare them.
 function fakeDb(record: Recorder) {
   return {
-    tables: { tasks: TABLE, projects: TABLE },
-    tableNameMap: new Map([['tasks', 'tasks']]),
+    tables: Object.fromEntries(COLLECTIONS.map((name) => [name, TABLE])),
+    tableNameMap: new Map(COLLECTIONS.map((name) => [name, name])),
     operators: {
       and: (...conditions: unknown[]) => ({ and: conditions }),
       equals: (column: FakeColumn, value: unknown) => ({ [column.key]: value }),
@@ -62,7 +95,7 @@ export function fakePayload(handlers: Handlers = {}): { payload: Payload; calls:
     find: method('find'),
     count: method('count'),
     create: method('create'),
-    collections: { tasks: collection, projects: collection },
+    collections: Object.fromEntries(COLLECTIONS.map((name) => [name, collection])),
     db: fakeDb(method),
   }
   return { payload: payload as unknown as Payload, calls }

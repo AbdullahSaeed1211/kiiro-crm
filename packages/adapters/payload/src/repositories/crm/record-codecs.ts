@@ -5,6 +5,7 @@ import { fieldOf, idOf, msOf, type Doc } from '../documents'
 import {
   decodeFields,
   encodeFields,
+  jsonObject,
   money,
   optionalNumber,
   optionalRef,
@@ -30,6 +31,7 @@ const ownerId = optionalRef('owner')
 const organizationId = optionalRef('organization')
 const email = optionalText('email')
 const phone = optionalText('phone')
+const customData = jsonObject('customData')
 
 const ORGANIZATION: Codecs<CrmDrafts['organization'], FieldOf<'organization'>> = {
   name: text('name'),
@@ -37,6 +39,8 @@ const ORGANIZATION: Codecs<CrmDrafts['organization'], FieldOf<'organization'>> =
   phone,
   email,
   ownerId,
+  sourceId: optionalRef('source'),
+  customData,
 }
 
 const CONTACT: Codecs<CrmDrafts['contact'], FieldOf<'contact'>> = {
@@ -46,6 +50,7 @@ const CONTACT: Codecs<CrmDrafts['contact'], FieldOf<'contact'>> = {
   phone,
   organizationId,
   ownerId,
+  customData,
 }
 
 const PIPELINE: Codecs<Omit<PipelineFields, 'createdAt' | 'updatedAt'>, FieldOf<'lead'> & FieldOf<'deal'>> = {
@@ -56,6 +61,7 @@ const PIPELINE: Codecs<Omit<PipelineFields, 'createdAt' | 'updatedAt'>, FieldOf<
   stageEnteredAt: stageEntry('stageEnteredAt'),
   lostReasonId: optionalRef('lostReason'),
   lostNote: optionalText('lostNote'),
+  customData,
 }
 
 const LEAD: Codecs<CrmDrafts['lead'], FieldOf<'lead'>> = {

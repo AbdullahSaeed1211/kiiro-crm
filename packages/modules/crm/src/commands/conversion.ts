@@ -7,7 +7,6 @@ import {
   accessDenied,
   cleanNullable,
   dealCustomData,
-  draftWithCustomData,
   executeCommand,
   failure,
   findExistingDeal,
@@ -82,6 +81,7 @@ async function markLostWork(deps: CrmDeps, input: unknown): Promise<CrmResult<Le
   return moved
 }
 
+/** Validates a lost reason, saves it, and moves the lead or deal to the lost stage. */
 export function markLost(deps: CrmDeps, input: unknown): Promise<CrmResult<LeadRecord | DealRecord>> {
   return executeCommand(deps, input, markLostWork)
 }
@@ -105,7 +105,8 @@ async function resolveOrganization(
     email: null,
     ownerId: lead.ownerId,
     sourceId: lead.sourceId,
-  } as unknown as CrmDrafts['organization'])
+    customData: {},
+  })
   return ok(created.id)
 }
 
@@ -130,6 +131,7 @@ async function resolveContact(input: {
     phone: cleanNullable(lead.phone),
     organizationId,
     ownerId: lead.ownerId,
+    customData: {},
   })
   return ok(contact)
 }
@@ -160,8 +162,9 @@ async function createConvertedDeal(input: {
     stageEnteredAt: deps.clock.now(),
     lostReasonId: null,
     lostNote: null,
-  } as CrmDrafts['deal']
-  return deps.repo.create('deal', draftWithCustomData(draft, customData) as CrmDrafts['deal'])
+    customData,
+  } satisfies CrmDrafts['deal']
+  return deps.repo.create('deal', draft)
 }
 
 async function resolveDeal(input: {
@@ -242,6 +245,7 @@ async function convertInputWork(deps: CrmDeps, input: unknown): Promise<CrmResul
     : idempotent.runIdempotent(`convert:${parsed.value.leadId}`, work)
 }
 
+/** Converts a lead into linked CRM records and supports retry after an interrupted ordered write. */
 export function convertLead(deps: CrmDeps, input: unknown): Promise<CrmResult<LeadRecord>> {
   return executeCommand(deps, input, convertInputWork)
 }

@@ -131,10 +131,12 @@ async function createLeadWork(deps: CrmDeps, input: unknown): Promise<CrmResult<
     ...pipelineFields(deps, value, defaults.value),
     convertedAt: null,
     convertedDealId: null,
-  } as CrmDrafts['lead']
+    customData: value.customData ?? {},
+  } satisfies CrmDrafts['lead']
   return createWithActivity(deps, 'lead', draft)
 }
 
+/** Validates and creates a lead in a workflow stage. */
 export function createLead(deps: CrmDeps, input: unknown): Promise<CrmResult<LeadRecord>> {
   return executeCommand(deps, input, createLeadWork)
 }
@@ -152,6 +154,7 @@ async function updateLeadWork(deps: CrmDeps, input: unknown): Promise<CrmResult<
   return saved === undefined ? failure('CONFLICT', 'lead was updated by someone else') : ok(saved)
 }
 
+/** Validates and conditionally updates a lead. */
 export function updateLead(deps: CrmDeps, input: unknown): Promise<CrmResult<LeadRecord>> {
   return executeCommand(deps, input, updateLeadWork)
 }
@@ -179,10 +182,12 @@ async function createDealWork(deps: CrmDeps, input: unknown): Promise<CrmResult<
     closedAt: defaults.value.stage.category === 'done_success' ? deps.clock.now() : null,
     sourceLeadId: id(value.sourceLeadId),
     ...pipelineFields(deps, value, defaults.value),
-  } as CrmDrafts['deal']
+    customData: value.customData ?? {},
+  } satisfies CrmDrafts['deal']
   return createWithActivity(deps, 'deal', draft)
 }
 
+/** Validates and creates a deal in a workflow stage. */
 export function createDeal(deps: CrmDeps, input: unknown): Promise<CrmResult<DealRecord>> {
   return executeCommand(deps, input, createDealWork)
 }
@@ -200,6 +205,7 @@ async function updateDealWork(deps: CrmDeps, input: unknown): Promise<CrmResult<
   return saved === undefined ? failure('CONFLICT', 'deal was updated by someone else') : ok(saved)
 }
 
+/** Validates and conditionally updates a deal. */
 export function updateDeal(deps: CrmDeps, input: unknown): Promise<CrmResult<DealRecord>> {
   return executeCommand(deps, input, updateDealWork)
 }
@@ -218,6 +224,7 @@ async function moveLeadWork(deps: CrmDeps, input: unknown): Promise<CrmResult<Le
   })
 }
 
+/** Validates and moves a lead to another stage. */
 export function moveLead(deps: CrmDeps, input: unknown): Promise<CrmResult<LeadRecord>> {
   return executeCommand(deps, input, moveLeadWork)
 }
@@ -236,6 +243,7 @@ async function moveDealWork(deps: CrmDeps, input: unknown): Promise<CrmResult<De
   })
 }
 
+/** Validates and moves a deal to another stage. */
 export function moveDeal(deps: CrmDeps, input: unknown): Promise<CrmResult<DealRecord>> {
   return executeCommand(deps, input, moveDealWork)
 }

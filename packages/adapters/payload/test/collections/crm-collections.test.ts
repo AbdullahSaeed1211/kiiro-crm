@@ -42,6 +42,7 @@ const many = (slug: SpikeCollectionSlug, name: string, relationTo: SpikeCollecti
 })
 
 const RELATIONS: readonly Relation[] = [
+  relation(organizations, 'source', sources),
   relation(contacts, 'organization', organizations),
   relation(contacts, FIELDS.owner, users),
   relation(leads, 'organization', organizations),
@@ -67,6 +68,7 @@ const REQUIRED_TEXT = { type: 'text', required: true }
 const EPOCH = { type: 'number', min: 0 }
 
 const SHAPES: readonly Shape[] = [
+  { slug: organizations, name: 'customData', shape: { type: 'json' } },
   { slug: contacts, name: 'firstName', shape: REQUIRED_TEXT },
   { slug: contacts, name: 'email', shape: { type: 'email' } },
   { slug: contacts, name: 'customData', shape: { type: 'json' } },
@@ -100,6 +102,7 @@ const SHAPES: readonly Shape[] = [
 ]
 
 const INDEXED: readonly (readonly [SpikeCollectionSlug, string])[] = [
+  [organizations, 'source'],
   [contacts, 'email'],
   [contacts, 'organization'],
   [contacts, FIELDS.owner],
