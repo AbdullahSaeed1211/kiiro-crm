@@ -1,0 +1,124 @@
+{
+  "measuredAt": "2026-09-13T17:53:23.463Z",
+  "spec": "§19.5 isolation proof (M1-L3)",
+  "method": "one OpenNext build deployed to two tenant environments; HTTP via Payload REST as each tenant owner; direct D1 queries with wrangler d1 execute --remote; bindings from the Workers settings API",
+  "http": {
+    "probe": "Isolation probe 1789308796643",
+    "tenants": {
+      "staging-a": {
+        "register": 200,
+        "registerError": "",
+        "login": 200,
+        "role": "owner",
+        "settings": 200,
+        "settingsError": "",
+        "workflow": 201,
+        "workflowError": "",
+        "workflowId": "6e799e3c-c19b-42bf-bb4e-c913d0cf2100",
+        "probeVisible": 1,
+        "appNameReadBack": "Staging Alpha"
+      },
+      "staging-b": {
+        "register": 200,
+        "registerError": "",
+        "login": 200,
+        "role": "owner",
+        "settings": 200,
+        "settingsError": "",
+        "workflow": 201,
+        "workflowError": "",
+        "workflowId": "c2abc6a8-3015-41a4-b96c-9984d9111713",
+        "probeVisible": 0,
+        "appNameReadBack": "Staging Beta"
+      }
+    },
+    "createInA": {
+      "status": 201,
+      "error": "",
+      "idKind": "string",
+      "idLooksUuid": true
+    },
+    "tokenFromAOnB": {
+      "status": 200,
+      "user": null
+    }
+  },
+  "d1": {
+    "staging-a": {
+      "probeRows": 1,
+      "users": 1
+    },
+    "staging-b": {
+      "probeRows": 0,
+      "users": 1
+    },
+    "note": "first staging-a query failed once with Cloudflare API code 7403 and succeeded on retry"
+  },
+  "bindings": {
+    "staging-a": [
+      {
+        "type": "d1",
+        "name": "D1",
+        "target": "526fa120-3eb8-4fb6-851b-fa732dccdbe6"
+      },
+      {
+        "type": "r2_bucket",
+        "name": "R2",
+        "target": "ops-staging-a"
+      },
+      {
+        "type": "ratelimit",
+        "name": "RATE_LIMIT_AUTH",
+        "target": "1002"
+      },
+      {
+        "type": "ratelimit",
+        "name": "RATE_LIMIT_INTAKE",
+        "target": "1001"
+      },
+      {
+        "type": "service",
+        "name": "WORKER_SELF_REFERENCE",
+        "target": "ops-staging-a"
+      }
+    ],
+    "staging-b": [
+      {
+        "type": "d1",
+        "name": "D1",
+        "target": "0adc086b-cd3e-4d7a-9d53-ac39c1c9335f"
+      },
+      {
+        "type": "r2_bucket",
+        "name": "R2",
+        "target": "ops-staging-b"
+      },
+      {
+        "type": "ratelimit",
+        "name": "RATE_LIMIT_AUTH",
+        "target": "1012"
+      },
+      {
+        "type": "ratelimit",
+        "name": "RATE_LIMIT_INTAKE",
+        "target": "1011"
+      },
+      {
+        "type": "service",
+        "name": "WORKER_SELF_REFERENCE",
+        "target": "ops-staging-b"
+      }
+    ]
+  },
+  "deploy": {
+    "staging-a": {
+      "totalUpload": "19294.04 KiB / gzip: 4438.98 KiB",
+      "startup": "48 ms"
+    },
+    "staging-b": {
+      "totalUpload": "19294.04 KiB / gzip: 4438.98 KiB",
+      "startup": "33 ms"
+    }
+  },
+  "unauthenticatedBoard": "HTTP 200 with a streamed NEXT_REDIRECT and meta refresh to /admin/login and no task data"
+}
