@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@ops/kernel": "workspace:*",
+    "@ops/module-work": "workspace:*",
     "@ops/platform": "workspace:*"
   },
   "peerDependencies": {

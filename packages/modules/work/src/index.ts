@@ -1,2 +1,2 @@
 /** Public API of @ops/module-work. */
-export {}
+export type { TaskDatesInput, TaskPriority, TaskRecord, TaskRepository } from './ports/tasks'

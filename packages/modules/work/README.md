@@ -6,12 +6,13 @@ Work domain: projects, tasks, dependencies.
 
 ## Public API
 
-None yet.
+Types only in the spike: `TaskRecord`, `TaskPriority`, `TaskDatesInput`, `TaskRepository`.
 
 ## Ports
 
-None yet.
+- `TaskRepository`: platform `StageStore` plus `loadTaskWorkflow`, `listTasks` and `saveDates` (compare-and-set on `expectedUpdatedAt`).
 
 ## Invariants
 
-None yet.
+- Task times are UTC epoch milliseconds (D-09).
+- `saveDates` and `saveStage` write only while `updatedAt` still equals the expected value.
