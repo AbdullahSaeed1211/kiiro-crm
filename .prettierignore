@@ -13,3 +13,4 @@ docs/spec.md
 .claude
 harness/templates
 docs/orchestration
+apps/web/next-env.d.ts

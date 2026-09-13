@@ -19,6 +19,8 @@ type LogFn = (objOrMsg: object | string, msg?: string) => void
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProduction = process.env.NODE_ENV === 'production'
+// Remote Cloudflare bindings are opt-in (lead-only remote migrations); builds and local runs never contact Cloudflare.
+const useRemoteBindings = process.env.PAYLOAD_REMOTE_BINDINGS === '1'
 // Built at runtime so the bundler never tries to include wrangler in the Worker.
 const WRANGLER_MODULE = '__wrangler'.replaceAll('_', '')
 
@@ -61,7 +63,7 @@ const cloudflareLogger = {
 
 async function getCloudflareContextFromWrangler(): Promise<CloudflareContext> {
   const { getPlatformProxy } = (await import(/* webpackIgnore: true */ WRANGLER_MODULE)) as WranglerModule
-  const options: GetPlatformProxyOptions = { remoteBindings: isProduction }
+  const options: GetPlatformProxyOptions = { remoteBindings: useRemoteBindings }
   if (process.env.CLOUDFLARE_ENV) options.environment = process.env.CLOUDFLARE_ENV
   return (await getPlatformProxy(options)) as unknown as CloudflareContext
 }

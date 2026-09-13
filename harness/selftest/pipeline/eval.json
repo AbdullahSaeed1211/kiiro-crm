@@ -1,0 +1,15 @@
+{
+  "lesson": "selftest-pipeline",
+  "repro": {
+    "cwd": ".",
+    "command": "pnpm exec tsx harness/selftest/pipeline/run.ts --break",
+    "expectExitCode": "nonzero",
+    "expectOutput": "SELFTEST FAILED"
+  },
+  "fixed": {
+    "cwd": ".",
+    "command": "pnpm exec tsx harness/selftest/pipeline/run.ts",
+    "expectExitCode": "zero",
+    "expectOutput": "SELFTEST PASSED"
+  }
+}
