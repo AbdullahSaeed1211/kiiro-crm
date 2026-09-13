@@ -8,3 +8,5 @@
 | Q-004 | M0 CI                    | GitHub organization/repository for the product and GitHub CLI access for CI setup                                                                            | operator GitHub org · maintainer account                                                                                        | operator GitHub org                                | no for local M0            |
 
 Note on Q-002 (2026-09-13): one `next build` attempted a remote Wrangler preview session against the logged-in customer account (`edge-preview` request rejected with error 10021; no resources created). Fixed by E-006.
+
+Resolved 2026-09-13: Q-002 → E-007 (spike only on the first-customer account; operator account before M8). Q-004 → E-008 (private repository under the owner's personal GitHub account).
