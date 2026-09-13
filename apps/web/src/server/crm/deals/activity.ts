@@ -11,6 +11,7 @@ export interface ActivityItem {
 export async function loadActivity(
   context: Pick<RequestContext, 'payload' | 'req'>,
   id: string,
+  authorizedParentDeal: true,
 ): Promise<readonly ActivityItem[]> {
   const page = await context.payload.find({
     collection: 'activity',
@@ -19,7 +20,7 @@ export async function loadActivity(
     limit: 30,
     pagination: false,
     depth: 0,
-    overrideAccess: false,
+    overrideAccess: authorizedParentDeal,
     user: context.req.user,
     req: context.req,
   })

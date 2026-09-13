@@ -6,6 +6,7 @@ export interface DealListItem {
   readonly stage: Workflow['stages'][number]
   readonly organizationName: string | null
   readonly primaryContactName: string | null
+  readonly ownerName: string | null
 }
 
 export interface DealStageTotal {
@@ -69,6 +70,12 @@ export function filterDeals(
     const matchesStage = stageId === undefined || item.deal.stageId === stageId
     return matchesQuery && matchesStage
   })
+}
+
+export function withDefaultOwner(input: unknown, ownerId: string): unknown {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return input
+  const data = input as Record<string, unknown>
+  return { ...data, ownerId: data.ownerId ?? ownerId }
 }
 
 export function organizationName(deal: DealRecord, organizations: readonly OrganizationRecord[]): string | null {

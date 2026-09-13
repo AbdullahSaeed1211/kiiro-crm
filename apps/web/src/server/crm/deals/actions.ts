@@ -3,6 +3,7 @@
 import { createDeal, markLost, moveDeal, updateDeal } from '@ops/module-crm'
 import { revalidatePath } from 'next/cache'
 import { getCrmDeps } from '../deps'
+import { withDefaultOwner } from './view-model'
 
 export type DealActionResult =
   | { readonly ok: true; readonly id: string; readonly updatedAt: number }
@@ -25,7 +26,8 @@ function refresh(id?: string) {
 }
 
 export async function createDealAction(input: unknown): Promise<DealActionResult> {
-  const result = await createDeal(await getCrmDeps(), input)
+  const deps = await getCrmDeps()
+  const result = await createDeal(deps, withDefaultOwner(input, deps.actor.id))
   if (result.ok) refresh(result.value.id)
   return resultOf(result)
 }

@@ -72,7 +72,7 @@ export default async function DealBoardPage() {
             </div>
           }
         />
-        <DealBoard stages={stages} cards={cards} labels={LABELS} />
+        <DealBoard stages={stages} cards={cards} labels={LABELS} lostReasons={data.lostReasons} />
       </PageContent>
     </>
   )

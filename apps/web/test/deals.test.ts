@@ -2,7 +2,7 @@ import { asId } from '@ops/kernel'
 import { describe, expect, it, vi } from 'vitest'
 import { loadActivity } from '../src/server/crm/deals/activity'
 import type { RequestContext } from '../src/server/work/deps'
-import { aggregateStageTotals, filterDeals, formatMoney } from '../src/server/crm/deals/view-model'
+import { aggregateStageTotals, filterDeals, formatMoney, withDefaultOwner } from '../src/server/crm/deals/view-model'
 
 const workflow = {
   id: asId('deal-workflow'),
@@ -39,6 +39,25 @@ function deal(id: string, stageId: string, amountMinor: number) {
   }
 }
 
+function listItems() {
+  return [
+    {
+      deal: deal('website', 'qualified', 100),
+      stage: workflow.stages[0],
+      organizationName: 'Acme',
+      primaryContactName: null,
+      ownerName: null,
+    },
+    {
+      deal: deal('retainer', 'won', 200),
+      stage: workflow.stages[1],
+      organizationName: 'Beta',
+      primaryContactName: null,
+      ownerName: null,
+    },
+  ]
+}
+
 describe('deal view model', () => {
   it('sums values by stage while preserving empty stages', () => {
     expect(aggregateStageTotals([deal('a', 'qualified', 12500), deal('b', 'qualified', 7500)], workflow)).toEqual([
@@ -53,32 +72,23 @@ describe('deal view model', () => {
   })
 
   it('filters by search text and workflow stage', () => {
-    const items = [
-      {
-        deal: deal('website', 'qualified', 100),
-        stage: workflow.stages[0],
-        organizationName: 'Acme',
-        primaryContactName: null,
-      },
-      {
-        deal: deal('retainer', 'won', 200),
-        stage: workflow.stages[1],
-        organizationName: 'Beta',
-        primaryContactName: null,
-      },
-    ]
-    expect(filterDeals(items, 'acme', 'qualified').map((item) => item.deal.id)).toEqual(['website'])
-    expect(filterDeals(items, '', 'won').map((item) => item.deal.id)).toEqual(['retainer'])
+    expect(filterDeals(listItems(), 'acme', 'qualified').map((item) => item.deal.id)).toEqual(['website'])
+    expect(filterDeals(listItems(), '', 'won').map((item) => item.deal.id)).toEqual(['retainer'])
   })
 
-  it('passes the authenticated request into activity reads', async () => {
+  it('defaults an unassigned create to the authenticated actor', () => {
+    expect(withDefaultOwner({ title: 'Deal', ownerId: null }, 'actor-1')).toMatchObject({ ownerId: 'actor-1' })
+    expect(withDefaultOwner({ title: 'Deal' }, 'actor-1')).toMatchObject({ ownerId: 'actor-1' })
+  })
+
+  it('passes the authenticated request into authorized activity reads', async () => {
     const user = { id: 'staff-1' }
     const find = vi.fn().mockResolvedValue({ docs: [] })
     const context = {
       payload: { find } as unknown as RequestContext['payload'],
       req: { user } as RequestContext['req'],
     }
-    await loadActivity(context, 'deal-1')
-    expect(find).toHaveBeenCalledWith(expect.objectContaining({ overrideAccess: false, user, req: context.req }))
+    await loadActivity(context, 'deal-1', true)
+    expect(find).toHaveBeenCalledWith(expect.objectContaining({ overrideAccess: true, user, req: context.req }))
   })
 })

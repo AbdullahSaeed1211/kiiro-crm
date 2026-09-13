@@ -76,7 +76,7 @@ function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number
       stage: stageCell(item.stage),
       value: <span className="tabular-nums">{formatMoney(item.deal.value)}</span>,
       organization: item.organizationName ?? <span className="text-muted-foreground">—</span>,
-      owner: item.deal.ownerId ?? <span className="text-muted-foreground">Unassigned</span>,
+      owner: item.ownerName ?? <span className="text-muted-foreground">Unassigned</span>,
       expectedCloseAt: <span className="tabular-nums">{formatDate(item.deal.expectedCloseAt)}</span>,
     },
   }
