@@ -56,8 +56,8 @@ describe('gen-wrangler', () => {
     expect(env).toMatchObject({
       name: 'ops-alpha',
       routes: [{ pattern: 'alpha.platform.example.test', custom_domain: true }],
-      d1_databases: [{ binding: 'D1', database_name: 'ops-alpha' }],
-      r2_buckets: [{ binding: 'R2', bucket_name: 'ops-alpha' }],
+      d1_databases: [{ binding: 'D1', database_name: 'ops-alpha', remote: true }],
+      r2_buckets: [{ binding: 'R2', bucket_name: 'ops-alpha', remote: true }],
       services: [{ binding: 'WORKER_SELF_REFERENCE', service: 'ops-alpha' }],
       vars: { TENANT_SLUG: 'alpha', APP_ORIGIN: 'https://alpha.platform.example.test' },
       triggers: { crons: ['*/15 * * * *'] },
@@ -69,7 +69,7 @@ describe('gen-wrangler', () => {
     const config = parseJsonc(rendered) as Record<string, unknown>
     const { env, ...top } = config
     expect(top).toEqual(baseConfig())
-    expect(JSON.stringify(top)).not.toMatch(/alpha|beta/)
+    expect(JSON.stringify(top)).not.toMatch(/alpha|beta|"remote"/)
     expect(Object.keys(env as object)).toEqual(['alpha', 'beta'])
   })
 

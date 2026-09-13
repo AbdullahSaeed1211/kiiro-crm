@@ -66,13 +66,15 @@
         {
           "binding": "D1",
           "database_name": "ops-staging-a",
-          "database_id": "526fa120-3eb8-4fb6-851b-fa732dccdbe6"
+          "database_id": "526fa120-3eb8-4fb6-851b-fa732dccdbe6",
+          "remote": true
         }
       ],
       "r2_buckets": [
         {
           "binding": "R2",
-          "bucket_name": "ops-staging-a"
+          "bucket_name": "ops-staging-a",
+          "remote": true
         }
       ],
       "send_email": [
@@ -126,13 +128,15 @@
         {
           "binding": "D1",
           "database_name": "ops-staging-b",
-          "database_id": "0adc086b-cd3e-4d7a-9d53-ac39c1c9335f"
+          "database_id": "0adc086b-cd3e-4d7a-9d53-ac39c1c9335f",
+          "remote": true
         }
       ],
       "r2_buckets": [
         {
           "binding": "R2",
-          "bucket_name": "ops-staging-b"
+          "bucket_name": "ops-staging-b",
+          "remote": true
         }
       ],
       "send_email": [

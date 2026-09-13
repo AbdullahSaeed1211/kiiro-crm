@@ -12,6 +12,8 @@ interface BindingInput {
   readonly bucket: string
   readonly intakeNamespace: string
   readonly authNamespace: string
+  // Remote only takes effect when a lead run enables remote bindings (E-006); deploys ignore it.
+  readonly remote: boolean
 }
 
 const OUTPUT = 'apps/web/wrangler.jsonc'
@@ -25,8 +27,8 @@ const HEADER = [
 /** Bindings every Worker has, with identical names so application code never branches on the tenant. */
 function bindings(input: BindingInput): Config {
   return {
-    d1_databases: [{ binding: 'D1', ...input.d1 }],
-    r2_buckets: [{ binding: 'R2', bucket_name: input.bucket }],
+    d1_databases: [{ binding: 'D1', ...input.d1, ...(input.remote ? { remote: true } : {}) }],
+    r2_buckets: [{ binding: 'R2', bucket_name: input.bucket, ...(input.remote ? { remote: true } : {}) }],
     send_email: [{ name: 'EMAIL' }],
     services: [{ binding: 'WORKER_SELF_REFERENCE', service: input.worker }],
     ratelimits: [
@@ -47,7 +49,7 @@ export function baseConfig(): Config {
     compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
     assets: { directory: '.open-next/assets', binding: 'ASSETS' },
     observability: { enabled: true },
-    ...bindings({ worker: 'ops-dev', d1, bucket: 'ops-dev', intakeNamespace: '1', authNamespace: '2' }),
+    ...bindings({ worker: 'ops-dev', d1, bucket: 'ops-dev', intakeNamespace: '1', authNamespace: '2', remote: false }),
   }
 }
 
@@ -77,7 +79,7 @@ export function tenantEnv(tenant: Tenant): Config {
   return {
     name: worker,
     ...routing(tenant),
-    ...bindings({ worker, d1, bucket: tenant.r2.bucket, intakeNamespace: intake, authNamespace: auth }),
+    ...bindings({ worker, d1, bucket: tenant.r2.bucket, intakeNamespace: intake, authNamespace: auth, remote: true }),
     vars: vars(tenant),
     triggers: { crons: [CRON_EVERY_15_MINUTES] },
   }
