@@ -9,6 +9,7 @@ Cloudflare adapters: Email Service, Turnstile, rate limits, R2 streams, cron and
 - `dispatchCron(env, scheduledTime)`: forwards a cron trigger to `POST /api/v1/internal/cron` through the `WORKER_SELF_REFERENCE` service binding with the internal secret (spec §13).
 - `bridgeInboundEmail(env, message)`: reads the raw Email Routing stream once and forwards it with `x-envelope-from` and `x-envelope-to` to `POST /api/v1/internal/email/inbound`; rejects messages over `MAX_INBOUND_BYTES` (25 MiB) or refused by the route (spec §14.4).
 - `INTERNAL_ROUTES`, `INTERNAL_SECRET_HEADER`: paths and header shared by the Worker entry and the internal route handlers.
+- `payloadEmailAdapter({ sender, fromAddress, fromName })`: Payload `email` adapter over a `MailSender` (spec §14.3); throws when the send fails.
 - `handleCronRequest(request, { secret, jobs })`: `POST /api/v1/internal/cron`; constant-time secret check (401), body `{ scheduledTime }` (400), runs `runCron` and answers `{ ran }`.
 - `handleInboundEmailRequest(request, { secret, sink })`: `POST /api/v1/internal/email/inbound`; secret (401), declared and actual size capped at 25 MiB (413), both envelope headers required (400), then `InboundEmailSink.accept`. `createLoggingInboundSink()` logs only size and SHA-256.
 - `runCron({ scheduledTime, jobs, clock, logger })`: runs due `CronJob`s one after another over the 15-minute window (`CRON_INTERVAL_MS`) ending at the trigger; a failing job is logged and does not stop the others.

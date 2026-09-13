@@ -108,7 +108,9 @@
         "APP_ORIGIN": "https://ops-staging-a.mirchmedia01.workers.dev",
         "INBOUND_DOMAIN": "in.example.test",
         "TURNSTILE_HOSTNAMES": "",
-        "MAIL_TRANSPORT": "cloudflare"
+        "MAIL_TRANSPORT": "cloudflare",
+        "MAIL_FROM_ADDRESS": "no-reply@example.test",
+        "MAIL_FROM_NAME": "Staging Alpha"
       },
       "triggers": {
         "crons": [
@@ -165,7 +167,9 @@
         "APP_ORIGIN": "https://ops-staging-b.mirchmedia01.workers.dev",
         "INBOUND_DOMAIN": "in.example.test",
         "TURNSTILE_HOSTNAMES": "",
-        "MAIL_TRANSPORT": "cloudflare"
+        "MAIL_TRANSPORT": "cloudflare",
+        "MAIL_FROM_ADDRESS": "no-reply@example.test",
+        "MAIL_FROM_NAME": "Staging Beta"
       },
       "triggers": {
         "crons": [

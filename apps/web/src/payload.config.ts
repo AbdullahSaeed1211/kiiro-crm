@@ -5,6 +5,7 @@ import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
 import { r2Storage } from '@payloadcms/storage-r2'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import type { CloudflareContext } from '@opennextjs/cloudflare'
+import { CloudflareMailSender, ConsoleMailSender, payloadEmailAdapter } from '@ops/adapter-cloudflare'
 import { COLLECTIONS, settingsGlobal, spikeCollections } from '@ops/adapter-payload'
 import { buildConfig } from 'payload'
 import type { Config } from 'payload'
@@ -68,6 +69,9 @@ async function getCloudflareContextFromWrangler(): Promise<CloudflareContext> {
 const cloudflare =
   isCLI || !isProduction ? await getCloudflareContextFromWrangler() : await getCloudflareContext({ async: true })
 
+const { env } = cloudflare
+const mailSender = env.MAIL_TRANSPORT === 'cloudflare' ? new CloudflareMailSender(env.EMAIL) : new ConsoleMailSender()
+
 export default buildConfig({
   admin: {
     user: COLLECTIONS.users,
@@ -81,7 +85,8 @@ export default buildConfig({
   graphQL: { disable: true },
   defaultDepth: 0,
   maxDepth: 2,
-  db: sqliteD1Adapter({ binding: cloudflare.env.D1, idType: 'uuid' }),
+  db: sqliteD1Adapter({ binding: env.D1, idType: 'uuid' }),
+  email: payloadEmailAdapter({ sender: mailSender, fromAddress: env.MAIL_FROM_ADDRESS, fromName: env.MAIL_FROM_NAME }),
   ...(isProduction ? { logger: cloudflareLogger } : {}),
-  plugins: [r2Storage({ bucket: cloudflare.env.R2, collections: { [COLLECTIONS.attachments]: true } })],
+  plugins: [r2Storage({ bucket: env.R2, collections: { [COLLECTIONS.attachments]: true } })],
 })
