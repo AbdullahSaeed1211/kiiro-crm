@@ -245,7 +245,7 @@ export interface Project {
  */
 export interface Workflow {
   id: string;
-  recordType: 'organization' | 'project' | 'task';
+  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
   name: string;
   stages?:
     | {
@@ -270,7 +270,7 @@ export interface Task {
   title: string;
   description?: string | null;
   project?: (string | null) | Project;
-  relatedType?: ('organization' | 'project' | 'task') | null;
+  relatedType?: ('organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal') | null;
   relatedId?: string | null;
   parentTask?: (string | null) | Task;
   workflow?: (string | null) | Workflow;
@@ -313,7 +313,7 @@ export interface Task {
  */
 export interface Activity {
   id: string;
-  recordType: 'organization' | 'project' | 'task';
+  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
   recordId: string;
   verb:
     | 'record.created'
@@ -351,7 +351,7 @@ export interface Activity {
  */
 export interface Attachment {
   id: string;
-  recordType: 'organization' | 'project' | 'task';
+  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
   recordId: string;
   fileName: string;
   sizeBytes: number;
@@ -383,7 +383,7 @@ export interface Notification {
     | 'email_received'
     | 'invitation_accepted'
     | 'stalled';
-  recordType?: ('organization' | 'project' | 'task') | null;
+  recordType?: ('organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal') | null;
   recordId?: string | null;
   actor?: (string | null) | User;
   data?:
@@ -414,7 +414,7 @@ export interface Notification {
 export interface EmailMessage {
   id: string;
   direction: 'outbound' | 'inbound';
-  recordType?: ('organization' | 'project' | 'task') | null;
+  recordType?: ('organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal') | null;
   recordId?: string | null;
   messageId: string;
   inReplyTo?: string | null;

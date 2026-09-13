@@ -87,7 +87,7 @@ Evidence: `docs/spike-data/isolation-staging-*.json`. A probe task created in `s
 ## Known risks
 
 - First-request latency after deploy or isolate eviction is about one second.
-- Lost-update window in compare-and-set writes until M3-L1.
+- Compare-and-set writes rely on undocumented Payload Drizzle adapter members (`drizzle`, `tables`, `operators`); an upgrade that removes them fails loudly.
 - Bundle size and cold start will grow with more collections and pages; `pnpm size` tracks it.
 - D1 placement: location hints are required per tenant region.
 - The spike tenants run in the first customer's Cloudflare account and must be deleted after this report (E-007).
@@ -102,7 +102,7 @@ GO. Payload on Workers starts in about 30 ms, isolates tenants completely, runs 
 
 ## Recommended next action
 
-1. Merge M1-W10 (single conditional compare-and-set write) and re-run `pnpm test:integration`.
+1. Done: M1-W10 merged; `pnpm test:integration` passes 17 of 17 including the concurrent-write case.
 2. Owner: enable Workers Paid, then re-measure signed-in pages on `staging-a` with `scripts/spike/latency.ts` and `analytics.ts`; onboard Email Sending and Routing for the approved domain and run the email round trip (E-019).
-3. Delete the spike tenants (`ops-staging-a`, `ops-staging-b`, their D1 databases and R2 buckets) after owner approval (E-007, §0.3).
+3. Done: spike tenants deleted with owner approval (E-021).
 4. Re-plan M2–M9 from these findings (§0.10): D-36 conditional writes and session handling in M3; edge auth check and `first-register` block in M5; D1 location hints and owner-first provisioning in M7.

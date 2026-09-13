@@ -27,8 +27,9 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+// The compare-and-set write bypasses Payload field validation (E-017), so the minimum of 0 is enforced here.
 function isOptionalTime(value: unknown): value is number | null {
-  return value === null || isFiniteNumber(value)
+  return value === null || (isFiniteNumber(value) && value >= 0)
 }
 
 function parseInput(input: unknown): SetTaskDatesInput | undefined {
