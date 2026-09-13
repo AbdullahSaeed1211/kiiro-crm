@@ -2,6 +2,7 @@
 
 import { RecordForm, type FormValue, type RecordFieldConfig } from '@ops/ui/composites/RecordForm'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { saveContact, saveOrganization } from '../../server/crm/directory/actions'
 
 type FormKind = 'organization' | 'contact'
@@ -49,6 +50,7 @@ export function DirectoryForm({
   cancelHref,
 }: DirectoryFormProps) {
   const router = useRouter()
+  const [error, setError] = useState<string | undefined>()
   const organizationFields: RecordFieldConfig[] = [
     { name: 'name', label: 'Organization name', required: true, placeholder: 'e.g. Northstar Labs' },
     { name: 'website', label: 'Website', type: 'url', placeholder: 'https://…' },
@@ -69,15 +71,25 @@ export function DirectoryForm({
   ]
   const fields = kind === 'organization' ? organizationFields : contactFields
   const submit = async (values: Record<string, FormValue>) => {
+    setError(undefined)
     const payload = kind === 'organization' ? organizationPayload(values) : contactPayload(values)
     const result = await saveRecord({ kind, id, expectedUpdatedAt, payload })
-    if (!result.ok) throw new Error(result.error.message)
+    if (!result.ok) {
+      setError(result.error.message)
+      if (result.error.code === 'CONFLICT') router.refresh()
+      return
+    }
     const collection = kind === 'organization' ? 'organizations' : 'contacts'
     router.push(`/${collection}/${result.value.id}`)
     router.refresh()
   }
   return (
     <div className="max-w-2xl space-y-6">
+      {error === undefined ? null : (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
+          {error}
+        </p>
+      )}
       <RecordForm
         fields={fields}
         initialValues={initialValues}

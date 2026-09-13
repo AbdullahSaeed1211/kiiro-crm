@@ -52,19 +52,28 @@ export async function listProjects(
   })
 }
 
+export function activityReadOptions(parentAuthorized: boolean): { readonly overrideAccess: boolean } {
+  return { overrideAccess: parentAuthorized }
+}
+
 export async function listActivities(
   context: RequestContext,
-  recordType: 'organization' | 'contact',
-  recordId: string,
+  options: Readonly<{
+    recordType: 'organization' | 'contact'
+    recordId: string
+    parentAuthorized: boolean
+  }>,
 ): Promise<readonly ActivityItem[]> {
   const result = await context.payload.find({
     collection: 'activity',
-    where: { and: [{ recordType: { equals: recordType } }, { recordId: { equals: recordId } }] },
+    where: {
+      and: [{ recordType: { equals: options.recordType } }, { recordId: { equals: options.recordId } }],
+    },
     sort: '-occurredAt',
     limit: 30,
     pagination: false,
     depth: 0,
-    overrideAccess: false,
+    ...activityReadOptions(options.parentAuthorized),
     user: context.req.user,
     req: context.req,
   })
@@ -77,13 +86,12 @@ export async function listActivities(
     const occurredAt = typeof entry.occurredAt === 'number' ? entry.occurredAt : Date.parse(String(entry.occurredAt))
     if (!Number.isFinite(occurredAt)) return []
     const actorId = refId(entry.actor)
-    const verb = text(entry.verb) ?? 'record.updated'
     return [
       {
         id: entry.id,
         occurredAt,
         actorName: actorId === null ? null : (people.get(actorId)?.name ?? null),
-        summary: verb === 'record.created' ? 'Record created' : 'Record updated',
+        summary: text(entry.verb) === 'record.created' ? 'Record created' : 'Record updated',
       },
     ]
   })

@@ -9,6 +9,7 @@ import type { ReactNode } from 'react'
 import type { OrganizationRecord } from '@ops/module-crm'
 import type { ActivityItem, OrganizationRelations, PersonSummary } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
+import { hasRelationItems, safeExternalHref } from '../../server/crm/directory/utils'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 function EmptyValue() {
@@ -34,10 +35,10 @@ function Activity({ entries }: Readonly<{ entries: readonly ActivityItem[] }>) {
     />
   )
 }
-function RelationList({ children, empty }: Readonly<{ children: ReactNode; empty: string }>) {
+function RelationList({ items, empty }: Readonly<{ items: readonly ReactNode[]; empty: string }>) {
   return (
     <div className="divide-y rounded-lg border">
-      {children ?? <p className="p-4 text-sm text-muted-foreground">{empty}</p>}
+      {hasRelationItems(items) ? items : <p className="p-4 text-sm text-muted-foreground">{empty}</p>}
     </div>
   )
 }
@@ -86,6 +87,7 @@ function OrganizationAside({
   owner,
   relations,
 }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null; relations: OrganizationRelations }>) {
+  const website = record.website === null ? null : safeExternalHref(record.website)
   const contactRows = relations.contacts.map((contact) => (
     <RelationRow
       key={contact.id}
@@ -107,17 +109,17 @@ function OrganizationAside({
           <div>
             <dt className="text-xs text-muted-foreground">Website</dt>
             <dd className="mt-0.5">
-              {record.website === null ? (
+              {website === null ? (
                 <EmptyValue />
               ) : (
                 <a
-                  href={record.website}
+                  href={website}
                   className="inline-flex items-center gap-1 text-primary hover:underline"
                   target="_blank"
                   rel="noreferrer"
                 >
                   <Globe2 aria-hidden className="size-3.5" />
-                  {record.website.replace(/^https?:\/\//, '')}
+                  {website.replace(/^https?:\/\//, '')}
                 </a>
               )}
             </dd>
@@ -145,13 +147,13 @@ function OrganizationAside({
         </dl>
       </DetailCard>
       <DetailCard title={`Contacts · ${String(relations.contacts.length)}`}>
-        <RelationList empty="No contacts linked yet.">{contactRows}</RelationList>
+        <RelationList items={contactRows} empty="No contacts linked yet." />
       </DetailCard>
       <DetailCard title={`Deals · ${String(relations.deals.length)}`}>
-        <RelationList empty="No deals linked yet.">{dealRows}</RelationList>
+        <RelationList items={dealRows} empty="No deals linked yet." />
       </DetailCard>
       <DetailCard title={`Projects · ${String(relations.projects.length)}`}>
-        <RelationList empty="No projects linked yet.">{projectRows}</RelationList>
+        <RelationList items={projectRows} empty="No projects linked yet." />
       </DetailCard>
       <DetailCard title="Meta">
         <Meta record={record} />

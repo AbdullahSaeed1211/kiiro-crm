@@ -9,6 +9,7 @@ import type { ReactNode } from 'react'
 import type { ContactRecord } from '@ops/module-crm'
 import type { ActivityItem, ContactRelations, PersonSummary } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
+import { hasRelationItems } from '../../server/crm/directory/utils'
 import { CopyButton } from './copy-button'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
@@ -35,10 +36,10 @@ function Activity({ entries }: Readonly<{ entries: readonly ActivityItem[] }>) {
     />
   )
 }
-function RelationList({ children, empty }: Readonly<{ children: ReactNode; empty: string }>) {
+function RelationList({ items, empty }: Readonly<{ items: readonly ReactNode[]; empty: string }>) {
   return (
     <div className="divide-y rounded-lg border">
-      {children ?? <p className="p-4 text-sm text-muted-foreground">{empty}</p>}
+      {hasRelationItems(items) ? items : <p className="p-4 text-sm text-muted-foreground">{empty}</p>}
     </div>
   )
 }
@@ -143,10 +144,10 @@ function ContactAside({
         </dl>
       </DetailCard>
       <DetailCard title={`Leads · ${String(relations.leads.length)}`}>
-        <RelationList empty="No leads linked yet.">{leadRows}</RelationList>
+        <RelationList items={leadRows} empty="No leads linked yet." />
       </DetailCard>
       <DetailCard title={`Deals · ${String(relations.deals.length)}`}>
-        <RelationList empty="No deals linked yet.">{dealRows}</RelationList>
+        <RelationList items={dealRows} empty="No deals linked yet." />
       </DetailCard>
       <DetailCard title="Meta">
         <Meta record={record} />

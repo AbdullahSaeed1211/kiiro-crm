@@ -17,6 +17,7 @@ import type {
   PersonSummary,
 } from '../../server/crm/directory/data'
 import { displayName, formatDirectorySort } from '../../server/crm/directory/data'
+import { safeExternalHref } from '../../server/crm/directory/utils'
 
 const TABLE_LABELS: DataTableLabels = {
   selectAll: 'Select all',
@@ -103,33 +104,36 @@ function organizationColumns(query: string, sort: DirectorySort): DataTableColum
   ]
 }
 function organizationRows(items: readonly OrganizationListItem[]): DataTableRow[] {
-  return items.map(({ record, owner, openDeals }) => ({
-    id: record.id,
-    cells: {
-      name: (
-        <a href={`/organizations/${record.id}`} className={linkClass()}>
-          {record.name}
-        </a>
-      ),
-      website:
-        record.website === null ? (
-          <EmptyValue />
-        ) : (
-          <a
-            href={record.website}
-            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {record.website.replace(/^https?:\/\//, '')}
-            <ArrowUpRight aria-hidden className="size-3" />
+  return items.map(({ record, owner, openDeals }) => {
+    const website = record.website === null ? null : safeExternalHref(record.website)
+    return {
+      id: record.id,
+      cells: {
+        name: (
+          <a href={`/organizations/${record.id}`} className={linkClass()}>
+            {record.name}
           </a>
         ),
-      owner: <OwnerCell owner={owner} />,
-      deals: String(openDeals),
-      updated: <DateCell value={record.updatedAt} />,
-    },
-  }))
+        website:
+          website === null ? (
+            <EmptyValue />
+          ) : (
+            <a
+              href={website}
+              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {website.replace(/^https?:\/\//, '')}
+              <ArrowUpRight aria-hidden className="size-3" />
+            </a>
+          ),
+        owner: <OwnerCell owner={owner} />,
+        deals: String(openDeals),
+        updated: <DateCell value={record.updatedAt} />,
+      },
+    }
+  })
 }
 export function OrganizationsTable({
   result,

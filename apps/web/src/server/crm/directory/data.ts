@@ -24,6 +24,11 @@ export interface ContactListItem {
   readonly owner: PersonSummary | null
 }
 
+export interface OrganizationOption {
+  readonly value: string
+  readonly label: string
+}
+
 export interface DirectoryPage<T> {
   readonly items: readonly T[]
   readonly total: number
@@ -134,6 +139,15 @@ export async function listOrganizations(
   }
 }
 
+export async function listOrganizationOptions(): Promise<readonly OrganizationOption[]> {
+  const context = await getRequestContext()
+  const repo = createCrmRepository(context.req)
+  const records = await repo.list('organization')
+  return records
+    .toSorted((a, b) => a.name.localeCompare(b.name))
+    .map((record) => ({ value: record.id, label: record.name }))
+}
+
 export async function listContacts(
   input: {
     readonly query?: string
@@ -185,7 +199,7 @@ export async function getOrganization(id: string): Promise<{
   const [people, projects, activity] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
     listProjects(context, record.id),
-    listActivities(context, 'organization', record.id),
+    listActivities(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
   ])
   return {
     record,
@@ -216,7 +230,7 @@ export async function getContact(id: string): Promise<{
   if (record === undefined) return null
   const [people, activity] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
-    listActivities(context, 'contact', record.id),
+    listActivities(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
   ])
   const organization =
     record.organizationId === null ? null : (organizations.find((item) => item.id === record.organizationId) ?? null)

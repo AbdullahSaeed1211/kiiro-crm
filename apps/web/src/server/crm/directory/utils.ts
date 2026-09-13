@@ -27,3 +27,21 @@ export function personLabel(person: PersonSummary | null): string {
 export function queryValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
+
+export function hasRelationItems(items: readonly unknown[]): boolean {
+  return items.length > 0
+}
+
+export function safeExternalHref(value: string): string | null {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function withActorOwner(input: unknown, ownerId: string): unknown {
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) return input
+  return { ...input, ownerId }
+}
