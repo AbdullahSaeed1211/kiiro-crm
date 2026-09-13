@@ -3,11 +3,14 @@ import type { Actor, Role } from '@ops/platform'
 import type { PayloadRequest } from 'payload'
 import { COLLECTIONS, FIELDS } from '../contracts/names'
 
-type UserDocument = Readonly<Record<string, unknown>>
-
 const ROLES: ReadonlySet<string> = new Set(['owner', 'manager', 'staff'])
 const MAX_REPORT_DEPTH = 5
 const actors = new WeakMap<PayloadRequest, Promise<Actor | undefined>>()
+
+// Documents are read by key because the generated user type differs per app.
+function read(doc: object, key: string): unknown {
+  return (doc as Readonly<Record<string, unknown>>)[key]
+}
 
 function idOf(value: unknown): Id | undefined {
   if (typeof value === 'string' || typeof value === 'number') return asId(String(value))
@@ -21,16 +24,17 @@ function idsOf(value: unknown): Id[] {
 }
 
 /** Maps a users document to an actor; a missing or unknown role yields an inactive staff actor. */
-export function toActor(user: UserDocument, reportIds: readonly Id[] = []): Actor | undefined {
-  const id = idOf(user['id'])
+export function toActor(user: object, reportIds: readonly Id[] = []): Actor | undefined {
+  const id = idOf(read(user, 'id'))
   if (id === undefined) return undefined
-  const roleValue = user[FIELDS.role]
+  const roleValue = read(user, FIELDS.role)
   const known = typeof roleValue === 'string' && ROLES.has(roleValue)
   const role = known ? (roleValue as Role) : 'staff'
-  return { id, role, active: known && user[FIELDS.active] === true, groupIds: idsOf(user[FIELDS.groups]), reportIds }
+  const active = known && read(user, FIELDS.active) === true
+  return { id, role, active, groupIds: idsOf(read(user, FIELDS.groups)), reportIds }
 }
 
-/** Loads the ids of users who report to `managerId` directly or indirectly, up to five levels (spec §9.10). */
+/** Ids of users reporting to `managerId` directly or indirectly, up to five levels (spec §9.10). */
 export async function loadReportIds(req: PayloadRequest, managerId: Id): Promise<Id[]> {
   const found = new Set<Id>()
   let frontier: Id[] = [managerId]
@@ -50,7 +54,7 @@ async function loadActor(req: PayloadRequest): Promise<Actor | undefined> {
   return { ...base, reportIds: await loadReportIds(req, base.id) }
 }
 
-/** Returns the actor of an authenticated request, loading transitive reports for staff once per request. */
+/** The actor of an authenticated request; staff reports are loaded once per request. */
 export function resolveActor(req: PayloadRequest): Promise<Actor | undefined> {
   const cached = actors.get(req)
   if (cached !== undefined) return cached

@@ -68,7 +68,16 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
-    media: Media;
+    groups: Group;
+    organizations: Organization;
+    projects: Project;
+    tasks: Task;
+    workflows: Workflow;
+    activity: Activity;
+    attachments: Attachment;
+    notifications: Notification;
+    emailMessages: EmailMessage;
+    jobRuns: JobRun;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -77,18 +86,31 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
+    groups: GroupsSelect<false> | GroupsSelect<true>;
+    organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
+    projects: ProjectsSelect<false> | ProjectsSelect<true>;
+    tasks: TasksSelect<false> | TasksSelect<true>;
+    workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
+    activity: ActivitySelect<false> | ActivitySelect<true>;
+    attachments: AttachmentsSelect<false> | AttachmentsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
+    jobRuns: JobRunsSelect<false> | JobRunsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: number;
+    defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    settings: Setting;
+  };
+  globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -122,7 +144,12 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: number;
+  id: string;
+  name: string;
+  role: 'owner' | 'manager' | 'staff';
+  active?: boolean | null;
+  groups?: (string | Group)[] | null;
+  reportsTo?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -144,11 +171,191 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "groups".
  */
-export interface Media {
-  id: number;
-  alt: string;
+export interface Group {
+  id: string;
+  name: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organizations".
+ */
+export interface Organization {
+  id: string;
+  name: string;
+  website?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  owner?: (string | null) | User;
+  customData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects".
+ */
+export interface Project {
+  id: string;
+  name: string;
+  organization?: (string | null) | Organization;
+  owner?: (string | null) | User;
+  members?: (string | User)[] | null;
+  workflow?: (string | null) | Workflow;
+  stageId?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  stageEnteredAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  startAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  targetEndAt?: number | null;
+  description?: string | null;
+  customData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflows".
+ */
+export interface Workflow {
+  id: string;
+  recordType: 'organization' | 'project' | 'task';
+  name: string;
+  stages?:
+    | {
+        id?: string | null;
+        name: string;
+        category: 'backlog' | 'open' | 'active' | 'waiting' | 'done_success' | 'done_failure' | 'cancelled';
+        color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink';
+        position: number;
+        probability?: number | null;
+      }[]
+    | null;
+  defaultStageId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks".
+ */
+export interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  project?: (string | null) | Project;
+  relatedType?: ('organization' | 'project' | 'task') | null;
+  relatedId?: string | null;
+  parentTask?: (string | null) | Task;
+  workflow?: (string | null) | Workflow;
+  stageId?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  stageEnteredAt?: number | null;
+  rank?: string | null;
+  priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
+  assignees?: (string | User)[] | null;
+  group?: (string | null) | Group;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  startAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  dueAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  completedAt?: number | null;
+  customData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity".
+ */
+export interface Activity {
+  id: string;
+  recordType: 'organization' | 'project' | 'task';
+  recordId: string;
+  verb:
+    | 'record.created'
+    | 'field.changed'
+    | 'stage.changed'
+    | 'assignment.changed'
+    | 'comment.added'
+    | 'mention.added'
+    | 'attachment.added'
+    | 'attachment.downloaded'
+    | 'email.sent'
+    | 'email.received'
+    | 'relation.linked'
+    | 'record.converted';
+  actor?: (string | null) | User;
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  occurredAt: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "attachments".
+ */
+export interface Attachment {
+  id: string;
+  recordType: 'organization' | 'project' | 'task';
+  recordId: string;
+  fileName: string;
+  sizeBytes: number;
+  uploadedBy?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -161,10 +368,122 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: string;
+  user: string | User;
+  type:
+    | 'assigned'
+    | 'mentioned'
+    | 'due_soon'
+    | 'overdue'
+    | 'digest'
+    | 'intake_received'
+    | 'email_received'
+    | 'invitation_accepted'
+    | 'stalled';
+  recordType?: ('organization' | 'project' | 'task') | null;
+  recordId?: string | null;
+  actor?: (string | null) | User;
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  dedupeKey: string;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  readAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  emailedAt?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailMessages".
+ */
+export interface EmailMessage {
+  id: string;
+  direction: 'outbound' | 'inbound';
+  recordType?: ('organization' | 'project' | 'task') | null;
+  recordId?: string | null;
+  messageId: string;
+  inReplyTo?: string | null;
+  from: string;
+  to?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  cc?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  subject?: string | null;
+  textBody?: string | null;
+  htmlFileKey?: string | null;
+  attachments?: (string | Attachment)[] | null;
+  status: 'queued' | 'sent' | 'failed' | 'received' | 'quarantined';
+  error?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  occurredAt: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobRuns".
+ */
+export interface JobRun {
+  id: string;
+  job: string;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  windowStart: number;
+  status: 'running' | 'completed' | 'failed';
+  processed?: number | null;
+  created?: number | null;
+  skipped?: number | null;
+  durationMs?: number | null;
+  cursor?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: number;
+  id: string;
   key: string;
   data:
     | {
@@ -181,20 +500,56 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: number;
+  id: string;
   document?:
     | ({
         relationTo: 'users';
-        value: number | User;
+        value: string | User;
       } | null)
     | ({
-        relationTo: 'media';
-        value: number | Media;
+        relationTo: 'groups';
+        value: string | Group;
+      } | null)
+    | ({
+        relationTo: 'organizations';
+        value: string | Organization;
+      } | null)
+    | ({
+        relationTo: 'projects';
+        value: string | Project;
+      } | null)
+    | ({
+        relationTo: 'tasks';
+        value: string | Task;
+      } | null)
+    | ({
+        relationTo: 'workflows';
+        value: string | Workflow;
+      } | null)
+    | ({
+        relationTo: 'activity';
+        value: string | Activity;
+      } | null)
+    | ({
+        relationTo: 'attachments';
+        value: string | Attachment;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: string | Notification;
+      } | null)
+    | ({
+        relationTo: 'emailMessages';
+        value: string | EmailMessage;
+      } | null)
+    | ({
+        relationTo: 'jobRuns';
+        value: string | JobRun;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: number | User;
+    value: string | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -204,10 +559,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: number;
+  id: string;
   user: {
     relationTo: 'users';
-    value: number | User;
+    value: string | User;
   };
   key?: string | null;
   value?:
@@ -227,7 +582,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: number;
+  id: string;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -238,6 +593,11 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
+  active?: T;
+  groups?: T;
+  reportsTo?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -257,10 +617,116 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
+ * via the `definition` "groups_select".
  */
-export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
+export interface GroupsSelect<T extends boolean = true> {
+  name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organizations_select".
+ */
+export interface OrganizationsSelect<T extends boolean = true> {
+  name?: T;
+  website?: T;
+  phone?: T;
+  email?: T;
+  owner?: T;
+  customData?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects_select".
+ */
+export interface ProjectsSelect<T extends boolean = true> {
+  name?: T;
+  organization?: T;
+  owner?: T;
+  members?: T;
+  workflow?: T;
+  stageId?: T;
+  stageEnteredAt?: T;
+  startAt?: T;
+  targetEndAt?: T;
+  description?: T;
+  customData?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks_select".
+ */
+export interface TasksSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  project?: T;
+  relatedType?: T;
+  relatedId?: T;
+  parentTask?: T;
+  workflow?: T;
+  stageId?: T;
+  stageEnteredAt?: T;
+  rank?: T;
+  priority?: T;
+  assignees?: T;
+  group?: T;
+  startAt?: T;
+  dueAt?: T;
+  completedAt?: T;
+  customData?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflows_select".
+ */
+export interface WorkflowsSelect<T extends boolean = true> {
+  recordType?: T;
+  name?: T;
+  stages?:
+    | T
+    | {
+        id?: T;
+        name?: T;
+        category?: T;
+        color?: T;
+        position?: T;
+        probability?: T;
+      };
+  defaultStageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity_select".
+ */
+export interface ActivitySelect<T extends boolean = true> {
+  recordType?: T;
+  recordId?: T;
+  verb?: T;
+  actor?: T;
+  data?: T;
+  occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "attachments_select".
+ */
+export interface AttachmentsSelect<T extends boolean = true> {
+  recordType?: T;
+  recordId?: T;
+  fileName?: T;
+  sizeBytes?: T;
+  uploadedBy?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -270,6 +736,62 @@ export interface MediaSelect<T extends boolean = true> {
   filesize?: T;
   width?: T;
   height?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  type?: T;
+  recordType?: T;
+  recordId?: T;
+  actor?: T;
+  data?: T;
+  dedupeKey?: T;
+  readAt?: T;
+  emailedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailMessages_select".
+ */
+export interface EmailMessagesSelect<T extends boolean = true> {
+  direction?: T;
+  recordType?: T;
+  recordId?: T;
+  messageId?: T;
+  inReplyTo?: T;
+  from?: T;
+  to?: T;
+  cc?: T;
+  subject?: T;
+  textBody?: T;
+  htmlFileKey?: T;
+  attachments?: T;
+  status?: T;
+  error?: T;
+  occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobRuns_select".
+ */
+export interface JobRunsSelect<T extends boolean = true> {
+  job?: T;
+  windowStart?: T;
+  status?: T;
+  processed?: T;
+  created?: T;
+  skipped?: T;
+  durationMs?: T;
+  cursor?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -310,6 +832,95 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface Setting {
+  id: string;
+  appName?: string | null;
+  timezone: string;
+  locale: 'en' | 'es';
+  currency: string;
+  weekStartsOn: number;
+  brand: {
+    primaryHex?: string | null;
+    radius: 'sm' | 'md' | 'lg';
+  };
+  modules?: {
+    crm?: boolean | null;
+    work?: boolean | null;
+    intake?: boolean | null;
+    mail?: boolean | null;
+  };
+  stalledDays: number;
+  email: {
+    fromName?: string | null;
+    fromAddress?: string | null;
+    senderStatus: 'unverified' | 'verified';
+    inboundDomain?: string | null;
+    inboundLocalPrefix?: string | null;
+  };
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  onboardedAt?: number | null;
+  appliedTemplates?:
+    | {
+        key: string;
+        version: number;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  appName?: T;
+  timezone?: T;
+  locale?: T;
+  currency?: T;
+  weekStartsOn?: T;
+  brand?:
+    | T
+    | {
+        primaryHex?: T;
+        radius?: T;
+      };
+  modules?:
+    | T
+    | {
+        crm?: T;
+        work?: T;
+        intake?: T;
+        mail?: T;
+      };
+  stalledDays?: T;
+  email?:
+    | T
+    | {
+        fromName?: T;
+        fromAddress?: T;
+        senderStatus?: T;
+        inboundDomain?: T;
+        inboundLocalPrefix?: T;
+      };
+  onboardedAt?: T;
+  appliedTemplates?:
+    | T
+    | {
+        key?: T;
+        version?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

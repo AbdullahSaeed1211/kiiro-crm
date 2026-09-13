@@ -2,14 +2,14 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
+import { r2Storage } from '@payloadcms/storage-r2'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import type { CloudflareContext } from '@opennextjs/cloudflare'
+import { COLLECTIONS, settingsGlobal, spikeCollections } from '@ops/adapter-payload'
 import { buildConfig } from 'payload'
 import type { Config } from 'payload'
 import type { GetPlatformProxyOptions } from 'wrangler'
 import type * as Wrangler from 'wrangler'
-
-import { Users } from './collections/Users'
 
 type WranglerModule = typeof Wrangler
 type LogFn = (objOrMsg: object | string, msg?: string) => void
@@ -70,10 +70,12 @@ const cloudflare =
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: COLLECTIONS.users,
     importMap: { baseDir: path.resolve(dirname) },
   },
-  collections: [Users],
+  // Payload appends its own collections to this array, so it gets a copy.
+  collections: [...spikeCollections],
+  globals: [settingsGlobal],
   secret: process.env.PAYLOAD_SECRET,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   graphQL: { disable: true },
@@ -81,4 +83,5 @@ export default buildConfig({
   maxDepth: 2,
   db: sqliteD1Adapter({ binding: cloudflare.env.D1, idType: 'uuid' }),
   ...(isProduction ? { logger: cloudflareLogger } : {}),
+  plugins: [r2Storage({ bucket: cloudflare.env.R2, collections: { [COLLECTIONS.attachments]: true } })],
 })

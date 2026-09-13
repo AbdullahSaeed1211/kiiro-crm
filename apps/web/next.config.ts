@@ -9,7 +9,14 @@ const nextConfig: NextConfig = {
   // `next dev` would otherwise write AGENTS.md and CLAUDE.md into the app directory.
   agentRules: false,
   // Workspace packages ship TypeScript source.
-  transpilePackages: ['@ops/ui', '@ops/adapter-cloudflare', '@ops/kernel', '@ops/platform'],
+  transpilePackages: [
+    '@ops/ui',
+    '@ops/adapter-cloudflare',
+    '@ops/adapter-payload',
+    '@ops/kernel',
+    '@ops/module-work',
+    '@ops/platform',
+  ],
   // Packages with Cloudflare Workers (workerd) specific code: https://opennext.js.org/cloudflare/howtos/workerd
   serverExternalPackages: ['jose', 'pg-cloudflare'],
   // One page-data worker: each worker would start its own local Wrangler proxy on the same local D1 file (SQLITE_BUSY).
