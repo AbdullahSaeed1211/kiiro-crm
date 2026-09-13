@@ -2,7 +2,7 @@ import type { TaskRepository } from '@ops/module-work'
 import type { StageStore, Workflow } from '@ops/platform'
 import type { CollectionSlug, PayloadRequest, Where } from 'payload'
 import { COLLECTIONS, RECORD_TYPES } from '../contracts/names'
-import { findAsUser, updateIfUnchanged } from './local-api'
+import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
 import { toStageRecord, toTaskRecord } from './task-mapping'
 import { toWorkflow } from './workflow-mapping'
 
@@ -38,13 +38,7 @@ function createStageStore(req: PayloadRequest): StageStore {
     addTransition: () => Promise.resolve(),
     addActivity: async ({ record, verb, actorId, data, occurredAt }) => {
       const activity = { recordType: record.type, recordId: record.id, verb, actor: actorId, data, occurredAt }
-      await req.payload.create({
-        collection: COLLECTIONS.activity,
-        data: activity,
-        depth: 0,
-        overrideAccess: true,
-        req,
-      })
+      await createAsSystem(req, COLLECTIONS.activity, activity)
     },
   }
 }

@@ -15,5 +15,6 @@ docs/spec.md
 .claude
 harness/templates
 harness/metrics
+docs/spike-data/*.json
 docs/orchestration
 apps/web/next-env.d.ts

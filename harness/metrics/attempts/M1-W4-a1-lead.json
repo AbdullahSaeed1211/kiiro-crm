@@ -1,0 +1,45 @@
+{
+  "wp": "M1-W4",
+  "milestone": "M1",
+  "attempt": 1,
+  "runner": "lead",
+  "startedAt": "2026-09-13T13:48:36.614Z",
+  "finishedAt": "2026-09-13T13:48:56.747Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1062,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 3334,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 15095,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --changed",
+      "exitCode": 0,
+      "durationMs": 259,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 317,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 15,
+  "suggestedClasses": [],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}

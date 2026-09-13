@@ -1,7 +1,7 @@
 import { asId, fixedClock, type Id } from '@ops/kernel'
 import { can, type StageStore, type StageTrackedRecord, type Workflow } from '@ops/platform'
 import { describe, expect, it } from 'vitest'
-import { runMoveTask } from '../../../../src/server/actions/work/tasks/moveTask'
+import { runMoveTask } from '../../../../src/server/work/move-task'
 import type { TaskRecord, TaskRepository, WorkDeps } from '../../../../src/server/work/task-repository'
 
 const TASK_ID = asId('task-1')
