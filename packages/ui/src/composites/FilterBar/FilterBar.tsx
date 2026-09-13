@@ -29,6 +29,75 @@ export type FilterBarProps = Readonly<{
   className?: string | undefined
 }>
 
+function SearchField({
+  value,
+  labels,
+  onChange,
+}: Readonly<{
+  value: string
+  labels: FilterBarLabels
+  onChange: (value: string) => void
+}>) {
+  return (
+    <div className="relative min-w-48 flex-1 md:max-w-sm">
+      <Search
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+      />
+      <Input
+        type="search"
+        aria-label={labels.search}
+        placeholder={labels.searchPlaceholder}
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value)
+        }}
+        className="pl-8"
+      />
+    </div>
+  )
+}
+
+function StageFilter({
+  selected,
+  options,
+  labels,
+  onToggle,
+}: Readonly<{
+  selected: readonly string[]
+  options: readonly StageOption[]
+  labels: FilterBarLabels
+  onToggle: (stageId: string) => void
+}>) {
+  return (
+    <Popover>
+      <PopoverTrigger render={<Button type="button" variant="outline" size="sm" />}>
+        <SlidersHorizontal aria-hidden />
+        {labels.stage}
+        {selected.length > 0 ? <span className="text-xs tabular-nums">({selected.length})</span> : null}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64">
+        {options.length === 0 ? <p className="p-1 text-sm text-muted-foreground">{labels.noStages}</p> : null}
+        {options.map((stage) => (
+          <label
+            key={stage.id}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-muted"
+          >
+            <Checkbox
+              checked={selected.includes(stage.id)}
+              onCheckedChange={() => {
+                onToggle(stage.id)
+              }}
+            />
+            <span aria-hidden className={cn('size-2 shrink-0 rounded-full', stageDotClass(stage.color))} />
+            <span className="truncate">{stage.name}</span>
+          </label>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 /** Search and multi-stage controls for server-filtered list pages. */
 export function FilterBar({
   query,
@@ -71,47 +140,8 @@ export function FilterBar({
   }
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
-      <div className="relative min-w-48 flex-1 md:max-w-sm">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          type="search"
-          aria-label={labels.search}
-          placeholder={labels.searchPlaceholder}
-          value={draftQuery}
-          onChange={(event) => {
-            setDraftQuery(event.target.value)
-          }}
-          className="pl-8"
-        />
-      </div>
-      <Popover>
-        <PopoverTrigger render={<Button type="button" variant="outline" size="sm" />}>
-          <SlidersHorizontal aria-hidden />
-          {labels.stage}
-          {draftStages.length > 0 ? <span className="text-xs tabular-nums">({draftStages.length})</span> : null}
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-64">
-          {stageOptions.length === 0 ? <p className="p-1 text-sm text-muted-foreground">{labels.noStages}</p> : null}
-          {stageOptions.map((stage) => (
-            <label
-              key={stage.id}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-muted"
-            >
-              <Checkbox
-                checked={draftStages.includes(stage.id)}
-                onCheckedChange={() => {
-                  chooseStage(stage.id)
-                }}
-              />
-              <span aria-hidden className={cn('size-2 shrink-0 rounded-full', stageDotClass(stage.color))} />
-              <span className="truncate">{stage.name}</span>
-            </label>
-          ))}
-        </PopoverContent>
-      </Popover>
+      <SearchField value={draftQuery} labels={labels} onChange={setDraftQuery} />
+      <StageFilter selected={draftStages} options={stageOptions} labels={labels} onToggle={chooseStage} />
       {active ? (
         <Button type="button" variant="ghost" size="sm" onClick={clear}>
           <X aria-hidden />
