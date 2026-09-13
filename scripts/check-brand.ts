@@ -9,7 +9,8 @@ import { escapeRegExp, formatMatch, scanFiles } from './lib/scan'
 export const BRAND_TOKENS: readonly string[] = ['mirch', 'frappe', 'twenty', 'plane', 'huly']
 
 const SCANNED_DIRS = ['apps', 'packages']
-const EXCLUDED_FILES: ReadonlySet<string> = new Set(['apps/web/cloudflare-env.d.ts'])
+// Generated from tenants/*.jsonc, where tenant names and hostnames are allowed.
+const EXCLUDED_FILES: ReadonlySet<string> = new Set(['apps/web/cloudflare-env.d.ts', 'apps/web/wrangler.jsonc'])
 const DISPLAY_NAME = /"displayName"\s*:\s*"([^"]+)"/g
 
 /** Reads every `displayName` from `tenants/*.jsonc` below `root`; no tenants directory yields no names. */
