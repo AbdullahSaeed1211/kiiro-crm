@@ -12,6 +12,7 @@ export default defineConfig(
       'scripts/fixtures/**',
       'harness/selftest/**',
       '**/.open-next/**',
+      '**/.wrangler/**',
       '**/.next/**',
       '**/dist/**',
       '**/coverage/**',

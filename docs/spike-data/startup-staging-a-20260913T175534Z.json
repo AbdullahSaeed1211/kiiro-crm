@@ -1,0 +1,71 @@
+{
+  "metric": "startup",
+  "env": "staging-a",
+  "startedAt": "2026-09-13T17:55:34.036Z",
+  "finishedAt": "2026-09-13T17:59:44.311Z",
+  "source": "wrangler versions upload output line \"Worker Startup Time: <n> ms\"",
+  "command": "pnpm --filter web exec wrangler versions upload --env staging-a",
+  "percentileMethod": "nearest-rank: the value at rank ceil(p * n / 100), at least 1, of the ascending samples; median is p50",
+  "startupTimeMs": {
+    "count": 5,
+    "min": 26,
+    "median": 27,
+    "max": 36
+  },
+  "coldMs": {
+    "count": 5,
+    "min": 1051.538,
+    "median": 1078.421,
+    "max": 2482.009
+  },
+  "coldTimer": "fetch timed with performance.now(): from send to fully read body, connections kept alive",
+  "coldUrl": "https://ops-staging-a.mirchmedia01.workers.dev/api/v1/health",
+  "settleMs": 15000,
+  "runs": [
+    {
+      "run": 1,
+      "startupTimeMs": 27,
+      "versionId": "ca431686-5a6e-4967-8d9b-deb5113e841e",
+      "cold": {
+        "status": 200,
+        "ms": 2482.009
+      }
+    },
+    {
+      "run": 2,
+      "startupTimeMs": 26,
+      "versionId": "ce16f7a6-a1e4-4c59-839a-8fb522bd006c",
+      "cold": {
+        "status": 200,
+        "ms": 1136.098
+      }
+    },
+    {
+      "run": 3,
+      "startupTimeMs": 26,
+      "versionId": "740e77b0-654c-433b-bdf3-8007068f3a37",
+      "cold": {
+        "status": 200,
+        "ms": 1051.538
+      }
+    },
+    {
+      "run": 4,
+      "startupTimeMs": 31,
+      "versionId": "e34fad1b-4e33-4b6a-9905-137da4f4aab0",
+      "cold": {
+        "status": 200,
+        "ms": 1078.421
+      }
+    },
+    {
+      "run": 5,
+      "startupTimeMs": 36,
+      "versionId": "4fef021f-aa85-4a74-a6d4-b836bb7f81b8",
+      "cold": {
+        "status": 200,
+        "ms": 1076.911
+      }
+    }
+  ]
+}

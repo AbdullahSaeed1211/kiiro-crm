@@ -1,4 +1,6 @@
-import { TASK_FIXTURES } from './fixtures'
+import { createTaskRepository } from '@ops/adapter-payload'
+import { getRequestContext, type RequestContext } from '../../../work/deps'
+import { toTaskListItem, type PeopleById } from './task-items'
 import type { TaskListItem, TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'
 
 // Every list page shows 50 rows with server pagination (decision D-34).
@@ -36,19 +38,32 @@ export function parseTaskPage(value: string | undefined): number {
   return Number.isInteger(page) && page > 0 ? page : 1
 }
 
-/**
- * Reads one page of tasks in the requested order, with the id as tie-breaker so pages never overlap.
- * Spike implementation over fixture rows; M1-L3 swaps in the Payload-backed read model behind the same signature.
- */
-export function listTasks(query: TaskListQuery): Promise<TaskListResult> {
+// Names come through the users collection's access, so staff only see names they may read.
+async function loadPeople({ payload, req }: RequestContext, ids: readonly string[]): Promise<PeopleById> {
+  if (ids.length === 0) return new Map()
+  const where = { id: { in: ids } }
+  const { docs } = await payload.find({
+    collection: 'users',
+    where,
+    depth: 0,
+    limit: ids.length,
+    overrideAccess: false,
+    req,
+  })
+  return new Map(docs.map((user) => [user.id, { name: user.name, email: user.email }]))
+}
+
+/** Reads one page of the tasks the signed-in user may see, with the id as tie-breaker so pages never overlap. */
+export async function listTasks(query: TaskListQuery): Promise<TaskListResult> {
+  const context = await getRequestContext()
+  const tasks = createTaskRepository(context.req)
+  const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])
+  const people = await loadPeople(context, [...new Set(records.flatMap((task) => task.assigneeIds))])
   const direction = query.sort.desc ? -1 : 1
   const compare = COMPARE[query.sort.key]
-  const sorted = [...TASK_FIXTURES].sort((a, b) => direction * compare(a, b) || a.id.localeCompare(b.id))
+  const sorted = records
+    .map((task) => toTaskListItem(task, workflow, people))
+    .sort((a, b) => direction * compare(a, b) || a.id.localeCompare(b.id))
   const start = (query.page - 1) * PAGE_SIZE
-  return Promise.resolve({
-    items: sorted.slice(start, start + PAGE_SIZE),
-    total: sorted.length,
-    page: query.page,
-    pageSize: PAGE_SIZE,
-  })
+  return { items: sorted.slice(start, start + PAGE_SIZE), total: sorted.length, page: query.page, pageSize: PAGE_SIZE }
 }

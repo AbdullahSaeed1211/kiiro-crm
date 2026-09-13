@@ -4,7 +4,7 @@ import openNext from './.open-next/worker.js'
 // Typed with the bindings this entry uses rather than the generated `CloudflareEnv`: that type refers back to this
 // module through the self-referencing service binding, and the cycle would erase the binding types.
 const worker: ExportedHandler<InternalForwardEnv> = {
-  fetch: openNext.fetch,
+  fetch: (request, env, ctx) => openNext.fetch(request, env, ctx),
   scheduled: (controller, env, ctx) => {
     ctx.waitUntil(dispatchCron(env, controller.scheduledTime))
   },
