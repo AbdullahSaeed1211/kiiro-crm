@@ -10,3 +10,4 @@ apps/web/src/migrations
 apps/web/src/app/(payload)/admin/importMap.js
 packages/ui/src/components/ui
 docs/spec.md
+.claude

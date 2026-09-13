@@ -13,3 +13,4 @@ tests/e2e/screenshots/
 .env
 .env.*
 !.env.example
+.claude/

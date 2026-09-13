@@ -5,6 +5,7 @@
   "gitignore": true,
   "ignore": [
     "**/node_modules/**",
+    ".claude/**",
     "**/test/**",
     "**/*.test.ts",
     "packages/templates/**",
