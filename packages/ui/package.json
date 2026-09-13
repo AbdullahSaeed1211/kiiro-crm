@@ -12,7 +12,10 @@
     "./hooks/*": "./src/hooks/*.ts"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "3.1.0",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "2.2.0",
     "@base-ui/react": "1.8.0",
+    "@svar-ui/react-gantt": "2.7.3",
     "@tanstack/react-table": "9.2.4",
     "class-variance-authority": "0.7.1",
     "cmdk": "1.1.1",
