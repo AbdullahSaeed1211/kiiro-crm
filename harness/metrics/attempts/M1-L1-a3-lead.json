@@ -1,0 +1,57 @@
+{
+  "wp": "M1-L1",
+  "milestone": "M1",
+  "attempt": 3,
+  "runner": "lead",
+  "startedAt": "2026-09-13T12:30:05.139Z",
+  "finishedAt": "2026-09-13T12:30:30.328Z",
+  "gates": [
+    {
+      "name": "pnpm build",
+      "exitCode": 0,
+      "durationMs": 11123,
+      "failingLines": []
+    },
+    {
+      "name": "pnpm --filter web check:types",
+      "exitCode": 0,
+      "durationMs": 660,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 843,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 3088,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 8352,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --changed",
+      "exitCode": 0,
+      "durationMs": 812,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 253,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 106,
+  "suggestedClasses": [],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}

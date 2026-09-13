@@ -16,6 +16,8 @@ export default defineConfig(
       '**/dist/**',
       '**/coverage/**',
       'apps/web/cloudflare-env.d.ts',
+      'apps/web/postcss.config.mjs',
+      'packages/ui/src/hooks/use-mobile.ts',
       'apps/web/src/payload-types.ts',
       'apps/web/src/migrations/**',
       'apps/web/src/app/(payload)/**',

@@ -1,0 +1,51 @@
+/* Product tokens added on top of the shadcn neutral theme (spec §15.2); brand overrides are injected at runtime (§9.12). */
+:root {
+  --success: oklch(0.62 0.13 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.75 0.15 75);
+  --warning-foreground: oklch(0.2 0 0);
+  --info: oklch(0.62 0.12 245);
+  --info-foreground: oklch(0.99 0 0);
+  --stage-gray: oklch(0.65 0.01 250);
+  --stage-blue: oklch(0.62 0.13 250);
+  --stage-green: oklch(0.62 0.13 150);
+  --stage-amber: oklch(0.75 0.15 75);
+  --stage-red: oklch(0.6 0.19 27);
+  --stage-violet: oklch(0.58 0.15 295);
+  --stage-teal: oklch(0.63 0.1 190);
+  --stage-pink: oklch(0.65 0.17 350);
+}
+
+.dark {
+  --success: oklch(0.7 0.13 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.83 0.15 75);
+  --warning-foreground: oklch(0.2 0 0);
+  --info: oklch(0.7 0.12 245);
+  --info-foreground: oklch(0.99 0 0);
+  --stage-gray: oklch(0.73 0.01 250);
+  --stage-blue: oklch(0.7 0.13 250);
+  --stage-green: oklch(0.7 0.13 150);
+  --stage-amber: oklch(0.83 0.15 75);
+  --stage-red: oklch(0.68 0.19 27);
+  --stage-violet: oklch(0.66 0.15 295);
+  --stage-teal: oklch(0.71 0.1 190);
+  --stage-pink: oklch(0.73 0.17 350);
+}
+
+@theme inline {
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-stage-gray: var(--stage-gray);
+  --color-stage-blue: var(--stage-blue);
+  --color-stage-green: var(--stage-green);
+  --color-stage-amber: var(--stage-amber);
+  --color-stage-red: var(--stage-red);
+  --color-stage-violet: var(--stage-violet);
+  --color-stage-teal: var(--stage-teal);
+  --color-stage-pink: var(--stage-pink);
+}

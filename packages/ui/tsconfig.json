@@ -1,4 +1,9 @@
 {
   "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@ops/ui/*": ["./src/*"]
+    }
+  },
   "include": ["src", "test"]
 }

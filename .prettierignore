@@ -5,12 +5,15 @@ pnpm-lock.yaml
 .wrangler
 coverage
 apps/web/cloudflare-env.d.ts
+apps/web/wrangler.jsonc
 apps/web/src/payload-types.ts
 apps/web/src/migrations
 apps/web/src/app/(payload)/admin/importMap.js
 packages/ui/src/components/ui
+packages/ui/src/hooks/use-mobile.ts
 docs/spec.md
 .claude
 harness/templates
+harness/metrics
 docs/orchestration
 apps/web/next-env.d.ts

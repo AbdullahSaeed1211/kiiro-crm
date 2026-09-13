@@ -2,8 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { r2Storage } from '@payloadcms/storage-r2'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import type { CloudflareContext } from '@opennextjs/cloudflare'
 import { buildConfig } from 'payload'
@@ -12,7 +10,6 @@ import type { GetPlatformProxyOptions } from 'wrangler'
 import type * as Wrangler from 'wrangler'
 
 import { Users } from './collections/Users'
-import { Media } from './collections/Media'
 
 type WranglerModule = typeof Wrangler
 type LogFn = (objOrMsg: object | string, msg?: string) => void
@@ -76,11 +73,12 @@ export default buildConfig({
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
   },
-  collections: [Users, Media],
-  editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET ?? '',
+  collections: [Users],
+  secret: process.env.PAYLOAD_SECRET,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
-  db: sqliteD1Adapter({ binding: cloudflare.env.D1 }),
+  graphQL: { disable: true },
+  defaultDepth: 0,
+  maxDepth: 2,
+  db: sqliteD1Adapter({ binding: cloudflare.env.D1, idType: 'uuid' }),
   ...(isProduction ? { logger: cloudflareLogger } : {}),
-  plugins: [r2Storage({ bucket: cloudflare.env.R2, collections: { media: true } })],
 })

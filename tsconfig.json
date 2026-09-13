@@ -1,5 +1,10 @@
 {
   "extends": "./tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@ops/ui/*": ["./packages/ui/src/*"]
+    }
+  },
   "include": ["vitest.config.ts", "playwright.config.ts", "apps/*/src", "packages/**/src", "packages/**/test"],
   "exclude": ["**/node_modules", "**/.next", "**/.open-next", "scripts/fixtures", "harness/selftest"]
 }

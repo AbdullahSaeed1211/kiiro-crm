@@ -23,6 +23,7 @@
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "check:scope": "tsx scripts/check-scope.ts",
+    "gen:wrangler": "tsx scripts/gen-wrangler.ts",
     "harness:plan": "tsx scripts/harness/plan.ts",
     "harness:brief": "tsx scripts/harness/brief.ts",
     "harness:record": "tsx scripts/harness/record.ts",
@@ -54,6 +55,7 @@
     "tsx": "4.23.13",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.0",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "zod": "4.6.2"
   }
 }

@@ -1,0 +1,23 @@
+// Spike tenant (E-003, E-007): workers.dev hostname, throwaway resources deleted after the M1 spike report.
+// `host` and `d1.id` are filled by the lead when the resources are created.
+{
+  "slug": "staging-b",
+  "displayName": "Staging Beta",
+  "hostType": "workers_dev",
+  "template": "agency",
+  "timezone": "Europe/London",
+  "locale": "en",
+  "currency": "GBP",
+  "owner": { "email": "owner@example.test", "name": "Spike Owner" },
+  "email": {
+    "fromName": "Staging Beta",
+    "fromAddress": "no-reply@example.test",
+    "inboundDomain": "in.example.test",
+    "inboundLocalPrefix": "staging-b--",
+  },
+  "d1": { "name": "ops-staging-b" },
+  "r2": { "bucket": "ops-staging-b" },
+  "rateLimitNamespaces": { "intake": "1011", "auth": "1012" },
+  "intake": { "allowedOrigins": [], "turnstileHostnames": [] },
+  "deployOrder": 1,
+}

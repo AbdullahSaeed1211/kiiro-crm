@@ -6,9 +6,8 @@ interface WebpackConfig {
 }
 
 const nextConfig: NextConfig = {
-  images: {
-    localPatterns: [{ pathname: '/api/media/file/**' }],
-  },
+  // Workspace packages ship TypeScript source.
+  transpilePackages: ['@ops/ui'],
   // Packages with Cloudflare Workers (workerd) specific code: https://opennext.js.org/cloudflare/howtos/workerd
   serverExternalPackages: ['jose', 'pg-cloudflare'],
   // One page-data worker: each worker would start its own local Wrangler proxy on the same local D1 file (SQLITE_BUSY).
