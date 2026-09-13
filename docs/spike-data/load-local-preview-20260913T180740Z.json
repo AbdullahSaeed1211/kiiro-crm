@@ -1,0 +1,167 @@
+{
+  "metric": "load-burst",
+  "runtime": "local workerd via `pnpm preview` (OpenNext build) with local D1 and seeded data (12 tasks)",
+  "machine": "darwin arm64, Node v22.22.3",
+  "measuredAt": "2026-09-13T18:07:56.416Z",
+  "requestsPerLevel": 200,
+  "percentileMethod": "nearest-rank",
+  "session": "seeded owner; token not stored",
+  "results": [
+    {
+      "path": "/api/v1/health",
+      "concurrency": 1,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 296.5,
+      "p50Ms": 3.4,
+      "p95Ms": 4.6,
+      "p99Ms": 10.7,
+      "maxMs": 19.2
+    },
+    {
+      "path": "/api/v1/health",
+      "concurrency": 10,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 526.7,
+      "p50Ms": 19.4,
+      "p95Ms": 23.9,
+      "p99Ms": 25.3,
+      "maxMs": 25.4
+    },
+    {
+      "path": "/api/v1/health",
+      "concurrency": 50,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 554.2,
+      "p50Ms": 86,
+      "p95Ms": 109.2,
+      "p99Ms": 113.6,
+      "maxMs": 114.1
+    },
+    {
+      "path": "/tasks",
+      "concurrency": 1,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 83.6,
+      "p50Ms": 11.4,
+      "p95Ms": 16,
+      "p99Ms": 19.9,
+      "maxMs": 39.4
+    },
+    {
+      "path": "/tasks",
+      "concurrency": 10,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 113.7,
+      "p50Ms": 87.1,
+      "p95Ms": 99.2,
+      "p99Ms": 119.9,
+      "maxMs": 120
+    },
+    {
+      "path": "/tasks",
+      "concurrency": 50,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 118.5,
+      "p50Ms": 416.3,
+      "p95Ms": 525.7,
+      "p99Ms": 525.8,
+      "maxMs": 574.7
+    },
+    {
+      "path": "/tasks/board",
+      "concurrency": 1,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 99.2,
+      "p50Ms": 9.7,
+      "p95Ms": 14.5,
+      "p99Ms": 16.9,
+      "maxMs": 49.8
+    },
+    {
+      "path": "/tasks/board",
+      "concurrency": 10,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 130.6,
+      "p50Ms": 74.4,
+      "p95Ms": 97.3,
+      "p99Ms": 121.4,
+      "maxMs": 123
+    },
+    {
+      "path": "/tasks/board",
+      "concurrency": 50,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 132.8,
+      "p50Ms": 378.6,
+      "p95Ms": 476.3,
+      "p99Ms": 476.4,
+      "maxMs": 521.8
+    },
+    {
+      "path": "/timeline",
+      "concurrency": 1,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 151.8,
+      "p50Ms": 6.5,
+      "p95Ms": 9.9,
+      "p99Ms": 12.2,
+      "maxMs": 54.8
+    },
+    {
+      "path": "/timeline",
+      "concurrency": 10,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 242.9,
+      "p50Ms": 41.6,
+      "p95Ms": 47.1,
+      "p99Ms": 48.2,
+      "maxMs": 49.7
+    },
+    {
+      "path": "/timeline",
+      "concurrency": 50,
+      "requests": 200,
+      "statuses": {
+        "200": 200
+      },
+      "requestsPerSecond": 246.6,
+      "p50Ms": 202.6,
+      "p95Ms": 254.5,
+      "p99Ms": 254.6,
+      "maxMs": 278.9
+    }
+  ]
+}
