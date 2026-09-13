@@ -3,3 +3,4 @@ export type { Clock, DomainError, ErrorCode, Id, Logger, LogFields, Result } fro
 export type { FilterCondition, FilterNode, FilterOperator, Page, SortSpec } from './contracts/filter'
 export { domainError, err, isOk, ok } from './lib/result'
 export { asId, createJsonLogger, fixedClock, newId, redact, systemClock } from './lib/runtime'
+export type { Money } from './contracts/money'

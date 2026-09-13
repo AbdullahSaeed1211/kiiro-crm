@@ -145,6 +145,12 @@ describe('admin groups', () => {
     notifications: ADMIN_GROUPS.system,
     emailMessages: ADMIN_GROUPS.system,
     jobRuns: ADMIN_GROUPS.system,
+    contacts: ADMIN_GROUPS.records,
+    leads: ADMIN_GROUPS.records,
+    deals: ADMIN_GROUPS.records,
+    sources: ADMIN_GROUPS.configuration,
+    lostReasons: ADMIN_GROUPS.configuration,
+    stageTransitions: ADMIN_GROUPS.system,
   }
 
   it.each(Object.entries(groups))('%s sits in the %s group', (slug, group) => {

@@ -1,5 +1,6 @@
 import type {
   CollectionConfig,
+  CollectionSlug,
   CompoundIndex,
   Field,
   JSONField,
@@ -68,18 +69,23 @@ export function selectOf(
   return { name, type: 'select', options: [...values], ...flags }
 }
 
+// Unnecessary in this package, where `CollectionSlug` is `string`, but required in apps whose generated types narrow it
+// and lag behind new collections until types regenerate.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- see the comment above
+const relationTarget = (slug: SpikeCollectionSlug): CollectionSlug => slug as unknown as CollectionSlug
+
 /** Single relationship to one collection; with `idType: 'uuid'` the stored value is the target's UUID string. */
 export function relationshipTo(
   name: string,
   relationTo: SpikeCollectionSlug,
   flags: FieldFlags = {},
 ): RelationshipField {
-  return { name, type: 'relationship', relationTo, ...flags }
+  return { name, type: 'relationship', relationTo: relationTarget(relationTo), ...flags }
 }
 
 /** Has-many relationship to one collection. */
 export function hasManyTo(name: string, relationTo: SpikeCollectionSlug): RelationshipField {
-  return { name, type: 'relationship', relationTo, hasMany: true }
+  return { name, type: 'relationship', relationTo: relationTarget(relationTo), hasMany: true }
 }
 
 /** Timestamp stored as UTC epoch milliseconds (decision D-09). */

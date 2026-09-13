@@ -48,7 +48,7 @@ describe('parseTenant', () => {
 
 describe('gen-wrangler', () => {
   it('loads the repository tenants in deploy order', () => {
-    expect(loadTenants(ROOT).map((entry) => entry.slug)).toEqual(['staging-a', 'staging-b'])
+    expect(loadTenants(ROOT).map((entry) => entry.slug)).toEqual(['mirchmedia'])
   })
 
   it('gives each tenant environment only its own resources', () => {

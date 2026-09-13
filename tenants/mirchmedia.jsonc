@@ -1,0 +1,27 @@
+// First customer tenant, kept as the local sample (spec §20.8). Not provisioned: `host` waits for PLATFORM_DOMAIN (Q-003)
+// and `d1.id` is written by provisioning (M7).
+{
+  "slug": "mirchmedia",
+  "displayName": "Mirch Media",
+  "hostType": "platform",
+  "host": "mirchmedia.platform-domain.invalid",
+  "template": "agency",
+  "timezone": "America/New_York",
+  "locale": "en",
+  "currency": "USD",
+  "owner": { "email": "owner@example.test", "name": "Owner" },
+  "email": {
+    "fromName": "Mirch Media",
+    "fromAddress": "no-reply@example.test",
+    "inboundDomain": "in.example.test",
+    "inboundLocalPrefix": "mirchmedia--",
+  },
+  "d1": { "name": "ops-mirchmedia" },
+  "r2": { "bucket": "ops-mirchmedia" },
+  "rateLimitNamespaces": { "intake": "1001", "auth": "1002" },
+  "intake": {
+    "allowedOrigins": ["https://www.mirchmedia.com", "https://web.mirchmedia.com"],
+    "turnstileHostnames": ["www.mirchmedia.com", "web.mirchmedia.com"],
+  },
+  "deployOrder": 0,
+}

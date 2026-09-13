@@ -59,6 +59,13 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   },
   [COLLECTIONS.emailMessages]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.jobRuns]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.contacts]: scopedRecord(RECORD_TYPES.contacts),
+  [COLLECTIONS.leads]: scopedRecord(RECORD_TYPES.leads),
+  [COLLECTIONS.deals]: scopedRecord(RECORD_TYPES.deals),
+  [COLLECTIONS.sources]: { read: anyActive, ...managedByLeads },
+  [COLLECTIONS.lostReasons]: { read: anyActive, ...managedByLeads },
+  // Transitions inherit the parent record's access in the full design; staff read them through record queries.
+  [COLLECTIONS.stageTransitions]: { read: managerUp, ...systemWrites },
 }
 
 /** Access for the settings global: every active user reads, only owners update. */

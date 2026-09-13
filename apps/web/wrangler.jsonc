@@ -59,21 +59,26 @@
     }
   ],
   "env": {
-    "staging-a": {
-      "name": "ops-staging-a",
-      "workers_dev": true,
+    "mirchmedia": {
+      "name": "ops-mirchmedia",
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "mirchmedia.platform-domain.invalid",
+          "custom_domain": true
+        }
+      ],
       "d1_databases": [
         {
           "binding": "D1",
-          "database_name": "ops-staging-a",
-          "database_id": "526fa120-3eb8-4fb6-851b-fa732dccdbe6",
+          "database_name": "ops-mirchmedia",
           "remote": true
         }
       ],
       "r2_buckets": [
         {
           "binding": "R2",
-          "bucket_name": "ops-staging-a",
+          "bucket_name": "ops-mirchmedia",
           "remote": true
         }
       ],
@@ -85,7 +90,7 @@
       "services": [
         {
           "binding": "WORKER_SELF_REFERENCE",
-          "service": "ops-staging-a"
+          "service": "ops-mirchmedia"
         }
       ],
       "ratelimits": [
@@ -107,75 +112,13 @@
         }
       ],
       "vars": {
-        "TENANT_SLUG": "staging-a",
-        "APP_ORIGIN": "https://ops-staging-a.mirchmedia01.workers.dev",
+        "TENANT_SLUG": "mirchmedia",
+        "APP_ORIGIN": "https://mirchmedia.platform-domain.invalid",
         "INBOUND_DOMAIN": "in.example.test",
-        "TURNSTILE_HOSTNAMES": "",
+        "TURNSTILE_HOSTNAMES": "www.mirchmedia.com,web.mirchmedia.com",
         "MAIL_TRANSPORT": "cloudflare",
         "MAIL_FROM_ADDRESS": "no-reply@example.test",
-        "MAIL_FROM_NAME": "Staging Alpha"
-      },
-      "triggers": {
-        "crons": [
-          "*/15 * * * *"
-        ]
-      }
-    },
-    "staging-b": {
-      "name": "ops-staging-b",
-      "workers_dev": true,
-      "d1_databases": [
-        {
-          "binding": "D1",
-          "database_name": "ops-staging-b",
-          "database_id": "0adc086b-cd3e-4d7a-9d53-ac39c1c9335f",
-          "remote": true
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "R2",
-          "bucket_name": "ops-staging-b",
-          "remote": true
-        }
-      ],
-      "send_email": [
-        {
-          "name": "EMAIL"
-        }
-      ],
-      "services": [
-        {
-          "binding": "WORKER_SELF_REFERENCE",
-          "service": "ops-staging-b"
-        }
-      ],
-      "ratelimits": [
-        {
-          "name": "RATE_LIMIT_INTAKE",
-          "namespace_id": "1011",
-          "simple": {
-            "limit": 10,
-            "period": 60
-          }
-        },
-        {
-          "name": "RATE_LIMIT_AUTH",
-          "namespace_id": "1012",
-          "simple": {
-            "limit": 20,
-            "period": 60
-          }
-        }
-      ],
-      "vars": {
-        "TENANT_SLUG": "staging-b",
-        "APP_ORIGIN": "https://ops-staging-b.mirchmedia01.workers.dev",
-        "INBOUND_DOMAIN": "in.example.test",
-        "TURNSTILE_HOSTNAMES": "",
-        "MAIL_TRANSPORT": "cloudflare",
-        "MAIL_FROM_ADDRESS": "no-reply@example.test",
-        "MAIL_FROM_NAME": "Staging Beta"
+        "MAIL_FROM_NAME": "Mirch Media"
       },
       "triggers": {
         "crons": [

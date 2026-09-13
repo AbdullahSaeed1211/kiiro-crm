@@ -20,6 +20,9 @@ export const SPIKE_SCOPES: Readonly<Record<string, ScopeDefinition>> = {
     groupField: FIELDS.group,
     extensions: [memberOf(`${FIELDS.project}.${FIELDS.members}`)],
   },
+  [RECORD_TYPES.contacts]: { ownerField: FIELDS.owner },
+  [RECORD_TYPES.leads]: { ownerField: FIELDS.owner, assigneesField: FIELDS.assignees },
+  [RECORD_TYPES.deals]: { ownerField: FIELDS.owner, assigneesField: FIELDS.assignees },
 }
 
 const scopeFilter = createScopeFilter(SPIKE_SCOPES)

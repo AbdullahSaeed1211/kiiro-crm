@@ -2,7 +2,18 @@
 
 import { AppShell } from '@ops/ui/composites/AppShell'
 import { AppSidebar, type NavGroup } from '@ops/ui/composites/AppSidebar'
-import { CalendarDays, ChartGantt, CircleCheckBig, LayoutDashboard, ListTodo, type LucideIcon } from 'lucide-react'
+import {
+  Building2,
+  CalendarDays,
+  ChartGantt,
+  CircleCheckBig,
+  Contact,
+  Handshake,
+  LayoutDashboard,
+  ListTodo,
+  UserPlus,
+  type LucideIcon,
+} from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
@@ -14,6 +25,13 @@ type NavLink = readonly [label: string, href: string, icon: LucideIcon]
 const GENERAL: readonly NavLink[] = [
   ['Dashboard', '/', LayoutDashboard],
   ['My tasks', '/my-tasks', CircleCheckBig],
+]
+
+const CRM: readonly NavLink[] = [
+  ['Leads', '/leads', UserPlus],
+  ['Deals', '/deals', Handshake],
+  ['Organizations', '/organizations', Building2],
+  ['Contacts', '/contacts', Contact],
 ]
 
 const WORK: readonly NavLink[] = [
@@ -31,6 +49,7 @@ function navGroups(pathname: string): NavGroup[] {
   const item = ([label, href, icon]: NavLink) => ({ label, href, icon, active: isActive(pathname, href) })
   return [
     { id: 'general', items: GENERAL.map(item) },
+    { id: 'crm', label: 'CRM', items: CRM.map(item) },
     { id: 'work', label: 'Work', items: WORK.map(item) },
   ]
 }
