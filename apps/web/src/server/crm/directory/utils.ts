@@ -1,5 +1,5 @@
 import type { ContactRecord } from '@ops/module-crm'
-import type { PersonSummary } from './data'
+import type { PersonSummary } from './types'
 
 export function parseDirectoryPage(value: string | undefined): number {
   const page = Number(value)
