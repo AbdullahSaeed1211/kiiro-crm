@@ -1,4 +1,4 @@
-import type { ContactSeed, OrganizationSeed } from './crm-data'
+import type { ContactSeed, OrganizationSeed } from './crm-types'
 
 const HARBOR_PINE = 'harbor-pine'
 

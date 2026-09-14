@@ -1,5 +1,5 @@
 import { DEV_PASSWORD, type ProjectSeed, type TaskSeed, type UserSeed, type WorkflowSeed } from './data'
-import type { ContactSeed, DealSeed, LeadSeed, OrganizationSeed } from './crm-data'
+import type { ContactSeed, DealSeed, LeadSeed, OrganizationSeed } from './crm-types'
 
 type Data = Record<string, unknown>
 

@@ -1,61 +1,4 @@
-import type { UserKey, WorkflowSeed } from './data'
-
-export type Service = 'Website' | 'SEO' | 'Social media' | 'Design' | 'App development' | 'Ads'
-export type Budget = 'Under $1k' | '$1k–5k' | '$5k–20k' | '$20k+'
-
-export interface OrganizationSeed {
-  readonly key: string
-  readonly name: string
-  readonly website: string
-  readonly phone: string
-  readonly email: string
-  readonly source?: string
-}
-
-export interface ContactSeed {
-  readonly key: string
-  readonly firstName: string
-  readonly lastName: string
-  readonly email: string
-  readonly phone: string
-  readonly organization: string
-}
-
-export interface LeadSeed {
-  readonly key: string
-  readonly title: string
-  readonly firstName: string
-  readonly lastName: string
-  readonly email: string
-  readonly phone: string
-  readonly companyName: string
-  readonly organization: string
-  readonly source: string
-  readonly owner: UserKey
-  readonly assignees: readonly UserKey[]
-  readonly stage: string
-  readonly service: Service
-  readonly budget: Budget
-  readonly lostReason?: string
-  readonly lostNote?: string
-}
-
-export interface DealSeed {
-  readonly key: string
-  readonly title: string
-  readonly organization: string
-  readonly contacts: readonly string[]
-  readonly primaryContact: string
-  readonly valueAmountMinor: number
-  readonly expectedCloseDay: number
-  readonly stage: string
-  readonly owner: UserKey
-  readonly assignees: readonly UserKey[]
-  readonly serviceLines: readonly Service[]
-  readonly sourceLead?: string
-  readonly lostReason?: string
-  readonly lostNote?: string
-}
+import type { WorkflowSeed } from './data'
 
 export const CRM_WORKFLOWS: readonly WorkflowSeed[] = [
   {
@@ -85,5 +28,6 @@ export const CRM_WORKFLOWS: readonly WorkflowSeed[] = [
 export const SOURCES = ['Website form', 'Referral', 'Ads', 'Social', 'Email', 'Phone/walk-in'] as const
 export const LOST_REASONS = ['Budget', 'Timing', 'No response', 'Chose competitor', 'Not a fit'] as const
 
+export type { Budget, ContactSeed, DealSeed, LeadSeed, OrganizationSeed, Service } from './crm-types'
 export { CONTACTS, ORGANIZATIONS } from './crm-directory-data'
 export { DEALS, LEADS } from './crm-pipeline-data'
