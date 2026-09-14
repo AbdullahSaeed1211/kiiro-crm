@@ -1,10 +1,9 @@
-import { sanitizeConfig, type Config, type SanitizedConfig } from 'payload'
+import type { CollectionConfig, SanitizedConfig } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { canUseAdmin, SETTINGS_ACCESS, SPIKE_ACCESS } from '../../src/access/spike-access'
-import { ADMIN_GROUPS, settingsGlobal, spikeCollections } from '../../src/collections'
+import { ADMIN_GROUPS, spikeCollections } from '../../src/collections'
 import { COLLECTIONS, FIELDS, SETTINGS_GLOBAL, type SpikeCollectionSlug } from '../../src/contracts/names'
-
-type SanitizedCollection = SanitizedConfig['collections'][number]
+import { findCollection, findField, indexPathsOf, isHasMany, sanitizeSpikeConfig } from './sanitized-config'
 
 interface RelationshipExpectation {
   readonly slug: SpikeCollectionSlug
@@ -13,54 +12,36 @@ interface RelationshipExpectation {
   readonly hasMany: boolean
 }
 
-// Sanitizing a config never connects, so the database adapter only has to satisfy the config type.
-const unusedDatabase: Config['db'] = {
-  defaultIDType: 'text',
-  init: () => {
-    throw new Error('the collection test never connects to a database')
-  },
-}
-
 const OPERATIONS = ['read', 'create', 'update', 'delete'] as const
 const SLUGS = Object.values(COLLECTIONS)
 
 let config: SanitizedConfig
 
 beforeAll(async () => {
-  config = await sanitizeConfig({
-    secret: 'collection-test',
-    admin: { user: COLLECTIONS.users },
-    // Payload appends its own collections to the array it receives, so it gets a copy.
-    collections: [...spikeCollections],
-    globals: [settingsGlobal],
-    graphQL: { disable: true },
-    db: unusedDatabase,
-  })
+  config = await sanitizeSpikeConfig()
 })
 
-function collection(slug: string): SanitizedCollection {
-  const found = config.collections.find((candidate) => candidate.slug === slug)
-  if (found === undefined) throw new Error(`missing collection ${slug}`)
-  return found
-}
+const collection = (slug: string) => findCollection(config, slug)
+const fieldOf = (slug: string, name: string): unknown => findField(config, slug, name)
+const indexPaths = (slug: string): string[][] => indexPathsOf(config, slug)
 
-function fieldOf(slug: string, name: string): unknown {
-  return collection(slug).flattenedFields.find((candidate) => candidate.name === name)
-}
-
-function isHasMany(field: unknown): boolean {
-  return typeof field === 'object' && field !== null && 'hasMany' in field && field.hasMany === true
-}
-
-function indexPaths(slug: string): string[][] {
-  return collection(slug).sanitizedIndexes.map((index) => index.fields.map((field) => field.path))
-}
+const GROUP_ORDER: readonly string[] = Object.values(ADMIN_GROUPS)
+const groupRank = (candidate: CollectionConfig): number =>
+  GROUP_ORDER.findIndex((group) => group === candidate.admin?.group)
 
 describe('spike collections', () => {
   it('sanitizes every spike collection and the settings global', () => {
+    const slugs = spikeCollections.map((candidate) => candidate.slug)
     expect(config.collections.map((candidate) => candidate.slug)).toEqual(expect.arrayContaining(SLUGS))
-    expect(spikeCollections.map((candidate) => candidate.slug)).toEqual(SLUGS)
+    expect(slugs).toHaveLength(SLUGS.length)
+    expect(slugs).toEqual(expect.arrayContaining(SLUGS))
     expect(config.globals.map((global) => global.slug)).toContain(SETTINGS_GLOBAL)
+  })
+
+  it('lists the collections in admin group order', () => {
+    const ranks = spikeCollections.map(groupRank)
+    expect(ranks).not.toContain(-1)
+    expect(ranks).toEqual([...ranks].sort((left, right) => left - right))
   })
 
   it('declares the user role and active flag the access functions read', () => {

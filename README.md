@@ -77,11 +77,7 @@ pnpm install
 cp apps/web/.dev.vars.example apps/web/.dev.vars
 ```
 
-`.dev.vars` holds the local secrets and variables; the example values work for local development. The seed and reset scripts read `PAYLOAD_SECRET` from that file, but `pnpm dev` and the Payload CLI read it from the environment, so export it in the shell you run them from:
-
-```sh
-export PAYLOAD_SECRET="$(grep '^PAYLOAD_SECRET=' apps/web/.dev.vars | cut -d= -f2-)"
-```
+`.dev.vars` holds the local secrets and variables; the example values work for local development. The root `pnpm dev` launcher loads `.dev.vars`, falls back to `.dev.vars.example` when the local file is absent, and keeps explicit process-environment values as overrides. If neither file exists or `PAYLOAD_SECRET` is missing, it prints an actionable error without printing secret values. No manual export is needed.
 
 Create the local database and seed it:
 
@@ -175,12 +171,14 @@ The one-command provisioning, deploy loop and runbooks are milestone M7 (spec §
 Work follows the spec in milestones, each split into work packages (spec §0, §21):
 
 - A lead plans each milestone in `docs/orchestration/m<N>/plan.md`, dispatches work packages to workers with a brief, reviews, and merges. Workers stay inside the brief's write scope and report in `docs/orchestration/m<N>/reports/`.
+- Workers send one completion notification and stop after committing a clean result. The lead does not poll active workers, conversations, branches, or worktrees. See spec §0.8.
 - Execution decisions are recorded in `docs/decisions/decision-register.md` (E-nnn), open questions in `docs/decisions/open-questions.md`, and architecture decisions in `docs/adr/`.
-- The harness (`harness/`, `scripts/harness/`, spec §26) records attempt metrics, classifies failures, and turns repeated failures into lessons with regression evals that later briefs include.
+- The harness (`harness/`, `scripts/harness/`, spec §26) records attempt metrics, classifies failures, and turns repeated failures into lessons with regression evals that later briefs include. Every `fix(...)` commit and post-review remediation is retry evidence, even when automated gates pass.
 
 Conventions:
 
 - Conventional Commits, for example `feat(crm): ...` or `docs: ...`.
+- A `fix(...)` commit is a harness signal and must be paired with an append-only attempt that confirms its root-cause class.
 - Comments stay short: a one-line TSDoc on exported symbols, inline comments only to explain why. No commented-out code.
 - Documentation describes current behavior only; link to the owning document instead of duplicating it.
 

@@ -58,7 +58,7 @@ export const RECORD_TYPES = {
  * Relationships store Payload ids; `contacts` and `assignees` are has-many; money is `valueAmountMinor` + `valueCurrency`.
  */
 export const CRM_FIELDS = {
-  organization: ['name', 'website', 'phone', 'email', 'owner', 'customData'],
+  organization: ['name', 'website', 'phone', 'email', 'owner', 'source', 'customData'],
   contact: ['firstName', 'lastName', 'email', 'phone', 'organization', 'owner', 'customData'],
   lead: [
     'title',

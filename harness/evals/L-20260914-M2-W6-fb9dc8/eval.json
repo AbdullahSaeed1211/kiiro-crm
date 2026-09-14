@@ -1,0 +1,13 @@
+{
+  "lesson": "L-20260914-M2-W6-fb9dc8",
+  "repro": {
+    "cwd": "harness/evals/L-20260914-M2-W6-fb9dc8/repro",
+    "command": "pnpm exec tsx ../../../../scripts/harness/eval-fixtures/access-scope.ts bad",
+    "expectExitCode": "nonzero"
+  },
+  "fixed": {
+    "cwd": "harness/evals/L-20260914-M2-W6-fb9dc8/fixed",
+    "command": "pnpm exec tsx ../../../../scripts/harness/eval-fixtures/access-scope.ts fixed",
+    "expectExitCode": "zero"
+  }
+}

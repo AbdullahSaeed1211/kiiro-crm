@@ -7,6 +7,7 @@ shadcn/ui primitives (Base UI, `base-nova` style, neutral base color) and brand-
 ## Public API
 
 - `ThemeProvider`: light, dark and system themes (D-19).
+- Root exports and `@ops/ui/composites/<name>` expose `StagePill`, `StageSelect`, `RecordPageLayout`, `ActivityFeed`, `ConfirmDialog`, `RecordForm`, and `FilterBar`. These composites remain data-source agnostic and receive labels and records from the app.
 - `@ops/ui/globals.css`: Tailwind 4 entry with the shadcn neutral theme and the product tokens from `src/styles/tokens.css` (success, warning, info, stage colors; spec §15.2).
 - `@ops/ui/components/ui/<name>`: vendored shadcn components (spec §15.1), added with `pnpm dlx shadcn@4.21.0 add <names> -c apps/web`.
 - `@ops/ui/lib/utils`: `cn` class merging.

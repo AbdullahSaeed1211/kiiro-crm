@@ -11,6 +11,7 @@ export const organizationsCollection = spikeCollection({
     textField('phone', { maxLength: 50 }),
     { name: 'email', type: 'email' },
     relationshipTo(FIELDS.owner, COLLECTIONS.users, { index: true }),
+    relationshipTo('source', COLLECTIONS.sources, { index: true }),
     customDataField(),
   ],
 })

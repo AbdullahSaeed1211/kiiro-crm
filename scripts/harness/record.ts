@@ -36,6 +36,7 @@ export interface RecordOptions {
   runner: Attempt['runner']
   run: CommandRunner
   base?: string | undefined
+  confirmed?: string[] | undefined
   force?: boolean | undefined
   tookOver?: boolean | undefined
   now?: (() => Date) | undefined
@@ -110,7 +111,10 @@ function buildAttempt(input: {
   return {
     ...{ wp: opts.wp, milestone: milestoneOf(opts.wp).milestone, attempt: opts.attempt, runner: opts.runner },
     ...{ ...input.times, gates, scopeViolations, filesChanged: input.filesChanged },
-    ...{ suggestedClasses: suggestClasses({ gates, scopeViolations, gateClassMap }), confirmedClasses: [] },
+    ...{
+      suggestedClasses: suggestClasses({ gates, scopeViolations, gateClassMap }),
+      confirmedClasses: [...new Set(opts.confirmed ?? [])],
+    },
     leadTookOver: opts.tookOver === true,
   }
 }
@@ -153,6 +157,13 @@ function parseRunner(value: string): Attempt['runner'] {
   return value
 }
 
+function parseConfirmed(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== '')
+}
+
 async function main(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
@@ -161,6 +172,7 @@ async function main(argv: string[]): Promise<number> {
       attempt: { type: 'string' },
       runner: { type: 'string', default: 'worker' },
       base: { type: 'string' },
+      confirm: { type: 'string' },
       force: { type: 'boolean', default: false },
       'took-over': { type: 'boolean', default: false },
       verbose: { type: 'boolean', default: false },
@@ -170,7 +182,12 @@ async function main(argv: string[]): Promise<number> {
   if (!Number.isInteger(attempt) || attempt < 1) throw new Error('usage: harness:record <WP-ID> --attempt <k>')
   const result = await recordAttempt({
     ...{ root: REPO_ROOT, wp: positionals[0] ?? '', attempt, runner: parseRunner(values.runner) },
-    ...{ base: values.base, force: values.force, tookOver: values['took-over'] },
+    ...{
+      base: values.base,
+      confirmed: parseConfirmed(values.confirm),
+      force: values.force,
+      tookOver: values['took-over'],
+    },
     run: createShellRunner({ root: REPO_ROOT, echo: values.verbose }),
   })
   printSummary(result, REPO_ROOT)
