@@ -7,7 +7,7 @@ import { displayName, type DirectorySort } from './utils'
 
 export type { ActivityItem, ContactListItem, OrganizationListItem, PersonSummary } from './types'
 
-export const DIRECTORY_PAGE_SIZE = 50
+const DIRECTORY_PAGE_SIZE = 50
 
 export interface OrganizationOption {
   readonly value: string
