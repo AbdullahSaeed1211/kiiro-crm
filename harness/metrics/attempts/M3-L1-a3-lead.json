@@ -1,0 +1,140 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 3,
+  "runner": "lead",
+  "startedAt": "2026-09-14T08:56:32.926Z",
+  "finishedAt": "2026-09-14T08:57:02.490Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 2190,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 1,
+      "durationMs": 1902,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 1,
+      "durationMs": 5579,
+      "failingLines": [
+        "src/app/(app)/projects/new/page.tsx(5,39): error TS2307: Cannot find module '../../../../server/actions/work/projects/createProject' or its corresponding type declarations.",
+        "src/server/actions/work/projects/addProjectMember.ts(3,10): error TS2305: Module '\"@ops/module-work\"' has no exported member 'addProjectMember'.",
+        "src/server/actions/work/projects/addProjectMember.ts(6,36): error TS2307: Cannot find module '../../../work/command-deps' or its corresponding type declarations.",
+        "src/server/actions/work/projects/removeProjectMember.ts(3,10): error TS2305: Module '\"@ops/module-work\"' has no exported member 'removeProjectMember'.",
+        "src/server/actions/work/projects/removeProjectMember.ts(6,36): error TS2307: Cannot find module '../../../work/command-deps' or its corresponding type declarations.",
+        "src/server/actions/work/projects/updateProject.ts(3,10): error TS2305: Module '\"@ops/module-work\"' has no exported member 'updateProject'.",
+        "src/server/actions/work/projects/updateProject.ts(5,36): error TS2307: Cannot find module '../../../work/command-deps' or its corresponding type declarations.",
+        "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: tsc --noEmit",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 18978,
+      "failingLines": [
+        "16:23  error  Unsafe assignment of an error typed value  @typescript-eslint/no-unsafe-assignment",
+        "9:9    error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment",
+        "9:24   error  Unsafe call of a type that could not be resolved               @typescript-eslint/no-unsafe-call",
+        "9:47   error  Unsafe call of a type that could not be resolved               @typescript-eslint/no-unsafe-call",
+        "10:14   error  Unsafe member access .ok on a type that cannot be resolved     @typescript-eslint/no-unsafe-member-access",
+        "11:17   error  Unsafe member access .ok on a type that cannot be resolved     @typescript-eslint/no-unsafe-member-access",
+        "11:51   error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment",
+        "11:69   error  Unsafe member access .value on a type that cannot be resolved  @typescript-eslint/no-unsafe-member-access",
+        "11:113  error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment",
+        "11:127  error  Unsafe member access .error on a type that cannot be resolved  @typescript-eslint/no-unsafe-member-access",
+        "9:9    error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment",
+        "9:24   error  Unsafe call of a type that could not be resolved               @typescript-eslint/no-unsafe-call",
+        "9:50   error  Unsafe call of a type that could not be resolved               @typescript-eslint/no-unsafe-call",
+        "10:14   error  Unsafe member access .ok on a type that cannot be resolved     @typescript-eslint/no-unsafe-member-access",
+        "11:17   error  Unsafe member access .ok on a type that cannot be resolved     @typescript-eslint/no-unsafe-member-access",
+        "11:51   error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment",
+        "11:69   error  Unsafe member access .value on a type that cannot be resolved  @typescript-eslint/no-unsafe-member-access",
+        "11:113  error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment",
+        "11:127  error  Unsafe member access .error on a type that cannot be resolved  @typescript-eslint/no-unsafe-member-access",
+        "8:9    error  Unsafe assignment of an error typed value                      @typescript-eslint/no-unsafe-assignment"
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 540,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 311,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [
+    "apps/web/src/app/api/v1/brand/[asset]/route.ts",
+    "apps/web/src/app/api/v1/comments/[commentId]/route.ts",
+    "apps/web/src/app/api/v1/comments/route.ts",
+    "apps/web/src/app/api/v1/files/[attachmentId]/route.ts",
+    "apps/web/src/app/api/v1/files/route.ts",
+    "apps/web/src/app/api/v1/notifications/[notificationId]/route.ts",
+    "apps/web/src/app/api/v1/notifications/route.ts",
+    "apps/web/src/app/api/v1/notifications/unread-count/route.ts",
+    "apps/web/src/app/api/v1/search/route.ts",
+    "apps/web/src/server/collaboration/auth.ts",
+    "apps/web/src/server/collaboration/brand.ts",
+    "apps/web/src/server/collaboration/parents.ts",
+    "apps/web/src/server/collaboration/responses.ts",
+    "apps/web/src/server/collaboration/service.ts",
+    "docs/orchestration/m3/plan.md",
+    "docs/orchestration/m3/reports/M3-W3.md",
+    "harness/metrics/attempts/M3-W3-a1.json",
+    "harness/metrics/attempts/M3-W3-a2.json",
+    "harness/metrics/attempts/M3-W3-a3.json",
+    "harness/metrics/attempts/M3-W3-a4.json",
+    "harness/metrics/attempts/M3-W3-a5.json",
+    "harness/metrics/attempts/M3-W3-a6.json",
+    "harness/metrics/attempts/M3-W3-a7.json",
+    "packages/adapters/payload/src/collaboration/comments.ts",
+    "packages/adapters/payload/src/collaboration/files.ts",
+    "packages/adapters/payload/src/collaboration/index.ts",
+    "packages/adapters/payload/src/collaboration/markdown.ts",
+    "packages/adapters/payload/src/collaboration/mentions.ts",
+    "packages/adapters/payload/src/collaboration/notifications.ts",
+    "packages/adapters/payload/src/collaboration/search.ts",
+    "packages/adapters/payload/src/collaboration/views.ts",
+    "packages/adapters/payload/src/collections/collaboration/attachments.ts",
+    "packages/adapters/payload/src/collections/collaboration/comments.ts",
+    "packages/adapters/payload/src/collections/collaboration/fields.ts",
+    "packages/adapters/payload/src/collections/collaboration/index.ts",
+    "packages/adapters/payload/src/collections/collaboration/layouts.ts",
+    "packages/adapters/payload/src/collections/collaboration/notification-prefs.ts",
+    "packages/adapters/payload/src/collections/collaboration/notifications.ts",
+    "packages/adapters/payload/src/collections/collaboration/saved-views.ts",
+    "packages/adapters/payload/test/collaboration/access.test.ts",
+    "packages/adapters/payload/test/collaboration/collaboration.test.ts",
+    "packages/adapters/payload/test/collaboration/collections.test.ts",
+    "packages/ui/src/composites/Collaboration/Content.tsx",
+    "packages/ui/src/composites/Collaboration/Pickers.tsx",
+    "packages/ui/src/composites/Collaboration/Primitives.tsx",
+    "packages/ui/src/composites/Collaboration/index.ts"
+  ],
+  "filesChanged": 52,
+  "suggestedClasses": [
+    "GATE_FAILURE",
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "SCOPE_VIOLATION",
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": false
+}

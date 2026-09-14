@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { deriveTitle, matchingLessons, previousFindings, renderBrief } from '../../harness/brief.ts'
+import {
+  delegatedCriticalPaths,
+  deriveTitle,
+  matchingLessons,
+  previousFindings,
+  renderBrief,
+} from '../../harness/brief.ts'
 import { loadLessons, type Lesson } from '../../harness/lib/lessons.ts'
 import { globsOverlap } from '../../harness/lib/globs.ts'
 import { attempt, cleanupRepos, makeRepo, REAL_ROOT, writeAttempt, writeFile } from './helpers.ts'
@@ -64,6 +70,16 @@ describe('renderBrief', () => {
   })
 })
 
+describe('brief plan guard', () => {
+  it('rejects a worker plan that delegates a lead-owned critical path', () => {
+    const plan = `| WP | Owner | Status | Objective | Write scope | Acceptance |\n|---|---|---|---|---|---|\n| M5-W1 | Worker | planned | Unsafe delegation | \`apps/mail-router/\`; \`scripts/lib/safe/\` | Must pass |\n`
+    const root = makeRepo({ 'docs/orchestration/m5/plan.md': plan })
+    expect(() => renderBrief({ root, wp: 'M5-W1', attempt: 1, milestoneBranch: 'm5-ui', lessons: [] })).toThrow(
+      /assigns lead-owned critical paths.*apps\/mail-router\//,
+    )
+  })
+})
+
 describe('brief helpers', () => {
   it('summarises the previous attempt, preferring the lead file', () => {
     const root = makeRepo()
@@ -80,6 +96,21 @@ describe('brief helpers', () => {
   it('derives short titles', () => {
     expect(deriveTitle('Core harness scripts: plan, brief')).toBe('Core harness scripts')
     expect(deriveTitle('a '.repeat(50)).length).toBeLessThanOrEqual(61)
+  })
+
+  it('identifies critical scope overlap before dispatch', () => {
+    expect(
+      delegatedCriticalPaths({
+        wp: 'M3-W5',
+        owner: 'Worker',
+        wave: '',
+        depends: '',
+        status: 'planned',
+        objective: '',
+        writeScope: '`scripts/**`; `apps/mail-router/wrangler.jsonc`',
+        acceptance: '',
+      }),
+    ).toEqual(['scripts/gen-wrangler.ts', 'scripts/lib/tenant-schema.ts', 'apps/mail-router/'])
   })
 
   it('reports invalid lesson files without throwing', () => {

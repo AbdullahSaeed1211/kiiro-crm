@@ -1,10 +1,11 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, relative } from 'node:path'
 import { parseArgs } from 'node:util'
+import { CRITICAL_PATHS } from '../lib/critical-paths.ts'
 import { effectiveAttempts, isFailure, loadAttempts } from './lib/attempts.ts'
 import { createShellRunner } from './lib/exec.ts'
 import { detectMilestoneBranch } from './lib/git.ts'
-import { anyOverlap } from './lib/globs.ts'
+import { anyOverlap, globsOverlap } from './lib/globs.ts'
 import { loadLessons, type Lesson } from './lib/lessons.ts'
 import { dependencyIds, loadPlanRow, scopeEntries, type PlanRow } from './lib/plan-rows.ts'
 import { isMain, milestoneOf, paths, readText, REPO_ROOT, runCli } from './lib/repo.ts'
@@ -50,6 +51,13 @@ export function renderPitfalls(lessons: Lesson[]): string {
     .join('\n')
 }
 
+/** Critical paths accidentally assigned to a worker plan row. */
+export function delegatedCriticalPaths(row: PlanRow): string[] {
+  if (row.owner.toLowerCase() === 'lead') return []
+  const scope = scopeEntries(row.writeScope)
+  return CRITICAL_PATHS.filter((critical) => scope.some((entry) => globsOverlap(entry, critical)))
+}
+
 /** Failing gates of the previous attempt (the lead's file when present). */
 export function previousFindings(opts: { root: string; wp: string; attempt: number }): string {
   if (opts.attempt <= 1) return 'None (first attempt).'
@@ -77,6 +85,13 @@ function inputsText(row: PlanRow, source: 'plan' | 'spec', lower: string): strin
 export function renderBrief(opts: BriefOptions): string {
   const { milestone, lower } = milestoneOf(opts.wp)
   const { row, source } = loadPlanRow(opts.root, opts.wp)
+  const isHistorical = row.status.startsWith('merged') || row.status === 'done-by-lead'
+  const delegated = source === 'plan' && !isHistorical ? delegatedCriticalPaths(row) : []
+  if (delegated.length > 0) {
+    throw new Error(
+      `${opts.wp} assigns lead-owned critical paths to a worker: ${delegated.join(', ')}. Re-plan before dispatch.`,
+    )
+  }
   return fillTemplate(readText(paths.template(opts.root, 'brief')), {
     wp: opts.wp,
     title: deriveTitle(row.objective),
