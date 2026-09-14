@@ -77,11 +77,7 @@ pnpm install
 cp apps/web/.dev.vars.example apps/web/.dev.vars
 ```
 
-`.dev.vars` holds the local secrets and variables; the example values work for local development. The seed and reset scripts read `PAYLOAD_SECRET` from that file, but `pnpm dev` and the Payload CLI read it from the environment, so export it in the shell you run them from:
-
-```sh
-export PAYLOAD_SECRET="$(grep '^PAYLOAD_SECRET=' apps/web/.dev.vars | cut -d= -f2-)"
-```
+`.dev.vars` holds the local secrets and variables; the example values work for local development. The root `pnpm dev` launcher loads `.dev.vars`, falls back to `.dev.vars.example` when the local file is absent, and keeps explicit process-environment values as overrides. If neither file exists or `PAYLOAD_SECRET` is missing, it prints an actionable error without printing secret values. No manual export is needed.
 
 Create the local database and seed it:
 

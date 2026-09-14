@@ -22,6 +22,9 @@ export function assertLocalOnly(env: Env): void {
 
 const QUOTED = /^(["'])(.*)\1$/
 
+const devVarsPath = (webDir: string): string | undefined =>
+  ['.dev.vars', '.dev.vars.example'].map((name) => join(webDir, name)).find((path) => existsSync(path))
+
 const devVarEntry = (line: string): [string, string] => {
   const at = line.indexOf('=')
   const value = line.slice(at + 1).trim()
@@ -34,9 +37,26 @@ export function parseDevVars(text: string): Map<string, string> {
   return new Map(lines.filter((line) => line.includes('=') && !line.startsWith('#')).map(devVarEntry))
 }
 
+/** Merges local development vars with the process environment; explicit process values win. */
+export function localDevEnvironment(webDir: string, env: Env): Env {
+  const file = devVarsPath(webDir)
+  if (file === undefined) {
+    throw new Error(
+      `local development vars are missing; create ${join(webDir, '.dev.vars')} from ${join(webDir, '.dev.vars.example')} and retry pnpm dev`,
+    )
+  }
+  const merged = { ...Object.fromEntries(parseDevVars(readFileSync(file, 'utf8'))), ...env }
+  if (merged['PAYLOAD_SECRET'] === undefined || merged['PAYLOAD_SECRET'] === '') {
+    throw new Error(
+      `local development vars at ${file} must define PAYLOAD_SECRET; add it to ${join(webDir, '.dev.vars')} and retry pnpm dev`,
+    )
+  }
+  return merged
+}
+
 /** `PAYLOAD_SECRET` from `.dev.vars` in `webDir`, else from `.dev.vars.example`. */
 export function localPayloadSecret(webDir: string): string {
-  const file = ['.dev.vars', '.dev.vars.example'].map((name) => join(webDir, name)).find((path) => existsSync(path))
+  const file = devVarsPath(webDir)
   const secret = file === undefined ? undefined : parseDevVars(readFileSync(file, 'utf8')).get('PAYLOAD_SECRET')
   if (secret === undefined || secret === '') throw new Error(`no PAYLOAD_SECRET in ${webDir}/.dev.vars(.example)`)
   return secret
