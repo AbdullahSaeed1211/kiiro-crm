@@ -1,0 +1,81 @@
+{
+  "wp": "M3-W3",
+  "milestone": "M3",
+  "attempt": 7,
+  "runner": "worker",
+  "startedAt": "2026-09-14T08:43:31.863Z",
+  "finishedAt": "2026-09-14T08:45:26.016Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 5585,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 30194,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 73523,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 3505,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 1056,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [
+    "apps/web/src/server/collaboration/auth.ts",
+    "apps/web/src/server/collaboration/parents.ts",
+    "apps/web/src/server/collaboration/responses.ts",
+    "apps/web/src/server/collaboration/service.ts",
+    "packages/adapters/payload/src/collaboration/comments.ts",
+    "packages/adapters/payload/src/collaboration/files.ts",
+    "packages/adapters/payload/src/collaboration/index.ts",
+    "packages/adapters/payload/src/collaboration/markdown.ts",
+    "packages/adapters/payload/src/collaboration/mentions.ts",
+    "packages/adapters/payload/src/collaboration/notifications.ts",
+    "packages/adapters/payload/src/collaboration/search.ts",
+    "packages/adapters/payload/src/collaboration/views.ts",
+    "packages/adapters/payload/src/collections/collaboration/attachments.ts",
+    "packages/adapters/payload/src/collections/collaboration/comments.ts",
+    "packages/adapters/payload/src/collections/collaboration/fields.ts",
+    "packages/adapters/payload/src/collections/collaboration/index.ts",
+    "packages/adapters/payload/src/collections/collaboration/layouts.ts",
+    "packages/adapters/payload/src/collections/collaboration/notification-prefs.ts",
+    "packages/adapters/payload/src/collections/collaboration/notifications.ts",
+    "packages/adapters/payload/src/collections/collaboration/saved-views.ts",
+    "packages/adapters/payload/test/collaboration/access.test.ts",
+    "packages/adapters/payload/test/collaboration/collaboration.test.ts",
+    "packages/adapters/payload/test/collaboration/collections.test.ts",
+    "packages/ui/src/composites/Collaboration/Content.tsx",
+    "packages/ui/src/composites/Collaboration/Pickers.tsx",
+    "packages/ui/src/composites/Collaboration/Primitives.tsx",
+    "packages/ui/src/composites/Collaboration/index.ts"
+  ],
+  "filesChanged": 44,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "ACCESS_SCOPE",
+    "CONTRACT_DRIFT",
+    "MISSING_TEST",
+    "EDGE_CASE",
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": false
+}

@@ -1,0 +1,78 @@
+{
+  "wp": "M3-W3",
+  "milestone": "M3",
+  "attempt": 2,
+  "runner": "worker",
+  "startedAt": "2026-09-14T06:52:38.661Z",
+  "finishedAt": "2026-09-14T06:53:23.911Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 5666,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 6123,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 32105,
+      "failingLines": [
+        "51:28  error  Unnecessary conditional, the types have no overlap                           @typescript-eslint/no-unnecessary-condition",
+        "51:37  error  Remove this \"===\" check; it will always be false. Did you mean to use \"==\"?  sonarjs/different-types-comparison",
+        "22:8  error  Async function 'createComment' has too many lines (52). Maximum allowed is 40  max-lines-per-function",
+        "30:53  error  Refactor this function to reduce its Cognitive Complexity from 11 to the 10 allowed                            sonarjs/cognitive-complexity",
+        "30:53  error  Async arrow function has a complexity of 17. Maximum allowed is 8                                              complexity",
+        "35:46  error  'input['author'] ?? ''' will use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string",
+        "45:96  error  Unsafe member access .author on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access",
+        "38:9   error  Unsafe assignment of an `any` value                                                           @typescript-eslint/no-unsafe-assignment",
+        "39:9   error  Unsafe assignment of an `any` value                                                           @typescript-eslint/no-unsafe-assignment",
+        "114:12  error  This assertion is unnecessary since the receiver accepts the original type of the expression  @typescript-eslint/no-unnecessary-type-assertion",
+        "144:9   error  Unsafe assignment of an `any` value                                                           @typescript-eslint/no-unsafe-assignment",
+        "17:61  error  Async arrow function 'findByID' has no 'await' expression         @typescript-eslint/require-await",
+        "31:29  error  Async method 'find' has no 'await' expression                     @typescript-eslint/require-await",
+        "42:35  error  Unnecessary optional chain on a non-nullish value                 @typescript-eslint/no-unnecessary-condition",
+        "43:41  error  Unnecessary optional chain on a non-nullish value                 @typescript-eslint/no-unnecessary-condition",
+        "60:92  error  Async arrow function has a complexity of 9. Maximum allowed is 8  complexity",
+        "61:53  error  Unnecessary optional chain on a non-nullish value                 @typescript-eslint/no-unnecessary-condition",
+        "63:40  error  Unnecessary optional chain on a non-nullish value                 @typescript-eslint/no-unnecessary-condition",
+        "64:40  error  Unnecessary optional chain on a non-nullish value                 @typescript-eslint/no-unnecessary-condition",
+        "65:40  error  Unnecessary optional chain on a non-nullish value                 @typescript-eslint/no-unnecessary-condition"
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 992,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 1,
+      "durationMs": 300,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 37,
+  "suggestedClasses": [
+    "GATE_FAILURE",
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "ACCESS_SCOPE",
+    "MISSING_TEST",
+    "GATE_FAILURE",
+    "EDGE_CASE",
+    "CONTRACT_DRIFT",
+    "PERFORMANCE"
+  ],
+  "leadTookOver": false
+}
