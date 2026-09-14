@@ -72,7 +72,12 @@ export default async function DealBoardPage() {
             </div>
           }
         />
-        <DealBoard stages={stages} cards={cards} labels={LABELS} lostReasons={data.lostReasons} />
+        <DealBoard
+          stages={stages}
+          cards={cards.map((card) => ({ ...card, href: `/deals/${encodeURIComponent(card.id)}` }))}
+          labels={LABELS}
+          lostReasons={data.lostReasons}
+        />
       </PageContent>
     </>
   )

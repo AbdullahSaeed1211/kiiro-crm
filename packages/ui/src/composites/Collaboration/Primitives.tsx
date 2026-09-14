@@ -6,8 +6,9 @@ import { Button } from '../../components/ui/button'
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '../../components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
 import { Check, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
+import { useState } from 'react'
 
-export interface ViewOption {
+interface ViewOption {
   readonly id: string
   readonly label: string
   readonly kind?: string
@@ -50,8 +51,9 @@ export function SavedViewMenu({
   onSelect: (id: string) => void
   labels?: Readonly<{ trigger: string }>
 }>) {
+  const [open, setOpen] = useState(false)
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={<Button size="sm" variant="outline" />}>{labels.trigger}</PopoverTrigger>
       <PopoverContent className="w-56 p-1">
         <Command>
@@ -63,6 +65,7 @@ export function SavedViewMenu({
                 key={view.id}
                 value={view.label}
                 onSelect={() => {
+                  setOpen(false)
                   onSelect(view.id)
                 }}
               >
@@ -157,7 +160,7 @@ export function AvatarStack({
   const visible = users.slice(0, max)
   const remainder = users.length - visible.length
   return (
-    <div className="flex items-center -space-x-2" aria-label={`${String(users.length)} users`}>
+    <div className="flex items-center -space-x-2" aria-label={`${String(users.length)} ${users.length === 1 ? 'user' : 'users'}`}>
       {visible.map((user) => (
         <UserAvatar key={user.id} name={user.name} />
       ))}

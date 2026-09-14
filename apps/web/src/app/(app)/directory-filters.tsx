@@ -28,6 +28,7 @@ export function DirectoryFilters({ query }: Readonly<{ query: string }>) {
       }}
       onQueryChange={update}
       onStagesChange={() => undefined}
+      showStageFilter={false}
       className="border-y py-3"
     />
   )

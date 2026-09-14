@@ -25,6 +25,7 @@ export type FilterBarProps = Readonly<{
   labels: FilterBarLabels
   onQueryChange: (query: string) => void
   onStagesChange: (stageIds: readonly string[]) => void
+  showStageFilter?: boolean
   debounceMs?: number
   className?: string | undefined
 }>
@@ -106,6 +107,7 @@ export function FilterBar({
   labels,
   onQueryChange,
   onStagesChange,
+  showStageFilter = true,
   debounceMs = 300,
   className,
 }: FilterBarProps) {
@@ -141,7 +143,7 @@ export function FilterBar({
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       <SearchField value={draftQuery} labels={labels} onChange={setDraftQuery} />
-      <StageFilter selected={draftStages} options={stageOptions} labels={labels} onToggle={chooseStage} />
+      {showStageFilter ? <StageFilter selected={draftStages} options={stageOptions} labels={labels} onToggle={chooseStage} /> : null}
       {active ? (
         <Button type="button" variant="ghost" size="sm" onClick={clear}>
           <X aria-hidden />

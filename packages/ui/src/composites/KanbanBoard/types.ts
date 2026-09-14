@@ -21,6 +21,7 @@ export interface KanbanCard {
   readonly stageId: string
   readonly title: string
   readonly updatedAt: number
+  readonly href?: string
   readonly meta?: ReactNode
 }
 

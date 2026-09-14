@@ -107,7 +107,7 @@ export function KanbanCardItem({ card, stages, label, onMove, dragEnabled }: Kan
       ref={ref}
       data-card-id={card.id}
       className={cn(
-        'relative flex flex-col gap-2 rounded-lg border bg-card p-3 text-card-foreground shadow-xs',
+        'ops-kanban-card relative flex flex-col gap-2 rounded-lg border bg-card p-3 text-card-foreground shadow-xs',
         dragEnabled && 'cursor-grab',
         dragging && 'opacity-50',
       )}
@@ -122,7 +122,16 @@ export function KanbanCardItem({ card, stages, label, onMove, dragEnabled }: Kan
         />
       )}
       <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 font-medium break-words">{card.title}</span>
+        {card.href === undefined ? (
+          <span className="min-w-0 font-medium break-words">{card.title}</span>
+        ) : (
+          <a
+            className="min-w-0 font-medium break-words underline-offset-2 hover:text-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href={card.href}
+          >
+            {card.title}
+          </a>
+        )}
         <MoveMenu card={card} stages={stages} label={label} onMove={onMove} />
       </div>
       {card.meta === undefined ? null : (
