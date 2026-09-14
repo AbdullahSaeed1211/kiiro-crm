@@ -28,7 +28,11 @@ export function DirectoryListHeader({
           title={title}
           count={total}
           description={description}
-          actions={<Button render={<a href={`/${kind}/new`}>{action}</a>}>{action}</Button>}
+          actions={
+            <Button nativeButton={false} render={<a href={`/${kind}/new`}>{action}</a>}>
+              {action}
+            </Button>
+          }
         />
         <DirectoryFilters query={query} />
         {children}

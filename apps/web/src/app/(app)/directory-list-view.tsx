@@ -152,7 +152,11 @@ export function OrganizationsTable({
           icon={Building2}
           title="No organizations yet"
           description="Add the companies your team is building relationships with."
-          action={<Button render={<a href="/organizations/new">New organization</a>}>New organization</Button>}
+          action={
+            <Button nativeButton={false} render={<a href="/organizations/new">New organization</a>}>
+              New organization
+            </Button>
+          }
         />
       }
     />
@@ -223,7 +227,11 @@ export function ContactsTable({
           icon={Contact}
           title="No contacts yet"
           description="Add the people who help your organizations move forward."
-          action={<Button render={<a href="/contacts/new">New contact</a>}>New contact</Button>}
+          action={
+            <Button nativeButton={false} render={<a href="/contacts/new">New contact</a>}>
+              New contact
+            </Button>
+          }
         />
       }
     />
