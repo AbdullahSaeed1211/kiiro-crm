@@ -75,7 +75,7 @@ export function filterDeals(
 export function withDefaultOwner(input: unknown, ownerId: string): unknown {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) return input
   const data = input as Record<string, unknown>
-  return { ...data, ownerId: data.ownerId ?? ownerId }
+  return { ...data, ownerId }
 }
 
 export function organizationName(deal: DealRecord, organizations: readonly OrganizationRecord[]): string | null {

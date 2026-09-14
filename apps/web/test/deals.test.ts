@@ -1,5 +1,6 @@
 import { asId } from '@ops/kernel'
 import { describe, expect, it, vi } from 'vitest'
+import { deferredLostMoveResult } from '../src/app/(app)/deals/deal-board-model'
 import { loadActivity } from '../src/server/crm/deals/activity'
 import type { RequestContext } from '../src/server/work/deps'
 import { aggregateStageTotals, filterDeals, formatMoney, withDefaultOwner } from '../src/server/crm/deals/view-model'
@@ -76,9 +77,17 @@ describe('deal view model', () => {
     expect(filterDeals(listItems(), '', 'won').map((item) => item.deal.id)).toEqual(['retainer'])
   })
 
-  it('defaults an unassigned create to the authenticated actor', () => {
+  it('always assigns a create to the authenticated actor', () => {
     expect(withDefaultOwner({ title: 'Deal', ownerId: null }, 'actor-1')).toMatchObject({ ownerId: 'actor-1' })
     expect(withDefaultOwner({ title: 'Deal' }, 'actor-1')).toMatchObject({ ownerId: 'actor-1' })
+    expect(withDefaultOwner({ title: 'Deal', ownerId: 'attacker-1' }, 'actor-1')).toMatchObject({ ownerId: 'actor-1' })
+  })
+
+  it('defers lost drops without reporting a move failure', () => {
+    expect(deferredLostMoveResult('qualified', 7)).toEqual({
+      ok: true,
+      data: { stageId: 'qualified', updatedAt: 7 },
+    })
   })
 
   it('passes the authenticated request into authorized activity reads', async () => {

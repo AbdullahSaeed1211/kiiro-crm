@@ -2,9 +2,10 @@
 
 import { KanbanBoard, type KanbanBoardLabels, type KanbanCard, type KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { moveDealAction } from '../../../server/crm/deals/actions'
 import { DealLostDialog, type LostMove } from './DealLostDialog'
+import { deferredLostMoveResult } from './deal-board-model'
 
 export function DealBoard({
   stages,
@@ -19,6 +20,10 @@ export function DealBoard({
 }>) {
   const router = useRouter()
   const [lostMove, setLostMove] = useState<LostMove | null>(null)
+  const stageByCard = useRef(new Map(cards.map((card) => [card.id, card.stageId])))
+  useEffect(() => {
+    for (const card of cards) stageByCard.current.set(card.id, card.stageId)
+  }, [cards])
   return (
     <>
       <KanbanBoard
@@ -29,10 +34,11 @@ export function DealBoard({
           const destination = stages.find((stage) => stage.id === toStageId)
           if (destination?.category === 'done_failure') {
             setLostMove({ cardId, expectedUpdatedAt })
-            return { ok: false, error: { code: 'VALIDATION', message: 'Choose a lost reason before closing a deal' } }
+            return deferredLostMoveResult(stageByCard.current.get(cardId) ?? toStageId, expectedUpdatedAt)
           }
           const result = await moveDealAction({ dealId: cardId, toStageId, expectedUpdatedAt })
           if (!result.ok) return { ok: false, error: { code: result.code ?? 'INTERNAL', message: result.message } }
+          stageByCard.current.set(cardId, toStageId)
           return { ok: true, data: { stageId: toStageId, updatedAt: result.updatedAt } }
         }}
         onConflict={() => {
