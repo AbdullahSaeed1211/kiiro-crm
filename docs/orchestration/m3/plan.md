@@ -16,6 +16,7 @@ All workers start from the M2 completion commit on `main`, work in isolated work
 ## Integration boundaries
 
 - Workers add leaf collection, repository, hook and UI modules. They do not edit Payload registration, generated Payload types, migrations, central seed assembly or central package barrels. Their reports list every lead assembly step required.
+- M3-W3 owns the `savedViews` and `layouts` collection definitions, access rules and repositories. M3-W1 owns the settings pages that administer shared views and records the W3 service boundary as an integration dependency. No second collection definition is accepted.
 - A worker may refine an existing file only when it is named in that worker's exclusive scope. If the current architecture makes a shared edit unavoidable, the worker records a dependency request and stops that portion without widening scope.
 - Each vertical must be coherent enough to review as a product outcome. Small internal tasks stay inside the worker and do not become separate sidebar tasks.
 
