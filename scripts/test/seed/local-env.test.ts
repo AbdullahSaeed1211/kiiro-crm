@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertLocalOnly,
   localD1StateDir,
+  localDevEnvironment,
   localPayloadSecret,
   parseDevVars,
   remoteSettingOf,
@@ -54,6 +55,38 @@ describe('localPayloadSecret', () => {
 
   it('throws without a secret', () => {
     expect(() => localPayloadSecret(dir())).toThrow(/PAYLOAD_SECRET/)
+  })
+})
+
+describe('localDevEnvironment', () => {
+  const dir = (): string => mkdtempSync(join(tmpdir(), 'dev-env-'))
+
+  it('loads parsed vars and preserves explicit process environment overrides', () => {
+    const webDir = dir()
+    writeFileSync(join(webDir, '.dev.vars'), 'PAYLOAD_SECRET=file-secret\nAPP_ORIGIN="http://file.test"\n')
+    expect(
+      localDevEnvironment(webDir, { PAYLOAD_SECRET: 'process-secret', APP_ORIGIN: 'http://process.test' }),
+    ).toEqual({
+      PAYLOAD_SECRET: 'process-secret',
+      APP_ORIGIN: 'http://process.test',
+    })
+  })
+
+  it('falls back to the example file when local vars are absent', () => {
+    const webDir = dir()
+    writeFileSync(join(webDir, '.dev.vars.example'), 'PAYLOAD_SECRET=example-secret\n')
+    expect(localDevEnvironment(webDir, {})).toEqual({ PAYLOAD_SECRET: 'example-secret' })
+  })
+
+  it('explains how to create missing local vars', () => {
+    expect(() => localDevEnvironment(dir(), {})).toThrow(/create .*\.dev\.vars.*\.dev\.vars\.example/)
+  })
+
+  it('rejects a vars file without PAYLOAD_SECRET without exposing values', () => {
+    const webDir = dir()
+    writeFileSync(join(webDir, '.dev.vars'), 'APP_ORIGIN=http://localhost:3000\n')
+    expect(() => localDevEnvironment(webDir, {})).toThrow(/must define PAYLOAD_SECRET/)
+    expect(() => localDevEnvironment(webDir, { PAYLOAD_SECRET: '' })).toThrow(/must define PAYLOAD_SECRET/)
   })
 })
 
