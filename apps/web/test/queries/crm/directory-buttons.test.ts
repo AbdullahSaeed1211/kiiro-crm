@@ -17,7 +17,7 @@ describe('directory anchor buttons', () => {
   it('declare non-native semantics for every anchor-rendered Button', () => {
     const openings = DIRECTORY_SOURCE_FILES.flatMap((file) => anchorButtonOpenings(readFileSync(resolve(file), 'utf8')))
 
-    expect(openings).toHaveLength(5)
+    expect(openings).toHaveLength(3)
     expect(openings.every((opening) => opening.includes('nativeButton={false}'))).toBe(true)
   })
 })

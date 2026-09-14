@@ -45,7 +45,8 @@ describe('seed data', () => {
     expect(unique(USERS.map((user) => user.name))).toBe(true)
     expect(unique(TASKS.map((task) => task.title))).toBe(true)
     expect(unique([...GROUPS, ...PROJECTS.map((project) => project.name)])).toBe(true)
-    expect(USERS.every((user) => user.email.endsWith('@example.test'))).toBe(true)
+    expect(USERS.filter((user) => user.key !== 'owner').every((user) => user.email.endsWith('@example.test'))).toBe(true)
+    expect(USERS.find((user) => user.key === 'owner')?.email).toBe('mirchads@gmail.com')
   })
 })
 

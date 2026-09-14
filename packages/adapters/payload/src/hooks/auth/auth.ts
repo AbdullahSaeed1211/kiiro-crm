@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-statements, sonarjs/cognitive-complexity */
+/* eslint-disable complexity, max-statements, sonarjs/cognitive-complexity -- this hook is the single Payload login policy boundary. */
 import {
   APIError,
   type CollectionBeforeChangeHook,
@@ -23,7 +23,8 @@ const ownerLocks = new WeakMap<object, Promise<void>>()
 const ownerReleases = new WeakMap<object, () => void>()
 
 function trustedCreate(req: PayloadRequest): boolean {
-  const operation = req.context['authOperation']
+  const context = req.context as Record<string, unknown> | undefined
+  const operation = context?.['authOperation']
   return operation === 'invitation' || operation === 'provisioning'
 }
 
@@ -128,6 +129,7 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
       throw new APIError('Users can only be created by an invitation or provisioning flow.', 403, null, true)
     return data
   }
+  if (trustedCreate(req)) return data
   const actor = await resolveActor(req)
   if (actor?.active !== true) throw new APIError('You do not have permission to update this user.', 403, null, true)
   if (actor.role === 'owner') return data
