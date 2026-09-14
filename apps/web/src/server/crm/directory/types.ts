@@ -13,6 +13,17 @@ export interface ActivityItem {
   readonly summary: string
 }
 
+export interface EmailThreadMessage {
+  readonly id: string
+  readonly direction: 'inbound' | 'outbound'
+  readonly from: string
+  readonly to: readonly string[]
+  readonly subject: string
+  readonly textBody: string
+  readonly status: 'queued' | 'sent' | 'failed' | 'received' | 'quarantined'
+  readonly occurredAt: number
+}
+
 export interface OrganizationListItem {
   readonly record: OrganizationRecord
   readonly owner: PersonSummary | null

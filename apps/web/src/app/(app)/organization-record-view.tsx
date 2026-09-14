@@ -3,7 +3,12 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import { Globe2, UsersRound } from 'lucide-react'
 import type { OrganizationRecord } from '@ops/module-crm'
-import type { ActivityItem, OrganizationRelations, PersonSummary } from '../../server/crm/directory/data'
+import type {
+  ActivityItem,
+  EmailThreadMessage,
+  OrganizationRelations,
+  PersonSummary,
+} from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
 import { safeExternalHref } from '../../server/crm/directory/utils'
 import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
@@ -97,9 +102,10 @@ export function OrganizationRecordView({
     owner: PersonSummary | null
     relations: OrganizationRelations
     activity: readonly ActivityItem[]
+    emailMessages: readonly EmailThreadMessage[]
   }
 }>) {
-  const { record, owner, relations, activity } = data
+  const { record, owner, relations, activity, emailMessages } = data
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }, { label: record.name }]} />
@@ -123,7 +129,10 @@ export function OrganizationRecordView({
               phone={record.phone}
             />
           }
-          tabs={recordTabs(<Activity entries={activity} recordType="organization" recordId={record.id} />)}
+          tabs={recordTabs(
+            <Activity entries={activity} recordType="organization" recordId={record.id} />,
+            emailMessages,
+          )}
           aside={<OrganizationAside record={record} owner={owner} relations={relations} />}
         />
       </PageContent>

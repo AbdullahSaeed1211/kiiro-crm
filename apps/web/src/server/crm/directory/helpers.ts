@@ -1,5 +1,5 @@
 import type { RequestContext } from '../../work/deps'
-import type { ActivityItem, PersonSummary } from './types'
+import type { ActivityItem, EmailThreadMessage, PersonSummary } from './types'
 
 function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null
@@ -11,6 +11,36 @@ function refId(value: unknown): string | null {
     return typeof id === 'string' ? id : null
   }
   return null
+}
+
+function textList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+// eslint-disable-next-line complexity -- normalization keeps malformed persisted mail out of the UI boundary.
+function emailMessage(value: Record<string, unknown>): EmailThreadMessage | null {
+  const direction = value.direction
+  const status = value.status
+  const from = text(value.from)
+  const occurredAt = typeof value.occurredAt === 'number' ? value.occurredAt : Date.parse(text(value.createdAt) ?? '')
+  if (
+    (direction !== 'inbound' && direction !== 'outbound') ||
+    !['queued', 'sent', 'failed', 'received', 'quarantined'].includes(String(status)) ||
+    from === null ||
+    !Number.isFinite(occurredAt)
+  )
+    return null
+  const normalizedStatus = status as EmailThreadMessage['status']
+  return {
+    id: text(value.id) ?? '',
+    direction,
+    from,
+    to: textList(value.to),
+    subject: text(value.subject) ?? '(no subject)',
+    textBody: text(value.textBody) ?? '',
+    status: normalizedStatus,
+    occurredAt,
+  }
 }
 
 export async function loadPeople(
@@ -52,10 +82,32 @@ export async function listProjects(
   })
 }
 
+export async function listEmailMessages(
+  context: RequestContext,
+  options: Readonly<{ recordType: string; recordId: string; parentAuthorized: boolean }>,
+): Promise<readonly EmailThreadMessage[]> {
+  const result = await context.payload.find({
+    collection: 'emailMessages',
+    where: { and: [{ recordType: { equals: options.recordType } }, { recordId: { equals: options.recordId } }] },
+    sort: '-occurredAt',
+    limit: 50,
+    pagination: false,
+    depth: 0,
+    ...activityReadOptions(options.parentAuthorized),
+    user: context.req.user,
+    req: context.req,
+  })
+  return result.docs.flatMap((entry) => {
+    const message = emailMessage(entry as unknown as Record<string, unknown>)
+    return message === null || message.id === '' ? [] : [message]
+  })
+}
+
 export function activityReadOptions(parentAuthorized: boolean): { readonly overrideAccess: boolean } {
   return { overrideAccess: parentAuthorized }
 }
 
+// eslint-disable-next-line max-lines-per-function -- activity and comment reads share one ordered timeline
 export async function listActivities(
   context: RequestContext,
   options: Readonly<{
@@ -64,25 +116,50 @@ export async function listActivities(
     parentAuthorized: boolean
   }>,
 ): Promise<readonly ActivityItem[]> {
-  const result = await context.payload.find({
-    collection: 'activity',
-    where: {
-      and: [{ recordType: { equals: options.recordType } }, { recordId: { equals: options.recordId } }],
-    },
-    sort: '-occurredAt',
-    limit: 30,
-    pagination: false,
-    depth: 0,
-    ...activityReadOptions(options.parentAuthorized),
-    user: context.req.user,
-    req: context.req,
-  })
-  const actorIds = result.docs.flatMap((entry) => {
-    const actorId = refId(entry.actor)
-    return actorId === null ? [] : [actorId]
-  })
+  const [result, comments] = await Promise.all([
+    context.payload.find({
+      collection: 'activity',
+      where: {
+        and: [{ recordType: { equals: options.recordType } }, { recordId: { equals: options.recordId } }],
+      },
+      sort: '-occurredAt',
+      limit: 30,
+      pagination: false,
+      depth: 0,
+      ...activityReadOptions(options.parentAuthorized),
+      user: context.req.user,
+      req: context.req,
+    }),
+    context.payload.find({
+      collection: 'comments',
+      where: {
+        and: [
+          { recordType: { equals: options.recordType } },
+          { recordId: { equals: options.recordId } },
+          { deletedAt: { exists: false } },
+        ],
+      },
+      sort: '-createdAt',
+      limit: 30,
+      pagination: false,
+      depth: 0,
+      ...activityReadOptions(options.parentAuthorized),
+      user: context.req.user,
+      req: context.req,
+    }),
+  ])
+  const actorIds = [
+    ...result.docs.flatMap((entry) => {
+      const actorId = refId(entry.actor)
+      return actorId === null ? [] : [actorId]
+    }),
+    ...comments.docs.flatMap((entry) => {
+      const authorId = refId(entry.author)
+      return authorId === null ? [] : [authorId]
+    }),
+  ]
   const people = await loadPeople(context, actorIds)
-  return result.docs.flatMap((entry) => {
+  const activities = result.docs.flatMap((entry) => {
     const occurredAt = typeof entry.occurredAt === 'number' ? entry.occurredAt : Date.parse(String(entry.occurredAt))
     if (!Number.isFinite(occurredAt)) return []
     const actorId = refId(entry.actor)
@@ -95,4 +172,19 @@ export async function listActivities(
       },
     ]
   })
+  const commentItems = comments.docs.flatMap((entry) => {
+    const occurredAt = Date.parse(entry.createdAt)
+    const body = entry.body.trim()
+    if (!Number.isFinite(occurredAt) || body === '') return []
+    const authorId = refId(entry.author)
+    return [
+      {
+        id: entry.id,
+        occurredAt,
+        actorName: authorId === null ? null : (people.get(authorId)?.name ?? null),
+        summary: `Comment: ${body.slice(0, 140)}`,
+      },
+    ]
+  })
+  return [...activities, ...commentItems].sort((left, right) => right.occurredAt - left.occurredAt).slice(0, 30)
 }

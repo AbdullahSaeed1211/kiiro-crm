@@ -2,18 +2,18 @@
 
 This is the release-review inventory for tenant-facing CRM surfaces. The owner names identify the local reference whose observable behavior is the comparison baseline; tenant branding, role, terminology, and data rules remain authoritative.
 
-| Surface / routes | Reference owner | Required interaction contract | Evidence | Status / deviation |
-| --- | --- | --- | --- | --- |
-| App shell, dashboard `/` | Twenty | In-flow nav, active route, tenant branding, light default, responsive content | route-health + desktop/mobile screenshots | Conformant; tenant branding intentionally replaces reference brand |
-| CRM indexes `/leads`, `/deals`, `/contacts`, `/organizations` | Twenty + Frappe CRM | Dense rows, real detail links, explicit empty/loading/error states, role-safe labels | route-health detail traversal + UUID guard | Conformant for current list read models |
-| Boards `/leads/board`, `/deals/board`, `/tasks/board` | Plane | Predictable columns/cards, touch-safe actions, no dead card affordances | route-health + responsive project checks | Conformant; drag/drop remains intentionally unavailable |
-| Projects `/projects`, `/projects/[id]` | Twenty | Object header, progress/context, linked work, explicit empty state | route-health + project interaction tests | Conformant |
-| Tasks `/tasks`, `/my-tasks`, `/calendar`, `/tasks/[id]` | Twenty + Plane | URL-backed views/sort/page, contextual panel, canonical deep link, mobile drawer | desktop/mobile task guard + screenshots + back/forward | Conformant via explicit URL-state architecture; no intercepted parallel route |
-| Settings `/settings/*` | Twenty + Frappe CRM | Grouped role-aware IA, consistent row grammar, routed forms | settings IA browser guard | Conformant; no full-screen modal settings |
-| Command palette (all app routes) | Plane | Keyboard shortcut, centered bounded dialog, useful defaults, reset on close | command-palette browser guard | Conformant; search remains the product's authorized API |
-| Activity/comments on records | Plane + Huly | Chronology, actor/action language, comment composer, pending/error feedback | route-health + record activity implementation | Conformant for comments/activity; email thread renderer deferred |
-| Email/intake `/settings/email`, `/settings/intake` | Agentic Inbox | Clear setup state, explicit send/intake boundaries, role-safe configuration | route-health + build | Setup/configuration surfaces conform; full thread UI is not yet surfaced |
-| Auth/onboarding `/login`, `/invite/*`, `/onboarding` | Twenty + Frappe CRM | Prefilled deterministic seed, clear validation, no admin branding leakage, business-neutral setup | auth/provision tests + route-health + typed preset guard | Conformant; tenant presets are stored with the workspace |
+| Surface / routes                                              | Reference owner     | Required interaction contract                                                                     | Evidence                                                 | Status / deviation                                                                          |
+| ------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| App shell, dashboard `/`                                      | Twenty              | In-flow nav, active route, tenant branding, light default, responsive content                     | route-health + desktop/mobile screenshots                | Conformant; tenant branding intentionally replaces reference brand                          |
+| CRM indexes `/leads`, `/deals`, `/contacts`, `/organizations` | Twenty + Frappe CRM | Dense rows, real detail links, explicit empty/loading/error states, role-safe labels              | route-health detail traversal + UUID guard               | Conformant for current list read models                                                     |
+| Boards `/leads/board`, `/deals/board`, `/tasks/board`         | Plane               | Predictable columns/cards, touch-safe actions, no dead card affordances                           | route-health + responsive project checks                 | Conformant; drag/drop remains intentionally unavailable                                     |
+| Projects `/projects`, `/projects/[id]`                        | Twenty              | Object header, progress/context, linked work, explicit empty state                                | route-health + project interaction tests                 | Conformant                                                                                  |
+| Tasks `/tasks`, `/my-tasks`, `/calendar`, `/tasks/[id]`       | Twenty + Plane      | URL-backed views/sort/page, contextual panel, canonical deep link, mobile drawer                  | desktop/mobile task guard + screenshots + back/forward   | Conformant via explicit URL-state architecture; no intercepted parallel route               |
+| Settings `/settings/*`                                        | Twenty + Frappe CRM | Grouped role-aware IA, consistent row grammar, routed forms                                       | settings IA browser guard                                | Conformant; no full-screen modal settings                                                   |
+| Command palette (all app routes)                              | Plane               | Keyboard shortcut, centered bounded dialog, useful defaults, reset on close                       | command-palette browser guard                            | Conformant; search remains the product's authorized API                                     |
+| Activity/comments on records                                  | Plane + Huly        | Chronology, actor/action language, comment composer, pending/error feedback                       | route-health + record activity implementation            | Conformant; linked email messages have a dedicated responsive thread tab                    |
+| Email/intake `/settings/email`, `/settings/intake`            | Agentic Inbox       | Clear setup state, explicit send/intake boundaries, role-safe configuration                       | route-health + build + record email thread               | Conformant for setup and record-linked inbound threads; replies open the tenant mail client |
+| Auth/onboarding `/login`, `/invite/*`, `/onboarding`          | Twenty + Frappe CRM | Prefilled deterministic seed, clear validation, no admin branding leakage, business-neutral setup | auth/provision tests + route-health + typed preset guard | Conformant; tenant presets are stored with the workspace                                    |
 
 ## Release evidence
 
@@ -24,8 +24,8 @@ This is the release-review inventory for tenant-facing CRM surfaces. The owner n
 ## Known intentional deviations
 
 - Explicit `panel=1`/`returnTo` URL state is used instead of Next intercepted routes; this preserves deep links and reloadability without introducing a second navigation tree.
-- Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders and inline rename/edit remain outside the current UI contract. Delete is available from the settings list with the collection ownership policy enforced server-side.
-- Email setup and inbound intake are shipped; a complete Agentic Inbox-style thread composer/renderer is not yet part of the customer shell.
+- Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders remain outside the current UI contract. Rename and delete are available from the settings list with the collection ownership policy enforced server-side.
+- Outbound replies intentionally use the tenant's configured mail client (`mailto:`) so the customer shell never presents a send action without a configured transport; inbound messages are rendered in the record Email tab.
 
 ## Deeper reference learnings applied
 

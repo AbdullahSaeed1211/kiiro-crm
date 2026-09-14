@@ -1,11 +1,12 @@
 import { createCrmRepository } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
 import { getRequestContext } from '../../work/deps'
-import { listActivities, listProjects, loadPeople } from './helpers'
-import type { ActivityItem, ContactListItem, OrganizationListItem, PersonSummary } from './types'
+import { listActivities, listEmailMessages, listProjects, loadPeople } from './helpers'
+import type { ActivityItem, ContactListItem, EmailThreadMessage, OrganizationListItem, PersonSummary } from './types'
 import { displayName, type DirectorySort } from './utils'
 
 export type { ActivityItem, ContactListItem, OrganizationListItem, PersonSummary } from './types'
+export type { EmailThreadMessage } from './types'
 
 const DIRECTORY_PAGE_SIZE = 50
 
@@ -165,6 +166,7 @@ export async function getOrganization(id: string): Promise<{
   readonly owner: PersonSummary | null
   readonly relations: OrganizationRelations
   readonly activity: readonly ActivityItem[]
+  readonly emailMessages: readonly EmailThreadMessage[]
 } | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
@@ -174,10 +176,11 @@ export async function getOrganization(id: string): Promise<{
     repo.list('deal'),
   ])
   if (record === undefined) return null
-  const [people, projects, activity] = await Promise.all([
+  const [people, projects, activity, emailMessages] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
     listProjects(context, record.id),
     listActivities(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
+    listEmailMessages(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
   ])
   return {
     record,
@@ -188,6 +191,7 @@ export async function getOrganization(id: string): Promise<{
       projects,
     },
     activity,
+    emailMessages,
   }
 }
 
@@ -196,6 +200,7 @@ export async function getContact(id: string): Promise<{
   readonly owner: PersonSummary | null
   readonly relations: ContactRelations
   readonly activity: readonly ActivityItem[]
+  readonly emailMessages: readonly EmailThreadMessage[]
 } | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
@@ -206,9 +211,10 @@ export async function getContact(id: string): Promise<{
     repo.list('deal'),
   ])
   if (record === undefined) return null
-  const [people, activity] = await Promise.all([
+  const [people, activity, emailMessages] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
     listActivities(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
+    listEmailMessages(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
   ])
   const organization =
     record.organizationId === null ? null : (organizations.find((item) => item.id === record.organizationId) ?? null)
@@ -226,6 +232,7 @@ export async function getContact(id: string): Promise<{
       deals: deals.filter((deal) => deal.contactIds.includes(record.id)),
     },
     activity,
+    emailMessages,
   }
 }
 

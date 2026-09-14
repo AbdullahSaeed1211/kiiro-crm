@@ -109,6 +109,7 @@ export default async function MembersSettingsPage() {
       role: user.role,
       status: user.active === true ? 'Active' : 'Inactive',
       lastInvitation: 'Not sent',
+      actions: <span className="text-xs text-muted-foreground">Managed by role policy</span>,
     })),
     ...invitations.docs.map((invitation) => ({
       id: invitation.id,

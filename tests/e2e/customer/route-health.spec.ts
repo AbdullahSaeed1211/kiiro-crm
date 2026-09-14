@@ -122,6 +122,10 @@ test('customer routes load without browser failures and stay within the response
     await expect(page.locator('main, [data-slot="sheet-content"], [data-slot="card"]').first()).toBeVisible()
     expect(Date.now() - start, `${route} exceeded ${String(ROUTE_BUDGET_MS)}ms`).toBeLessThan(ROUTE_BUDGET_MS)
     expect(await page.locator('body').innerText(), `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
+    if (route.startsWith('/contacts/') || route.startsWith('/organizations/')) {
+      await page.getByRole('tab', { name: 'Email' }).click()
+      await expect(page.getByRole('heading', { name: 'Email', exact: true })).toBeVisible()
+    }
   }
 
   await page.goto('/leads', { waitUntil: 'domcontentloaded' })
@@ -174,7 +178,8 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
   await page.keyboard.press('Escape')
 })
 
-test('saved views use typed controls and support deletion', async ({ page }) => {
+// eslint-disable-next-line max-statements -- this guard covers the full saved-view lifecycle in one browser flow.
+test('saved views use typed controls and support rename and deletion', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings/views')
   await expect(page.getByRole('heading', { name: 'Views', exact: true })).toBeVisible()
@@ -184,9 +189,15 @@ test('saved views use typed controls and support deletion', async ({ page }) => 
   await page.getByLabel('View name').fill(name)
   await page.getByRole('button', { name: 'Save view' }).click()
   await expect(page.getByText(name, { exact: true })).toBeVisible()
+  const row = page.getByRole('listitem').filter({ hasText: name })
+  const renamed = `${name} renamed`
+  await row.getByRole('button', { name: 'Edit' }).click()
+  await page.getByLabel('Saved view name').fill(renamed)
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText(renamed, { exact: true })).toBeVisible()
   page.once('dialog', (dialog) => void dialog.accept())
-  await page.getByRole('button', { name: 'Delete' }).last().click()
-  await expect(page.getByText(name, { exact: true })).toHaveCount(0)
+  await page.getByRole('listitem').filter({ hasText: renamed }).getByRole('button', { name: 'Delete' }).click()
+  await expect(page.getByText(renamed, { exact: true })).toHaveCount(0)
 })
 
 test('onboarding exposes the tenant-neutral business preset catalog', async ({ page }) => {
