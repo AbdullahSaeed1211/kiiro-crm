@@ -11,6 +11,45 @@ interface Result {
 }
 type Action = (input: unknown) => Promise<Result>
 
+interface Field {
+  name: string
+  label: string
+  type?: 'text' | 'number' | 'email' | 'select'
+  options?: readonly { value: string; label: string }[]
+}
+
+function FieldControl({
+  field,
+  value,
+  onChange,
+}: Readonly<{ field: Field; value: string; onChange: (value: string) => void }>) {
+  if (field.type === 'select')
+    return (
+      <select
+        className="h-10 rounded-md border bg-background px-3"
+        name={field.name}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        {(field.options ?? []).map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    )
+  return (
+    <input
+      className="h-10 rounded-md border bg-background px-3"
+      name={field.name}
+      autoComplete="off"
+      onChange={(event) => onChange(event.target.value)}
+      type={field.type ?? 'text'}
+      value={value}
+    />
+  )
+}
+
 export function SettingsActionForm({
   action,
   fields,
@@ -19,7 +58,7 @@ export function SettingsActionForm({
   submitLabel,
 }: Readonly<{
   action: Action
-  fields: readonly { name: string; label: string; type?: 'text' | 'number' | 'email' }[]
+  fields: readonly Field[]
   fixedValues?: Readonly<Record<string, unknown>>
   initialValues?: Readonly<Record<string, string | number>>
   submitLabel: string
@@ -49,13 +88,10 @@ export function SettingsActionForm({
       {fields.map((field) => (
         <label className="grid gap-1 text-sm" key={field.name}>
           <span className="font-medium">{field.label}</span>
-          <input
-            className="h-10 rounded-md border bg-background px-3"
-            name={field.name}
-            autoComplete="off"
-            onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
-            type={field.type ?? 'text'}
+          <FieldControl
+            field={field}
             value={values[field.name] ?? ''}
+            onChange={(value) => setValues((current) => ({ ...current, [field.name]: value }))}
           />
         </label>
       ))}

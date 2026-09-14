@@ -17,8 +17,8 @@ import { DealCreateDialog } from './DealCreateDialog'
 import { filterDeals, formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
 
-const APP_NAME = 'Workspace'
-export const metadata: Metadata = { title: `Deals · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: 'Deals' }
 export const dynamic = 'force-dynamic'
 
 const LABELS: DataTableLabels = {
@@ -150,8 +150,9 @@ export default async function DealsPage({
           <Search aria-hidden className="size-4 text-muted-foreground" />
           <input
             name="q"
+            aria-label="Search deals"
             defaultValue={first(params.q)}
-            placeholder="Search deals"
+            placeholder="Search deals…"
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           <select

@@ -10,8 +10,8 @@ import { DealCreateDialog } from '../DealCreateDialog'
 import { getDealListData } from '../../../../server/crm/deals/queries'
 import { aggregateStageTotals, formatMoney } from '../../../../server/crm/deals/view-model'
 
-const APP_NAME = 'Workspace'
-export const metadata: Metadata = { title: `Deal board · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: 'Deal board' }
 export const dynamic = 'force-dynamic'
 const LABELS: KanbanBoardLabels = {
   expand: 'Expand {name}',

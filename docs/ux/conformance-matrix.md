@@ -1,6 +1,6 @@
 # UX Conformance Matrix
 
-This is the release-review inventory for customer-facing Mirch surfaces. The owner names identify the local reference whose observable behavior is the comparison baseline; Mirch-specific tenant, role, and data rules remain authoritative.
+This is the release-review inventory for tenant-facing CRM surfaces. The owner names identify the local reference whose observable behavior is the comparison baseline; tenant branding, role, terminology, and data rules remain authoritative.
 
 | Surface / routes | Reference owner | Required interaction contract | Evidence | Status / deviation |
 | --- | --- | --- | --- | --- |
@@ -10,10 +10,10 @@ This is the release-review inventory for customer-facing Mirch surfaces. The own
 | Projects `/projects`, `/projects/[id]` | Twenty | Object header, progress/context, linked work, explicit empty state | route-health + project interaction tests | Conformant |
 | Tasks `/tasks`, `/my-tasks`, `/calendar`, `/tasks/[id]` | Twenty + Plane | URL-backed views/sort/page, contextual panel, canonical deep link, mobile drawer | desktop/mobile task guard + screenshots + back/forward | Conformant via explicit URL-state architecture; no intercepted parallel route |
 | Settings `/settings/*` | Twenty + Frappe CRM | Grouped role-aware IA, consistent row grammar, routed forms | settings IA browser guard | Conformant; no full-screen modal settings |
-| Command palette (all app routes) | Plane | Keyboard shortcut, centered bounded dialog, useful defaults, reset on close | command-palette browser guard | Conformant; search remains Mirch authorized API |
+| Command palette (all app routes) | Plane | Keyboard shortcut, centered bounded dialog, useful defaults, reset on close | command-palette browser guard | Conformant; search remains the product's authorized API |
 | Activity/comments on records | Plane + Huly | Chronology, actor/action language, comment composer, pending/error feedback | route-health + record activity implementation | Conformant for comments/activity; email thread renderer deferred |
 | Email/intake `/settings/email`, `/settings/intake` | Agentic Inbox | Clear setup state, explicit send/intake boundaries, role-safe configuration | route-health + build | Setup/configuration surfaces conform; full thread UI is not yet surfaced |
-| Auth/onboarding `/login`, `/invite/*`, `/onboarding` | Twenty + Frappe CRM | Prefilled deterministic seed, clear validation, no admin branding leakage | auth/provision tests + route-health | Conformant |
+| Auth/onboarding `/login`, `/invite/*`, `/onboarding` | Twenty + Frappe CRM | Prefilled deterministic seed, clear validation, no admin branding leakage, business-neutral setup | auth/provision tests + route-health + typed preset guard | Conformant; tenant presets are stored with the workspace |
 
 ## Release evidence
 
@@ -24,12 +24,13 @@ This is the release-review inventory for customer-facing Mirch surfaces. The own
 ## Known intentional deviations
 
 - Explicit `panel=1`/`returnTo` URL state is used instead of Next intercepted routes; this preserves deep links and reloadability without introducing a second navigation tree.
-- Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders and rename/delete controls remain outside the current UI contract.
+- Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders and inline rename/edit remain outside the current UI contract. Delete is available from the settings list with the collection ownership policy enforced server-side.
 - Email setup and inbound intake are shipped; a complete Agentic Inbox-style thread composer/renderer is not yet part of the customer shell.
 
 ## Deeper reference learnings applied
 
-- Plane's view list keeps the empty-search state separate from the no-views state and puts edit/delete/copy-link actions behind a close-on-select menu. Mirch now closes the saved-view menu after selection and distinguishes empty directory/filter states.
-- Frappe's `ViewControls` treats mobile controls as a horizontally scrollable quick-filter rail, keeps refresh/sort/column actions explicit, and exposes Save Changes/Cancel only after a view is dirty. Mirch follows the same explicit-control rule and avoids rendering a filter affordance when a directory has no filter dimensions.
-- Frappe's `Activities` component groups comments, tasks, calls, attachments, and email into a single chronological rail with actor avatars and a persistent connector. Mirch's shared `ActivityFeed` uses the same connector/actor hierarchy for the current activity contract.
-- Twenty's record-table settings split filters, sorts, visible fields, hidden fields, and layout into separate focused sub-pages. Mirch records this as the next expansion path instead of combining unrelated controls into one opaque menu.
+- Plane's view list keeps the empty-search state separate from the no-views state and puts edit/delete/copy-link actions behind a close-on-select menu. The product now closes the saved-view menu after selection and distinguishes empty directory/filter states.
+- Frappe's `ViewControls` treats mobile controls as a horizontally scrollable quick-filter rail, keeps refresh/sort/column actions explicit, and exposes Save Changes/Cancel only after a view is dirty. The product follows the same explicit-control rule and avoids rendering a filter affordance when a directory has no filter dimensions.
+- Frappe's `Activities` component groups comments, tasks, calls, attachments, and email into a single chronological rail with actor avatars and a persistent connector. The shared `ActivityFeed` uses the same connector/actor hierarchy for the current activity contract.
+- Twenty's record-table settings split filters, sorts, visible fields, hidden fields, and layout into separate focused sub-pages. The product records this as the next expansion path instead of combining unrelated controls into one opaque menu.
+- White-label baseline: no customer-facing route title or onboarding option assumes Mirch or an agency. Tenant `appName` owns the title suffix, while setup offers a neutral general preset plus the vertical presets defined by the platform contract.

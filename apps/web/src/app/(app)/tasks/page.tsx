@@ -28,13 +28,11 @@ import type {
   TaskStageColor,
 } from '../../../server/queries/work/tasks/types'
 
-// Default product name until settings.appName exists (decision D-05).
-const APP_NAME = 'Workspace'
 const PAGE_TITLE = 'Tasks'
 const AVATAR_LIMIT = 3
 
-/** Browser tab title, `{page} · {appName}` (spec §17). */
-export const metadata: Metadata = { title: `${PAGE_TITLE} · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: PAGE_TITLE }
 
 const LABELS: DataTableLabels = {
   selectAll: 'Select all',

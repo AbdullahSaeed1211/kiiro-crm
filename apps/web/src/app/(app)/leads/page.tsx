@@ -8,9 +8,9 @@ import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
 import { LeadListControls } from './LeadListControls'
 
-const APP_NAME = 'Workspace'
 type SearchParams = Record<string, string | string[] | undefined>
-export const metadata: Metadata = { title: `Leads · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: 'Leads' }
 export const dynamic = 'force-dynamic'
 
 const TABLE_LABELS: DataTableLabels = {
@@ -100,7 +100,7 @@ function LeadTable({
           description="Create a lead or connect a website form to start your pipeline."
           action={
             <a
-              className="inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground"
+              className="ops-action-button inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground"
               href="/leads/new"
             >
               New lead

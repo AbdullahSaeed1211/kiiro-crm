@@ -174,6 +174,21 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
   await page.keyboard.press('Escape')
 })
 
+test('saved views use typed controls and support deletion', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/views')
+  await expect(page.getByRole('heading', { name: 'Views', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Record type')).toHaveValue('task')
+  await expect(page.getByLabel('View kind')).toHaveValue('table')
+  const name = `E2E view ${String(Date.now())}`
+  await page.getByLabel('View name').fill(name)
+  await page.getByRole('button', { name: 'Save view' }).click()
+  await expect(page.getByText(name, { exact: true })).toBeVisible()
+  page.once('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: 'Delete' }).last().click()
+  await expect(page.getByText(name, { exact: true })).toHaveCount(0)
+})
+
 // Keep the seed source as the single credential authority; this guard catches stale test fixtures.
 test('route-health harness has a local owner credential', () => {
   expect(OWNER_EMAIL).toBe('mirchads@gmail.com')

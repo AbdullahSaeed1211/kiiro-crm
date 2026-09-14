@@ -9,12 +9,10 @@ import type { TaskRecord } from '../../../server/work/task-repository'
 import type { TimelineTask } from './save-dates'
 import { TimelineChart } from './TimelineChart'
 
-// Default product name until settings.appName exists (decision D-05).
-const APP_NAME = 'Workspace'
 const PAGE_TITLE = 'Timeline'
 
-/** Browser tab title, `{page} · {appName}` (spec §17). */
-export const metadata: Metadata = { title: `${PAGE_TITLE} · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: PAGE_TITLE }
 
 /** Reads the task repository on every request. */
 export const dynamic = 'force-dynamic'

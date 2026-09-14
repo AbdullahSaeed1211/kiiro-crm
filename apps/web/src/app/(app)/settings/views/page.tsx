@@ -3,12 +3,15 @@ import { saveConfiguration } from '../../../../server/actions/settings'
 import { listSavedViews } from '../../../../server/queries/settings/listSavedViews'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
+import { SavedViewList } from './saved-view-list'
 
 export const metadata: Metadata = { title: 'Views' }
 export const dynamic = 'force-dynamic'
 
+const RECORD_TYPES = ['organization', 'contact', 'lead', 'deal', 'project', 'task'] as const
+
 export default async function ViewsSettingsPage() {
-  const taskViews = await listSavedViews('task')
+  const savedViews = (await Promise.all(RECORD_TYPES.map((recordType) => listSavedViews(recordType)))).flat()
   return (
     <SettingsPage
       title="Views"
@@ -32,32 +35,41 @@ export default async function ViewsSettingsPage() {
             isDefault: false,
           }}
           fields={[
-            { name: 'recordType', label: 'Record type' },
+            {
+              name: 'recordType',
+              label: 'Record type',
+              type: 'select',
+              options: [
+                ['organization', 'Organizations'],
+                ['contact', 'Contacts'],
+                ['lead', 'Leads'],
+                ['deal', 'Deals'],
+                ['project', 'Projects'],
+                ['task', 'Tasks'],
+              ].map(([value, label]) => ({ value, label })),
+            },
             { name: 'name', label: 'View name' },
-            { name: 'kind', label: 'View kind' },
+            {
+              name: 'kind',
+              label: 'View kind',
+              type: 'select',
+              options: [
+                { value: 'table', label: 'Table' },
+                { value: 'board', label: 'Board' },
+                { value: 'calendar', label: 'Calendar' },
+                { value: 'timeline', label: 'Timeline' },
+              ],
+            },
           ]}
           initialValues={{ recordType: 'task', kind: 'table' }}
           submitLabel="Save view"
         />
         <div className="space-y-3 border-t pt-5">
           <div>
-            <h2 className="text-sm font-semibold">Task views</h2>
-            <p className="text-sm text-muted-foreground">Shared and personal views available in the Tasks menu.</p>
+            <h2 className="text-sm font-semibold">Saved views</h2>
+            <p className="text-sm text-muted-foreground">Shared and personal views available in each record list.</p>
           </div>
-          {taskViews.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No saved task views yet.</p>
-          ) : (
-            <ul className="divide-y rounded-lg border" aria-label="Saved task views">
-              {taskViews.map((view) => (
-                <li className="flex items-center justify-between gap-3 px-3 py-2 text-sm" key={view.id}>
-                  <span className="min-w-0 truncate font-medium">{view.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {view.ownerId === null ? 'Shared' : 'Personal'} · {view.kind}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <SavedViewList views={savedViews} />
         </div>
       </SettingsForm>
     </SettingsPage>

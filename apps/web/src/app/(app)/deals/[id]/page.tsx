@@ -8,10 +8,11 @@ import { notFound } from 'next/navigation'
 import { DealControls } from '../DealControls'
 import { getDealDetailData, type ActivityItem, type DealDetailData } from '../../../../server/crm/deals/queries'
 import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
+import { RecordActionLinks } from '../../record-action-links'
 
-const APP_NAME = 'Workspace'
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: `Deal · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: 'Deal' }
 
 function ActivityCard({ activity }: Readonly<{ activity: readonly ActivityItem[] }>) {
   return (
@@ -90,6 +91,7 @@ function DealHero({ data }: Readonly<{ data: DealDetailData }>) {
         <br />
         <span className="font-medium text-foreground">{formatDate(deal.expectedCloseAt)}</span>
       </div>
+      <RecordActionLinks recordType="deal" recordId={deal.id} recordLabel={deal.title} />
     </div>
   )
 }

@@ -9,12 +9,10 @@ import { getWorkDeps } from '../../../../server/work/deps'
 import type { TaskPriority, TaskRecord } from '../../../../server/work/task-repository'
 import { TaskBoard } from './TaskBoard'
 
-// Default product name until settings.appName exists (decision D-05).
-const APP_NAME = 'Workspace'
 const SECTION = 'Tasks'
 
-/** Browser tab title, `{page} · {appName}` (spec §17). */
-export const metadata: Metadata = { title: `Task board · ${APP_NAME}` }
+/** The parent app layout supplies the tenant's branded title suffix. */
+export const metadata: Metadata = { title: 'Task board' }
 
 /** Reads per-request task data. */
 export const dynamic = 'force-dynamic'

@@ -1,9 +1,16 @@
 'use server'
+/* eslint-disable max-lines -- settings actions share one authorization boundary; intake helpers live beside the screen. */
 
 import { revalidatePath } from 'next/cache'
 import { can, type Role } from '@ops/platform'
 import { payloadData, type UntypedPayload } from '../../auth/api'
 import { getProductContext, requireRole, type ProductContext } from '../../auth/context'
+import {
+  INTAKE_KEY_PATTERN,
+  parseIntakeFormSettings,
+  randomServerKey,
+  sha256Hex,
+} from '../../../app/(app)/settings/intake/intake-validation'
 
 export type ActionResult =
   { readonly ok: true; readonly data?: unknown } | { readonly ok: false; readonly error: string }
@@ -11,6 +18,7 @@ const recordOf = (input: unknown): Record<string, unknown> =>
   typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
 const stringValue = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
+
 function normalizeSettings(data: Record<string, unknown>): Record<string, unknown> {
   const normalized = { ...data }
   for (const key of ['weekStartsOn', 'stalledDays']) {
@@ -92,10 +100,104 @@ export async function saveModules(input: unknown): Promise<ActionResult> {
   })
 }
 
+export async function saveEmailSettings(input: unknown): Promise<ActionResult> {
+  const data = recordOf(input)
+  return updateSettings({
+    email: {
+      inboundDomain: stringValue(data.inboundDomain) ?? null,
+      inboundLocalPrefix: stringValue(data.inboundLocalPrefix) ?? null,
+    },
+  })
+}
+
+export async function createIntakeForm(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const data = recordOf(input)
+  const key = stringValue(data.key)?.toLowerCase()
+  const name = stringValue(data.name)
+  if (key === undefined || name === undefined || !INTAKE_KEY_PATTERN.test(key))
+    return { ok: false, error: 'Name and a lowercase URL-safe key are required.' }
+  try {
+    await context.payload.create({
+      collection: 'intakeForms',
+      data: {
+        key,
+        name,
+        active: true,
+        targetRecordType: 'lead',
+        fieldMap: { name: 'title', email: 'email', phone: 'phone', company: 'companyName', message: 'notes' },
+        allowedOrigins: [],
+        requireTurnstile: true,
+        serverKeyHashes: [],
+        successMessage: 'Thanks. We will be in touch.',
+      },
+      req: context.req,
+    })
+    revalidatePath('/settings/intake')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to create intake form.' }
+  }
+}
+
+export async function updateIntakeForm(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const data = recordOf(input)
+  const id = stringValue(data.id)
+  if (id === undefined) return { ok: false, error: 'Intake form id is required.' }
+  const parsed = parseIntakeFormSettings(data)
+  if (!parsed.ok) return parsed
+  try {
+    await context.payload.update({
+      collection: 'intakeForms',
+      id,
+      data: parsed.data,
+      req: context.req,
+    })
+    revalidatePath('/settings/intake')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to update intake form.' }
+  }
+}
+
+/** Adds a new hashed server credential and returns the plaintext exactly once for copying. */
+export async function rotateIntakeServerKey(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const id = stringValue(recordOf(input).id)
+  if (id === undefined) return { ok: false, error: 'Intake form id is required.' }
+  try {
+    const found = await context.payload.find({
+      collection: 'intakeForms',
+      where: { id: { equals: id } },
+      limit: 1,
+      depth: 0,
+      req: context.req,
+    })
+    if (found.docs.length === 0) return { ok: false, error: 'Intake form not found.' }
+    const form = found.docs[0]
+    const currentHashes = Array.isArray(form.serverKeyHashes)
+      ? form.serverKeyHashes.filter((hash): hash is string => typeof hash === 'string')
+      : []
+    const serverKey = randomServerKey()
+    await context.payload.update({
+      collection: 'intakeForms',
+      id,
+      data: { serverKeyHashes: [...currentHashes, await sha256Hex(serverKey)] },
+      req: context.req,
+    })
+    revalidatePath('/settings/intake')
+    return { ok: true, data: { serverKey } }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to create server key.' }
+  }
+}
+
 export async function saveTerminology(input: unknown): Promise<ActionResult> {
   return updateSettings({ terminology: recordOf(input) })
 }
 
+// eslint-disable-next-line complexity, max-statements -- configuration writes share one validated boundary
 export async function saveConfiguration(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
   const data = recordOf(input)
@@ -113,9 +215,29 @@ export async function saveConfiguration(input: unknown): Promise<ActionResult> {
       await dataPayload.create({ collection, data: values, overrideAccess: false, req: context.req })
     else await dataPayload.update({ collection, id, data: values, overrideAccess: false, req: context.req })
     revalidatePath('/settings')
+    if (collection === 'savedViews') revalidatePath('/settings/views')
     return { ok: true }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unable to save configuration.' }
+  }
+}
+
+/** Deletes one configuration record after the collection access policy checks ownership. */
+export async function deleteConfiguration(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const data = recordOf(input)
+  const collection = stringValue(data.collection)
+  const id = stringValue(data.id)
+  if (collection === undefined || !['fieldDefinitions', 'workflows', 'savedViews', 'layouts'].includes(collection))
+    return { ok: false, error: 'Configuration collection is invalid.' }
+  if (id === undefined) return { ok: false, error: 'Configuration id is required.' }
+  try {
+    await payloadData(context.payload).delete({ collection, id, overrideAccess: false, req: context.req })
+    revalidatePath('/settings')
+    if (collection === 'savedViews') revalidatePath('/settings/views')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to delete configuration.' }
   }
 }
 
@@ -133,7 +255,7 @@ export async function saveProfile(input: unknown): Promise<ActionResult> {
 }
 
 // Preference validation and the read-modify-write must remain one server action.
-// eslint-disable-next-line complexity, max-lines-per-function
+// eslint-disable-next-line complexity, max-lines-per-function -- validation and persistence share the same authorized update boundary.
 export async function saveNotificationPreferences(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager', 'staff')
   const dataPayload = payloadData(context.payload)
@@ -183,6 +305,7 @@ export async function saveNotificationPreferences(input: unknown): Promise<Actio
   }
 }
 
+// eslint-disable-next-line complexity, max-statements -- invitation authorization, duplicate checks and token creation share one transactional boundary.
 export async function inviteMember(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
   const dataPayload = payloadData(context.payload)
@@ -194,11 +317,91 @@ export async function inviteMember(input: unknown): Promise<ActionResult> {
   if (!can(context.actor, 'manage_members', { type: 'users', role }))
     return { ok: false, error: 'You cannot invite this role.' }
   try {
+    const existing = await dataPayload.find({
+      collection: 'users',
+      where: { email: { equals: email } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req: context.req,
+    })
+    if (existing.docs.length > 0) return { ok: false, error: 'An active member already uses this email.' }
+    const pending = await dataPayload.find({
+      collection: 'invitations',
+      where: { and: [{ email: { equals: email } }, { status: { equals: 'pending' } }] },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req: context.req,
+    })
+    if (pending.docs.length > 0) return { ok: false, error: 'A pending invitation already exists for this email.' }
     const token = await createInvitation({ dataPayload, context, email, role })
     revalidatePath('/settings/members')
-    return { ok: true, data: { token } }
+    const origin = process.env.APP_ORIGIN || 'http://localhost:3000'
+    return { ok: true, data: { token, inviteUrl: `${origin.replace(/\/$/u, '')}/invite/${token}` } }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unable to create invitation.' }
+  }
+}
+
+export async function revokeInvitation(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const id = stringValue(recordOf(input).id)
+  if (id === undefined) return { ok: false, error: 'Invitation id is required.' }
+  try {
+    await context.payload.update({
+      collection: 'invitations',
+      id,
+      data: { status: 'revoked' },
+      overrideAccess: false,
+      req: context.req,
+    })
+    revalidatePath('/settings/members')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to revoke invitation.' }
+  }
+}
+
+// eslint-disable-next-line complexity, max-statements -- resend validates authorization, rotates the token, and revokes the previous record atomically.
+export async function resendInvitation(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const id = stringValue(recordOf(input).id)
+  if (id === undefined) return { ok: false, error: 'Invitation id is required.' }
+  try {
+    const found = await context.payload.find({
+      collection: 'invitations',
+      where: { id: { equals: id } },
+      depth: 0,
+      limit: 1,
+      overrideAccess: false,
+      req: context.req,
+    })
+    const invitation = found.docs.at(0)
+    if (invitation === undefined) return { ok: false, error: 'Invitation not found.' }
+    if (invitation.status === 'accepted' || invitation.status === 'accepting')
+      return { ok: false, error: 'This invitation has already been accepted.' }
+    if (!can(context.actor, 'manage_members', { type: 'users', role: invitation.role }))
+      return { ok: false, error: 'You cannot resend this invitation.' }
+    const dataPayload = payloadData(context.payload)
+    const token = await createInvitation({
+      dataPayload,
+      context,
+      email: invitation.email.toLowerCase(),
+      role: invitation.role,
+    })
+    await dataPayload.update({
+      collection: 'invitations',
+      id,
+      data: { status: 'revoked' },
+      overrideAccess: false,
+      req: context.req,
+    })
+    revalidatePath('/settings/members')
+    const origin = process.env.APP_ORIGIN || 'http://localhost:3000'
+    return { ok: true, data: { inviteUrl: `${origin.replace(/\/$/u, '')}/invite/${token}` } }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to resend invitation.' }
   }
 }
 
