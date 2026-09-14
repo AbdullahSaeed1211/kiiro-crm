@@ -3,7 +3,7 @@
 
 import { deleteConfiguration, saveConfiguration } from '../../../../server/actions/settings'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 function recordTypeLabel(value: string): string {
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}s`
@@ -19,6 +19,10 @@ export function SavedViewList({
   const [draftName, setDraftName] = useState('')
   const [error, setError] = useState('')
   const router = useRouter()
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (editingId !== null && window.matchMedia('(min-width: 768px)').matches) inputRef.current?.focus()
+  }, [editingId])
   if (views.length === 0) return <p className="text-sm text-muted-foreground">No saved views yet.</p>
   return (
     <>
@@ -29,9 +33,9 @@ export function SavedViewList({
               <label className="min-w-48 flex-1">
                 <span className="sr-only">Saved view name</span>
                 <input
-                  autoFocus
                   className="h-8 w-full rounded-md border bg-background px-2"
                   maxLength={120}
+                  ref={inputRef}
                   value={draftName}
                   onChange={(event) => {
                     setDraftName(event.target.value)
@@ -54,7 +58,7 @@ export function SavedViewList({
               {editingId === view.id ? (
                 <>
                   <button
-                    className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                    className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                     disabled={pendingId !== null || draftName.trim() === ''}
                     type="button"
                     onClick={() => {
@@ -77,7 +81,7 @@ export function SavedViewList({
                     {pendingId === view.id ? 'Saving…' : 'Save'}
                   </button>
                   <button
-                    className="text-xs text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
+                    className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                     disabled={pendingId !== null}
                     type="button"
                     onClick={() => {
@@ -90,7 +94,7 @@ export function SavedViewList({
                 </>
               ) : (
                 <button
-                  className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                  className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                   disabled={pendingId !== null || editingId !== null}
                   type="button"
                   onClick={() => {
@@ -103,7 +107,7 @@ export function SavedViewList({
                 </button>
               )}
               <button
-                className="text-xs text-destructive underline-offset-2 hover:underline disabled:opacity-50"
+                className="text-xs text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 disabled={pendingId !== null || editingId !== null}
                 type="button"
                 onClick={() => {

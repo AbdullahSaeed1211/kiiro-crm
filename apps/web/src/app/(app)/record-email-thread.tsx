@@ -69,7 +69,7 @@ export function RecordEmailThread({ messages }: Readonly<{ messages: readonly Em
                 </p>
                 {reply === null ? null : (
                   <a
-                    className="mt-3 inline-flex text-xs font-medium text-primary underline-offset-2 hover:underline"
+                    className="mt-3 inline-flex rounded-sm text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     href={reply}
                   >
                     {message.direction === 'inbound' ? 'Reply' : 'Email recipient'}
