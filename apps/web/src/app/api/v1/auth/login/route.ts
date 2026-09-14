@@ -1,11 +1,13 @@
-import { bodyOf, errorResponse, jsonWithCookie, payloadForAuth, stringOf } from '../../../../../server/auth/api'
+import { authBody, errorResponse, jsonWithCookie, payloadForAuth, stringOf } from '../../../../../server/auth/api'
 
 function safeRedirect(value: string | undefined): string {
   return value?.startsWith('/') === true && !value.startsWith('//') ? value : '/'
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const body = await bodyOf(request)
+  const prepared = await authBody(request)
+  if (prepared instanceof Response) return prepared
+  const body = prepared
   const email = stringOf(body, 'email')?.toLowerCase()
   const password = stringOf(body, 'password')
   if (email === undefined || password === undefined)

@@ -6,7 +6,10 @@ import {
   isIanaTimeZone,
   settingsGlobalConfig,
 } from '../../src/collections/config/collections'
+import { sharedViewAccess } from '../../src/collections/config/access'
+import type { PayloadRequest } from 'payload'
 
+// eslint-disable-next-line max-lines-per-function
 describe('people and configuration collections', () => {
   it('declares the people vertical collections with durable timestamps', () => {
     expect(peopleCollections.map((collection) => collection.slug)).toEqual([
@@ -37,5 +40,20 @@ describe('people and configuration collections', () => {
     expect(isHexColor('#abc')).toBe(false)
     expect(isIanaTimeZone('Europe/London')).toBe(true)
     expect(isIanaTimeZone('not/a-zone')).toBe(false)
+  })
+
+  it('allows personal views for staff but reserves shared views for managers', async () => {
+    const staffReq = {
+      user: { id: 's1', role: 'staff', active: true },
+      payload: { find: () => Promise.resolve({ docs: [] }) },
+    } as unknown as PayloadRequest
+    const managerReq = {
+      user: { id: 'm1', role: 'manager', active: true },
+      payload: { find: () => Promise.resolve({ docs: [] }) },
+    } as unknown as PayloadRequest
+    await expect(sharedViewAccess.create({ req: staffReq, data: {} })).resolves.toBe(true)
+    await expect(sharedViewAccess.create({ req: staffReq, data: { owner: null } })).resolves.toBe(false)
+    await expect(sharedViewAccess.create({ req: managerReq, data: { owner: null } })).resolves.toBe(true)
+    await expect(sharedViewAccess.create({ req: staffReq, data: { owner: 's2' } })).resolves.toBe(false)
   })
 })

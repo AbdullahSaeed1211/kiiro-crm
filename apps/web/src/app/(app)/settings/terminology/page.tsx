@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
-import { SettingsForm, SettingRow, SettingsPage } from '../settings-shell'
+import { saveTerminology } from '../../../../server/actions/settings'
+import { SettingsActionForm } from '../settings-action-form'
+import { SettingsForm, SettingsPage } from '../settings-shell'
 
 export const metadata: Metadata = { title: 'Terminology · Workspace' }
 export const dynamic = 'force-dynamic'
@@ -12,16 +14,18 @@ export default function TerminologySettingsPage() {
       roles={['owner', 'manager']}
     >
       <SettingsForm>
-        {['Organizations', 'Contacts', 'Leads', 'Deals', 'Projects', 'Tasks'].map((name) => (
-          <div className="grid gap-3 sm:grid-cols-3" key={name}>
-            <SettingRow label="Record type" value={name} />
-            <SettingRow label="Singular" value={name.replace(/s$/, '')} />
-            <SettingRow label="Plural" value={name} />
-          </div>
-        ))}
-        <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" type="button">
-          Save terminology
-        </button>
+        <SettingsActionForm
+          action={saveTerminology}
+          fields={[
+            { name: 'organization', label: 'Organization' },
+            { name: 'contact', label: 'Contact' },
+            { name: 'lead', label: 'Lead' },
+            { name: 'deal', label: 'Deal' },
+            { name: 'project', label: 'Project' },
+            { name: 'task', label: 'Task' },
+          ]}
+          submitLabel="Save terminology"
+        />
       </SettingsForm>
     </SettingsPage>
   )

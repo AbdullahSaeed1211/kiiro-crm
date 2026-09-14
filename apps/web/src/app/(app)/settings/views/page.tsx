@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
-import { SettingsForm, SettingRow, SettingsPage } from '../settings-shell'
+import { saveConfiguration } from '../../../../server/actions/settings'
+import { SettingsActionForm } from '../settings-action-form'
+import { SettingsForm, SettingsPage } from '../settings-shell'
 
 export const metadata: Metadata = { title: 'Views · Workspace' }
 export const dynamic = 'force-dynamic'
@@ -8,16 +10,16 @@ export default function ViewsSettingsPage() {
   return (
     <SettingsPage title="Views" description="Manage shared views and defaults." roles={['owner', 'manager']}>
       <SettingsForm>
-        <SettingRow label="View name" value="Open deals" />
-        <SettingRow label="Record type" value="Deals" />
-        <div className="flex gap-3">
-          <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" type="button">
-            Save view
-          </button>
-          <button className="h-10 rounded-md border px-4 text-sm" type="button">
-            Delete
-          </button>
-        </div>
+        <SettingsActionForm
+          action={saveConfiguration}
+          fixedValues={{ collection: 'savedViews' }}
+          fields={[
+            { name: 'recordType', label: 'Record type' },
+            { name: 'name', label: 'View name' },
+            { name: 'kind', label: 'View kind' },
+          ]}
+          submitLabel="Save view"
+        />
       </SettingsForm>
     </SettingsPage>
   )

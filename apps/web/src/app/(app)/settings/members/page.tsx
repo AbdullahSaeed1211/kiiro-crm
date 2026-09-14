@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
-import { SettingsForm, SettingRow, SettingsPage } from '../settings-shell'
+import { inviteMember } from '../../../../server/actions/settings'
+import { InviteMemberForm } from '../member-forms'
+import { SettingsForm, SettingsPage } from '../settings-shell'
 
 export const metadata: Metadata = { title: 'Members · Workspace' }
 export const dynamic = 'force-dynamic'
@@ -12,18 +14,10 @@ export default function MembersSettingsPage() {
       roles={['owner', 'manager']}
     >
       <SettingsForm>
-        <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto]">
-          <SettingRow label="Invite by email" value="teammate@example.com" />
-          <SettingRow label="Role" value="staff" />
-          <button
-            className="h-10 self-end rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
-            type="button"
-          >
-            Invite
-          </button>
-        </div>
+        <InviteMemberForm action={inviteMember} />
         <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-          Members, groups, reporting lines, invitations, and activation status appear here.
+          Members, groups, reporting lines, invitations, and activation status are enforced by the people collection
+          access boundary.
         </div>
       </SettingsForm>
     </SettingsPage>

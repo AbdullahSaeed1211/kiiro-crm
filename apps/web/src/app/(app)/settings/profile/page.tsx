@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
-import { SettingsForm, SettingRow, SettingsPage } from '../settings-shell'
+import { saveProfile } from '../../../../server/actions/settings'
+import { SettingsActionForm } from '../settings-action-form'
+import { SettingsForm, SettingsPage } from '../settings-shell'
 
 export const metadata: Metadata = { title: 'Profile · Workspace' }
 export const dynamic = 'force-dynamic'
@@ -12,11 +14,11 @@ export default function ProfileSettingsPage() {
       roles={['owner', 'manager', 'staff']}
     >
       <SettingsForm>
-        <SettingRow label="Name" value="Your name" />
-        <SettingRow label="Email" value="you@example.com" />
-        <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" type="button">
-          Save profile
-        </button>
+        <SettingsActionForm
+          action={saveProfile}
+          fields={[{ name: 'name', label: 'Name' }]}
+          submitLabel="Save profile"
+        />
         <div className="border-t pt-4">
           <h2 className="font-medium">Change password</h2>
           <p className="mt-1 text-sm text-muted-foreground">Use the secure password form to rotate your password.</p>

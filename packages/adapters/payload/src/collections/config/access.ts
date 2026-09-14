@@ -1,5 +1,5 @@
 import { isManagerUp, type Actor } from '@ops/platform'
-import type { Access, Where } from 'payload'
+import type { Access, AccessArgs, Where } from 'payload'
 import { resolveActor } from '../../access/actor'
 
 type Rule = (actor: Actor) => boolean | Where
@@ -18,9 +18,28 @@ export const configAccess = {
   personalView: allow((actor) => ({ owner: { equals: actor.id } })),
 } as const
 
+interface SavedViewData {
+  readonly owner?: unknown
+}
+function ownerIdOf(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (typeof value === 'object' && value !== null && 'id' in value) return ownerIdOf(value.id)
+  return undefined
+}
+function sharedViewScope(actor: Actor): Where {
+  return { or: [{ owner: { equals: null } }, { owner: { equals: actor.id } }] }
+}
+const createSharedView: Access<SavedViewData> = async ({ req, data }: AccessArgs<SavedViewData>) => {
+  const actor = await resolveActor(req)
+  if (actor?.active !== true) return false
+  if (data?.owner === null) return isManagerUp(actor)
+  const owner = ownerIdOf(data?.owner)
+  return owner === undefined || owner === String(actor.id)
+}
+
 export const sharedViewAccess = {
-  read: allow(() => true),
-  create: allow((actor) => isManagerUp(actor)),
-  update: allow(isManagerUp),
-  delete: allow(isManagerUp),
+  read: allow(sharedViewScope),
+  create: createSharedView,
+  update: allow(sharedViewScope),
+  delete: allow(sharedViewScope),
 } as const

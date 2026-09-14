@@ -1,10 +1,25 @@
 import type { Metadata } from 'next'
-import { SettingsForm, SettingRow, SettingsPage } from '../settings-shell'
+import { requireRole } from '../../../../server/auth/context'
+import { updateSettings } from '../../../../server/actions/settings'
+import { SettingsActionForm } from '../settings-action-form'
+import { SettingsForm, SettingsPage } from '../settings-shell'
 
 export const metadata: Metadata = { title: 'General · Workspace' }
 export const dynamic = 'force-dynamic'
 
-export default function GeneralSettingsPage() {
+export default async function GeneralSettingsPage() {
+  const context = await requireRole('owner', 'manager')
+  const settings = (await context.payload.findGlobal({ slug: 'settings', depth: 0 })) as unknown as Record<
+    string,
+    unknown
+  >
+  const editable = context.actor.role === 'owner'
+  const values = Object.fromEntries(
+    ['appName', 'timezone', 'locale', 'currency', 'weekStartsOn', 'stalledDays'].map((key) => [
+      key,
+      typeof settings[key] === 'string' || typeof settings[key] === 'number' ? settings[key] : '',
+    ]),
+  )
   return (
     <SettingsPage
       title="General"
@@ -12,14 +27,30 @@ export default function GeneralSettingsPage() {
       roles={['owner', 'manager']}
     >
       <SettingsForm>
-        <SettingRow label="Workspace name" value="Workspace" />
-        <SettingRow label="Time zone" value="UTC" />
-        <SettingRow label="Locale" value="en" />
-        <SettingRow label="Currency" value="USD" />
-        <SettingRow label="Stalled after (days)" value="14" />
-        <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" type="button">
-          Save changes
-        </button>
+        {editable ? (
+          <SettingsActionForm
+            action={updateSettings}
+            fields={[
+              { name: 'appName', label: 'Workspace name' },
+              { name: 'timezone', label: 'Time zone' },
+              { name: 'locale', label: 'Locale' },
+              { name: 'currency', label: 'Currency' },
+              { name: 'weekStartsOn', label: 'Week starts on', type: 'number' },
+              { name: 'stalledDays', label: 'Stalled after (days)', type: 'number' },
+            ]}
+            initialValues={values}
+            submitLabel="Save changes"
+          />
+        ) : (
+          <dl className="space-y-3 text-sm">
+            {Object.entries(values).map(([key, value]) => (
+              <div className="flex justify-between gap-4 border-b pb-2" key={key}>
+                <dt className="text-muted-foreground">{key}</dt>
+                <dd>{String(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </SettingsForm>
     </SettingsPage>
   )

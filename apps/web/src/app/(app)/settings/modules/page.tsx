@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { saveModules } from '../../../../server/actions/settings'
+import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 
 export const metadata: Metadata = { title: 'Modules · Workspace' }
@@ -8,18 +10,17 @@ export default function ModulesSettingsPage() {
   return (
     <SettingsPage title="Modules" description="Choose which workspace capabilities are available." roles={['owner']}>
       <SettingsForm>
-        {['CRM', 'Work', 'Intake', 'Mail'].map((name) => (
-          <label className="flex items-center justify-between rounded-lg border p-4 text-sm" key={name}>
-            <span>
-              <span className="block font-medium">{name}</span>
-              <span className="text-muted-foreground">Available to workspace members</span>
-            </span>
-            <input defaultChecked type="checkbox" />
-          </label>
-        ))}
-        <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" type="button">
-          Save modules
-        </button>
+        <SettingsActionForm
+          action={saveModules}
+          fields={[
+            { name: 'crm', label: 'CRM (true or false)' },
+            { name: 'work', label: 'Work (true or false)' },
+            { name: 'intake', label: 'Intake (true or false)' },
+            { name: 'mail', label: 'Mail (true or false)' },
+          ]}
+          initialValues={{ crm: 'true', work: 'true', intake: 'true', mail: 'true' }}
+          submitLabel="Save modules"
+        />
       </SettingsForm>
     </SettingsPage>
   )

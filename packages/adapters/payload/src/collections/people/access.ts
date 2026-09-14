@@ -1,5 +1,5 @@
 import { isManagerUp, type Actor } from '@ops/platform'
-import type { Access, Where } from 'payload'
+import type { Access, FieldAccess, Where } from 'payload'
 import { resolveActor } from '../../access/actor'
 
 type Rule = (actor: Actor) => boolean | Where
@@ -26,6 +26,14 @@ export const membersManagerUp = allowPeople((actor): boolean | Where => {
 
 export const selfOnly = (field = 'id'): Access => allowPeople((actor) => ({ [field]: { equals: actor.id } }))
 
+const STAFF_VISIBLE_FIELDS = new Set(['name', 'email', 'avatar', 'role'])
+export const userFieldRead =
+  (field: string): FieldAccess =>
+  async ({ req }) => {
+    const actor = await resolveActor(req)
+    return actor?.active === true && (actor.role !== 'staff' || STAFF_VISIBLE_FIELDS.has(field))
+  }
+
 export const peopleAccess = {
   users: {
     read: allowPeople((actor) => isManagerUp(actor) || { active: { equals: true } }),
@@ -46,7 +54,7 @@ export const peopleAccess = {
   },
   notificationPrefs: {
     read: selfOnly('user'),
-    create: () => false,
+    create: selfOnly('user'),
     update: selfOnly('user'),
     delete: () => false,
   },

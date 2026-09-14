@@ -1,6 +1,6 @@
 import type { CollectionConfig, Field, GlobalConfig } from 'payload'
 import { ADMIN_GROUPS } from '../fields'
-import { configAccess } from './access'
+import { configAccess, sharedViewAccess } from './access'
 import { configEpoch, configJson, configRelation, configText } from './fields'
 
 const RECORD_TYPES = ['organization', 'contact', 'lead', 'deal', 'project', 'task'] as const
@@ -83,12 +83,7 @@ export const savedViewsCollection = base(
     { name: 'pinned', type: 'checkbox', defaultValue: false },
     { name: 'isDefault', type: 'checkbox', defaultValue: false },
   ],
-  {
-    read: configAccess.activeRead,
-    create: configAccess.activeRead,
-    update: configAccess.managerUp,
-    delete: configAccess.managerUp,
-  },
+  sharedViewAccess,
 )
 savedViewsCollection.indexes = [{ fields: ['recordType', 'owner'] }]
 

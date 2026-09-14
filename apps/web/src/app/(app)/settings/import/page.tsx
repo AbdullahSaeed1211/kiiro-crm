@@ -17,9 +17,9 @@ export default function ImportSettingsPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           {['Organizations', 'Contacts', 'Leads', 'Projects', 'Tasks'].map((name) => (
-            <button className="rounded-md border px-3 py-2 text-sm" key={name} type="button">
-              Download {name} template
-            </button>
+            <a className="rounded-md border px-3 py-2 text-sm" href="/admin" key={name}>
+              Open importer for {name}
+            </a>
           ))}
         </div>
         <a className="text-sm underline underline-offset-4" href="/admin">
