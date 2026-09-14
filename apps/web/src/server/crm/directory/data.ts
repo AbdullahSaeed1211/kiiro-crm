@@ -2,27 +2,12 @@ import { createCrmRepository } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
 import { getRequestContext } from '../../work/deps'
 import { listActivities, listProjects, loadPeople } from './helpers'
+import type { ActivityItem, ContactListItem, OrganizationListItem, PersonSummary } from './types'
 import { displayName, type DirectorySort } from './utils'
 
+export type { ActivityItem, ContactListItem, OrganizationListItem, PersonSummary } from './types'
+
 export const DIRECTORY_PAGE_SIZE = 50
-
-export interface PersonSummary {
-  readonly id: string
-  readonly name: string
-  readonly email: string
-}
-
-export interface OrganizationListItem {
-  readonly record: OrganizationRecord
-  readonly owner: PersonSummary | null
-  readonly openDeals: number
-}
-
-export interface ContactListItem {
-  readonly record: ContactRecord
-  readonly organization: { readonly id: string; readonly name: string } | null
-  readonly owner: PersonSummary | null
-}
 
 export interface OrganizationOption {
   readonly value: string
@@ -46,13 +31,6 @@ export interface ContactRelations {
   readonly organization: OrganizationRecord | null
   readonly leads: readonly { readonly id: string; readonly title: string }[]
   readonly deals: readonly DealRecord[]
-}
-
-export interface ActivityItem {
-  readonly id: string
-  readonly occurredAt: number
-  readonly actorName: string | null
-  readonly summary: string
 }
 
 function sortOrganizations(items: readonly OrganizationListItem[], sort: DirectorySort): OrganizationListItem[] {

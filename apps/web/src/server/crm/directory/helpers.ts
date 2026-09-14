@@ -1,5 +1,5 @@
 import type { RequestContext } from '../../work/deps'
-import type { ActivityItem, PersonSummary } from './data'
+import type { ActivityItem, PersonSummary } from './types'
 
 export function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null
