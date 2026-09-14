@@ -38,7 +38,10 @@ export async function saveOnboardingStep(step: string, input: unknown) {
   const update = step === 'workspace' ? data : {}
   values[step] = data
   if (step === 'template') {
-    const applied = await applyTemplate({ payload: context.payload, req: context.req }, typeof data.template === 'string' ? data.template : '')
+    const applied = await applyTemplate(
+      { payload: context.payload, req: context.req },
+      typeof data.template === 'string' ? data.template : '',
+    )
     if (!applied.ok) return applied
   }
   try {

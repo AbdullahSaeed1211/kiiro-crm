@@ -25,10 +25,7 @@ describe('onboarding template application', () => {
       findGlobal: vi.fn(() => Promise.resolve({ terminology: {}, modules: {}, appliedTemplates: [] })),
       updateGlobal: vi.fn(() => Promise.resolve({})),
     }
-    const result = await applyTemplate(
-      { payload, req: {} as never },
-      'legal',
-    )
+    const result = await applyTemplate({ payload, req: {} as never }, 'legal')
     expect(result).toEqual({ ok: true, key: 'legal' })
     expect(updates).toContain('workflows')
     expect(creates).toContain('fieldDefinitions')

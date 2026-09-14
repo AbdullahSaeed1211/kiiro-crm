@@ -1,3 +1,5 @@
+/* eslint-disable max-lines -- the versioned vertical catalog is intentionally co-located for auditability. */
+
 import type { StageCategory, StageColor } from '@ops/platform'
 
 export const TEMPLATE_KEYS = [
@@ -132,65 +134,208 @@ function baseTemplate(
       view('lead', 'Open leads', 'table', ['title', 'stage', 'owner', 'source']),
       view('deal', 'Deal pipeline', 'board', ['title', 'stage', 'owner', 'value']),
       view('project', 'Projects', 'board', ['name', 'stage', 'owner']),
-      view('task', 'Team tasks', 'table', ['title', 'stage', 'priority', 'assignees', 'dueAt'], { key: 'dueAt', desc: false }),
+      view('task', 'Team tasks', 'table', ['title', 'stage', 'priority', 'assignees', 'dueAt'], {
+        key: 'dueAt',
+        desc: false,
+      }),
     ],
   }
 }
 
 const AGENCY_FIELDS: readonly TemplateField[] = [
-  { recordType: 'lead', key: 'service', label: 'Service', type: 'select', options: ['Website', 'SEO', 'Social media', 'Design', 'App development', 'Ads'] },
-  { recordType: 'lead', key: 'budget', label: 'Budget', type: 'select', options: ['Under $1k', '$1k–5k', '$5k–20k', '$20k+'] },
-  { recordType: 'deal', key: 'serviceLines', label: 'Service lines', type: 'multiSelect', options: ['Website', 'SEO', 'Social media', 'Design', 'App development', 'Ads'] },
+  {
+    recordType: 'lead',
+    key: 'service',
+    label: 'Service',
+    type: 'select',
+    options: ['Website', 'SEO', 'Social media', 'Design', 'App development', 'Ads'],
+  },
+  {
+    recordType: 'lead',
+    key: 'budget',
+    label: 'Budget',
+    type: 'select',
+    options: ['Under $1k', '$1k–5k', '$5k–20k', '$20k+'],
+  },
+  {
+    recordType: 'deal',
+    key: 'serviceLines',
+    label: 'Service lines',
+    type: 'multiSelect',
+    options: ['Website', 'SEO', 'Social media', 'Design', 'App development', 'Ads'],
+  },
 ]
 
 const TEMPLATES: readonly VerticalTemplate[] = [
-  baseTemplate('blank', {}, [workflow('lead', 'Leads', GENERIC_LEAD_STAGES), workflow('deal', 'Deals', GENERIC_DEAL_STAGES)]),
-  baseTemplate('agency', {}, [workflow('lead', 'Leads', GENERIC_LEAD_STAGES), workflow('deal', 'Deals', [
-    { name: 'Discovery', category: 'active', color: 'blue', probability: 10 },
-    { name: 'Proposal sent', category: 'active', color: 'amber', probability: 40 },
-    { name: 'Negotiation', category: 'waiting', color: 'violet', probability: 70 },
-    { name: 'Won', category: 'done_success', color: 'green', probability: 100 },
-    { name: 'Lost', category: 'done_failure', color: 'red', probability: 0 },
-  ])], AGENCY_FIELDS),
-  baseTemplate('accounting', { deal: 'Engagement' }, [workflow('lead', 'Leads', GENERIC_LEAD_STAGES), workflow('deal', 'Engagements', [
-    { name: 'Onboarding', category: 'open', color: 'blue' }, { name: 'In progress', category: 'active', color: 'amber' },
-    { name: 'Filed', category: 'done_success', color: 'green' }, { name: 'Lost', category: 'done_failure', color: 'red' },
-  ])], [{ recordType: 'lead', key: 'entityType', label: 'Entity type', type: 'select' }, { recordType: 'lead', key: 'taxYear', label: 'Tax year', type: 'number' }]),
-  baseTemplate('education', { deal: 'Enrollment' }, [workflow('lead', 'Inquiries', [
-    { name: 'Inquiry', category: 'open', color: 'blue' }, { name: 'Applied', category: 'active', color: 'amber' },
-    { name: 'Enrolled', category: 'done_success', color: 'green' }, { name: 'Not enrolled', category: 'done_failure', color: 'red' },
-  ]), workflow('deal', 'Enrollments', [
-    { name: 'Registered', category: 'open', color: 'blue' }, { name: 'Attending', category: 'active', color: 'amber' },
-    { name: 'Completed', category: 'done_success', color: 'green' }, { name: 'Withdrawn', category: 'cancelled', color: 'gray' },
-  ])], [{ recordType: 'lead', key: 'program', label: 'Program', type: 'select' }, { recordType: 'lead', key: 'startTerm', label: 'Start term', type: 'select' }]),
-  baseTemplate('health', { deal: 'Appointment', contact: 'Client' }, [workflow('lead', 'Leads', [
-    { name: 'New', category: 'open', color: 'blue' }, { name: 'Contacted', category: 'active', color: 'amber' },
-    { name: 'Booked', category: 'done_success', color: 'green' }, { name: 'Not booked', category: 'done_failure', color: 'red' },
-  ]), workflow('deal', 'Appointments', [
-    { name: 'Scheduled', category: 'open', color: 'blue' }, { name: 'Attended', category: 'done_success', color: 'green' },
-    { name: 'No-show', category: 'done_failure', color: 'red' }, { name: 'Cancelled', category: 'cancelled', color: 'gray' },
-  ])], [{ recordType: 'lead', key: 'serviceType', label: 'Service type', type: 'select' }, { recordType: 'lead', key: 'preferredLocation', label: 'Preferred location', type: 'select' }], true),
-  baseTemplate('home-inspection', { deal: 'Booking', project: 'Inspection' }, [workflow('lead', 'Leads', GENERIC_LEAD_STAGES), workflow('deal', 'Bookings', [
-    { name: 'Scheduled', category: 'open', color: 'blue' }, { name: 'Inspected', category: 'active', color: 'amber' },
-    { name: 'Report sent', category: 'done_success', color: 'green' }, { name: 'Cancelled', category: 'cancelled', color: 'gray' },
-  ])], [{ recordType: 'lead', key: 'propertyAddress', label: 'Property address', type: 'text' }, { recordType: 'lead', key: 'inspectionType', label: 'Inspection type', type: 'select' }, { recordType: 'lead', key: 'sqft', label: 'Square feet', type: 'number' }]),
-  baseTemplate('legal', { deal: 'Matter', organization: 'Firm client', project: 'Case file' }, [workflow('lead', 'Intake', [
-    { name: 'New', category: 'open', color: 'blue' }, { name: 'Consultation booked', category: 'active', color: 'amber' },
-    { name: 'Consulted', category: 'waiting', color: 'violet' }, { name: 'Retained', category: 'done_success', color: 'green' }, { name: 'Declined', category: 'done_failure', color: 'red' },
-  ]), workflow('deal', 'Matters', [
-    { name: 'Intake', category: 'open', color: 'blue' }, { name: 'Treatment', category: 'active', color: 'amber' },
-    { name: 'Records requested', category: 'waiting', color: 'violet' }, { name: 'Attorney review', category: 'active', color: 'amber' },
-    { name: 'Settled', category: 'done_success', color: 'green' }, { name: 'Closed, no recovery', category: 'done_failure', color: 'red' },
-  ])], [{ recordType: 'lead', key: 'caseType', label: 'Case type', type: 'select', sensitive: true }, { recordType: 'lead', key: 'incidentDate', label: 'Incident date', type: 'date', sensitive: true }, { recordType: 'lead', key: 'language', label: 'Language', type: 'select', options: ['English', 'Español'] }], true),
-  baseTemplate('real-estate', { deal: 'Transaction', contact: 'Client' }, [workflow('lead', 'Leads', [
-    { name: 'New', category: 'open', color: 'blue' }, { name: 'Contacted', category: 'active', color: 'amber' },
-    { name: 'Showing', category: 'active', color: 'violet' }, { name: 'Offer', category: 'waiting', color: 'amber' }, { name: 'Closed', category: 'done_success', color: 'green' }, { name: 'Lost', category: 'done_failure', color: 'red' },
-  ]), workflow('deal', 'Transactions', GENERIC_DEAL_STAGES)], [{ recordType: 'lead', key: 'side', label: 'Side', type: 'select', options: ['Buyer', 'Seller'] }, { recordType: 'lead', key: 'budget', label: 'Budget', type: 'currency' }, { recordType: 'lead', key: 'area', label: 'Area', type: 'text' }]),
-  baseTemplate('travel', { deal: 'Trip' }, [workflow('lead', 'Leads', [
-    { name: 'New', category: 'open', color: 'blue' }, { name: 'Quoted', category: 'active', color: 'amber' }, { name: 'Booked', category: 'done_success', color: 'green' }, { name: 'Lost', category: 'done_failure', color: 'red' },
-  ]), workflow('deal', 'Trips', [
-    { name: 'Planning', category: 'open', color: 'blue' }, { name: 'Confirmed', category: 'active', color: 'amber' }, { name: 'Travelled', category: 'done_success', color: 'green' }, { name: 'Cancelled', category: 'cancelled', color: 'gray' },
-  ])], [{ recordType: 'lead', key: 'destination', label: 'Destination', type: 'text' }, { recordType: 'lead', key: 'travelDates', label: 'Travel dates', type: 'text' }, { recordType: 'lead', key: 'travellers', label: 'Travellers', type: 'number' }]),
+  baseTemplate('blank', {}, [
+    workflow('lead', 'Leads', GENERIC_LEAD_STAGES),
+    workflow('deal', 'Deals', GENERIC_DEAL_STAGES),
+  ]),
+  baseTemplate(
+    'agency',
+    {},
+    [
+      workflow('lead', 'Leads', GENERIC_LEAD_STAGES),
+      workflow('deal', 'Deals', [
+        { name: 'Discovery', category: 'active', color: 'blue', probability: 10 },
+        { name: 'Proposal sent', category: 'active', color: 'amber', probability: 40 },
+        { name: 'Negotiation', category: 'waiting', color: 'violet', probability: 70 },
+        { name: 'Won', category: 'done_success', color: 'green', probability: 100 },
+        { name: 'Lost', category: 'done_failure', color: 'red', probability: 0 },
+      ]),
+    ],
+    AGENCY_FIELDS,
+  ),
+  baseTemplate(
+    'accounting',
+    { deal: 'Engagement' },
+    [
+      workflow('lead', 'Leads', GENERIC_LEAD_STAGES),
+      workflow('deal', 'Engagements', [
+        { name: 'Onboarding', category: 'open', color: 'blue' },
+        { name: 'In progress', category: 'active', color: 'amber' },
+        { name: 'Filed', category: 'done_success', color: 'green' },
+        { name: 'Lost', category: 'done_failure', color: 'red' },
+      ]),
+    ],
+    [
+      { recordType: 'lead', key: 'entityType', label: 'Entity type', type: 'select' },
+      { recordType: 'lead', key: 'taxYear', label: 'Tax year', type: 'number' },
+    ],
+  ),
+  baseTemplate(
+    'education',
+    { deal: 'Enrollment' },
+    [
+      workflow('lead', 'Inquiries', [
+        { name: 'Inquiry', category: 'open', color: 'blue' },
+        { name: 'Applied', category: 'active', color: 'amber' },
+        { name: 'Enrolled', category: 'done_success', color: 'green' },
+        { name: 'Not enrolled', category: 'done_failure', color: 'red' },
+      ]),
+      workflow('deal', 'Enrollments', [
+        { name: 'Registered', category: 'open', color: 'blue' },
+        { name: 'Attending', category: 'active', color: 'amber' },
+        { name: 'Completed', category: 'done_success', color: 'green' },
+        { name: 'Withdrawn', category: 'cancelled', color: 'gray' },
+      ]),
+    ],
+    [
+      { recordType: 'lead', key: 'program', label: 'Program', type: 'select' },
+      { recordType: 'lead', key: 'startTerm', label: 'Start term', type: 'select' },
+    ],
+  ),
+  baseTemplate(
+    'health',
+    { deal: 'Appointment', contact: 'Client' },
+    [
+      workflow('lead', 'Leads', [
+        { name: 'New', category: 'open', color: 'blue' },
+        { name: 'Contacted', category: 'active', color: 'amber' },
+        { name: 'Booked', category: 'done_success', color: 'green' },
+        { name: 'Not booked', category: 'done_failure', color: 'red' },
+      ]),
+      workflow('deal', 'Appointments', [
+        { name: 'Scheduled', category: 'open', color: 'blue' },
+        { name: 'Attended', category: 'done_success', color: 'green' },
+        { name: 'No-show', category: 'done_failure', color: 'red' },
+        { name: 'Cancelled', category: 'cancelled', color: 'gray' },
+      ]),
+    ],
+    [
+      { recordType: 'lead', key: 'serviceType', label: 'Service type', type: 'select' },
+      { recordType: 'lead', key: 'preferredLocation', label: 'Preferred location', type: 'select' },
+    ],
+    true,
+  ),
+  baseTemplate(
+    'home-inspection',
+    { deal: 'Booking', project: 'Inspection' },
+    [
+      workflow('lead', 'Leads', GENERIC_LEAD_STAGES),
+      workflow('deal', 'Bookings', [
+        { name: 'Scheduled', category: 'open', color: 'blue' },
+        { name: 'Inspected', category: 'active', color: 'amber' },
+        { name: 'Report sent', category: 'done_success', color: 'green' },
+        { name: 'Cancelled', category: 'cancelled', color: 'gray' },
+      ]),
+    ],
+    [
+      { recordType: 'lead', key: 'propertyAddress', label: 'Property address', type: 'text' },
+      { recordType: 'lead', key: 'inspectionType', label: 'Inspection type', type: 'select' },
+      { recordType: 'lead', key: 'sqft', label: 'Square feet', type: 'number' },
+    ],
+  ),
+  baseTemplate(
+    'legal',
+    { deal: 'Matter', organization: 'Firm client', project: 'Case file' },
+    [
+      workflow('lead', 'Intake', [
+        { name: 'New', category: 'open', color: 'blue' },
+        { name: 'Consultation booked', category: 'active', color: 'amber' },
+        { name: 'Consulted', category: 'waiting', color: 'violet' },
+        { name: 'Retained', category: 'done_success', color: 'green' },
+        { name: 'Declined', category: 'done_failure', color: 'red' },
+      ]),
+      workflow('deal', 'Matters', [
+        { name: 'Intake', category: 'open', color: 'blue' },
+        { name: 'Treatment', category: 'active', color: 'amber' },
+        { name: 'Records requested', category: 'waiting', color: 'violet' },
+        { name: 'Attorney review', category: 'active', color: 'amber' },
+        { name: 'Settled', category: 'done_success', color: 'green' },
+        { name: 'Closed, no recovery', category: 'done_failure', color: 'red' },
+      ]),
+    ],
+    [
+      { recordType: 'lead', key: 'caseType', label: 'Case type', type: 'select', sensitive: true },
+      { recordType: 'lead', key: 'incidentDate', label: 'Incident date', type: 'date', sensitive: true },
+      { recordType: 'lead', key: 'language', label: 'Language', type: 'select', options: ['English', 'Español'] },
+    ],
+    true,
+  ),
+  baseTemplate(
+    'real-estate',
+    { deal: 'Transaction', contact: 'Client' },
+    [
+      workflow('lead', 'Leads', [
+        { name: 'New', category: 'open', color: 'blue' },
+        { name: 'Contacted', category: 'active', color: 'amber' },
+        { name: 'Showing', category: 'active', color: 'violet' },
+        { name: 'Offer', category: 'waiting', color: 'amber' },
+        { name: 'Closed', category: 'done_success', color: 'green' },
+        { name: 'Lost', category: 'done_failure', color: 'red' },
+      ]),
+      workflow('deal', 'Transactions', GENERIC_DEAL_STAGES),
+    ],
+    [
+      { recordType: 'lead', key: 'side', label: 'Side', type: 'select', options: ['Buyer', 'Seller'] },
+      { recordType: 'lead', key: 'budget', label: 'Budget', type: 'currency' },
+      { recordType: 'lead', key: 'area', label: 'Area', type: 'text' },
+    ],
+  ),
+  baseTemplate(
+    'travel',
+    { deal: 'Trip' },
+    [
+      workflow('lead', 'Leads', [
+        { name: 'New', category: 'open', color: 'blue' },
+        { name: 'Quoted', category: 'active', color: 'amber' },
+        { name: 'Booked', category: 'done_success', color: 'green' },
+        { name: 'Lost', category: 'done_failure', color: 'red' },
+      ]),
+      workflow('deal', 'Trips', [
+        { name: 'Planning', category: 'open', color: 'blue' },
+        { name: 'Confirmed', category: 'active', color: 'amber' },
+        { name: 'Travelled', category: 'done_success', color: 'green' },
+        { name: 'Cancelled', category: 'cancelled', color: 'gray' },
+      ]),
+    ],
+    [
+      { recordType: 'lead', key: 'destination', label: 'Destination', type: 'text' },
+      { recordType: 'lead', key: 'travelDates', label: 'Travel dates', type: 'text' },
+      { recordType: 'lead', key: 'travellers', label: 'Travellers', type: 'number' },
+    ],
+  ),
 ]
 
 export function templateFor(key: string): VerticalTemplate | undefined {

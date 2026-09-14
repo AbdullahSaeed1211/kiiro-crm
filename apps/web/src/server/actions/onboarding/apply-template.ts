@@ -1,4 +1,10 @@
-import { templateFor, type TemplateField, type TemplateStage, type TemplateView, type VerticalTemplate } from '@ops/templates'
+import {
+  templateFor,
+  type TemplateField,
+  type TemplateStage,
+  type TemplateView,
+  type VerticalTemplate,
+} from '@ops/templates'
 import { revalidatePath } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 import type { UntypedPayload } from '../../auth/api'
@@ -27,7 +33,9 @@ function stageId(value: unknown): string | undefined {
 }
 
 function stageRows(value: unknown): ExistingStage[] {
-  return Array.isArray(value) ? value.filter((entry): entry is ExistingStage => typeof entry === 'object' && entry !== null) : []
+  return Array.isArray(value)
+    ? value.filter((entry): entry is ExistingStage => typeof entry === 'object' && entry !== null)
+    : []
 }
 
 function nextStages(desired: readonly TemplateStage[], existing: ExistingStage[]): Record<string, unknown>[] {
@@ -62,12 +70,18 @@ async function upsertWorkflow(
   const current = found.docs[0]
   const stages = nextStages(definition.stages, stageRows(current?.stages))
   const data = { recordType, name: definition.name, stages, defaultStageId: stages[0]?.id }
-  if (current?.id === undefined) await payload.create({ collection: 'workflows', data, req: context.req, overrideAccess: false })
+  if (current?.id === undefined)
+    await payload.create({ collection: 'workflows', data, req: context.req, overrideAccess: false })
   else await payload.update({ collection: 'workflows', id: current.id, data, req: context.req, overrideAccess: false })
 }
 
 // eslint-disable-next-line max-params -- field position is part of the persisted template contract.
-async function upsertField(payload: UntypedPayload, context: PayloadContext, field: TemplateField, position: number): Promise<void> {
+async function upsertField(
+  payload: UntypedPayload,
+  context: PayloadContext,
+  field: TemplateField,
+  position: number,
+): Promise<void> {
   const found = await payload.find({
     collection: 'fieldDefinitions',
     where: { and: [{ recordType: { equals: field.recordType } }, { key: { equals: field.key } }] },
@@ -89,8 +103,16 @@ async function upsertField(payload: UntypedPayload, context: PayloadContext, fie
     position,
   }
   const current = found.docs[0]
-  if (current?.id === undefined) await payload.create({ collection: 'fieldDefinitions', data, req: context.req, overrideAccess: false })
-  else await payload.update({ collection: 'fieldDefinitions', id: current.id, data, req: context.req, overrideAccess: false })
+  if (current?.id === undefined)
+    await payload.create({ collection: 'fieldDefinitions', data, req: context.req, overrideAccess: false })
+  else
+    await payload.update({
+      collection: 'fieldDefinitions',
+      id: current.id,
+      data,
+      req: context.req,
+      overrideAccess: false,
+    })
 }
 
 async function ensureView(payload: UntypedPayload, context: PayloadContext, view: TemplateView): Promise<void> {
@@ -122,8 +144,11 @@ async function ensureView(payload: UntypedPayload, context: PayloadContext, view
 }
 
 /** Applies one declarative vertical template idempotently to a tenant's configuration collections. */
-// eslint-disable-next-line complexity, max-statements -- template application is one atomic authorized workflow.
-export async function applyTemplate(context: PayloadContext, key: string): Promise<{ ok: true; key: string } | { ok: false; error: string }> {
+// eslint-disable-next-line complexity, max-statements, max-lines-per-function -- template application is one atomic authorized workflow.
+export async function applyTemplate(
+  context: PayloadContext,
+  key: string,
+): Promise<{ ok: true; key: string } | { ok: false; error: string }> {
   const template = templateFor(key)
   if (template === undefined) return { ok: false, error: 'Choose a supported business type.' }
   const payload = context.payload as UntypedPayload
@@ -132,7 +157,10 @@ export async function applyTemplate(context: PayloadContext, key: string): Promi
     for (const [index, field] of template.fields.entries()) await upsertField(payload, context, field, index)
     for (const view of template.views) await ensureView(payload, context, view)
     const globalPayload = context.payload as GlobalPayload
-    const settings = (await globalPayload.findGlobal({ slug: 'settings', depth: 0, req: context.req })) as Record<string, unknown>
+    const settings = (await globalPayload.findGlobal({ slug: 'settings', depth: 0, req: context.req })) as Record<
+      string,
+      unknown
+    >
     const currentTerminology = objectOf(settings.terminology)
     const currentModules = objectOf(settings.modules)
     const applied = Array.isArray(settings.appliedTemplates)
@@ -154,7 +182,15 @@ export async function applyTemplate(context: PayloadContext, key: string): Promi
       overrideAccess: true,
       req: context.req,
     })
-    for (const path of ['/settings', '/settings/fields', '/settings/views', '/settings/workflows', '/tasks', '/leads', '/deals'])
+    for (const path of [
+      '/settings',
+      '/settings/fields',
+      '/settings/views',
+      '/settings/workflows',
+      '/tasks',
+      '/leads',
+      '/deals',
+    ])
       revalidatePath(path)
     return { ok: true, key: template.key }
   } catch (error) {
