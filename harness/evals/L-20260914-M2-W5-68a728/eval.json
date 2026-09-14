@@ -2,12 +2,12 @@
   "lesson": "L-20260914-M2-W5-68a728",
   "repro": {
     "cwd": "harness/evals/L-20260914-M2-W5-68a728/repro",
-    "command": "echo 'TODO: implement the repro step of L-20260914-M2-W5-68a728' >&2; exit 1",
+    "command": "pnpm exec tsx ../../../../scripts/harness/eval-fixtures/edge-case.ts bad",
     "expectExitCode": "nonzero"
   },
   "fixed": {
     "cwd": "harness/evals/L-20260914-M2-W5-68a728/fixed",
-    "command": "echo 'TODO: implement the fixed step of L-20260914-M2-W5-68a728' >&2; exit 1",
+    "command": "pnpm exec tsx ../../../../scripts/harness/eval-fixtures/edge-case.ts fixed",
     "expectExitCode": "zero"
   }
 }

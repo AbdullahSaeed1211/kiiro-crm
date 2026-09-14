@@ -1,0 +1,91 @@
+{
+  "wp": "M2-L2",
+  "milestone": "M2",
+  "attempt": 3,
+  "runner": "worker",
+  "startedAt": "2026-09-14T03:50:10.980Z",
+  "finishedAt": "2026-09-14T03:50:51.972Z",
+  "gates": [
+    {
+      "name": "pnpm build",
+      "exitCode": 0,
+      "durationMs": 16642,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1765,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 3648,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 18066,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 547,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 266,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [
+    "harness/CHANGELOG.md",
+    "harness/evals/L-20260914-M2-L2-f94a97/eval.json",
+    "harness/evals/L-20260914-M2-L2-f94a97/fixed/README.md",
+    "harness/evals/L-20260914-M2-L2-f94a97/repro/README.md",
+    "harness/evals/L-20260914-M2-W5-06a88b/eval.json",
+    "harness/evals/L-20260914-M2-W5-06a88b/fixed/README.md",
+    "harness/evals/L-20260914-M2-W5-06a88b/fixed/gates.json",
+    "harness/evals/L-20260914-M2-W5-06a88b/repro/README.md",
+    "harness/evals/L-20260914-M2-W5-06a88b/repro/gates.json",
+    "harness/evals/L-20260914-M2-W5-68a728/eval.json",
+    "harness/evals/L-20260914-M2-W5-68a728/fixed/README.md",
+    "harness/evals/L-20260914-M2-W5-68a728/repro/README.md",
+    "harness/evals/L-20260914-M2-W6-96c88c/eval.json",
+    "harness/evals/L-20260914-M2-W6-96c88c/fixed/README.md",
+    "harness/evals/L-20260914-M2-W6-96c88c/fixed/scope.json",
+    "harness/evals/L-20260914-M2-W6-96c88c/repro/README.md",
+    "harness/evals/L-20260914-M2-W6-96c88c/repro/scope.json",
+    "harness/evals/L-20260914-M2-W6-fb9dc8/eval.json",
+    "harness/evals/L-20260914-M2-W6-fb9dc8/fixed/README.md",
+    "harness/evals/L-20260914-M2-W6-fb9dc8/fixed/records.json",
+    "harness/evals/L-20260914-M2-W6-fb9dc8/repro/README.md",
+    "harness/evals/L-20260914-M2-W6-fb9dc8/repro/records.json",
+    "harness/lessons/L-20260914-M2-L2-f94a97.md",
+    "harness/lessons/L-20260914-M2-W5-06a88b.md",
+    "harness/lessons/L-20260914-M2-W5-68a728.md",
+    "harness/lessons/L-20260914-M2-W6-96c88c.md",
+    "harness/lessons/L-20260914-M2-W6-fb9dc8.md",
+    "scripts/harness/eval-fixtures/access-scope.ts",
+    "scripts/harness/eval-fixtures/contract-drift.ts",
+    "scripts/harness/eval-fixtures/edge-case.ts",
+    "scripts/harness/eval-fixtures/gate-failure.ts",
+    "scripts/harness/eval-fixtures/scope-violation.ts",
+    "scripts/harness/retro.ts",
+    "scripts/test/harness/retro.test.ts"
+  ],
+  "filesChanged": 35,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT",
+    "SCOPE_VIOLATION"
+  ],
+  "leadTookOver": false
+}

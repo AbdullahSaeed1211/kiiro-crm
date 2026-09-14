@@ -1,0 +1,7 @@
+{
+  "actor": "staff-1",
+  "records": [
+    { "id": "owned", "ownerId": "staff-1", "assigneeIds": [] },
+    { "id": "foreign", "ownerId": "staff-2", "assigneeIds": [] }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "allowed": ["apps/web/src/app/(app)/deals/**", "apps/web/src/server/crm/deals/**"],
+  "changed": ["apps/web/src/app/(app)/deals/page.tsx", "apps/web/test/deals.test.ts"]
+}

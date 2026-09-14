@@ -41,10 +41,16 @@ export function wpStats(files: AttemptFile[]): WpStat[] {
     const own = files.filter((f) => f.data.wp === wp)
     const attempts = Math.max(...own.map((f) => f.data.attempt))
     const first = effective.find((f) => f.data.wp === wp && f.data.attempt === 1)
+    const firstPass =
+      attempts === 1 &&
+      first !== undefined &&
+      !first.data.leadTookOver &&
+      first.data.confirmedClasses.length === 0 &&
+      !first.data.gates.some(isFailure)
     return {
       wp,
       attempts,
-      firstPass: first !== undefined && !first.data.gates.some(isFailure),
+      firstPass,
       retries: attempts - 1,
       tookOver: own.some((f) => f.data.leadTookOver),
       gateMs: own.reduce((sum, f) => sum + f.data.gates.reduce((s, g) => s + g.durationMs, 0), 0),
