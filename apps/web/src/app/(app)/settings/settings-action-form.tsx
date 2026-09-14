@@ -1,6 +1,7 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 
+import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 
 interface Result {
@@ -23,6 +24,7 @@ export function SettingsActionForm({
   initialValues?: Readonly<Record<string, string | number>>
   submitLabel: string
 }>) {
+  const router = useRouter()
   const [values, setValues] = useState<Record<string, string>>(
     Object.fromEntries(fields.map((field) => [field.name, String(initialValues[field.name] ?? '')])),
   )
@@ -35,6 +37,7 @@ export function SettingsActionForm({
     const response = await action({ ...fixedValues, ...values })
     setResult(response)
     setPending(false)
+    if (response.ok) router.refresh()
   }
   return (
     <form
@@ -49,6 +52,7 @@ export function SettingsActionForm({
           <input
             className="h-10 rounded-md border bg-background px-3"
             name={field.name}
+            autoComplete="off"
             onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
             type={field.type ?? 'text'}
             value={values[field.name] ?? ''}
@@ -70,7 +74,7 @@ export function SettingsActionForm({
         disabled={pending}
         type="submit"
       >
-        {pending ? 'Saving...' : submitLabel}
+        {pending ? 'Saving…' : submitLabel}
       </button>
     </form>
   )

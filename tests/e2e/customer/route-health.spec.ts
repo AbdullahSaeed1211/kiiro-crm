@@ -1,0 +1,188 @@
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { expect, test, type Page } from '@playwright/test'
+import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
+import { WEB_DIR } from '../../../scripts/seed/local-env'
+
+const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
+const SIGN_IN_LOCK = join(tmpdir(), 'ops-route-health-sign-in.lock')
+const ROUTE_BUDGET_MS = 12_000
+const UUID_TEXT = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i
+const ROUTES = [
+  ['/', 'Dashboard'],
+  ['/leads', 'Leads'],
+  ['/leads/board', 'Lead board'],
+  ['/deals', 'Deals'],
+  ['/deals/board', 'Deal board'],
+  ['/contacts', 'Contacts'],
+  ['/organizations', 'Organizations'],
+  ['/projects', 'Projects'],
+  ['/tasks', 'Tasks'],
+  ['/my-tasks', 'My tasks'],
+  ['/calendar', 'Calendar'],
+  ['/timeline', 'Timeline'],
+  ['/settings/general', 'General'],
+  ['/settings/members', 'Members'],
+  ['/settings/notifications', 'Notifications'],
+  ['/settings/email', 'Email'],
+  ['/settings/intake', 'Intake'],
+  ['/onboarding', 'Workspace'],
+  ['/leads/new', 'New lead'],
+  ['/contacts/new', 'New contact'],
+  ['/organizations/new', 'New organization'],
+  ['/projects/new', 'New project'],
+] as const
+
+test.describe.configure({ mode: 'serial', timeout: 120_000 })
+
+function tryLock(): boolean {
+  try {
+    mkdirSync(SIGN_IN_LOCK)
+    return true
+  } catch {
+    const age = Date.now() - (statSync(SIGN_IN_LOCK, { throwIfNoEntry: false })?.mtimeMs ?? Date.now())
+    if (age > 60_000) rmSync(SIGN_IN_LOCK, { recursive: true, force: true })
+    return false
+  }
+}
+
+async function signIn(page: Page): Promise<void> {
+  // eslint-disable-next-line sonarjs/no-fixed-wait-in-tests -- cross-project D1 session lock is filesystem-backed.
+  while (!tryLock()) await page.waitForTimeout(100)
+  try {
+    await page.goto('/login')
+    await page.getByLabel('Email').fill(OWNER_EMAIL)
+    await page.getByLabel('Password').fill(DEV_PASSWORD)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/$/)
+  } finally {
+    rmSync(SIGN_IN_LOCK, { recursive: true, force: true })
+  }
+}
+
+async function firstDetailHref(page: Page, prefix: string): Promise<string> {
+  const hrefs = await page
+    .locator(`a[href^="${prefix}/"]`)
+    .evaluateAll((links) =>
+      links.map((link) => link.getAttribute('href')).filter((href): href is string => href !== null),
+    )
+  const detail = hrefs.find((href) => !href.endsWith('/new') && !href.includes('/board'))
+  if (detail === undefined) throw new Error(`no detail link found for ${prefix}`)
+  return detail
+}
+
+// eslint-disable-next-line max-lines-per-function, max-statements -- one deterministic route-health flow keeps the audit atomic.
+test('customer routes load without browser failures and stay within the response budget', async ({ page }) => {
+  const consoleIssues: string[] = []
+  const pageErrors: string[] = []
+  const failedRequests: string[] = []
+  const badResponses: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'warning' || message.type() === 'error')
+      consoleIssues.push(`${message.type()}: ${message.text()}`)
+  })
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('requestfailed', (request) =>
+    failedRequests.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`),
+  )
+  page.on('response', (response) => {
+    const path = new URL(response.url()).pathname
+    if (response.status() >= 500 || (response.status() >= 400 && path.startsWith('/api/'))) {
+      badResponses.push(`${String(response.status())} ${response.request().method()} ${path}`)
+    }
+  })
+
+  await signIn(page)
+  const timings: string[] = []
+  for (const [route, heading] of ROUTES) {
+    const start = Date.now()
+    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await expect(page.getByRole('heading', { name: heading, exact: false }).first()).toBeVisible()
+    const elapsed = Date.now() - start
+    timings.push(`${route}=${String(elapsed)}ms`)
+    expect(elapsed, `${route} exceeded ${String(ROUTE_BUDGET_MS)}ms`).toBeLessThan(ROUTE_BUDGET_MS)
+    const bodyText = await page.locator('body').innerText()
+    expect(bodyText).not.toContain('Application error')
+    expect(bodyText, `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
+  }
+
+  const detailRoutes: string[] = []
+  for (const prefix of ['/projects', '/leads', '/contacts', '/organizations']) {
+    await page.goto(prefix, { waitUntil: 'domcontentloaded' })
+    detailRoutes.push(await firstDetailHref(page, prefix))
+  }
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
+  if (taskDetail === null) throw new Error('no task detail link found on dashboard')
+  detailRoutes.splice(1, 0, taskDetail)
+  for (const route of detailRoutes) {
+    const start = Date.now()
+    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('main, [data-slot="sheet-content"], [data-slot="card"]').first()).toBeVisible()
+    expect(Date.now() - start, `${route} exceeded ${String(ROUTE_BUDGET_MS)}ms`).toBeLessThan(ROUTE_BUDGET_MS)
+    expect(await page.locator('body').innerText(), `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
+  }
+
+  await page.goto('/leads', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Search workspace' }).click()
+  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('Website')
+  await expect(page.getByText('Website redesign inquiry', { exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  expect(pageErrors, pageErrors.join('\n')).toEqual([])
+  expect(failedRequests, failedRequests.join('\n')).toEqual([])
+  expect(badResponses, badResponses.join('\n')).toEqual([])
+  expect(consoleIssues, consoleIssues.join('\n')).toEqual([])
+  test.info().annotations.push({ type: 'route-timings', description: timings.join(', ') })
+})
+
+// eslint-disable-next-line max-statements -- this guard intentionally covers both contextual and canonical navigation.
+test('task details preserve origin in contextual mode and render canonically when deep-linked', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/')
+  const href = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
+  if (href === null) throw new Error('no task detail link found on dashboard')
+  await page.goto(href)
+  await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath('task-panel.png'), fullPage: true })
+  await page.goBack()
+  await expect(page).toHaveURL(/\/$/)
+  await page.goForward()
+  await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(/\/$/)
+  const taskPath = href.split('?')[0]
+  await page.goto(taskPath)
+  await expect(page.getByRole('heading', { name: 'Assignees' })).toBeVisible()
+  await expect(page.locator('[data-slot="sheet-content"]')).toHaveCount(0)
+  await page.screenshot({ path: test.info().outputPath('task-page.png'), fullPage: true })
+})
+
+test('settings IA and command palette expose useful, non-dead defaults', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/general')
+  const settingsNav = page.getByRole('navigation', { name: 'Settings' })
+  await expect(settingsNav.getByRole('heading', { name: 'Workspace' })).toBeVisible()
+  await expect(settingsNav.getByRole('heading', { name: 'People & access' })).toBeVisible()
+  await expect(settingsNav.getByRole('heading', { name: 'Work configuration' })).toBeVisible()
+  await page.getByRole('button', { name: 'Search workspace' }).click()
+  await expect(page.getByText('Navigate', { exact: true })).toBeVisible()
+  await expect(page.getByText('Create', { exact: true })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Navigate' }).getByText('Tasks', { exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath('command-palette.png'), fullPage: true })
+  await page.keyboard.press('Escape')
+})
+
+// Keep the seed source as the single credential authority; this guard catches stale test fixtures.
+test('route-health harness has a local owner credential', () => {
+  expect(OWNER_EMAIL).toBe('mirchads@gmail.com')
+  expect(existsSync(join(WEB_DIR, '.dev.vars.example'))).toBe(true)
+  expect(readFileSync(join(WEB_DIR, '.dev.vars.example'), 'utf8')).toContain('PAYLOAD_SECRET=')
+})
+
+test('customer surfaces default to light mode under a dark operating-system preference', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto('/login')
+  await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
+})

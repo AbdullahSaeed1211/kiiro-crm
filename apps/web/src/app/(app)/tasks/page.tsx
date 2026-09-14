@@ -1,3 +1,5 @@
+/* eslint-disable max-lines -- task table owns its read-model cells and URL state in one route boundary. */
+
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ops/ui/components/ui/avatar'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
@@ -11,9 +13,12 @@ import {
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { TaskCreateForm } from './TaskCreateForm'
+import { TaskViewMenu } from './TaskViewMenu'
+import { taskHref } from '../task-navigation'
 import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
+import { listSavedViews, type SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
 import type {
   TaskListItem,
   TaskListResult,
@@ -135,11 +140,15 @@ function DueCell({ dueAt }: Readonly<{ dueAt: number | null }>) {
   )
 }
 
-function toRow(task: TaskListItem): DataTableRow {
+function toRow(task: TaskListItem, returnTo: string): DataTableRow {
   return {
     id: task.id,
     cells: {
-      title: <span className="font-medium">{task.title}</span>,
+      title: (
+        <a href={taskHref(task.id, returnTo)} className="font-medium hover:text-primary hover:underline">
+          {task.title}
+        </a>
+      ),
       stage: <StageCell stage={task.stage} />,
       priority: <PriorityCell priority={task.priority} />,
       assignees: <AssigneesCell assignees={task.assignees} />,
@@ -149,10 +158,10 @@ function toRow(task: TaskListItem): DataTableRow {
   }
 }
 
-function taskColumns(sort: TaskSort): DataTableColumn[] {
+function taskColumns(sort: TaskSort, view: string): DataTableColumn[] {
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
-    `?sort=${formatTaskSort({ key, desc: sort.key === key && !sort.desc })}`
+    `?${new URLSearchParams({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view }).toString()}`
   return [
     { id: 'title', header: 'Title', sortHref: sortHref('title'), hideable: false },
     { id: 'stage', header: 'Stage', sortHref: sortHref('stage') },
@@ -163,10 +172,14 @@ function taskColumns(sort: TaskSort): DataTableColumn[] {
   ]
 }
 
-function paginationOf(result: TaskListResult, sort: TaskSort): DataTablePaginationState {
+function paginationOf({
+  result,
+  sort,
+  view,
+}: Readonly<{ result: TaskListResult; sort: TaskSort; view: string }>): DataTablePaginationState {
   const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize))
   const pageHref = (page: number): string =>
-    `?${new URLSearchParams({ sort: formatTaskSort(sort), page: String(page) }).toString()}`
+    `?${new URLSearchParams({ sort: formatTaskSort(sort), page: String(page), view }).toString()}`
   return {
     page: result.page,
     pageSize: result.pageSize,
@@ -180,25 +193,92 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
+function parseTaskView(value: string | undefined, savedViews: readonly SavedViewSummary[]): string {
+  if (value !== undefined && savedViews.some((view) => view.id === value)) return value
+  return value === 'open' || value === 'mine' ? value : 'all'
+}
+
+// eslint-disable-next-line complexity -- validates a small persisted sort object defensively.
+function savedViewSort(view: SavedViewSummary | undefined, fallback: TaskSort): TaskSort {
+  if (typeof view?.sort !== 'object' || view.sort === null || Array.isArray(view.sort)) return fallback
+  const value = view.sort as Record<string, unknown>
+  const key = value.key
+  if (key !== 'title' && key !== 'stage' && key !== 'priority' && key !== 'dueAt') return fallback
+  return { key, desc: value.desc === true }
+}
+
+function savedViewMode(view: SavedViewSummary | undefined): 'all' | 'open' | 'mine' {
+  if (typeof view?.filter !== 'object' || view.filter === null || Array.isArray(view.filter)) return 'all'
+  const status = (view.filter as Record<string, unknown>).status
+  return status === 'open' || status === 'mine' ? status : 'all'
+}
+
+function taskModeOf(view: string, savedView: SavedViewSummary | undefined): 'all' | 'open' | 'mine' {
+  if (savedView !== undefined) return savedViewMode(savedView)
+  return view === 'open' || view === 'mine' ? view : 'all'
+}
+
 /** Tasks list (spec §17.5). */
 export default async function TasksPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
-  const { sort: sortParam, page: pageParam } = await searchParams
+  const {
+    sort: sortParam,
+    page: pageParam,
+    view: viewParam,
+    relatedType,
+    relatedId,
+    title: titleParam,
+  } = await searchParams
   const sort = parseTaskSort(firstValue(sortParam))
-  const result = await listTasks({ page: parseTaskPage(firstValue(pageParam)), sort })
+  const savedViews = await listSavedViews('task')
+  const view = parseTaskView(firstValue(viewParam), savedViews)
+  const selectedSavedView = savedViews.find((savedView) => savedView.id === view)
+  const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
+  const taskMode = taskModeOf(view, selectedSavedView)
+  const returnToParams = new URLSearchParams({
+    sort: formatTaskSort(sort),
+    page: String(parseTaskPage(firstValue(pageParam))),
+    view,
+  })
+  const returnTo = `/tasks?${returnToParams.toString()}`
+  const result = await listTasks({
+    page: parseTaskPage(firstValue(pageParam)),
+    sort: effectiveSort,
+    view: taskMode,
+  })
   return (
     <>
       <AppHeader breadcrumbs={[{ label: PAGE_TITLE }]} />
       <PageContent>
-        <PageHeader title={PAGE_TITLE} count={result.total} actions={<TaskCreateForm />} />
+        <PageHeader
+          title={PAGE_TITLE}
+          count={result.total}
+          actions={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <TaskViewMenu
+                selectedId={view}
+                customViews={savedViews.map((savedView) => ({
+                  id: savedView.id,
+                  label: savedView.name,
+                  pinned: savedView.pinned,
+                }))}
+              />
+              <TaskCreateForm
+                relatedType={firstValue(relatedType)}
+                relatedId={firstValue(relatedId)}
+                initialTitle={firstValue(titleParam)}
+              />
+            </div>
+          }
+        />
         <DataTable
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
           key={`${formatTaskSort(sort)}:${String(result.page)}`}
-          columns={taskColumns(sort)}
-          rows={result.items.map(toRow)}
-          sort={{ id: sort.key, desc: sort.desc }}
-          pagination={paginationOf(result, sort)}
+          columns={taskColumns(effectiveSort, view)}
+          rows={result.items.map((task) => toRow(task, returnTo))}
+          sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
+          pagination={paginationOf({ result, sort: effectiveSort, view })}
           labels={LABELS}
           emptyState={
             <EmptyState
