@@ -175,12 +175,14 @@ The one-command provisioning, deploy loop and runbooks are milestone M7 (spec §
 Work follows the spec in milestones, each split into work packages (spec §0, §21):
 
 - A lead plans each milestone in `docs/orchestration/m<N>/plan.md`, dispatches work packages to workers with a brief, reviews, and merges. Workers stay inside the brief's write scope and report in `docs/orchestration/m<N>/reports/`.
+- Workers send one completion notification and stop after committing a clean result. The lead does not poll active workers, conversations, branches, or worktrees. See spec §0.8.
 - Execution decisions are recorded in `docs/decisions/decision-register.md` (E-nnn), open questions in `docs/decisions/open-questions.md`, and architecture decisions in `docs/adr/`.
-- The harness (`harness/`, `scripts/harness/`, spec §26) records attempt metrics, classifies failures, and turns repeated failures into lessons with regression evals that later briefs include.
+- The harness (`harness/`, `scripts/harness/`, spec §26) records attempt metrics, classifies failures, and turns repeated failures into lessons with regression evals that later briefs include. Every `fix(...)` commit and post-review remediation is retry evidence, even when automated gates pass.
 
 Conventions:
 
 - Conventional Commits, for example `feat(crm): ...` or `docs: ...`.
+- A `fix(...)` commit is a harness signal and must be paired with an append-only attempt that confirms its root-cause class.
 - Comments stay short: a one-line TSDoc on exported symbols, inline comments only to explain why. No commented-out code.
 - Documentation describes current behavior only; link to the owning document instead of duplicating it.
 

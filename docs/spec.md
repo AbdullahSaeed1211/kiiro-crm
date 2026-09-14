@@ -44,6 +44,7 @@ Rendered by `pnpm harness:brief <WP-ID>` from `harness/templates/brief.md`: the 
 ### 0.6 Worker report
 `WP` · `Status: DONE | BLOCKED` · files changed · acceptance evidence (deciding output lines) · tests added · notable implementation choices · open questions or dependency requests.
 Reports carry JSON front matter validated by `harness/schemas/report.schema.json`; workers run `pnpm harness:record <WP-ID> --attempt <k>` before reporting.
+For a retry, the report also maps each lead finding to its failure class, countermeasure, test or check, and remediation commit. A green gate does not erase a review finding.
 
 ### 0.7 Critical paths
 Only the lead changes these paths; `pnpm check:scope <WP-ID>` fails a WP that touches them. Changes outside a WP's expected write scope are flagged for review, not auto-failed.
@@ -96,12 +97,14 @@ Each WP's own attempt files `harness/metrics/attempts/<WP-ID>-a<k>.json` are alw
 1. **Plan:** the lead copies the §21.3 table into `docs/orchestration/m<N>/plan.md`, adjusting it to the actual repository state (splits, merges, re-ordering) with a one-line reason per change.
 2. **Contracts:** wave-0 Lead WPs merge before workers start.
 3. **Dispatch:** WPs run as soon as their dependencies are merged, up to available concurrency (§0.11); parallel WPs must have non-overlapping write scopes.
-4. **Execute:** each WP works on branch `wp/<WP-ID>` from the milestone branch and writes its report.
-5. **Review:** the lead re-runs `pnpm harness:record <WP-ID>` (acceptance, `verify:fast`, scope), reads the diff, and checks for duplicate abstractions, authorization gaps and tenant-specific code.
-6. **Merge:** verified WPs merge into the milestone branch; the lead runs the full `pnpm verify` after each wave (per-WP checks are the fast subset, §6.6).
-7. **Retry:** a failed WP gets one more attempt with the lead's findings; after that the lead finishes it or re-plans.
+4. **Execute:** each WP works on branch `wp/<WP-ID>` from the milestone branch and writes its report. When the branch is clean, the evidence and report are committed, and the WP is DONE or BLOCKED, the worker sends one completion notification to the lead and stops.
+5. **Review:** only after that notification, the lead re-runs `pnpm harness:record <WP-ID>` (acceptance, `verify:fast`, scope), reads the diff, and checks for duplicate abstractions, authorization gaps and tenant-specific code.
+6. **Merge:** verified WPs merge into the milestone branch; the lead runs the full `pnpm verify` after each wave (per-WP checks are the fast subset, §6.6). After integrated verification passes, the lead removes the merged worker worktree and deletes its local branch.
+7. **Retry:** a failed WP gets one more attempt with the lead's findings written into the retry brief. Every post-review remediation and every `fix(...)` commit is a harness failure signal, including when all automated gates were green. The retry uses the next append-only attempt number and confirms the root-cause classes. After the retry budget, the lead finishes the WP or re-plans.
 8. **Accept:** the lead runs the §21.2 row and required runtime checks, writes `docs/reports/m<N>.md`, runs `pnpm harness:retro m<N>` and completes promoted lessons and evals (§26.8), and merges to `main`.
 **Status and resume:** `docs/orchestration/m<N>/plan.md` carries a status column (`planned | dispatched | review | merged | done-by-lead`) updated by the lead at each transition, so any new lead session resumes from the repository.
+
+**Completion signaling:** workers own progress and completion reporting. The runtime resumes the lead through a worker return, callback, completion event, or equivalent push notification. The lead does not repeatedly wait for status, list or read worker conversations, or inspect an active worker's branch or worktree to infer progress. If the runtime cannot push completion, the worker runs synchronously to completion. While workers run, the lead may perform independent work on the milestone branch that does not inspect, modify, or merge their active work.
 
 ### 0.9 Spike report template (`docs/reports/m1-spike.md`)
 ```text
@@ -1495,6 +1498,7 @@ Lesson ids are collision-free without coordination: `L-<YYYYMMDD>-<WP-ID>-<first
 `pnpm harness:record <WP-ID> --attempt <k>` runs the WP's acceptance commands, `pnpm verify:fast` and `pnpm check:scope`, and writes `harness/metrics/attempts/<WP-ID>-a<k>.json`
 (validated by `schemas/attempt.schema.json`): `{ wp, milestone, attempt, runner: "worker"|"lead", startedAt, finishedAt, gates: [{ name, exitCode, durationMs, failingLines }], scopeViolations: [paths], filesChanged, suggestedClasses: [], confirmedClasses: [], leadTookOver }`.
 Workers run it before reporting; the lead re-runs it during review (the lead's file wins). `suggestedClasses` are filled automatically from a gate→class map in `config.yaml` (e.g. `check:scope` → `SCOPE_VIOLATION`, `check:brand` → `BRAND_OR_VOCAB_LEAK`, permission test failure → `AUTHZ_GAP`); the lead confirms or corrects `confirmedClasses`.
+Review findings are metrics even when gates pass. Every `fix(...)` commit and every commit produced after the lead returns findings requires a new attempt file with confirmed root-cause classes. Attempt files and remediation commits remain append-only through the retro. First pass means attempt 1 passed and the lead returned no findings; any retry or review remediation makes first pass false.
 
 ### 26.4 Failure classes
 Severe: `AUTHZ_GAP` · `TENANT_ISOLATION` · `SECRET_EXPOSURE` · `DATA_LOSS` · `DESTRUCTIVE_DEPLOY`.
@@ -1510,6 +1514,7 @@ New classes are added by the lead with a changelog entry.
 
 ### 26.6 Brief injection
 `pnpm harness:brief <WP-ID>` adds every active lesson whose affected paths overlap the WP write scope under **Known pitfalls**, with its countermeasure and eval id.
+For retries, the lead writes every review finding into **Previous attempt findings** before dispatch. Each finding states the observed behavior, root-cause class, required countermeasure, and required evidence. A worker does not rely on chat history to recover these facts.
 
 ### 26.7 Retirement and simplification
 - **Retirement** is evidence-based: a lesson or check that has not fired for 3 milestones, whose `fixed/` eval passes and whose risk is covered by a stronger check, may be retired or merged by the lead with a changelog entry citing the metrics.
@@ -1517,7 +1522,7 @@ New classes are added by the lead with a changelog entry.
 - The retro reports harness cost (total gate duration per WP) so slow or redundant checks are simplified.
 
 ### 26.8 Retro
-`pnpm harness:retro m<N>` at milestone end: aggregates attempt files, lists classes over threshold, severe occurrences, first-pass rate, retries, lead takeovers and gate durations. It scaffolds lesson and eval folders; the lead completes them and commits the harness changes before the next milestone's wave 0.
+`pnpm harness:retro m<N>` at milestone end: aggregates attempt files, review findings and remediation commits; lists classes over threshold, severe occurrences, first-pass rate, retries, lead takeovers and gate durations. A green first attempt followed by a `fix(...)` commit is not first pass. The retro scaffolds lesson and eval folders; the lead completes them and commits the harness changes before the next milestone's wave 0.
 
 ### 26.9 Harness self-test (M0 acceptance)
 A planted end-to-end failure proves the loop:
