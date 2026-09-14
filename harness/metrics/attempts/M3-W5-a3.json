@@ -1,0 +1,74 @@
+{
+  "wp": "M3-W5",
+  "milestone": "M3",
+  "attempt": 3,
+  "runner": "worker",
+  "startedAt": "2026-09-14T08:46:02.135Z",
+  "finishedAt": "2026-09-14T08:48:37.954Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 4560,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 50090,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 93528,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 6569,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 1,
+      "durationMs": 800,
+      "failingLines": [
+        "FAIL .github/workflows/deploy.yml (critical path, lead-owned)",
+        "FAIL apps/mail-router/wrangler.jsonc (critical path, lead-owned)",
+        "FAIL scripts/gen-wrangler.ts (critical path, lead-owned)",
+        "FAIL scripts/lib/tenant-schema.ts (critical path, lead-owned)",
+        "check:scope: M3-W5 27 changed, 4 failed, 6 flagged",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    }
+  ],
+  "scopeViolations": [
+    ".github/workflows/deploy.yml",
+    "apps/mail-router/wrangler.jsonc",
+    "scripts/gen-wrangler.ts",
+    "scripts/lib/tenant-schema.ts",
+    "scripts/test/deploy/deploy.test.ts",
+    "scripts/test/gen-wrangler/gen-wrangler.test.ts",
+    "scripts/test/provision/fixtures/email-sending-list-help.txt",
+    "scripts/test/provision/fixtures/r2-bucket-list-help.txt",
+    "scripts/test/provision/fixtures/secret-list-help.txt",
+    "scripts/test/provision/provision.test.ts"
+  ],
+  "filesChanged": 26,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT",
+    "GATE_FAILURE",
+    "MISSING_TEST",
+    "IDEMPOTENCY_GAP",
+    "DOC_GAP",
+    "DEPENDENCY_REQUEST",
+    "DESTRUCTIVE_DEPLOY",
+    "SCOPE_VIOLATION"
+  ],
+  "leadTookOver": false
+}
