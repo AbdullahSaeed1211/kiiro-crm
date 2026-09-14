@@ -39,6 +39,7 @@ describe('renderBrief', () => {
     for (const section of [...SECTIONS, '**Boundaries:**', '**Report:**', '## Known pitfalls']) {
       expect(brief).toContain(section)
     }
+    expect(brief).toContain('`pwd` and `git rev-parse --show-toplevel` both equal the assigned worktree')
     expect(brief).toContain('`pnpm vitest run scripts/test/checks`')
     expect(brief).not.toMatch(/\{\{\w+\}\}/)
   })

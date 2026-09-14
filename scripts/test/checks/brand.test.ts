@@ -19,8 +19,9 @@ describe('check:brand', () => {
     expect(tokens).toEqual(['MIRCH', 'Plane', 'huly', 'globex studio'])
   })
 
-  it('reports planted leaks in apps and packages and skips the generated env file', () => {
+  it('reports planted leaks in apps and packages and skips generated tenant configs', () => {
     expect(brandFiles(fixture)).not.toContain('apps/web/cloudflare-env.d.ts')
+    expect(brandFiles(fixture)).not.toContain('apps/mail-router/wrangler.jsonc')
     expect(checkBrand(fixture)).toEqual(['apps/site/src/copy.ts:2 MIRCH', 'apps/site/src/copy.ts:3 globex studio'])
   })
 

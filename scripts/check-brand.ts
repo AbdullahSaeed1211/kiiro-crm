@@ -10,7 +10,11 @@ export const BRAND_TOKENS: readonly string[] = ['mirch', 'frappe', 'twenty', 'pl
 
 const SCANNED_DIRS = ['apps', 'packages']
 // Generated from tenants/*.jsonc, where tenant names and hostnames are allowed.
-const EXCLUDED_FILES: ReadonlySet<string> = new Set(['apps/web/cloudflare-env.d.ts', 'apps/web/wrangler.jsonc'])
+const EXCLUDED_FILES: ReadonlySet<string> = new Set([
+  'apps/mail-router/wrangler.jsonc',
+  'apps/web/cloudflare-env.d.ts',
+  'apps/web/wrangler.jsonc',
+])
 const DISPLAY_NAME = /"displayName"\s*:\s*"([^"]+)"/g
 
 /** Reads every `displayName` from `tenants/*.jsonc` below `root`; no tenants directory yields no names. */

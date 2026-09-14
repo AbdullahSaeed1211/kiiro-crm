@@ -1,0 +1,3 @@
+{
+  "services": [{ "binding": "TENANT_GLOBEX_STUDIO", "service": "ops-globex-studio" }],
+}
