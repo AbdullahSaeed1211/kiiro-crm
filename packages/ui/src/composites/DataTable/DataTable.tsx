@@ -27,6 +27,8 @@ export type DataTableProps = Readonly<{
   labels: DataTableLabels
   /** Rendered in place of the rows when the current page is empty. */
   emptyState?: ReactNode
+  /** Enables row selection only when the caller also provides a meaningful bulk action surface. */
+  selectable?: boolean
 }>
 
 const NO_SORTING: SortingState = []
@@ -104,8 +106,8 @@ function Body({ table, emptyState }: Readonly<{ table: DataTableInstance; emptyS
 }
 
 /** Server-paginated table with sortable headers, row selection and column visibility (decision D-14, spec §17.5). */
-export function DataTable({ columns, rows, pagination, sort, labels, emptyState }: DataTableProps) {
-  const columnDefs = useMemo(() => buildColumns(columns, labels), [columns, labels])
+export function DataTable({ columns, rows, pagination, sort, labels, emptyState, selectable = false }: DataTableProps) {
+  const columnDefs = useMemo(() => buildColumns({ columns, labels, selectable }), [columns, labels, selectable])
   const sorting = useMemo<SortingState>(
     () => (sort === undefined ? NO_SORTING : [{ id: sort.id, desc: sort.desc }]),
     [sort],
@@ -120,12 +122,12 @@ export function DataTable({ columns, rows, pagination, sort, labels, emptyState 
     state: { sorting },
   })
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-end gap-2">
+    <div className="ops-data-table flex flex-col gap-2">
+      <div className="ops-data-table-toolbar flex items-center justify-end gap-2">
         <DataTableViewOptions table={table} label={labels.columns} />
       </div>
       {/* The vendored table wrapper scrolls on its own; making this wrapper the scroller lets the header stick. */}
-      <div className="max-h-[calc(100svh-13rem)] overflow-auto rounded-lg border **:data-[slot=table-container]:overflow-visible">
+      <div className="ops-data-table-viewport max-h-[calc(100svh-13rem)] overflow-auto rounded-lg border **:data-[slot=table-container]:overflow-visible">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((group) => (

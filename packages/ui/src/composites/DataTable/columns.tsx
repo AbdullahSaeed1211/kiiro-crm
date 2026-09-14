@@ -77,6 +77,10 @@ function dataColumn(column: DataTableColumn): Column {
 }
 
 /** Builds the TanStack column definitions: a selection column followed by the caller's columns. */
-export function buildColumns(columns: readonly DataTableColumn[], labels: DataTableLabels): Column[] {
-  return [selectColumn(labels), ...columns.map((column) => dataColumn(column))]
+export function buildColumns({
+  columns,
+  labels,
+  selectable = false,
+}: Readonly<{ columns: readonly DataTableColumn[]; labels: DataTableLabels; selectable?: boolean }>): Column[] {
+  return [...(selectable ? [selectColumn(labels)] : []), ...columns.map((column) => dataColumn(column))]
 }
