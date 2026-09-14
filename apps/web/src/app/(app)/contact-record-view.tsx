@@ -184,6 +184,7 @@ export function ContactRecordView({
           actions={
             <Button
               variant="outline"
+              nativeButton={false}
               render={
                 <a href={`/contacts/${record.id}/edit`}>
                   <Pencil aria-hidden />

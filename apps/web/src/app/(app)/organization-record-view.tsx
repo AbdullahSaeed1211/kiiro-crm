@@ -189,6 +189,7 @@ export function OrganizationRecordView({
           actions={
             <Button
               variant="outline"
+              nativeButton={false}
               render={
                 <a href={`/organizations/${record.id}/edit`}>
                   <Pencil aria-hidden />
