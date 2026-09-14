@@ -1,4 +1,5 @@
-export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+/** Product attachment limit from spec §10.4. */
+export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 
 /** MIME types accepted by the product file route. */
 export const ALLOWED_ATTACHMENT_MIMES = new Set([
@@ -57,7 +58,7 @@ export function attachmentKey(input: AttachmentKeyInput): string {
 }
 
 export function validateAttachment(file: { readonly type: string; readonly size: number }): string | undefined {
-  if (file.size > MAX_ATTACHMENT_BYTES) return 'File must be 25 MB or smaller.'
+  if (file.size > MAX_ATTACHMENT_BYTES) return 'File must be 10 MB or smaller.'
   if (!ALLOWED_ATTACHMENT_MIMES.has(file.type)) return 'This file type is not supported.'
   return undefined
 }

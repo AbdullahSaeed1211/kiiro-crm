@@ -1,8 +1,9 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { getPayload } from 'payload'
+import { getPayload, type PayloadRequest } from 'payload'
 import {
   attachmentKey,
+  MAX_ATTACHMENT_BYTES,
   validateAttachment,
 } from '../../../../../../../packages/adapters/payload/src/collaboration/files'
 import { authenticate } from '../../../../server/collaboration/auth'
@@ -33,13 +34,14 @@ function parseUpload(form: FormData): UploadInput | Response {
 
 interface AttachmentInput {
   readonly payload: Awaited<ReturnType<typeof getPayload>>
+  readonly req: PayloadRequest
   readonly input: UploadInput
   readonly key: string
   readonly user: Record<string, unknown>
   readonly userId: string
 }
 
-function createAttachment({ payload, input, key, user, userId }: AttachmentInput) {
+function createAttachment({ payload, req, input, key, user, userId }: AttachmentInput) {
   const create = payload.create as unknown as (args: Record<string, unknown>) => Promise<unknown>
   return create({
     collection: 'attachments',
@@ -56,6 +58,7 @@ function createAttachment({ payload, input, key, user, userId }: AttachmentInput
     depth: 0,
     overrideAccess: false,
     user,
+    req,
   })
 }
 
@@ -63,10 +66,10 @@ interface StoreInput extends AttachmentInput {
   readonly env: CloudflareEnv
 }
 
-async function storeUpload({ env, payload, input, key, user, userId }: StoreInput): Promise<Response> {
+async function storeUpload({ env, payload, req, input, key, user, userId }: StoreInput): Promise<Response> {
   await env.R2.put(key, await input.file.arrayBuffer(), { httpMetadata: { contentType: input.file.type } })
   try {
-    const attachment = await createAttachment({ payload, input, key, user, userId })
+    const attachment = await createAttachment({ payload, req, input, key, user, userId })
     return Response.json({ attachment }, { status: 201 })
   } catch (error) {
     await env.R2.delete(key)
@@ -79,6 +82,9 @@ async function storeUpload({ env, payload, input, key, user, userId }: StoreInpu
 
 /** Uploads a private record attachment to R2 after the parent record scope check. */
 export async function POST(request: Request): Promise<Response> {
+  const contentLength = Number(request.headers.get('content-length') ?? '')
+  if (Number.isFinite(contentLength) && contentLength > MAX_ATTACHMENT_BYTES + 1024 * 1024)
+    return new Response('Payload too large', { status: 413 })
   const payload = await getPayload({ config })
   const context = await authenticate(payload, request)
   if (context === null) return unauthorized()
@@ -89,6 +95,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!(await canReadParent(payload, context, { recordType: parsed.recordType, recordId: parsed.recordId })))
     return forbidden()
   const { env } = await getCloudflareContext({ async: true })
+  const payloadRequest = { payload, user: context.user } as unknown as PayloadRequest
   const id = crypto.randomUUID()
   const key = attachmentKey({
     recordType: parsed.recordType,
@@ -96,5 +103,5 @@ export async function POST(request: Request): Promise<Response> {
     attachmentId: id,
     fileName: parsed.file.name,
   })
-  return storeUpload({ env, payload, input: parsed, key, user: context.user, userId: context.id })
+  return storeUpload({ env, payload, req: payloadRequest, input: parsed, key, user: context.user, userId: context.id })
 }

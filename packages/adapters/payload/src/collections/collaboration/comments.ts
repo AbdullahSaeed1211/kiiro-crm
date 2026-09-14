@@ -12,6 +12,10 @@ import {
 import { parseMentions } from '../../collaboration/mentions'
 import { ADMIN_GROUPS } from '../fields'
 
+function valueOf(value: object, key: string): unknown {
+  return (value as Record<string, unknown>)[key]
+}
+
 function relationId(value: unknown): string | undefined {
   const id = typeof value === 'object' && value !== null ? (value as Record<string, unknown>)['id'] : value
   return typeof id === 'string' || typeof id === 'number' ? String(id) : undefined
@@ -37,6 +41,11 @@ function assertAuthor(operation: string, input: Record<string, unknown>, actorId
     throw new Error('Comments must be authored by the current user.')
 }
 
+function assertImmutableReferences(operation: string, input: Record<string, unknown>): void {
+  if (operation === 'update' && ['author', 'recordType', 'recordId'].some((key) => key in input))
+    throw new Error('Comment author and parent references cannot be changed.')
+}
+
 function normalizeCommentFields({
   operation,
   input,
@@ -48,9 +57,10 @@ function normalizeCommentFields({
   originalDoc?: unknown
   body?: string | undefined
 }): void {
-  if (operation === 'create' && body !== undefined) input['mentions'] = parseMentions(body)
-  if (operation === 'update' && typeof originalDoc === 'object' && originalDoc !== null)
-    input['author'] = Reflect.get(originalDoc, 'author')
+  const previousBody =
+    typeof originalDoc === 'object' && originalDoc !== null ? valueOf(originalDoc, 'body') : undefined
+  const source = body ?? (typeof previousBody === 'string' ? previousBody : '')
+  if (operation === 'create' || operation === 'update') input['mentions'] = parseMentions(source)
 }
 
 async function validateCommentChange({
@@ -69,6 +79,7 @@ async function validateCommentChange({
   const input = recordOf(data)
   const body = input['body']
   assertAuthor(operation, input, String(actor.id))
+  assertImmutableReferences(operation, input)
   assertBody(body)
   const mentions = input['mentions']
   assertMentions(mentions)

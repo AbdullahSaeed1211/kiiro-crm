@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, Field, PayloadRequest, Where } from 'payload'
+import type { Access, CollectionConfig, CollectionSlug, Field, PayloadRequest, Where } from 'payload'
 import { isManagerUp } from '@ops/platform'
 import { COLLECTIONS, FIELDS, RECORD_TYPES } from '../../contracts/names'
 import { allow, anyActive, managerUp, ownedBy, systemOnly } from '../../access/rules'
@@ -24,6 +24,10 @@ export const RECORD_REFERENCE_FIELDS = [
 
 const noAccess: Access = () => false
 
+// Leaf collections are registered after the lead refreshes generated Payload types.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- generated collection union intentionally lags this leaf
+const payloadCollection = (slug: string): CollectionSlug => slug as unknown as CollectionSlug
+
 function valueOf(value: unknown, key: string): unknown {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : value
 }
@@ -48,6 +52,12 @@ function noneWhere(): Where {
 
 const scopedParents = Object.entries(RECORD_TYPES) as readonly [keyof typeof RECORD_TYPES, string][]
 
+function parentSlug(recordType: string): string | undefined {
+  const entry = scopedParents.find(([, value]) => value === recordType)
+  if (entry === undefined) return undefined
+  return entry[0] === 'organizations' ? COLLECTIONS.organizations : `${recordType}s`
+}
+
 /** Builds a query filter from the parent collections' own Payload access rules. */
 export async function parentScopeWhere(req: PayloadRequest): Promise<boolean | Where> {
   const actor = await resolveActor(req)
@@ -55,9 +65,10 @@ export async function parentScopeWhere(req: PayloadRequest): Promise<boolean | W
   if (isManagerUp(actor)) return true
   const pages = await Promise.all(
     scopedParents.map(async ([, recordType]) => {
-      const collection = recordType === 'organization' ? COLLECTIONS.organizations : `${recordType}s`
+      const collection = parentSlug(recordType)
+      if (collection === undefined) return { recordType, ids: [] }
       const page = await req.payload.find({
-        collection,
+        collection: payloadCollection(collection),
         depth: 0,
         pagination: false,
         overrideAccess: false,
@@ -67,8 +78,10 @@ export async function parentScopeWhere(req: PayloadRequest): Promise<boolean | W
       return { recordType, ids: page.docs.map((doc) => idOf(doc)).filter((id): id is string => id !== undefined) }
     }),
   )
-  const clauses = pages.flatMap(({ recordType, ids }) =>
-    ids.map((recordId) => ({ and: [{ recordType: { equals: recordType } }, { recordId: { equals: recordId } }] })),
+  const clauses: Where[] = pages.flatMap(({ recordType, ids }) =>
+    ids.map((recordId): Where => ({
+      and: [{ recordType: { equals: recordType } }, { recordId: { equals: recordId } }] as Where[],
+    })),
   )
   return clauses.length > 0 ? { or: clauses } : noneWhere()
 }
@@ -80,16 +93,15 @@ export async function canReadParentReference(
 ): Promise<boolean> {
   const actor = await resolveActor(req)
   if (actor?.active !== true) return false
-  if (isManagerUp(actor)) return true
-  const collection = scopedParents.find(([, recordType]) => recordType === reference.recordType)?.[0]
+  if (reference.recordType === '' || reference.recordId === '') return false
+  const collection = parentSlug(reference.recordType)
   if (collection === undefined) return false
-  const slug = collection === 'organizations' ? COLLECTIONS.organizations : `${reference.recordType}s`
   try {
     await req.payload.findByID({
-      collection: slug,
+      collection: payloadCollection(collection),
       id: reference.recordId,
       depth: 0,
-      overrideAccess: false,
+      overrideAccess: isManagerUp(actor),
       user: req.user,
       req,
     })
@@ -111,7 +123,13 @@ async function document(
 ): Promise<object | undefined> {
   if (id === undefined) return undefined
   try {
-    return await req.payload.findByID({ collection, id, depth: 0, overrideAccess: true, req })
+    return await req.payload.findByID({
+      collection: payloadCollection(collection),
+      id,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
   } catch {
     return undefined
   }
@@ -179,9 +197,17 @@ export const notificationPreferenceAccess = {
 
 const savedViewCreate: Access = async ({ req, data }) => {
   const actor = await activeActor(req)
-  if (actor === undefined) return false
-  const owner = idOf(Reflect.get(data, 'owner'))
-  return owner === undefined ? isManagerUp(actor) : owner === String(actor.id) || isManagerUp(actor)
+  if (actor === undefined || typeof data !== 'object' || data === null) return false
+  const owner = idOf(valueOf(data, 'owner'))
+  return owner === undefined ? isManagerUp(actor) : owner === String(actor.id)
+}
+
+const savedViewMutation: Access = async ({ req, id }) => {
+  const actor = await activeActor(req)
+  const view = await document(req, COLLABORATION_COLLECTIONS.savedViews, id)
+  if (actor === undefined || view === undefined) return false
+  const owner = idOf(valueOf(view, 'owner'))
+  return owner === undefined ? isManagerUp(actor) : owner === String(actor.id)
 }
 
 export const savedViewAccess = {
@@ -189,8 +215,8 @@ export const savedViewAccess = {
     or: [{ owner: { equals: null } }, { owner: { exists: false } }, { owner: { equals: actor.id } }],
   })),
   create: savedViewCreate,
-  update: allow((actor) => (isManagerUp(actor) ? true : { owner: { equals: actor.id } })),
-  delete: allow((actor) => (isManagerUp(actor) ? true : { owner: { equals: actor.id } })),
+  update: savedViewMutation,
+  delete: savedViewMutation,
 } as const
 
 export const layoutAccess = { read: anyActive, create: managerUp, update: managerUp, delete: managerUp } as const

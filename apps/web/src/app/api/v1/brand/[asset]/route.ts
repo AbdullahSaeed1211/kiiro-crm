@@ -1,6 +1,7 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getPayload } from 'payload'
+import { isBrandContentType, isBrandKey } from '../../../../../server/collaboration/brand'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,9 +40,11 @@ function fallbackFor(settings: Record<string, unknown>): Response {
 }
 
 async function streamBrandAsset(key: string): Promise<Response> {
+  if (!isBrandKey(key)) return new Response('Not found', { status: 404 })
   const { env } = await getCloudflareContext({ async: true })
   const object = await env.R2.get(key)
   if (object === null) return new Response('Not found', { status: 404 })
+  if (!isBrandContentType(object.httpMetadata?.contentType)) return new Response('Not found', { status: 404 })
   const headers = new Headers({ 'Cache-Control': 'public, max-age=300' })
   if (object.httpMetadata?.contentType) headers.set('Content-Type', object.httpMetadata.contentType)
   return new Response(object.body, { headers })

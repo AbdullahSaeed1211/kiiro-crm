@@ -1,6 +1,20 @@
 import { COLLECTIONS } from '../../contracts/names'
+import { resolveActor } from '../../access/actor'
 import { collaborationCollection, savedViewAccess } from './fields'
 import { ADMIN_GROUPS } from '../fields'
+
+function normalizeCreateOwner(input: Record<string, unknown>, actorId: string): void {
+  const owner = input['owner']
+  if (owner === undefined || owner === null) return
+  const ownerId = typeof owner === 'object' ? (owner as Record<string, unknown>)['id'] : owner
+  if (String(ownerId) !== actorId) throw new Error('A personal view must belong to the current user.')
+  input['owner'] = actorId
+}
+
+function preserveOwner(input: Record<string, unknown>, originalDoc: unknown): void {
+  if (typeof originalDoc === 'object' && originalDoc !== null)
+    input['owner'] = (originalDoc as Record<string, unknown>)['owner']
+}
 
 /** Personal and shared list/board/calendar/timeline configurations. */
 export const savedViewsCollection = collaborationCollection({
@@ -25,10 +39,15 @@ export const savedViewsCollection = collaborationCollection({
   access: savedViewAccess,
   hooks: {
     beforeChange: [
-      ({ data, operation, originalDoc }) => {
-        if (operation !== 'update' || originalDoc === undefined) return data
+      async ({ data, operation, originalDoc, req }) => {
+        const actor = await resolveActor(req)
+        if (actor?.active !== true) throw new Error('An active user is required.')
         const input = data as Record<string, unknown>
-        input['owner'] = Reflect.get(originalDoc, 'owner')
+        if (operation === 'create') {
+          normalizeCreateOwner(input, String(actor.id))
+          return input
+        }
+        preserveOwner(input, originalDoc)
         return input
       },
     ],

@@ -11,6 +11,7 @@ import {
   validateAttachment,
 } from '../../src/collaboration'
 import { scopedSearch } from '../../src/collaboration/search'
+import { isBrandContentType, isBrandKey } from '../../../../../apps/web/src/server/collaboration/brand'
 
 describe('comment mentions', () => {
   it('extracts unique ids and fans out only to active users other than the author', async () => {
@@ -42,6 +43,8 @@ describe('markdown-lite and attachments', () => {
   })
 
   it('uses a bounded, normalized R2 object key and enforces upload scope', () => {
+    const tenMiB = 10 * 1024 * 1024
+    const pdf = 'application/pdf'
     expect(sanitizeFileName('Résumé / client plan.pdf')).toBe('Resume-client-plan.pdf')
     expect(
       attachmentKey({
@@ -51,9 +54,10 @@ describe('markdown-lite and attachments', () => {
         fileName: 'Résumé / client plan.pdf',
       }),
     ).toBe('attachments/lead/lead-1/file-1/Resume-client-plan.pdf')
-    expect(validateAttachment({ type: 'application/pdf', size: 10 })).toBeUndefined()
+    expect(validateAttachment({ type: pdf, size: 10 })).toBeUndefined()
     expect(validateAttachment({ type: 'application/x-msdownload', size: 10 })).toBeTypeOf('string')
-    expect(validateAttachment({ type: 'application/pdf', size: 26 * 1024 * 1024 })).toBeTypeOf('string')
+    expect(validateAttachment({ type: pdf, size: tenMiB })).toBeUndefined()
+    expect(validateAttachment({ type: pdf, size: tenMiB + 1 })).toBeTypeOf('string')
   })
 })
 
@@ -84,5 +88,17 @@ describe('scoped search', () => {
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({ collection: 'leads', limit: 5, overrideAccess: false, user: { id: 'staff-1' } }),
     )
+  })
+})
+
+describe('brand asset boundary', () => {
+  it('accepts only the private brand namespace and expected image types', () => {
+    expect(isBrandKey('brand/tenant-1/logo.png')).toBe(true)
+    expect(isBrandKey('attachments/tenant-1/logo.png')).toBe(false)
+    expect(isBrandKey('brand/tenant-1/../secrets')).toBe(false)
+    expect(isBrandKey('brand/tenant-1\\logo.png')).toBe(false)
+    expect(isBrandContentType('image/png')).toBe(true)
+    expect(isBrandContentType('application/pdf')).toBe(false)
+    expect(isBrandContentType(undefined)).toBe(false)
   })
 })

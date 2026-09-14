@@ -1,6 +1,6 @@
 import type { Id } from '@ops/kernel'
 import { isManagerUp } from '@ops/platform'
-import type { PayloadRequest } from 'payload'
+import type { CollectionSlug, PayloadRequest } from 'payload'
 import { resolveActor } from '../access/actor'
 import { COLLECTIONS } from '../contracts/names'
 import { canReadParentReference } from '../collections/collaboration/fields'
@@ -28,7 +28,8 @@ export async function softDeleteComment(req: PayloadRequest, commentId: string) 
   const actor = await resolveActor(req)
   if (actor?.active !== true) throw new Error('An active user is required.')
   const comment = await req.payload.findByID({
-    collection: 'comments',
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- leaf collection is not in generated types yet
+    collection: 'comments' as unknown as CollectionSlug,
     id: commentId,
     depth: 0,
     overrideAccess: true,
@@ -42,7 +43,8 @@ export async function softDeleteComment(req: PayloadRequest, commentId: string) 
   }
   if (!(await canReadParentReference(req, reference)) || (!isManagerUp(actor) && String(authorId) !== String(actor.id)))
     throw new Error('The comment is not available.')
-  return req.payload.update({
+  const update = req.payload.update.bind(req.payload) as unknown as (args: Record<string, unknown>) => Promise<unknown>
+  return update({
     collection: 'comments',
     id: commentId,
     data: { body: '[deleted]', mentions: [], deletedAt: Date.now(), editedAt: Date.now() },
@@ -98,7 +100,8 @@ export async function createComment(req: PayloadRequest, input: CreateCommentInp
     throw new Error('The referenced record is not available.')
 
   const mentions = parseMentions(input.body)
-  const comment = await req.payload.create({
+  const create = req.payload.create as unknown as (args: Record<string, unknown>) => Promise<object>
+  const comment = await create({
     collection: 'comments',
     data: {
       recordType: input.recordType,
