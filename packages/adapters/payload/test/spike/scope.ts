@@ -1,7 +1,8 @@
 import { asId, type Id } from '@ops/kernel'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 import { expect } from 'vitest'
-import { DEV_PASSWORD, ORGANIZATION, PROJECTS, TASKS } from '../../../../../scripts/seed/data'
+import { ORGANIZATIONS } from '../../../../../scripts/seed/crm-directory-data'
+import { DEV_PASSWORD, PROJECTS, TASKS } from '../../../../../scripts/seed/data'
 import { loadReportIds, resolveActor } from '../../src/access/actor'
 import { COLLECTIONS, RECORD_TYPES } from '../../src/contracts/names'
 import { createTaskRepository } from '../../src/repositories'
@@ -34,7 +35,7 @@ const byName = (a: string, b: string): number => a.localeCompare(b)
 const SEEDED_NAMES = {
   tasks: TASKS.map((task) => task.title).toSorted(byName),
   projects: PROJECTS.map((project) => project.name).toSorted(byName),
-  organizations: [ORGANIZATION.name],
+  organizations: ORGANIZATIONS.map((organization) => organization.name).toSorted(byName),
 }
 
 const nameOf = (doc: object): string => textOf(doc, 'name') ?? textOf(doc, 'title') ?? ''
@@ -74,7 +75,7 @@ async function expectStaffScope(payload: Payload, email: string, expected: Staff
   expect(await taskTitlesAs(req)).toEqual(expected.tasks)
   expect(await namesAsUser(req, COLLECTIONS.tasks)).toEqual(expected.tasks)
   expect(await namesAsUser(req, COLLECTIONS.projects)).toEqual(expected.projects)
-  // The seeded organization is owned by the manager, who reports to nobody.
+  // Seeded organizations are owned by the manager, who reports to nobody.
   expect(await namesAsUser(req, COLLECTIONS.organizations)).toEqual([])
 }
 
