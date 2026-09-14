@@ -1,0 +1,86 @@
+{
+  "wp": "M3-W1",
+  "milestone": "M3",
+  "attempt": 4,
+  "runner": "worker",
+  "startedAt": "2026-09-14T08:51:30.168Z",
+  "finishedAt": "2026-09-14T08:52:01.182Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1938,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 4371,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 21623,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 2520,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 463,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [
+    "apps/web/src/app/(app)/settings/branding/page.tsx",
+    "apps/web/src/app/(app)/settings/fields/page.tsx",
+    "apps/web/src/app/(app)/settings/general/page.tsx",
+    "apps/web/src/app/(app)/settings/groups/page.tsx",
+    "apps/web/src/app/(app)/settings/import/page.tsx",
+    "apps/web/src/app/(app)/settings/layout.tsx",
+    "apps/web/src/app/(app)/settings/members/page.tsx",
+    "apps/web/src/app/(app)/settings/modules/page.tsx",
+    "apps/web/src/app/(app)/settings/notifications/page.tsx",
+    "apps/web/src/app/(app)/settings/page.tsx",
+    "apps/web/src/app/(app)/settings/profile/page.tsx",
+    "apps/web/src/app/(app)/settings/settings-shell.tsx",
+    "apps/web/src/app/(app)/settings/terminology/page.tsx",
+    "apps/web/src/app/(app)/settings/views/page.tsx",
+    "apps/web/src/app/(app)/settings/workflows/page.tsx",
+    "apps/web/src/i18n/messages/en/auth.json",
+    "apps/web/src/i18n/messages/en/onboarding.json",
+    "apps/web/src/i18n/messages/en/settings.json",
+    "apps/web/src/server/auth/api.ts",
+    "apps/web/src/server/auth/context.ts",
+    "packages/adapters/payload/src/collections/config/access.ts",
+    "packages/adapters/payload/src/collections/config/collections.ts",
+    "packages/adapters/payload/src/collections/config/fields.ts",
+    "packages/adapters/payload/src/collections/config/index.ts",
+    "packages/adapters/payload/src/collections/people/access.ts",
+    "packages/adapters/payload/src/collections/people/collections.ts",
+    "packages/adapters/payload/src/collections/people/index.ts",
+    "packages/adapters/payload/src/collections/people/invitations.ts",
+    "packages/adapters/payload/src/collections/people/values.ts",
+    "packages/adapters/payload/test/people/auth.test.ts",
+    "packages/adapters/payload/test/people/config.test.ts"
+  ],
+  "filesChanged": 54,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "ACCESS_SCOPE",
+    "RACE_CONDITION",
+    "MISSING_TEST",
+    "GATE_FAILURE",
+    "SPEC_GAP",
+    "CONTRACT_DRIFT"
+  ],
+  "leadTookOver": false
+}

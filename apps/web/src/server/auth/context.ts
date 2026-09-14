@@ -1,0 +1,34 @@
+import config from '@payload-config'
+import { resolveActor } from '@ops/adapter-payload'
+import { can, type Actor, type Role } from '@ops/platform'
+import { headers } from 'next/headers'
+import { notFound, redirect } from 'next/navigation'
+import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+
+export interface ProductContext {
+  readonly payload: Payload
+  readonly req: PayloadRequest
+  readonly actor: Actor
+  readonly user: Record<string, unknown>
+}
+
+export async function getProductContext(): Promise<ProductContext> {
+  const payload = await getPayload({ config })
+  const auth = await payload.auth({ headers: await headers() })
+  if (auth.user === null) redirect('/login')
+  const req = await createLocalReq({ user: auth.user }, payload)
+  const actor = await resolveActor(req)
+  if (actor?.active !== true) redirect('/login')
+  return { payload, req, actor, user: auth.user as unknown as Record<string, unknown> }
+}
+
+export async function requireRole(...roles: readonly Role[]): Promise<ProductContext> {
+  const context = await getProductContext()
+  if (!roles.includes(context.actor.role)) notFound()
+  return context
+}
+
+export const canManageAdmin = (actor: Actor): boolean => can(actor, 'admin_panel', { type: 'users' })
+export const canManageSettings = (actor: Actor): boolean => can(actor, 'manage_settings', { type: 'settings' })
+export const canManageMembers = (actor: Actor, role: Role): boolean =>
+  can(actor, 'manage_members', { type: 'users', role })
