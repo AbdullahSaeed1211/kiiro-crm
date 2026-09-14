@@ -1,0 +1,49 @@
+{
+  "wp": "M3-W4",
+  "milestone": "M3",
+  "attempt": 2,
+  "runner": "worker",
+  "startedAt": "2026-09-14T06:44:39.361Z",
+  "finishedAt": "2026-09-14T06:45:03.888Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 2019,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 3991,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 17711,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 494,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 1,
+      "durationMs": 256,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 22,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}

@@ -14,6 +14,16 @@ export { payloadEmailAdapter, type PayloadEmailAdapterOptions } from './mail/pay
 export type { EmailServiceMessage, EmailServiceResult, SendEmailBinding } from './mail/send-email-binding'
 export { isSenderNotVerified, mapSendError } from './mail/send-errors'
 export { withPlatformSenderFallback, type SenderFallbackOptions } from './mail/sender-fallback'
+export { ResendMailSender, type ResendMailSenderOptions } from './mail/resend-mail-sender'
+export { routePlatformInbound, type MailRouterEnv, type MailRouterTarget } from './mail/router'
+export {
+  TURNSTILE_VERIFY_URL,
+  verifyTurnstile,
+  type TurnstileResponse,
+  type TurnstileVerifierOptions,
+} from './intake/turnstile'
+export { InMemoryRateLimiter, createRateLimiter, type RateLimitBinding } from './intake/rate-limit'
+export { handleIntakeRequest, type IntakeRequestDeps } from './intake/request'
 export type { CronJob, CronJobOutcome, CronWindow } from './cron/cron-job'
 export {
   createDueSoonJob,
@@ -24,3 +34,16 @@ export {
   type DueSoonDeps,
 } from './cron/due-soon'
 export { CRON_INTERVAL_MS, runCron, type CronRun } from './cron/run-cron'
+export {
+  createDigestJob,
+  createIntakeCleanupJob,
+  createInvitationsExpireJob,
+  createOverdueJob,
+  createScheduledJobs,
+  createStalledJob,
+  type ExpiredInvitation,
+  type JobRunStore,
+  type JobSources,
+  type JobTarget,
+  type ScheduledJobsDeps,
+} from './cron/jobs'
