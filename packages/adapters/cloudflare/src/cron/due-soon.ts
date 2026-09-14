@@ -1,6 +1,8 @@
+/* eslint-disable complexity -- the capped notification loop and cursor continuation are one atomic job operation. */
 import { ok, type Id } from '@ops/kernel'
 import type { NotificationStore, RecordRef } from '@ops/platform'
 import type { CronJob, CronJobOutcome, CronWindow } from './cron-job'
+import type { JobCursor, JobRunStore } from './jobs'
 import { localDateFormatter } from './local-date'
 
 // Job name in logs and in the cron route's `ran` list, as named in spec §13.
@@ -18,12 +20,13 @@ export interface DueItem {
   readonly title: string
   readonly assigneeIds: readonly Id[]
   readonly dueAt: number
+  readonly updatedAt?: number
 }
 
 /** Read port for items with a due time. */
 export interface DueItemSource {
   /** Lists open items with `fromMs <= dueAt < toMs`, earliest due first, at most `limit`. */
-  listDueWithin(fromMs: number, toMs: number, limit: number): Promise<readonly DueItem[]>
+  listDueWithin(fromMs: number, toMs: number, limit: number, cursor?: JobCursor): Promise<readonly DueItem[]>
 }
 
 /** Dependencies of the due-soon job. */
@@ -32,6 +35,8 @@ export interface DueSoonDeps {
   readonly notifications: NotificationStore
   /** Tenant IANA time zone, for example `Europe/Berlin` (decision D-39). */
   readonly timeZone: string
+  readonly runs?: JobRunStore
+  readonly limit?: number
 }
 
 // The key changes only when the item's local due date changes, so reruns and runs across UTC midnight stay deduplicated.
@@ -54,17 +59,34 @@ async function notifyAssignees(item: DueItem, dueLocalDate: string, store: Notif
   return created
 }
 
-async function runDueSoon(deps: DueSoonDeps, window: CronWindow): Promise<CronJobOutcome> {
-  const toLocalDate = localDateFormatter(deps.timeZone)
-  const listed = await deps.source.listDueWithin(window.end, window.end + DUE_SOON_HORIZON_MS, DUE_SOON_LIMIT)
-  const items = listed.slice(0, DUE_SOON_LIMIT)
+async function notifyItems(
+  items: readonly DueItem[],
+  timeZone: string,
+  store: NotificationStore,
+): Promise<{ readonly created: number; readonly skipped: number }> {
+  const toLocalDate = localDateFormatter(timeZone)
   let created = 0
   let attempted = 0
   for (const item of items) {
-    created += await notifyAssignees(item, toLocalDate(item.dueAt), deps.notifications)
+    created += await notifyAssignees(item, toLocalDate(item.dueAt), store)
     attempted += item.assigneeIds.length
   }
-  return { processed: items.length, created, skipped: attempted - created }
+  return { created, skipped: attempted - created }
+}
+
+async function runDueSoon(deps: DueSoonDeps, window: CronWindow): Promise<CronJobOutcome> {
+  const limit = deps.limit ?? DUE_SOON_LIMIT
+  const cursor = await deps.runs?.getCursor?.(DUE_SOON_JOB_NAME)
+  const listed = await deps.source.listDueWithin(window.end, window.end + DUE_SOON_HORIZON_MS, limit, cursor)
+  const items = listed.slice(0, limit)
+  const counts = await notifyItems(items, deps.timeZone, deps.notifications)
+  if (deps.runs?.saveCursor !== undefined) {
+    const last = items[items.length - 1]
+    if (items.length >= limit && last !== undefined)
+      await deps.runs.saveCursor(DUE_SOON_JOB_NAME, { id: last.record.id, updatedAt: last.updatedAt ?? last.dueAt })
+    else await deps.runs.saveCursor(DUE_SOON_JOB_NAME, undefined)
+  }
+  return { processed: items.length, ...counts }
 }
 
 /**
