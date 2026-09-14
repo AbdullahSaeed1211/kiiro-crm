@@ -3,7 +3,8 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getPayload } from 'payload'
 import { authenticate } from '../../../../../server/collaboration/auth'
 import { canReadParent } from '../../../../../server/collaboration/parents'
-import { forbidden, unauthorized } from '../../../../../server/collaboration/responses'
+import { payloadNotFoundOrDenied, unauthorized } from '../../../../../server/collaboration/responses'
+import { sanitizeFileName } from '../../../../../../../../packages/adapters/payload/src/collaboration/files'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +14,10 @@ interface Params {
 
 function downloadHeaders(doc: Record<string, unknown>, contentType: string | undefined): Headers {
   const name = typeof doc.fileName === 'string' ? doc.fileName : 'download'
+  const safeName = sanitizeFileName(name)
+  const encodedName = encodeURIComponent(name.replaceAll(/[\u0000-\u001f\u007f]/gu, '_')).replaceAll("'", '%27')
   const headers = new Headers({
-    'Content-Disposition': `attachment; filename="${name.replaceAll('"', '')}"`,
+    'Content-Disposition': `attachment; filename="${safeName}"; filename*=UTF-8''${encodedName}`,
     'Cache-Control': 'private, no-store',
   })
   if (contentType !== undefined) headers.set('Content-Type', contentType)
@@ -47,8 +50,14 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
   const context = await authenticate(contextPayload, request)
   if (context === null) return unauthorized()
   const { attachmentId } = await params
-  const attachment = await readAttachment(contextPayload, attachmentId, context.user)
-  if (attachment === null || !(await canReadParent(contextPayload, context, attachment))) return forbidden()
+  let attachment: AttachmentInfo | null
+  try {
+    attachment = await readAttachment(contextPayload, attachmentId, context.user)
+  } catch (error) {
+    return payloadNotFoundOrDenied(error) ?? Response.json({ error: 'Unable to read attachment.' }, { status: 500 })
+  }
+  if (attachment === null || !(await canReadParent(contextPayload, context, attachment)))
+    return new Response('Not found', { status: 404 })
   const { env } = await getCloudflareContext({ async: true })
   const object = await env.R2.get(attachment.fileKey)
   if (object === null) return new Response('Not found', { status: 404 })

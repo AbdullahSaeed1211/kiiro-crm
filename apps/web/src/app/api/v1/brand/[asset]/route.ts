@@ -8,8 +8,17 @@ interface Params {
   readonly params: Promise<{ asset: string }>
 }
 
+function escapeXml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+}
+
 function fallback(letter: string): Response {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#111827"/><text x="32" y="43" fill="white" font-family="sans-serif" font-size="32" text-anchor="middle">${letter}</text></svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#111827"/><text x="32" y="43" fill="white" font-family="sans-serif" font-size="32" text-anchor="middle">${escapeXml(letter)}</text></svg>`
   return new Response(svg, { headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' } })
 }
 

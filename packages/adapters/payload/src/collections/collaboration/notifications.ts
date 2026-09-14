@@ -1,5 +1,5 @@
 import { COLLECTIONS } from '../../contracts/names'
-import { collaborationCollection, RECORD_REFERENCE_FIELDS } from './fields'
+import { collaborationCollection, notificationAccess, RECORD_REFERENCE_FIELDS } from './fields'
 import { ADMIN_GROUPS } from '../fields'
 import { NOTIFICATION_TYPE_VALUES } from '../values'
 
@@ -18,4 +18,16 @@ export const collaborationNotificationsCollection = collaborationCollection({
     { name: 'emailedAt', type: 'number', min: 0 },
   ],
   indexes: [{ fields: ['user', 'readAt', 'createdAt'] }],
+  access: notificationAccess,
+  hooks: {
+    beforeChange: [
+      ({ data, operation }) => {
+        if (operation === 'update') {
+          const keys = Object.keys(data as Record<string, unknown>)
+          if (keys.some((key) => key !== 'readAt')) throw new Error('Only readAt can be updated.')
+        }
+        return data
+      },
+    ],
+  },
 })

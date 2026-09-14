@@ -7,7 +7,12 @@ import {
 } from '../../../../../../../packages/adapters/payload/src/collaboration/files'
 import { authenticate } from '../../../../server/collaboration/auth'
 import { canReadParent } from '../../../../server/collaboration/parents'
-import { badRequest, forbidden, unauthorized } from '../../../../server/collaboration/responses'
+import {
+  badRequest,
+  forbidden,
+  payloadNotFoundOrDenied,
+  unauthorized,
+} from '../../../../server/collaboration/responses'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +71,8 @@ async function storeUpload({ env, payload, input, key, user, userId }: StoreInpu
   } catch (error) {
     await env.R2.delete(key)
     console.error('attachment metadata write failed', error)
+    const expected = payloadNotFoundOrDenied(error)
+    if (expected !== undefined) return expected
     return Response.json({ error: 'Unable to save the attachment.' }, { status: 500 })
   }
 }

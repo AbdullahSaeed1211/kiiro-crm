@@ -1,5 +1,5 @@
 import { COLLECTIONS } from '../../contracts/names'
-import { collaborationCollection } from './fields'
+import { collaborationCollection, notificationPreferenceAccess } from './fields'
 import { ADMIN_GROUPS } from '../fields'
 
 /** User-owned notification channel and digest settings. */
@@ -11,4 +11,5 @@ export const notificationPrefsCollection = collaborationCollection({
     { name: 'channels', type: 'json', required: true },
     { name: 'digestLocalTime', type: 'text', maxLength: 5 },
   ],
+  access: notificationPreferenceAccess,
 })

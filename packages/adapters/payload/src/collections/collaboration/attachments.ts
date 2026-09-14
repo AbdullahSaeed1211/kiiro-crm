@@ -1,5 +1,12 @@
 import { COLLECTIONS } from '../../contracts/names'
-import { collaborationCollection, RECORD_REFERENCE_FIELDS, ATTACHMENT_MIME_TYPES } from './fields'
+import {
+  attachmentDelete,
+  collaborationCollection,
+  parentScopedCreate,
+  parentScopedRead,
+  RECORD_REFERENCE_FIELDS,
+  ATTACHMENT_MIME_TYPES,
+} from './fields'
 import { ADMIN_GROUPS } from '../fields'
 
 /** R2-backed record files. The upload route enforces the size and MIME limits before writing the object. */
@@ -20,4 +27,5 @@ export const collaborationAttachmentsCollection = collaborationCollection({
   ],
   indexes: [{ fields: ['recordType', 'recordId'] }],
   upload: { mimeTypes: [...ATTACHMENT_MIME_TYPES], crop: false, focalPoint: false },
+  access: { read: parentScopedRead, create: parentScopedCreate, update: () => false, delete: attachmentDelete },
 })

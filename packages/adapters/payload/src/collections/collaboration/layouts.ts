@@ -1,4 +1,4 @@
-import { collaborationCollection } from './fields'
+import { collaborationCollection, layoutAccess } from './fields'
 import { ADMIN_GROUPS } from '../fields'
 
 /** One configurable record layout per registered record type. */
@@ -10,4 +10,5 @@ export const layoutsCollection = collaborationCollection({
     { name: 'sidebarFields', type: 'json', required: true },
     { name: 'quickCreateFields', type: 'json', required: true },
   ],
+  access: layoutAccess,
 })

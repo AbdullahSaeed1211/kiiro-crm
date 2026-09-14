@@ -1,5 +1,5 @@
 import { COLLECTIONS } from '../../contracts/names'
-import { collaborationCollection } from './fields'
+import { collaborationCollection, savedViewAccess } from './fields'
 import { ADMIN_GROUPS } from '../fields'
 
 /** Personal and shared list/board/calendar/timeline configurations. */
@@ -22,4 +22,5 @@ export const savedViewsCollection = collaborationCollection({
     { name: 'isDefault', type: 'checkbox', defaultValue: false },
   ],
   indexes: [{ fields: ['recordType', 'owner'] }],
+  access: savedViewAccess,
 })

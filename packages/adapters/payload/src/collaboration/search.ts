@@ -64,21 +64,21 @@ export interface SearchInput {
 export async function scopedSearch(payload: Payload, input: SearchInput): Promise<readonly SearchResult[]> {
   const q = input.query.trim()
   if (q.length < 2 || q.length > 80) throw new Error('Search must contain between 2 and 80 characters.')
-  const results: SearchResult[] = []
-  for (const definition of input.definitions ?? SEARCH_DEFINITIONS) {
-    const response = await payload.find({
-      collection: definition.collection,
-      where: { or: definition.searchFields.map((field) => ({ [field]: { like: q } })) },
-      sort: '-updatedAt',
-      limit: 5,
-      depth: 0,
-      overrideAccess: false,
-      user: input.user,
-    })
-    for (const doc of response.docs) {
-      results.push(resultOf(definition, doc))
-      if (results.length === 20) return results
-    }
-  }
-  return results
+  const definitions = input.definitions ?? SEARCH_DEFINITIONS
+  const responses = await Promise.all(
+    definitions.map((definition) =>
+      payload.find({
+        collection: definition.collection,
+        where: { or: definition.searchFields.map((field) => ({ [field]: { like: q } })) },
+        sort: '-updatedAt',
+        limit: 5,
+        depth: 0,
+        overrideAccess: false,
+        user: input.user,
+      }),
+    ),
+  )
+  return definitions
+    .flatMap((definition, index) => (responses[index]?.docs ?? []).map((doc) => resultOf(definition, doc)))
+    .slice(0, 20)
 }
