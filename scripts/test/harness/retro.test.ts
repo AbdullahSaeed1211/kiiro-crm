@@ -51,6 +51,31 @@ describe('analyzeRetro', () => {
   })
 })
 
+describe('first-pass analysis', () => {
+  it('does not call a green first attempt first-pass when a retry exists', () => {
+    const root = makeRepo()
+    writeAttempt(root, attempt({ wp: 'M5-W3' }))
+    writeAttempt(root, attempt({ wp: 'M5-W3', attempt: 2 }))
+
+    const analysis = analyzeRetro({
+      root,
+      files: loadAttempts(root).files,
+      config: loadConfig(root),
+      lessons: [],
+      n: 5,
+    })
+
+    expect(analysis.wpStats).toContainEqual({
+      wp: 'M5-W3',
+      attempts: 2,
+      firstPass: false,
+      retries: 1,
+      tookOver: false,
+      gateMs: 2000,
+    })
+  })
+})
+
 describe('runRetro scaffolding', () => {
   it('scaffolds a schema-valid lesson and eval once, and skips classes with an active lesson', () => {
     const root = makeRepo()
