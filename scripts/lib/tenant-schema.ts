@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const namespaceId = z.string().regex(/^[1-9]\d*$/)
 const text = z.string().min(1)
+const cloudflareName = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/)
 const hostname = z
   .string()
   .regex(/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i)
@@ -24,8 +25,8 @@ export const tenantSchema = z
       inboundDomain: hostname,
       inboundLocalPrefix: text.optional(),
     }),
-    d1: z.object({ name: text, id: z.uuid().optional() }),
-    r2: z.object({ bucket: z.string().min(3) }),
+    d1: z.object({ name: cloudflareName, id: z.uuid().optional() }),
+    r2: z.object({ bucket: cloudflareName }),
     rateLimitNamespaces: z.object({ intake: namespaceId, auth: namespaceId }),
     intake: z.object({ allowedOrigins: z.array(z.url()), turnstileHostnames: z.array(text) }),
     deployOrder: z.number().int().min(0),

@@ -6,6 +6,34 @@ export interface CommandResult {
   readonly output: string
 }
 
+/** Wrangler executable resolved from the web package, which pins the supported CLI version. */
+export const WRANGLER = 'pnpm --filter web exec wrangler'
+
+/** Validates a value before it is interpolated into a shell command. */
+export function assertSafeToken(value: string, label: string, pattern: RegExp): string {
+  if (!pattern.test(value)) throw new Error(`${label} contains unsupported characters`)
+  return value
+}
+
+/** Checks a planned Wrangler command against a captured help document without contacting Cloudflare. */
+export function commandSupportedByHelp(command: string, help: string): boolean {
+  const args = command.split(/\s+/).slice(command.split(/\s+/).lastIndexOf('wrangler') + 1)
+  const header =
+    help
+      .split('\n')
+      .find((line) => line.startsWith('wrangler '))
+      ?.trim() ?? ''
+  const firstFlag = args.findIndex((token) => token.startsWith('--'))
+  const path = args.slice(0, firstFlag === -1 ? args.length : firstFlag).join(' ')
+  const flags = args.filter((token) => token.startsWith('--'))
+  const placeholderStart = header.lastIndexOf(' [')
+  const documentedPath = placeholderStart >= 0 && header.endsWith(']') ? header.slice(0, placeholderStart) : header
+  return (
+    (`wrangler ${path}` === documentedPath || `wrangler ${path}`.startsWith(`${documentedPath} `)) &&
+    flags.every((flag) => help.includes(flag))
+  )
+}
+
 /** Injectable command runner used by provisioning and deployment tests. */
 export type CommandRunner = (
   command: string,

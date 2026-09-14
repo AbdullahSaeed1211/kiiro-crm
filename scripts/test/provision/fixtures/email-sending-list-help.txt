@@ -1,0 +1,6 @@
+wrangler email sending list [domain]
+
+List Email Sending subdomains
+
+OPTIONS
+      --zone-id  Zone ID

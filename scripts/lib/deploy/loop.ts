@@ -1,4 +1,4 @@
-import { assertCommand, parseBookmark, type CommandRunner } from '../provision/commands'
+import { assertCommand, assertSafeToken, parseBookmark, WRANGLER, type CommandRunner } from '../provision/commands'
 import { smokeTenant, type SmokeResult } from '../../smoke-tenant'
 import type { Tenant } from '../tenant-schema'
 
@@ -21,12 +21,13 @@ export interface DeploymentDependencies {
 
 /** The restore point command for a tenant. */
 export function restorePointCommand(tenant: Tenant): string {
-  return `wrangler d1 time-travel info ${tenant.d1.name} --env ${tenant.slug}`
+  return `${WRANGLER} d1 time-travel info ${tenant.d1.name} --env ${tenant.slug}`
 }
 
 /** The code-only rollback command. It never restores D1 data. */
 export function rollbackCommand(tenant: Tenant, tag: string): string {
-  return `wrangler rollback --name ops-${tenant.slug} --message "${tag} failed smoke"`
+  const safeTag = assertSafeToken(tag, 'release tag', /^v?[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$/)
+  return `${WRANGLER} rollback --name ops-${tenant.slug} --message "${safeTag} failed smoke"`
 }
 
 /** Runs restore point, migration, deployment and smoke in deploy order, stopping and rolling back on failure. */

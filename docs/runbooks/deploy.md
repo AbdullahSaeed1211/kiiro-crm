@@ -32,7 +32,7 @@ OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag vX.Y.Z --execute
 For each tenant, the loop runs:
 
 ```text
-wrangler d1 time-travel info <database> --env <slug>
+pnpm --filter web exec wrangler d1 time-travel info <database> --env <slug>
 CLOUDFLARE_ENV=<slug> pnpm --filter web exec payload migrate
 opennextjs-cloudflare deploy --env=<slug>
 pnpm tenant:smoke <slug> --execute
@@ -43,7 +43,7 @@ pnpm tenant:smoke <slug> --execute
 After a restore bookmark exists, any migration, deploy, or smoke failure runs a code-only rollback:
 
 ```text
-wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
+pnpm --filter web exec wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
 ```
 
 The loop records the bookmark, marks the tenant failed, blocks later tenants, and exits nonzero. Code rollback preserves bindings and data. It never restores D1 data automatically.

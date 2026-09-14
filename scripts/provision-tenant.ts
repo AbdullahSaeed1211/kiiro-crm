@@ -4,6 +4,7 @@ import { runCli } from './harness/lib/repo'
 import { shellRunner } from './lib/provision/commands'
 import {
   discoverProvisionState,
+  fetchProvisionClient,
   loadTenant,
   manualChecklist,
   provisionPlan,
@@ -36,13 +37,18 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
 async function executeProvision(slug: string, root: string, tenant: ReturnType<typeof loadTenant>): Promise<void> {
   const turnstileSecret =
     process.env[`TURNSTILE_SECRET_${slug.toUpperCase().replaceAll('-', '_')}`] ?? process.env['TURNSTILE_SECRET']
+  const internalSecret = process.env[`INTERNAL_SECRET_${slug.toUpperCase().replaceAll('-', '_')}`]
   const runner = shellRunner(root)
-  const state = await discoverProvisionState(tenant, runner, root)
+  const http = fetchProvisionClient()
+  const status = internalSecret === undefined ? undefined : { client: http, secret: internalSecret }
+  const state = await discoverProvisionState({ tenant, run: runner, root, ...(status === undefined ? {} : { status }) })
   await provisionTenant(tenant, {
     run: runner,
     root,
     state,
     ...(turnstileSecret === undefined ? {} : { turnstileSecret }),
+    ...(internalSecret === undefined ? {} : { internalSecret }),
+    http,
   })
 }
 

@@ -2,8 +2,12 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseJsonc } from '../jsonc'
-import { assertCommand, parseD1Id, resourceId, type CommandRunner } from './commands'
+import { assertCommand, assertSafeToken, parseD1Id, WRANGLER, type CommandRunner } from './commands'
 import { parseTenant, type Tenant } from '../tenant-schema'
+export { discoverProvisionState, provisionStatusEndpoint } from './state'
+export { fetchProvisionClient } from './http'
+import { updateTenantD1Id } from './tenant-file'
+export { updateTenantD1Id } from './tenant-file'
 
 /** The observable completion state for the eleven provisioning steps. */
 export interface ProvisionState {
@@ -34,6 +38,14 @@ export interface ProvisionDependencies {
   readonly turnstileSecret?: string
   readonly writeD1Id?: (id: string) => void
   readonly print?: (line: string) => void
+  readonly http?: ProvisionHttpClient
+  readonly internalSecret?: string
+}
+
+/** Minimal HTTP boundary for authenticated internal tenant operations. */
+export interface ProvisionHttpClient {
+  post: (url: string, body: unknown, secret: string) => Promise<{ ok: boolean; status: number }>
+  get: (url: string, secret: string) => Promise<{ ok: boolean; status: number; body?: Partial<ProvisionState> }>
 }
 
 interface StepContext {
@@ -41,6 +53,7 @@ interface StepContext {
   readonly deps: ProvisionDependencies
   readonly state: Partial<ProvisionState>
   readonly secretsFile?: string
+  readonly secrets?: Record<string, string>
 }
 
 /** Returns the tenant's stable Worker name. */
@@ -67,16 +80,19 @@ export function createSecretPayload(turnstileSecret: string): Record<string, str
 
 /** Builds the complete provisioning plan without contacting Cloudflare. */
 export function provisionPlan(tenant: Tenant): ProvisionStep[] {
+  assertSafeToken(tenant.slug, 'tenant slug', /^[a-z][a-z0-9-]{1,39}$/)
+  assertSafeToken(tenant.d1.name, 'D1 name', /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/)
+  assertSafeToken(tenant.r2.bucket, 'R2 bucket', /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/)
   const worker = workerName(tenant)
   return [
     { key: 'validate', label: 'validate tenant definition' },
-    { key: 'd1', label: 'create D1 database when absent', command: `wrangler d1 create ${tenant.d1.name}` },
-    { key: 'r2', label: 'create R2 bucket when absent', command: `wrangler r2 bucket create ${tenant.r2.bucket}` },
+    { key: 'd1', label: 'create D1 database when absent', command: `${WRANGLER} d1 create ${tenant.d1.name}` },
+    { key: 'r2', label: 'create R2 bucket when absent', command: `${WRANGLER} r2 bucket create ${tenant.r2.bucket}` },
     { key: 'wrangler', label: 'generate tenant Wrangler bindings', command: 'pnpm gen:wrangler' },
     {
       key: 'secrets',
       label: 'upload tenant secrets',
-      command: `wrangler secret bulk <temporary-secrets-file> --env ${tenant.slug}`,
+      command: `${WRANGLER} secret bulk <temporary-secrets-file> --env ${tenant.slug}`,
     },
     {
       key: 'migration',
@@ -88,11 +104,11 @@ export function provisionPlan(tenant: Tenant): ProvisionStep[] {
       label: 'deploy the existing build',
       command: `opennextjs-cloudflare deploy --env=${tenant.slug}`,
     },
-    { key: 'seed', label: 'seed settings, template and owner invitation', command: `POST ${seedEndpoint(tenant)}` },
+    { key: 'seed', label: 'seed settings, template and owner invitation' },
     {
       key: 'senderStatus',
       label: 'read Email Service sender status',
-      command: `wrangler email domains list --json --env ${tenant.slug}`,
+      command: `${WRANGLER} email sending list ${tenant.email.inboundDomain}`,
     },
     { key: 'checklist', label: 'print the manual domain, routing and Turnstile checklist' },
     { key: 'smoke', label: 'run tenant smoke checks', command: `pnpm tenant:smoke ${tenant.slug} --execute` },
@@ -106,14 +122,6 @@ function isComplete(key: ProvisionStep['key'], state: Partial<ProvisionState>, t
   return state[key] === true
 }
 
-function updateTenantD1Id(root: string, tenant: Tenant, id: string): void {
-  const file = join(root, 'tenants', `${tenant.slug}.jsonc`)
-  const source = readFileSync(file, 'utf8')
-  const needle = new RegExp(`("d1"\\s*:\\s*\\{\\s*"name"\\s*:\\s*"${tenant.d1.name}"\\s*)(\\})`)
-  if (!needle.test(source)) throw new Error(`${file}: could not locate d1.name to write database id`)
-  writeFileSync(file, source.replace(needle, `$1, "id": "${id}"$2`))
-}
-
 function secretsFile(tenant: Tenant, payload: Record<string, string>): string {
   const file = join(process.cwd(), `.tenant-secrets-${tenant.slug}-${String(process.pid)}.json`)
   writeFileSync(file, JSON.stringify(payload), { mode: 0o600 })
@@ -125,7 +133,12 @@ export async function provisionTenant(tenant: Tenant, deps: ProvisionDependencie
   const parsed = parseTenant(tenant, `tenant ${tenant.slug}`)
   const state: Partial<ProvisionState> = { ...deps.state }
   const print = deps.print ?? console.log
-  return runProvisionSteps(provisionPlan(parsed), { tenant: parsed, deps, state }, print)
+  const secrets = deps.internalSecret === undefined ? undefined : { INTERNAL_SECRET: deps.internalSecret }
+  return runProvisionSteps(
+    provisionPlan(parsed),
+    { tenant: parsed, deps, state, ...(secrets === undefined ? {} : { secrets }) },
+    print,
+  )
 }
 
 async function runProvisionSteps(
@@ -135,10 +148,12 @@ async function runProvisionSteps(
 ): Promise<ProvisionStep[]> {
   const completed: ProvisionStep[] = []
   let secretsFilePath = context.secretsFile
+  let secrets = context.secrets
   try {
     for (const step of steps) {
-      const result = await runProvisionStep(step, { ...context, secretsFile: secretsFilePath }, print)
+      const result = await runProvisionStep(step, { ...context, secretsFile: secretsFilePath, secrets }, print)
       secretsFilePath = result.secretsFile
+      secrets = result.secrets
       completed.push(step)
     }
   } finally {
@@ -155,17 +170,24 @@ async function shouldSkip(step: ProvisionStep, context: StepContext): Promise<bo
   return discovered || isComplete(step.key, state, tenant)
 }
 
-async function executeStep(step: ProvisionStep, context: StepContext): Promise<{ secretsFile: string | undefined }> {
+async function executeStep(
+  step: ProvisionStep,
+  context: StepContext,
+): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
   const { tenant, deps } = context
+  if (step.key === 'seed') return executeSeed(tenant, deps, context.secrets)
   const command = commandForStep(step, context)
   const environment = step.key === 'migration' ? { CLOUDFLARE_ENV: tenant.slug } : undefined
   const result = await deps.run(command.value, environment)
   assertCommand(result, command.value)
   if (step.key === 'd1') writeProvisionedD1Id(tenant, deps, result.output)
-  return { secretsFile: command.file }
+  return { secretsFile: command.file, ...(command.secrets === undefined ? {} : { secrets: command.secrets }) }
 }
 
-function commandForStep(step: ProvisionStep, context: StepContext): { value: string; file?: string } {
+function commandForStep(
+  step: ProvisionStep,
+  context: StepContext,
+): { value: string; file?: string; secrets?: Record<string, string> } {
   const { tenant, deps, secretsFile: existingSecretsFile } = context
   if (step.key !== 'secrets') {
     if (step.command === undefined) throw new Error(`provision step ${step.key} has no command`)
@@ -173,23 +195,58 @@ function commandForStep(step: ProvisionStep, context: StepContext): { value: str
   }
   const secret = deps.turnstileSecret
   if (secret === undefined || secret === '') throw new Error('TURNSTILE_SECRET is required to provision a tenant')
-  const file = existingSecretsFile ?? secretsFile(tenant, createSecretPayload(secret))
-  return { value: `wrangler secret bulk ${file} --env ${tenant.slug}`, file }
+  if (existingSecretsFile !== undefined)
+    return { value: `${WRANGLER} secret bulk ${existingSecretsFile} --env ${tenant.slug}`, file: existingSecretsFile }
+  const secrets = createSecretPayload(secret)
+  const existingInternalSecret = context.secrets?.['INTERNAL_SECRET']
+  if (existingInternalSecret !== undefined) secrets['INTERNAL_SECRET'] = existingInternalSecret
+  const file = secretsFile(tenant, secrets)
+  return {
+    value: `${WRANGLER} secret bulk ${file} --env ${tenant.slug}`,
+    file,
+    secrets,
+  }
 }
 
 async function runProvisionStep(
   step: ProvisionStep,
   context: StepContext,
   print: (line: string) => void,
-): Promise<{ secretsFile: string | undefined }> {
+): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
   if (await shouldSkip(step, context)) {
     print(`SKIP ${step.label}`)
-    return { secretsFile: context.secretsFile }
+    return { secretsFile: context.secretsFile, ...(context.secrets === undefined ? {} : { secrets: context.secrets }) }
   }
   print(`RUN ${step.label}`)
   if (step.key === 'checklist') print(manualChecklist(context.tenant))
-  if (step.key === 'validate' || step.key === 'checklist') return { secretsFile: context.secretsFile }
+  if (step.key === 'validate' || step.key === 'checklist')
+    return { secretsFile: context.secretsFile, ...(context.secrets === undefined ? {} : { secrets: context.secrets }) }
   return executeStep(step, context)
+}
+
+async function executeSeed(
+  tenant: Tenant,
+  deps: ProvisionDependencies,
+  secrets: Record<string, string> | undefined,
+): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
+  const secret = secrets?.['INTERNAL_SECRET']
+  if (deps.http === undefined || secret === undefined)
+    throw new Error('authenticated provisioning client and INTERNAL_SECRET are required for seeding')
+  const response = await deps.http.post(
+    seedEndpoint(tenant),
+    {
+      displayName: tenant.displayName,
+      template: tenant.template,
+      owner: tenant.owner,
+      timezone: tenant.timezone,
+      locale: tenant.locale,
+      currency: tenant.currency,
+      intake: tenant.intake,
+    },
+    secret,
+  )
+  if (!response.ok) throw new Error(`tenant seed failed (HTTP ${String(response.status)})`)
+  return { secretsFile: undefined, secrets }
 }
 
 function writeProvisionedD1Id(tenant: Tenant, deps: ProvisionDependencies, output: string): void {
@@ -198,35 +255,6 @@ function writeProvisionedD1Id(tenant: Tenant, deps: ProvisionDependencies, outpu
   if (id === undefined) throw new Error('wrangler d1 create did not return a database id')
   if (deps.writeD1Id !== undefined) deps.writeD1Id(id)
   else updateTenantD1Id(deps.root, tenant, id)
-}
-
-/** Discovers the idempotency state that Wrangler can expose without changing a resource. */
-export async function discoverProvisionState(
-  tenant: Tenant,
-  run: CommandRunner,
-  root: string,
-): Promise<Partial<ProvisionState>> {
-  const state: Partial<ProvisionState> = {
-    d1: tenant.d1.id !== undefined,
-    wrangler: existsSync(join(root, 'apps', 'web', 'wrangler.jsonc')),
-  }
-  const r2 = await run(`wrangler r2 bucket list --json`)
-  state.r2 = r2.exitCode === 0 && r2.output.includes(tenant.r2.bucket)
-  const secrets = await run(`wrangler secret list --env ${tenant.slug} --json`)
-  state.secrets =
-    secrets.exitCode === 0 &&
-    ['PAYLOAD_SECRET', 'INTERNAL_SECRET', 'TENANT_SECRET', 'TURNSTILE_SECRET'].every((name) =>
-      secrets.output.includes(name),
-    )
-  if (tenant.d1.id === undefined) {
-    const databases = await run('wrangler d1 list --json')
-    const id = databases.exitCode === 0 ? resourceId(databases.output, tenant.d1.name) : undefined
-    if (id !== undefined) {
-      state.d1 = true
-      updateTenantD1Id(root, tenant, id)
-    }
-  }
-  return state
 }
 
 /** Formats operator-only steps that cannot be completed by a local dry run. */

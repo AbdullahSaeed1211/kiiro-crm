@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { deployTenants, restorePointCommand, rollbackCommand } from '../../lib/deploy/loop'
+import { WRANGLER } from '../../lib/provision/commands'
 import type { Tenant } from '../../lib/tenant-schema'
 import type { SmokeResult } from '../../smoke-tenant'
 
@@ -32,10 +33,14 @@ const failed: SmokeResult = { ok: false, checks: [{ name: 'health', ok: false, d
 describe('deployment loop', () => {
   it('uses restore points and code-only rollback commands', () => {
     const alpha = makeTenant('alpha', 0)
-    expect(restorePointCommand(alpha)).toBe('wrangler d1 time-travel info ops-alpha --env alpha')
-    expect(rollbackCommand(alpha, 'v1.2.3')).toBe('wrangler rollback --name ops-alpha --message "v1.2.3 failed smoke"')
+    expect(restorePointCommand(alpha)).toBe(`${WRANGLER} d1 time-travel info ops-alpha --env alpha`)
+    expect(rollbackCommand(alpha, 'v1.2.3')).toBe(
+      `${WRANGLER} rollback --name ops-alpha --message "v1.2.3 failed smoke"`,
+    )
   })
+})
 
+describe('deployment failure handling', () => {
   it('stops later tenants and rolls back the tenant with an injected smoke failure', async () => {
     const commands: string[] = []
     const alpha = makeTenant('alpha', 0)
@@ -51,10 +56,12 @@ describe('deployment loop', () => {
       ['alpha', 'failed', true],
       ['beta', 'blocked', false],
     ])
-    expect(commands).toContain('wrangler rollback --name ops-alpha --message "v1.0.0 failed smoke"')
+    expect(commands).toContain(`${WRANGLER} rollback --name ops-alpha --message "v1.0.0 failed smoke"`)
     expect(commands.some((command) => command.includes('ops-beta'))).toBe(false)
   })
+})
 
+describe('deployment safety', () => {
   it('deploys all tenants in deploy order when smoke passes', async () => {
     const commands: string[] = []
     const results = await deployTenants([makeTenant('beta', 1), makeTenant('alpha', 0)], 'v1.0.0', {
@@ -67,5 +74,9 @@ describe('deployment loop', () => {
     expect(results.every((result) => result.status === 'deployed')).toBe(true)
     expect(commands[0]).toContain('ops-alpha')
     expect(commands).not.toContain(expect.stringContaining('rollback'))
+  })
+
+  it('rejects release tags that could escape a shell argument', () => {
+    expect(() => rollbackCommand(makeTenant('alpha', 0), 'v1.0.0";touch /tmp/pwned')).toThrow(/unsupported characters/)
   })
 })

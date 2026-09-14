@@ -9,7 +9,7 @@ Use this procedure when a deployment fails after its smoke checks or when an ope
 3. Run the code-only rollback command for the failed tenant:
 
 ```sh
-wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
+pnpm --filter web exec wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
 ```
 
 4. Rerun the smoke checks against the restored version. Verify health, login, the R2 put/get/delete probe, and the test email.
@@ -22,7 +22,7 @@ Data restore is a destructive, human-approved action. Only the platform operator
 After approval, run the exact command below with the recorded bookmark:
 
 ```sh
-wrangler d1 time-travel restore ops-<slug> --bookmark <bookmark> --env <slug>
+pnpm --filter web exec wrangler d1 time-travel restore ops-<slug> --bookmark <bookmark> --env <slug>
 ```
 
 Run migrations and smoke checks after the restore. Record the operator, approval, bookmark, command result, and verification output. Never guess a bookmark and never restore a different tenant's database.

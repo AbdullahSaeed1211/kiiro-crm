@@ -20,6 +20,7 @@ export interface SmokeResult {
 /** Injectable network and probe dependencies for local tests. */
 export interface SmokeDependencies {
   readonly fetch?: typeof fetch
+  readonly mode?: 'dry-run' | 'execute'
   readonly r2Probe?: () => Promise<boolean>
   readonly emailProbe?: () => Promise<boolean>
   readonly failCheck?: string
@@ -46,6 +47,7 @@ export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Prom
       probe: deps.r2Probe,
       dryRunDetail: 'put/get/delete probe (dry run)',
       successDetail: 'put/get/delete passed',
+      mode: deps.mode ?? 'dry-run',
     }),
     probeCheck({
       name: 'email',
@@ -53,6 +55,7 @@ export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Prom
       probe: deps.emailProbe,
       dryRunDetail: `test email to ${tenant.owner.email} (dry run)`,
       successDetail: 'accepted',
+      mode: deps.mode ?? 'dry-run',
     }),
   ])
   for (const check of checks) print(`${check.ok ? 'PASS' : 'FAIL'} smoke ${check.name}: ${check.detail}`)
@@ -76,8 +79,11 @@ async function probeCheck(input: {
   readonly probe?: () => Promise<boolean>
   readonly dryRunDetail: string
   readonly successDetail: string
+  readonly mode: 'dry-run' | 'execute'
 }): Promise<SmokeCheckResult> {
   if (input.forcedFailure) return { name: input.name, ok: false, detail: 'injected failure' }
+  if (input.mode === 'execute' && input.probe === undefined)
+    return { name: input.name, ok: false, detail: 'incomplete authenticated probe' }
   if (input.probe === undefined) return { name: input.name, ok: true, detail: input.dryRunDetail }
   const ok = await input.probe()
   return { name: input.name, ok, detail: ok ? input.successDetail : 'probe failed' }
@@ -95,13 +101,49 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   const tenant = loadTenant(process.cwd(), slug)
   const execute = values.execute
   assertLiveAllowed(execute)
-  const result = await smokeTenant(tenant, {
-    ...(execute ? { fetch } : {}),
+  return runSmokeCli({
+    slug,
+    tenant,
+    execute,
     ...(values['fail-check'] === undefined ? {} : { failCheck: values['fail-check'] }),
   })
+}
+
+async function runSmokeCli(input: {
+  readonly slug: string
+  readonly tenant: Tenant
+  readonly execute: boolean
+  readonly failCheck?: string
+}): Promise<number> {
+  const probes = input.execute
+    ? authenticatedProbes(input.tenant, process.env[`INTERNAL_SECRET_${input.slug.toUpperCase().replaceAll('-', '_')}`])
+    : {}
+  const result = await smokeTenant(input.tenant, {
+    ...(input.execute ? { fetch } : {}),
+    ...(input.execute ? { mode: 'execute' as const } : {}),
+    ...probes,
+    ...(input.failCheck === undefined ? {} : { failCheck: input.failCheck }),
+  })
   const status = result.ok ? 'ok' : 'failed'
-  console.log(`smoke: ${slug} ${status}`)
+  console.log(`smoke: ${input.slug} ${status}`)
   return result.ok ? 0 : 1
+}
+
+function authenticatedProbes(
+  tenant: Tenant,
+  secret: string | undefined,
+): { r2Probe?: () => Promise<boolean>; emailProbe?: () => Promise<boolean> } {
+  if (secret === undefined || secret === '') return {}
+  const base = tenantUrl(tenant)
+  return {
+    r2Probe: () => internalProbe(`${base}/api/v1/internal/provision/r2-probe`, secret),
+    emailProbe: () => internalProbe(`${base}/api/v1/internal/provision/email-probe`, secret),
+  }
+}
+
+async function internalProbe(url: string, secret: string): Promise<boolean> {
+  const response = await fetch(url, { method: 'POST', headers: { 'x-internal-secret': secret } })
+  return response.ok
 }
 
 function assertLiveAllowed(execute: boolean): void {
