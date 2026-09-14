@@ -116,10 +116,10 @@ describe('people auth invariants', () => {
     } as never)
     await Promise.resolve()
     expect(countCalls).toBe(1)
-    authHooks.afterOperation[0]({ req: firstReq } as never)
+    await authHooks.afterOperation[0]({ req: firstReq } as never)
     await second
     expect(countCalls).toBe(2)
-    authHooks.afterOperation[0]({ req: secondReq } as never)
+    await authHooks.afterOperation[0]({ req: secondReq } as never)
   })
 })
 

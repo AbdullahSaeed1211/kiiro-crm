@@ -3,6 +3,8 @@ import {
   APIError,
   type CollectionBeforeChangeHook,
   type CollectionBeforeLoginHook,
+  type CollectionAfterErrorHook,
+  type CollectionAfterOperationHook,
   type PayloadRequest,
   type TypeWithID,
 } from 'payload'
@@ -82,6 +84,15 @@ function releaseOwnerLock({ req }: { req: PayloadRequest }): void {
   ownerReleases.delete(req)
 }
 
+const releaseOwnerLockAfterOperation: CollectionAfterOperationHook = ({ req, result }) => {
+  releaseOwnerLock({ req })
+  return result
+}
+
+const releaseOwnerLockAfterError: CollectionAfterErrorHook = ({ req }) => {
+  releaseOwnerLock({ req })
+}
+
 /** Prevents an update from removing the final active owner of the tenant. */
 export const protectLastActiveOwner: CollectionBeforeChangeHook<UserRecord> = async ({ data, originalDoc, req }) => {
   if (data.password !== undefined) {
@@ -133,6 +144,6 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
 export const authHooks = {
   beforeLogin: [blockInactiveUser],
   beforeChange: [protectLastActiveOwner, enforceUserMutation],
-  afterOperation: [releaseOwnerLock],
-  afterError: [releaseOwnerLock],
+  afterOperation: [releaseOwnerLockAfterOperation],
+  afterError: [releaseOwnerLockAfterError],
 } as const

@@ -76,7 +76,12 @@ export const peopleUsersCollection: CollectionConfig = {
     },
     cookies: { secure: process.env.NODE_ENV === 'production', sameSite: 'Lax' },
   },
-  hooks: { beforeLogin: [...authHooks.beforeLogin], beforeChange: [...authHooks.beforeChange] },
+  hooks: {
+    beforeLogin: [...authHooks.beforeLogin],
+    beforeChange: [...authHooks.beforeChange],
+    afterOperation: [...authHooks.afterOperation],
+    afterError: [...authHooks.afterError],
+  },
 }
 
 export const peopleGroupsCollection: CollectionConfig = base({

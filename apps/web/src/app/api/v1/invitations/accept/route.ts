@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-lines-per-function, max-params, max-statements, sonarjs/cognitive-complexity, @typescript-eslint/no-unnecessary-condition, sonarjs/different-types-comparison */
+/* eslint-disable complexity, max-lines-per-function, max-statements, sonarjs/cognitive-complexity, @typescript-eslint/no-unnecessary-condition */
 import { createUnitOfWork } from '@ops/adapter-payload'
 import {
   authBody,
@@ -12,17 +12,17 @@ import {
   type UntypedPayloadDocument,
 } from '../../../../../server/auth/api'
 import { createLocalReq, type PayloadRequest } from 'payload'
+import {
+  claimInvitationWithCas,
+  completeInvitationClaim,
+  createInvitationClaimId,
+  type InvitationClaimResult,
+} from '../../../../../server/auth/invitation-claims'
 
 function hashInvitationToken(token: string): Promise<string> {
   return crypto.subtle
     .digest('SHA-256', new TextEncoder().encode(token))
     .then((digest) => Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join(''))
-}
-
-function docsOf(result: UntypedPayloadDocument | { docs: UntypedPayloadDocument[] }): UntypedPayloadDocument[] {
-  if (typeof result === 'object' && result !== null && 'docs' in result && Array.isArray(result.docs))
-    return result.docs as UntypedPayloadDocument[]
-  return [result as UntypedPayloadDocument]
 }
 
 function invalidInvitation(invitation: UntypedPayloadDocument | undefined): Response | undefined {
@@ -50,34 +50,14 @@ async function findInvitation(
   return result.docs[0]
 }
 
-async function claimInvitation(
-  dataPayload: UntypedPayload,
-  tokenHash: string,
-  req: PayloadRequest,
-  initial?: UntypedPayloadDocument,
-): Promise<UntypedPayloadDocument | Response> {
-  const initialDocument = initial ?? (await findInvitation(dataPayload, tokenHash, req))
-  const invalid = invalidInvitation(initialDocument)
-  if (invalid !== undefined) return invalid
-  if (initialDocument?.status === 'accepting' && initialDocument.claimId !== tokenHash)
+function claimError(result: InvitationClaimResult): Response | undefined {
+  if (result.kind === 'missing') return Response.json({ error: 'Invitation not found.' }, { status: 404 })
+  if (result.kind === 'expired') return Response.json({ error: 'This invitation has expired.' }, { status: 409 })
+  if (result.kind === 'used')
+    return Response.json({ error: 'This invitation has already been used or revoked.' }, { status: 409 })
+  if (result.kind === 'busy')
     return Response.json({ error: 'This invitation is already being accepted.' }, { status: 409 })
-  if (initialDocument?.status === 'pending') {
-    const claimed = await dataPayload.update({
-      collection: 'invitations',
-      where: { and: [{ id: { equals: initialDocument.id } }, { status: { equals: 'pending' } }] },
-      limit: 1,
-      data: { status: 'accepting', claimId: tokenHash, claimedAt: Date.now() },
-      overrideAccess: true,
-      req,
-    })
-    const claimedDoc = docsOf(claimed)[0]
-    if (claimedDoc !== undefined) return claimedDoc
-    const current = await findInvitation(dataPayload, tokenHash, req)
-    if (current?.status !== 'accepting' || current.claimId !== tokenHash)
-      return Response.json({ error: 'This invitation is already being accepted.' }, { status: 409 })
-    return current
-  }
-  return initialDocument ?? Response.json({ error: 'Invitation not found.' }, { status: 404 })
+  return undefined
 }
 
 function roleOf(invitation: UntypedPayloadDocument): 'owner' | 'manager' | 'staff' {
@@ -146,21 +126,9 @@ async function finishInvitation({
       if (user?.invitationId !== invitation.id) throw error
     }
   }
-  const completed = await dataPayload.update({
-    collection: 'invitations',
-    where: {
-      and: [
-        { id: { equals: invitation.id } },
-        { status: { equals: 'accepting' } },
-        { claimId: { equals: invitation.claimId } },
-      ],
-    },
-    limit: 1,
-    data: { status: 'accepted', acceptedAt: Date.now() },
-    overrideAccess: true,
-    req,
-  })
-  if (docsOf(completed)[0] === undefined) {
+  const claimId = typeof invitation.claimId === 'string' ? invitation.claimId : ''
+  const completed = await completeInvitationClaim({ store: dataPayload, invitationId: invitation.id, claimId, req })
+  if (!completed) {
     const current = await findInvitation(dataPayload, String(invitation.tokenHash), req)
     if (current?.status === 'accepted')
       return Response.json({ error: 'This invitation has already been accepted.' }, { status: 409 })
@@ -191,9 +159,14 @@ async function acceptInvitation({
   const initialEmail = typeof initial?.email === 'string' ? initial.email.toLowerCase() : ''
   const passwordError = passwordPolicyResponse(password, initialEmail)
   if (passwordError !== undefined) return passwordError
+  const claimId = createInvitationClaimId()
   return createUnitOfWork(req).run(async () => {
-    const invitation = await claimInvitation(dataPayload, tokenHash, req, initial)
-    if (invitation instanceof Response) return invitation
+    const claim = await claimInvitationWithCas({ store: dataPayload, tokenHash, claimId, req, initial })
+    const claimErrorResponse = claimError(claim)
+    if (claimErrorResponse !== undefined) return claimErrorResponse
+    if (claim.kind !== 'claimed')
+      return Response.json({ error: 'This invitation could not be claimed.' }, { status: 409 })
+    const invitation = claim.document
     const email = typeof invitation.email === 'string' ? invitation.email.toLowerCase() : ''
     return finishInvitation({ payload, dataPayload, invitation, email, password, name, req })
   })
