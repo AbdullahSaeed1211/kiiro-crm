@@ -8,10 +8,13 @@ import {
   type KanbanStage,
 } from '@ops/ui/composites/KanbanBoard'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LostReasonDialog } from './LeadDialogs'
 import { moveLead } from '../../../server/crm/leads/actions'
 import { leadStageMoveError } from '../../../server/crm/leads/types'
+import { deferredLostMoveResult } from './lead-board-model'
+
+type LostMove = Readonly<{ leadId: string; expectedUpdatedAt: number }>
 
 export function LeadBoard({
   stages,
@@ -25,21 +28,24 @@ export function LeadBoard({
   labels: KanbanBoardLabels
 }>) {
   const router = useRouter()
-  const [lostMove, setLostMove] = useState<{ leadId: string; expectedUpdatedAt: number } | null>(null)
-  const handleMove = async (move: KanbanMove) => {
-    const destination = stages.find((stage) => stage.id === move.toStageId)
+  const [lostMove, setLostMove] = useState<LostMove | null>(null)
+  const stageByCard = useRef(new Map(cards.map((card) => [card.id, card.stageId])))
+  useEffect(() => {
+    for (const card of cards) stageByCard.current.set(card.id, card.stageId)
+  }, [cards])
+  const handleMove = async ({ cardId, toStageId, expectedUpdatedAt }: KanbanMove) => {
+    const destination = stages.find((stage) => stage.id === toStageId)
     if (destination?.category === 'done_failure') {
-      setLostMove({ leadId: move.cardId, expectedUpdatedAt: move.expectedUpdatedAt })
-      return {
-        ok: false as const,
-        error: { code: 'VALIDATION', message: 'Choose a lost reason to mark the lead lost.' },
-      }
+      setLostMove({ leadId: cardId, expectedUpdatedAt })
+      return deferredLostMoveResult(stageByCard.current.get(cardId) ?? toStageId, expectedUpdatedAt)
     }
     if (destination !== undefined) {
       const error = leadStageMoveError(destination)
       if (error !== null) return { ok: false as const, error: { code: 'VALIDATION', message: error } }
     }
-    return moveLead({ leadId: move.cardId, toStageId: move.toStageId, expectedUpdatedAt: move.expectedUpdatedAt })
+    const result = await moveLead({ leadId: cardId, toStageId, expectedUpdatedAt })
+    if (result.ok) stageByCard.current.set(cardId, toStageId)
+    return result
   }
   return (
     <>
