@@ -23,4 +23,14 @@ export const savedViewsCollection = collaborationCollection({
   ],
   indexes: [{ fields: ['recordType', 'owner'] }],
   access: savedViewAccess,
+  hooks: {
+    beforeChange: [
+      ({ data, operation, originalDoc }) => {
+        if (operation !== 'update' || originalDoc === undefined) return data
+        const input = data as Record<string, unknown>
+        input['owner'] = Reflect.get(originalDoc, 'owner')
+        return input
+      },
+    ],
+  },
 })

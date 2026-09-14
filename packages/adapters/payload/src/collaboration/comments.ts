@@ -1,4 +1,5 @@
 import type { Id } from '@ops/kernel'
+import { isManagerUp } from '@ops/platform'
 import type { PayloadRequest } from 'payload'
 import { resolveActor } from '../access/actor'
 import { COLLECTIONS } from '../contracts/names'
@@ -16,6 +17,39 @@ export function validateCommentBody(body: string): string | undefined {
   if (body.trim() === '') return 'Comment body is required.'
   if (body.length > 10_000) return 'Comment body must be 10,000 characters or fewer.'
   return undefined
+}
+
+function recordValue(doc: object, key: string): unknown {
+  return (doc as Record<string, unknown>)[key]
+}
+
+/** Soft-deletes a comment without exposing a hard-delete path to callers. */
+export async function softDeleteComment(req: PayloadRequest, commentId: string) {
+  const actor = await resolveActor(req)
+  if (actor?.active !== true) throw new Error('An active user is required.')
+  const comment = await req.payload.findByID({
+    collection: 'comments',
+    id: commentId,
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  const author = recordValue(comment, 'author')
+  const authorId = typeof author === 'object' && author !== null ? recordValue(author, 'id') : author
+  const reference = {
+    recordType: String(recordValue(comment, 'recordType')),
+    recordId: String(recordValue(comment, 'recordId')),
+  }
+  if (!(await canReadParentReference(req, reference)) || (!isManagerUp(actor) && String(authorId) !== String(actor.id)))
+    throw new Error('The comment is not available.')
+  return req.payload.update({
+    collection: 'comments',
+    id: commentId,
+    data: { body: '[deleted]', mentions: [], deletedAt: Date.now(), editedAt: Date.now() },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
 }
 
 async function fanOutCreatedComment({

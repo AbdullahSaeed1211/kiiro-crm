@@ -12,4 +12,14 @@ export const notificationPrefsCollection = collaborationCollection({
     { name: 'digestLocalTime', type: 'text', maxLength: 5 },
   ],
   access: notificationPreferenceAccess,
+  hooks: {
+    beforeChange: [
+      ({ data, operation, originalDoc }) => {
+        if (operation !== 'update' || originalDoc === undefined) return data
+        const input = data as Record<string, unknown>
+        input['user'] = Reflect.get(originalDoc, 'user')
+        return input
+      },
+    ],
+  },
 })

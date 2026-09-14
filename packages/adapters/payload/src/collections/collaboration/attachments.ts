@@ -1,4 +1,5 @@
 import { COLLECTIONS } from '../../contracts/names'
+import { resolveActor } from '../../access/actor'
 import {
   attachmentDelete,
   collaborationCollection,
@@ -28,4 +29,16 @@ export const collaborationAttachmentsCollection = collaborationCollection({
   indexes: [{ fields: ['recordType', 'recordId'] }],
   upload: { mimeTypes: [...ATTACHMENT_MIME_TYPES], crop: false, focalPoint: false },
   access: { read: parentScopedRead, create: parentScopedCreate, update: () => false, delete: attachmentDelete },
+  hooks: {
+    beforeChange: [
+      async ({ data, operation, req }) => {
+        if (operation !== 'create') return data
+        const actor = await resolveActor(req)
+        if (actor?.active !== true) throw new Error('An active user is required.')
+        const input = data as Record<string, unknown>
+        input['uploadedBy'] = actor.id
+        return input
+      },
+    ],
+  },
 })
