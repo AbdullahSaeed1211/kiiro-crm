@@ -1,0 +1,129 @@
+import type { ReactNode } from 'react'
+
+export interface CalendarEvent {
+  readonly id: string
+  readonly title: string
+  readonly date: string
+  readonly href?: string
+  readonly tone?: 'default' | 'blue' | 'green' | 'amber' | 'red' | 'violet'
+  readonly meta?: ReactNode
+}
+const TONES: Record<NonNullable<CalendarEvent['tone']>, string> = {
+  default: 'bg-muted text-foreground',
+  blue: 'bg-stage-blue/15 text-foreground',
+  green: 'bg-stage-green/15 text-foreground',
+  amber: 'bg-stage-amber/15 text-foreground',
+  red: 'bg-destructive/10 text-destructive',
+  violet: 'bg-stage-violet/15 text-foreground',
+}
+const pad = (value: number): string => String(value).padStart(2, '0')
+const dateKey = (input: { readonly year: number; readonly month: number; readonly day: number }): string =>
+  `${String(input.year).padStart(4, '0')}-${pad(input.month + 1)}-${pad(input.day)}`
+function firstWeekday(input: { readonly year: number; readonly month: number; readonly weekStartsOn: 0 | 1 }): number {
+  const day = new Date(Date.UTC(input.year, input.month, 1)).getUTCDay()
+  return (day - input.weekStartsOn + 7) % 7
+}
+function monthHref(input: { readonly year: number; readonly month: number; readonly delta: number }): string {
+  const next = new Date(Date.UTC(input.year, input.month + input.delta, 1))
+  return `?month=${String(next.getUTCMonth() + 1)}&year=${String(next.getUTCFullYear())}`
+}
+function EventCell({ event }: Readonly<{ event: CalendarEvent }>) {
+  return (
+    <a
+      href={event.href ?? `?event=${event.id}`}
+      className={`block truncate rounded px-1.5 py-1 text-left text-xs ${TONES[event.tone ?? 'default']}`}
+    >
+      {event.title}
+    </a>
+  )
+}
+function DayCell({
+  date,
+  day,
+  events,
+}: Readonly<{ date: string | null; day: number; events: readonly CalendarEvent[] }>) {
+  if (date === null) return <div className="min-h-28 border-b border-r bg-muted/10 p-2" />
+  return (
+    <div className="min-h-28 border-b border-r p-2">
+      <time dateTime={date} className="text-xs font-medium text-muted-foreground">
+        {day}
+      </time>
+      <div className="mt-1 space-y-1">
+        {events.slice(0, 4).map((event) => (
+          <EventCell key={event.id} event={event} />
+        ))}
+        {events.length > 4 ? <span className="text-xs text-muted-foreground">+{events.length - 4} more</span> : null}
+      </div>
+    </div>
+  )
+}
+
+/** A compact month grid with deterministic event placement. */
+export function CalendarMonth({
+  year,
+  month,
+  events,
+  weekStartsOn = 1,
+  labels = { previous: 'Previous month', next: 'Next month' },
+}: Readonly<{
+  year: number
+  month: number
+  events: readonly CalendarEvent[]
+  weekStartsOn?: 0 | 1
+  labels?: Readonly<{ previous: string; next: string }>
+}>) {
+  const leading = firstWeekday({ year, month, weekStartsOn })
+  const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const cells = Math.ceil((leading + days) / 7) * 7
+  const monthLabel = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    Date.UTC(year, month, 1),
+  )
+  const byDate = new Map<string, CalendarEvent[]>()
+  for (const event of events) byDate.set(event.date, [...(byDate.get(event.date) ?? []), event])
+  const weekdays =
+    weekStartsOn === 1
+      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  return (
+    <section aria-label={monthLabel} className="overflow-hidden rounded-lg border bg-card">
+      <header className="flex items-center justify-between border-b px-4 py-3">
+        <a
+          className="text-sm text-muted-foreground hover:text-foreground"
+          href={monthHref({ year, month, delta: -1 })}
+          aria-label={labels.previous}
+        >
+          ←
+        </a>
+        <h2 className="text-sm font-semibold">{monthLabel}</h2>
+        <a
+          className="text-sm text-muted-foreground hover:text-foreground"
+          href={monthHref({ year, month, delta: 1 })}
+          aria-label={labels.next}
+        >
+          →
+        </a>
+      </header>
+      <div className="grid grid-cols-7 border-b bg-muted/30">
+        {weekdays.map((day) => (
+          <div key={day} className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {Array.from({ length: cells }, (_, index) => {
+          const day = index - leading + 1
+          const date = day < 1 || day > days ? null : dateKey({ year, month, day })
+          return (
+            <DayCell
+              key={date ?? `empty-${String(index)}`}
+              date={date}
+              day={day}
+              events={date === null ? [] : (byDate.get(date) ?? [])}
+            />
+          )
+        })}
+      </div>
+    </section>
+  )
+}
