@@ -26,3 +26,10 @@ This is the release-review inventory for customer-facing Mirch surfaces. The own
 - Explicit `panel=1`/`returnTo` URL state is used instead of Next intercepted routes; this preserves deep links and reloadability without introducing a second navigation tree.
 - Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders and rename/delete controls remain outside the current UI contract.
 - Email setup and inbound intake are shipped; a complete Agentic Inbox-style thread composer/renderer is not yet part of the customer shell.
+
+## Deeper reference learnings applied
+
+- Plane's view list keeps the empty-search state separate from the no-views state and puts edit/delete/copy-link actions behind a close-on-select menu. Mirch now closes the saved-view menu after selection and distinguishes empty directory/filter states.
+- Frappe's `ViewControls` treats mobile controls as a horizontally scrollable quick-filter rail, keeps refresh/sort/column actions explicit, and exposes Save Changes/Cancel only after a view is dirty. Mirch follows the same explicit-control rule and avoids rendering a filter affordance when a directory has no filter dimensions.
+- Frappe's `Activities` component groups comments, tasks, calls, attachments, and email into a single chronological rail with actor avatars and a persistent connector. Mirch's shared `ActivityFeed` uses the same connector/actor hierarchy for the current activity contract.
+- Twenty's record-table settings split filters, sorts, visible fields, hidden fields, and layout into separate focused sub-pages. Mirch records this as the next expansion path instead of combining unrelated controls into one opaque menu.
