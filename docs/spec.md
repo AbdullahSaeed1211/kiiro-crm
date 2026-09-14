@@ -106,6 +106,10 @@ Each WP's own attempt files `harness/metrics/attempts/<WP-ID>-a<k>.json` are alw
 
 **Completion signaling:** workers own progress and completion reporting. The runtime resumes the lead through a worker return, callback, completion event, or equivalent push notification. The lead does not repeatedly wait for status, list or read worker conversations, or inspect an active worker's branch or worktree to infer progress. If the runtime cannot push completion, the worker runs synchronously to completion. While workers run, the lead may perform independent work on the milestone branch that does not inspect, modify, or merge their active work.
 
+### 0.8.1 Functional versus UX acceptance
+
+Functional completion and visual/interaction acceptance are separate gates. Every UI work package records reference captures and measurable constraints before implementation, then supplies side-by-side desktop and 390 px evidence after implementation. Evidence covers typography, spacing, control density, focus states, empty/loading/error states, responsive layout, and raw persisted-ID leakage. Every drawer and dialog is exercised from each origin through backdrop, Escape, close button, footer action, browser Back, direct URL, focus return, and scroll-containment paths. “Inspired by Twenty/Frappe” is not evidence: references are behavior/layout inputs only, with deviations documented. The lead performs a visual integration pass after each parallel wave and may not close a milestone or recommend GO while any UX gate is open. Post-wave user findings are recorded as append-only failed evals/lessons and fed into the next plan.
+
 ### 0.9 Spike report template (`docs/reports/m1-spike.md`)
 ```text
 What was implemented
@@ -225,7 +229,7 @@ runtime white-label; lead intake from existing websites; inbound + outbound emai
 | D-45 | Import | `@payloadcms/plugin-import-export` in Payload admin (synchronous mode); no custom CSV parser |
 | D-46 | Password policy | 12–128 characters, must not equal the email; enforced on every set-password path (§12) |
 | D-47 | Event delivery | In-process `EventBus` after commit with error logging; missed side effects are repaired by idempotent reconciliation jobs (e.g. notifications derived from recent activity); no durable outbox unless dropped events are observed in production |
-| D-48 | Generality | Phase 1 builds for the first customer (Mirch Media, an agency): `agency` template and English only. Other templates (§18.2) and locales are built when a client needs them; generality is added where client number two proves it necessary |
+| D-48 | Generality | The product is tenant- and vertical-agnostic from onboarding: every template in §18 is selectable and applies terminology, workflows, fields, modules, and starter views idempotently. Tenant branding and locale remain configuration, not source-code forks |
 | D-49 | Custom tenant domains | Phase 2, when a customer asks: Cloudflare for SaaS custom hostnames on the `PLATFORM_DOMAIN` zone (100 included, then $0.10 each); the customer CNAMEs its hostname to `tenants.<PLATFORM_DOMAIN>`; an `ops-edge-router` Worker on route `*/*` forwards by `request.cf.hostMetadata.slug` to the tenant Worker through a service binding; email still uses the platform sender with the tenant display name |
 | D-50 | Platform operator | Owns the Cloudflare account, GitHub organization, `PLATFORM_DOMAIN`, Email Service domains and all secrets. Customers are tenants: their owners and managers are users inside their own instance and never receive platform credentials |
 
@@ -432,7 +436,7 @@ dependency-cruiser rules mirror §5.2 plus `no-circular`, `no-orphans` (except e
 ### 6.5 Custom checks (each script ≤ 80 lines, unit-tested)
 - `check:brand`: case-insensitive forbidden tokens (§3, constraint 2) outside `tenants/**`, `docs/**`, `scripts/check-brand.ts`; also runs on `apps/web/.open-next/**` build output in CI.
 - `check:vocab`: forbidden vertical vocabulary in `packages/kernel/**` and `packages/platform/**`.
-- `check:disables`: fails on `eslint-disable` comments naming a gated rule.
+- `check:disables`: fails on `eslint-disable` comments naming a gated rule unless the directive includes a concise `-- reason` explaining the intentional exception.
 - `check:docs`: every package has a README with Purpose and Public API sections; exported functions of `kernel`, `platform` and `modules/*` have TSDoc.
 - `check:size`: records the OpenNext Worker bundle size in `docs/reports/size.json`; fails on > 20% growth versus `main` without an ADR reference in the PR.
 
@@ -574,10 +578,10 @@ INBOUND_DOMAIN=in.localhost
 - Inbound email locally: `curl -X POST http://localhost:3000/api/v1/internal/email/inbound -H "x-internal-secret: dev-internal-secret" -H "x-envelope-from: …" -H "x-envelope-to: …" --data-binary @fixtures/email/reply.eml`.
 - `pnpm db:reset:local`: deletes the local D1 state directory under `.wrangler/state` and re-runs `payload migrate`.
 - `pnpm seed:dev` (Local API against local D1, idempotent by email/name):
-  settings `appName "Demo Workspace"`, timezone `America/New_York`, template `agency`;
-  users (password `DevPassword123!`): `owner@example.test` (owner), `manager@example.test` (manager), `staff1@example.test`, `staff2@example.test` (staff, report to manager);
-  groups `Design` (staff1), `Development` (staff2); 3 organizations, 5 contacts, 12 leads across all lead stages, 6 deals, 2 projects,
-  20 tasks with due dates from −3 to +10 days relative to now, intake form `website` with origin `http://localhost:3000`.
+  settings `appName "Mirch Media"`, timezone `Asia/Kolkata`, locale `en`, currency `INR`, template `agency`;
+  users (password `mirchads@123`): `mirchads@gmail.com` (owner), `manager@example.test` (manager), `staff1@example.test`, `staff2@example.test` (staff, report to manager);
+  groups `Design` (staff1), `Development` (staff2); 13 organizations (including the confirmed Mirch client list), 6 contacts, 5 leads, 5 deals, 14 projects and 24 tasks,
+  with due dates relative to now and prefilled notify/inbound settings for the confirmed tenant.
   Fixtures live in `scripts/fixtures/*.ts`; the `example.test` domain only.
 
 ---

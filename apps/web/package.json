@@ -20,6 +20,7 @@
     "@ops/module-crm": "workspace:*",
     "@ops/module-work": "workspace:*",
     "@ops/platform": "workspace:*",
+    "@ops/templates": "workspace:*",
     "@ops/ui": "workspace:*",
     "@payloadcms/db-d1-sqlite": "3.89.0",
     "@payloadcms/next": "3.89.0",

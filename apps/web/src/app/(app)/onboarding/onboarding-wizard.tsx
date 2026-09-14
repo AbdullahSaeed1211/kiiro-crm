@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
 
 const STEPS = [
@@ -12,18 +13,6 @@ const STEPS = [
   ['intake', 'Lead intake'],
   ['import', 'Import'],
   ['done', 'Done'],
-] as const
-
-const BUSINESS_PRESETS = [
-  ['blank', 'General business'],
-  ['agency', 'Agency & services'],
-  ['accounting', 'Accounting'],
-  ['education', 'Education'],
-  ['health', 'Healthcare'],
-  ['home-inspection', 'Home inspection'],
-  ['legal', 'Legal'],
-  ['real-estate', 'Real estate'],
-  ['travel', 'Travel'],
 ] as const
 
 export function OnboardingWizard({
@@ -184,9 +173,9 @@ export function OnboardingWizard({
               value={values.template}
               onChange={(event) => update('template', event.target.value)}
             >
-              {BUSINESS_PRESETS.map(([value, label]) => (
+              {TEMPLATE_KEYS.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {TEMPLATE_LABELS[value]}
                 </option>
               ))}
             </select>

@@ -189,6 +189,16 @@ test('saved views use typed controls and support deletion', async ({ page }) => 
   await expect(page.getByText(name, { exact: true })).toHaveCount(0)
 })
 
+test('onboarding exposes the tenant-neutral business preset catalog', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/onboarding')
+  await page.getByRole('button', { name: 'Business type' }).click()
+  const preset = page.locator('#business-type option')
+  await expect(preset).toHaveCount(9)
+  await expect(preset).toContainText(['General business', 'Healthcare', 'Legal', 'Real estate'])
+  expect(await preset.allTextContents()).not.toContain('Mirch Media')
+})
+
 // Keep the seed source as the single credential authority; this guard catches stale test fixtures.
 test('route-health harness has a local owner credential', () => {
   expect(OWNER_EMAIL).toBe('mirchads@gmail.com')
