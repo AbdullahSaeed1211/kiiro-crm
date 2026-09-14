@@ -1,11 +1,10 @@
 /** Public API of @ops/module-work. */
-export type { TaskDatesInput, TaskRecord, TaskRepository } from './ports/tasks'
+export type { TaskDatesInput, TaskPriority, TaskRecord, TaskRepository } from './ports/tasks'
 export type {
   ProjectDraft,
   ProjectRecord,
   TaskDraft,
   WorkTaskRecord,
-  TaskPriority,
   WorkDeps,
   WorkRecordType,
   WorkRepository,

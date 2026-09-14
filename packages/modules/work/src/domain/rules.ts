@@ -16,6 +16,7 @@ export function subtaskDepth(task: WorkTaskRecord, byId: ReadonlyMap<Id, WorkTas
   return depth
 }
 
+/** Returns true when at least one child remains open. */
 export function hasOpenChildren(children: readonly WorkTaskRecord[]): boolean {
   return children.some((child) => child.completedAt === null && child.stageId !== '')
 }

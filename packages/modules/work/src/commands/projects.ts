@@ -59,6 +59,7 @@ function canAssign(deps: WorkDeps, project: ProjectRecord): boolean {
   return canUpdate(deps, project) && deps.can(deps.actor, 'assign', resource(project))
 }
 
+/** Adds a member to a project with assignment authorization and compare-and-set protection. */
 export async function addProjectMember(
   deps: WorkDeps,
   input: { readonly projectId: Id; readonly memberId: Id; readonly expectedUpdatedAt: number },
@@ -75,6 +76,7 @@ export async function addProjectMember(
   return saved === undefined ? fail('CONFLICT', CONFLICT) : ok(saved)
 }
 
+/** Removes a member from a project with update authorization and compare-and-set protection. */
 export async function removeProjectMember(
   deps: WorkDeps,
   input: { readonly projectId: Id; readonly memberId: Id; readonly expectedUpdatedAt: number },

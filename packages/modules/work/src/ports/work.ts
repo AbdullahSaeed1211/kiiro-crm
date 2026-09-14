@@ -1,10 +1,8 @@
 import type { Clock, Id, Result } from '@ops/kernel'
 import type { Actor, Can, StageStore, UnitOfWork, Workflow } from '@ops/platform'
-import type { TaskRecord as TaskPortRecord } from './tasks'
+import type { TaskPriority, TaskRecord as TaskPortRecord } from './tasks'
 
 export type WorkRecordType = 'project' | 'task'
-export type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
-
 export interface ProjectRecord {
   readonly id: Id
   readonly name: string

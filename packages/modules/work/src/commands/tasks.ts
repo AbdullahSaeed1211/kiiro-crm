@@ -1,7 +1,7 @@
 import { asId, domainError, err, ok, type Id } from '@ops/kernel'
 import { changeStage } from '@ops/platform'
 import { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
-import { rankBetween, rebalanceRanks } from '../domain/rank'
+import { rankBetween } from '../domain/rank'
 import type { TaskDraft, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
 
 const TASK_CONFLICT = 'task was updated by someone else'
@@ -217,9 +217,4 @@ export async function setTaskDates(
     input.expectedUpdatedAt,
   )
   return saved === undefined ? fail('CONFLICT', TASK_CONFLICT) : ok(saved)
-}
-
-/** Returns evenly spaced ranks for a destination column after a reorder. */
-export function ranksForOrder(tasks: readonly WorkTaskRecord[]): ReadonlyMap<string, string> {
-  return rebalanceRanks(tasks.map((task) => task.id))
 }
