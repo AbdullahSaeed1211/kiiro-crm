@@ -1,0 +1,48 @@
+{
+  "wp": "M2-W5",
+  "milestone": "M2",
+  "attempt": 4,
+  "runner": "worker",
+  "startedAt": "2026-09-14T03:24:30.300Z",
+  "finishedAt": "2026-09-14T03:25:04.674Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 2783,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 6970,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 23580,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 630,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 349,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 3,
+  "suggestedClasses": [],
+  "confirmedClasses": [
+    "GATE_FAILURE",
+    "CONTRACT_DRIFT"
+  ],
+  "leadTookOver": false
+}

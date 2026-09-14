@@ -1,10 +1,10 @@
 import type { RequestContext } from '../../work/deps'
 import type { ActivityItem, PersonSummary } from './types'
 
-export function text(value: unknown): string | null {
+function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
-export function refId(value: unknown): string | null {
+function refId(value: unknown): string | null {
   if (typeof value === 'string') return value
   if (value !== null && typeof value === 'object' && 'id' in value) {
     const id = (value as { id?: unknown }).id

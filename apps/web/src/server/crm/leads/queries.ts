@@ -43,7 +43,7 @@ function ownerOf(lead: LeadRecord, people: ReadonlyMap<string, LeadPerson>): Lea
   return lead.ownerId === null ? null : (people.get(lead.ownerId) ?? null)
 }
 
-export function makeListItem(
+function makeListItem(
   input: Readonly<{
     lead: LeadRecord
     stages: readonly KanbanStage[]
