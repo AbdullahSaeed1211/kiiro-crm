@@ -1,4 +1,4 @@
-import type { DealSeed, LeadSeed } from './crm-data'
+import type { DealSeed, LeadSeed } from './crm-types'
 
 const NORTHSTAR = 'northstar'
 const HARBOR_PINE = 'harbor-pine'
