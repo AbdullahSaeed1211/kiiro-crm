@@ -420,3 +420,16 @@ export async function saveGroup(input: unknown): Promise<ActionResult> {
     return { ok: false, error: error instanceof Error ? error.message : 'Unable to save group.' }
   }
 }
+
+export async function deleteGroup(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const id = stringValue(recordOf(input).id)
+  if (id === undefined) return { ok: false, error: 'Group id is required.' }
+  try {
+    await context.payload.delete({ collection: 'groups', id, req: context.req })
+    revalidatePath('/settings/groups')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to delete group.' }
+  }
+}
