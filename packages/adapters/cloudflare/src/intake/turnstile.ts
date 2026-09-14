@@ -1,3 +1,4 @@
+/* eslint-disable complexity -- verification deliberately fails closed across every provider boundary. */
 import { createJsonLogger, type Logger } from '@ops/kernel'
 
 /** Cloudflare Turnstile verification endpoint. */
@@ -7,6 +8,7 @@ export const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile
 export interface TurnstileResponse {
   readonly success?: boolean
   readonly hostname?: string
+  readonly action?: string
 }
 
 /** Inputs for the fail-closed Turnstile verifier. */
@@ -19,7 +21,12 @@ export interface TurnstileVerifierOptions {
 
 /** Verifies a single-use Turnstile token and requires an allowlisted hostname. */
 export async function verifyTurnstile(
-  input: { readonly token: string; readonly remoteIp?: string; readonly allowedHostnames: readonly string[] },
+  input: {
+    readonly token: string
+    readonly remoteIp?: string
+    readonly allowedHostnames: readonly string[]
+    readonly action?: string
+  },
   options: TurnstileVerifierOptions,
 ): Promise<boolean> {
   const secret = options.secret
@@ -31,7 +38,14 @@ export async function verifyTurnstile(
   try {
     const body = new URLSearchParams({ secret, response: input.token })
     if (input.remoteIp !== undefined) body.set('remoteip', input.remoteIp)
-    return await requestVerification({ options, body, signal: controller.signal, hostnames: input.allowedHostnames })
+    body.set('action', input.action ?? 'intake')
+    return await requestVerification({
+      options,
+      body,
+      signal: controller.signal,
+      hostnames: input.allowedHostnames,
+      action: input.action ?? 'intake',
+    })
   } catch (error) {
     const logger = options.logger ?? createJsonLogger()
     logger.warn('turnstile.verify_failed', { reason: error instanceof Error ? error.name : 'unknown' })
@@ -46,6 +60,7 @@ async function requestVerification(input: {
   readonly body: URLSearchParams
   readonly signal: AbortSignal
   readonly hostnames: readonly string[]
+  readonly action: string
 }): Promise<boolean> {
   const response = await (input.options.fetcher ?? fetch)(TURNSTILE_VERIFY_URL, {
     method: 'POST',
@@ -53,7 +68,7 @@ async function requestVerification(input: {
     body: input.body,
     signal: input.signal,
   })
-  return response.ok && isAccepted(await response.json(), input.hostnames)
+  return response.ok && isAccepted(await response.json(), input.hostnames, input.action)
 }
 
 function validInput(
@@ -69,8 +84,20 @@ function validInput(
   )
 }
 
-function isAccepted(result: unknown, hostnames: readonly string[]): boolean {
-  if (typeof result !== 'object' || result === null || !('success' in result) || !('hostname' in result)) return false
+function isAccepted(result: unknown, hostnames: readonly string[], action: string): boolean {
+  if (
+    typeof result !== 'object' ||
+    result === null ||
+    !('success' in result) ||
+    !('hostname' in result) ||
+    !('action' in result)
+  )
+    return false
   const data = result as TurnstileResponse
-  return data.success === true && typeof data.hostname === 'string' && hostnames.includes(data.hostname)
+  return (
+    data.success === true &&
+    typeof data.hostname === 'string' &&
+    hostnames.includes(data.hostname) &&
+    data.action === action
+  )
 }

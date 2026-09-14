@@ -6,6 +6,7 @@ export { escapeHtml, renderTemplate } from './templates'
 export type {
   EmailMessage,
   InboundDestination,
+  InboundIntakePort,
   MailRecordRef,
   MailStore,
   ParsedAttachment,

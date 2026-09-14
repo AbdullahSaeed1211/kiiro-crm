@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/use-type-alias -- the discriminated command result is intentionally local to this security gate. */
 import {
   domainError,
   err,
@@ -14,8 +15,10 @@ const failure = (code: DomainError['code'], message: string): IntakeResult => er
 async function checkChannel(
   deps: SubmitIntakeDeps,
 ): Promise<
-  { readonly ok: true; readonly channel: 'web' | 'server' } | { readonly ok: false; readonly result: IntakeResult }
+  | { readonly ok: true; readonly channel: 'web' | 'server' | 'email' }
+  | { readonly ok: false; readonly result: IntakeResult }
 > {
+  if (deps.channel === 'email') return { ok: true, channel: 'email' }
   if (deps.serverKey !== undefined) {
     return serverChannel(deps)
   }
@@ -42,6 +45,7 @@ async function verifyWebTurnstile(deps: SubmitIntakeDeps): Promise<boolean> {
     token,
     ...(deps.remoteIp === undefined ? {} : { remoteIp: deps.remoteIp }),
     allowedHostnames: deps.turnstileHostnames ?? [],
+    action: deps.turnstileAction ?? 'intake',
   })
 }
 
@@ -65,7 +69,11 @@ export async function submitIntake(deps: SubmitIntakeDeps, payload: unknown): Pr
 
 async function createAccepted(
   deps: SubmitIntakeDeps,
-  prepared: { readonly channel: 'web' | 'server'; readonly payload: IntakePayload; readonly dedupeKey: string },
+  prepared: {
+    readonly channel: 'web' | 'server' | 'email'
+    readonly payload: IntakePayload
+    readonly dedupeKey: string
+  },
 ): Promise<IntakeResult> {
   const inserted = await deps.store.insertSubmission({
     formId: deps.form.id,
@@ -99,7 +107,7 @@ async function prepare(
 ): Promise<
   | {
       readonly ok: true
-      readonly channel: 'web' | 'server'
+      readonly channel: 'web' | 'server' | 'email'
       readonly payload: IntakePayload
       readonly dedupeKey: string
     }

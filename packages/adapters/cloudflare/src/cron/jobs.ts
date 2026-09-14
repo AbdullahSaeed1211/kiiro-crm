@@ -1,17 +1,47 @@
+/* eslint-disable sonarjs/no-duplicate-string -- job names are persisted protocol identifiers. */
 import { ok, type Id } from '@ops/kernel'
 import type { NotificationStore, RecordRef } from '@ops/platform'
-import type { CronJob, CronWindow } from './cron-job'
-import { localDateFormatter } from './local-date'
+import type { CronJob } from './cron-job'
+import {
+  asBatch,
+  claim,
+  cursorOfJob,
+  firstRunAfterNine,
+  JOB_LIMIT,
+  HOUR_MS,
+  DAY_MS,
+  localDate,
+  localDateChanged,
+  localMinutes,
+  notificationCount,
+  saveCursor,
+  startOfLocalDay,
+} from './job-support'
 
-/** A minimal job-run store. Its unique claim must be backed by `(job, window)` in persistence. */
+/** Stable ordering cursor persisted in `jobRuns` for capped jobs. */
+export interface JobCursor {
+  readonly updatedAt: number
+  readonly id: string
+}
+
+/** A capped page and the last row cursor returned by a job source. */
+export interface JobBatch<T> {
+  readonly rows: readonly T[]
+  readonly nextCursor?: JobCursor
+}
+
+/** A minimal job-run store. Its unique claim must be backed by `(job, windowStart)` in persistence. */
 export interface JobRunStore {
   claim(job: string, window: string): Promise<boolean>
+  getCursor?(job: string): Promise<JobCursor | undefined>
+  saveCursor?(job: string, cursor: JobCursor | undefined): Promise<void>
 }
 
 /** A pending invitation supplied by the jobs composition root. */
 export interface ExpiredInvitation {
   readonly id: Id
   readonly expiresAt: number
+  readonly updatedAt?: number
 }
 
 /** A task or record that can receive a daily notification. */
@@ -22,16 +52,33 @@ export interface JobTarget {
   readonly assigneeIds?: readonly Id[]
   readonly stageName?: string
   readonly stalledDays?: number
+  readonly updatedAt?: number
+  readonly digestLocalTime?: string
+}
+
+/** A rejected submission row that can be deleted with cursor continuation. */
+export interface RejectedSubmission {
+  readonly id: string
+  readonly updatedAt: number
 }
 
 /** Job data sources. Methods are intentionally narrow so local fixtures need no Payload runtime. */
 export interface JobSources {
-  listExpiredInvitations?(at: number, limit: number): Promise<readonly ExpiredInvitation[]>
+  listExpiredInvitations?(
+    at: number,
+    limit: number,
+    cursor?: JobCursor,
+  ): Promise<readonly ExpiredInvitation[] | JobBatch<ExpiredInvitation>>
   expireInvitation?(id: Id): Promise<void>
-  listOverdue?(before: number, limit: number): Promise<readonly JobTarget[]>
-  listDigests?(localDate: string, at: number, limit: number): Promise<readonly JobTarget[]>
-  listStalled?(before: number, limit: number): Promise<readonly JobTarget[]>
-  deleteRejected?(before: number, limit: number): Promise<number>
+  listOverdue?(before: number, limit: number, cursor?: JobCursor): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
+  listDigests?(
+    localDate: string,
+    at: number,
+    limit: number,
+    cursor?: JobCursor,
+  ): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
+  listStalled?(before: number, limit: number, cursor?: JobCursor): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
+  deleteRejected?(before: number, limit: number, cursor?: JobCursor): Promise<number | JobBatch<RejectedSubmission>>
 }
 
 /** Dependencies shared by the six scheduled jobs. */
@@ -44,57 +91,25 @@ export interface ScheduledJobsDeps {
   readonly limit?: number
 }
 
-const LIMIT = 200
-const HOUR = 60 * 60 * 1000
-const DAY = 24 * HOUR
-const jobWindow = (job: string, window: CronWindow): string => `${job}:${String(window.start)}`
-const localDate = (timeZone: string, ms: number): string => localDateFormatter(timeZone)(ms)
-const utcStartOfToday = (timeZone: string, ms: number): number => {
-  const date = localDate(timeZone, ms)
-  const [year, month, day] = date.split('-').map(Number)
-  const utc = Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1)
-  return utc
-}
-
-async function claim(deps: ScheduledJobsDeps, name: string, window: CronWindow): Promise<boolean> {
-  return deps.runs === undefined || deps.runs.claim(name, jobWindow(name, window))
-}
-
-async function notificationCount(input: {
-  readonly targets: readonly JobTarget[]
-  readonly type: 'overdue' | 'digest' | 'stalled'
-  readonly date: string
-  readonly notifications: NotificationStore
-}): Promise<{ readonly created: number; readonly skipped: number }> {
-  let created = 0
-  let attempted = 0
-  for (const target of input.targets) {
-    const recipients = target.assigneeIds ?? (target.ownerId === undefined ? [] : [target.ownerId])
-    for (const userId of recipients) {
-      attempted += 1
-      const result = await input.notifications.insertIfAbsent({
-        userId,
-        type: input.type,
-        dedupeKey: `${target.record.type}:${target.record.id}:${input.type}:${input.date}:${userId}`,
-        record: target.record,
-        data: { title: target.title },
-      })
-      if (result === 'created') created += 1
-    }
-  }
-  return { created, skipped: attempted - created }
-}
+export { startOfLocalDay } from './job-support'
 
 /** Expires pending invitations once per hour. */
 export function createInvitationsExpireJob(deps: ScheduledJobsDeps): CronJob {
   return {
     name: 'invitations.expire',
-    isDue: (window) => window.end % HOUR === 0,
+    isDue: (window) => window.end % HOUR_MS === 0,
     run: async (window) => {
       if (!(await claim(deps, 'invitations.expire', window))) return ok({ processed: 0, created: 0, skipped: 0 })
-      const rows = (await deps.source.listExpiredInvitations?.(window.end, deps.limit ?? LIMIT)) ?? []
-      for (const row of rows) await deps.source.expireInvitation?.(row.id)
-      return ok({ processed: rows.length, created: rows.length, skipped: 0 })
+      const page = asBatch(
+        await deps.source.listExpiredInvitations?.(
+          window.end,
+          deps.limit ?? JOB_LIMIT,
+          await cursorOfJob(deps, 'invitations.expire'),
+        ),
+      )
+      for (const row of page.rows) await deps.source.expireInvitation?.(row.id)
+      await saveCursor({ deps, name: 'invitations.expire', rows: page.rows, next: page.nextCursor })
+      return ok({ processed: page.rows.length, created: page.rows.length, skipped: 0 })
     },
   }
 }
@@ -103,35 +118,49 @@ export function createInvitationsExpireJob(deps: ScheduledJobsDeps): CronJob {
 export function createOverdueJob(deps: ScheduledJobsDeps): CronJob {
   return {
     name: 'tasks.overdue',
-    isDue: (window) => {
-      const today = utcStartOfToday(deps.timeZone, window.end)
-      return window.start < today && window.end >= today + 9 * HOUR
-    },
+    isDue: (window) => firstRunAfterNine(deps.timeZone, window),
     run: async (window) => {
       if (!(await claim(deps, 'tasks.overdue', window))) return ok({ processed: 0, created: 0, skipped: 0 })
-      const today = utcStartOfToday(deps.timeZone, window.end)
-      const rows = (await deps.source.listOverdue?.(today, deps.limit ?? LIMIT)) ?? []
-      const counts = await notificationCount({
-        targets: rows,
+      const today = startOfLocalDay(deps.timeZone, window.end)
+      const page = asBatch<JobTarget>(
+        await deps.source.listOverdue?.(today, deps.limit ?? JOB_LIMIT, await cursorOfJob(deps, 'tasks.overdue')),
+      )
+      const counts: { readonly created: number; readonly skipped: number } = await notificationCount({
+        targets: page.rows,
         type: 'overdue',
         date: localDate(deps.timeZone, window.end),
         notifications: deps.notifications,
       })
-      return ok({ processed: rows.length, ...counts })
+      await saveCursor({ deps, name: 'tasks.overdue', rows: page.rows, next: page.nextCursor })
+      return ok({ processed: page.rows.length, ...counts })
     },
   }
 }
 
-/** Sends each user's configured daily digest once for the tenant-local date. */
+/** Sends each user's configured daily digest after their tenant-local configured time. */
 export function createDigestJob(deps: ScheduledJobsDeps): CronJob {
   return {
     name: 'digest.send',
     run: async (window) => {
       if (!(await claim(deps, 'digest.send', window))) return ok({ processed: 0, created: 0, skipped: 0 })
       const date = localDate(deps.timeZone, window.end)
-      const rows = (await deps.source.listDigests?.(date, window.end, deps.limit ?? LIMIT)) ?? []
-      const counts = await notificationCount({ targets: rows, type: 'digest', date, notifications: deps.notifications })
-      return ok({ processed: rows.length, ...counts })
+      const page = asBatch<JobTarget>(
+        await deps.source.listDigests?.(
+          date,
+          window.end,
+          deps.limit ?? JOB_LIMIT,
+          await cursorOfJob(deps, 'digest.send'),
+        ),
+      )
+      const counts: { readonly created: number; readonly skipped: number } = await notificationCount({
+        targets: page.rows,
+        type: 'digest',
+        date,
+        notifications: deps.notifications,
+        digestMinutes: localMinutes(deps.timeZone, window.end),
+      })
+      await saveCursor({ deps, name: 'digest.send', rows: page.rows, next: page.nextCursor })
+      return ok({ processed: page.rows.length, ...counts })
     },
   }
 }
@@ -140,20 +169,24 @@ export function createDigestJob(deps: ScheduledJobsDeps): CronJob {
 export function createStalledJob(deps: ScheduledJobsDeps): CronJob {
   return {
     name: 'records.stalled',
-    isDue: (window) => {
-      const today = utcStartOfToday(deps.timeZone, window.end)
-      return window.start < today && window.end >= today + 9 * HOUR
-    },
+    isDue: (window) => firstRunAfterNine(deps.timeZone, window),
     run: async (window) => {
       if (!(await claim(deps, 'records.stalled', window))) return ok({ processed: 0, created: 0, skipped: 0 })
-      const rows = (await deps.source.listStalled?.(window.end, deps.limit ?? LIMIT)) ?? []
-      const counts = await notificationCount({
-        targets: rows,
+      const page = asBatch<JobTarget>(
+        await deps.source.listStalled?.(
+          startOfLocalDay(deps.timeZone, window.end),
+          deps.limit ?? JOB_LIMIT,
+          await cursorOfJob(deps, 'records.stalled'),
+        ),
+      )
+      const counts: { readonly created: number; readonly skipped: number } = await notificationCount({
+        targets: page.rows,
         type: 'stalled',
         date: localDate(deps.timeZone, window.end),
         notifications: deps.notifications,
       })
-      return ok({ processed: rows.length, ...counts })
+      await saveCursor({ deps, name: 'records.stalled', rows: page.rows, next: page.nextCursor })
+      return ok({ processed: page.rows.length, ...counts })
     },
   }
 }
@@ -162,11 +195,18 @@ export function createStalledJob(deps: ScheduledJobsDeps): CronJob {
 export function createIntakeCleanupJob(deps: ScheduledJobsDeps): CronJob {
   return {
     name: 'intake.cleanup',
-    isDue: (window) => window.end % DAY === 0,
+    isDue: (window) => localDateChanged(deps.timeZone, window),
     run: async (window) => {
       if (!(await claim(deps, 'intake.cleanup', window))) return ok({ processed: 0, created: 0, skipped: 0 })
-      const deleted = (await deps.source.deleteRejected?.(window.end - 30 * DAY, deps.limit ?? LIMIT)) ?? 0
-      return ok({ processed: deleted, created: deleted, skipped: 0 })
+      const result = await deps.source.deleteRejected?.(
+        window.end - 30 * DAY_MS,
+        deps.limit ?? JOB_LIMIT,
+        await cursorOfJob(deps, 'intake.cleanup'),
+      )
+      if (typeof result === 'number') return ok({ processed: result, created: result, skipped: 0 })
+      const page = result ?? { rows: [] }
+      await saveCursor({ deps, name: 'intake.cleanup', rows: page.rows, next: page.nextCursor })
+      return ok({ processed: page.rows.length, created: page.rows.length, skipped: 0 })
     },
   }
 }

@@ -76,6 +76,7 @@ export interface IntakeTurnstileVerifier {
     readonly token: string
     readonly remoteIp?: string
     readonly allowedHostnames: readonly string[]
+    readonly action: string
   }): Promise<boolean>
 }
 /** Rate-limit boundary. */
@@ -97,6 +98,7 @@ export interface SubmitIntakeDeps {
   readonly turnstileToken?: string
   readonly production?: boolean
   readonly turnstileHostnames?: readonly string[]
+  readonly turnstileAction?: string
   readonly channel?: IntakeChannel
 }
 /** Successful command result. */

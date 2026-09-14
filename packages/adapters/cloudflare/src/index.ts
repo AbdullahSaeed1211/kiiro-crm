@@ -41,9 +41,13 @@ export {
   createOverdueJob,
   createScheduledJobs,
   createStalledJob,
+  startOfLocalDay,
   type ExpiredInvitation,
+  type JobBatch,
+  type JobCursor,
   type JobRunStore,
   type JobSources,
   type JobTarget,
+  type RejectedSubmission,
   type ScheduledJobsDeps,
 } from './cron/jobs'

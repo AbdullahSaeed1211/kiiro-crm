@@ -1,6 +1,6 @@
 /** Structural subset of a Cloudflare Rate Limit binding. */
 export interface RateLimitBinding {
-  limit(key: string): Promise<{ readonly success: boolean }>
+  limit(options: { readonly key: string }): Promise<{ readonly success: boolean }>
 }
 
 /** A local fixture implementation that is deterministic and resets by fixed windows. */
@@ -27,7 +27,7 @@ export function createRateLimiter(binding: RateLimitBinding | undefined): { chec
     check: async (key) => {
       if (binding === undefined) return false
       try {
-        return (await binding.limit(key)).success
+        return (await binding.limit({ key })).success
       } catch {
         return false
       }

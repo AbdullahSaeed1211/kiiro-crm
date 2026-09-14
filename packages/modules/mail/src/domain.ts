@@ -1,3 +1,4 @@
+/* eslint-disable complexity, max-params -- inbound acceptance coordinates persistence and retryable side effects. */
 import {
   domainError,
   err,
@@ -22,24 +23,38 @@ export async function receiveInboundEmail(
 > {
   const parsed = await parsedOf(deps)
   const existing = await deps.store.findMessageByMessageId(parsed.messageId)
-  if (existing !== undefined)
+  if (existing !== undefined) {
+    if (existing.record !== undefined && existing.status === 'received')
+      await announce(deps, existing.record, existing.messageId)
     return duplicateResult(parsed.messageId, existing.status === 'quarantined', existing.record)
+  }
   const local = deps.envelopeTo.split('@')[0]?.toLowerCase() ?? ''
   const destination = await resolveInboundDestination(local, deps.store)
-  const record = recordOf(destination)
-  const accepted = await acceptedSender(deps, parsed.from, record)
+  const intake = destination.kind === 'intake' ? await submitToIntake(deps, destination.formId, parsed) : undefined
+  const record = intake?.recordRef ?? recordOf(destination)
+  const accepted =
+    destination.kind === 'intake' ? intake?.accepted === true : await acceptedSender(deps, parsed.from, record)
   const message = await createInboundMessage({ deps, parsed, accepted, record })
   if (accepted && record !== undefined) await announce(deps, record, message.messageId)
-  return ok(receivedResult(parsed.messageId, accepted, record))
+  return ok(receivedResult(parsed.messageId, accepted, record, destination))
 }
 
 function recordOf(destination: Awaited<ReturnType<typeof resolveInboundDestination>>): MailRecordRef | undefined {
   return destination.kind === 'record' ? destination.record : undefined
 }
-function receivedResult(messageId: string, accepted: boolean, record: MailRecordRef | undefined): ReceiveInboundResult {
+function receivedResult(
+  messageId: string,
+  accepted: boolean,
+  record: MailRecordRef | undefined,
+  destination: Awaited<ReturnType<typeof resolveInboundDestination>>,
+): ReceiveInboundResult {
   if (!accepted || record === undefined)
     return { status: 'quarantined', messageId, destination: { kind: 'quarantine' } }
-  return { status: 'received', messageId, destination: { kind: 'record', record } }
+  return {
+    status: 'received',
+    messageId,
+    destination: destination.kind === 'intake' ? destination : { kind: 'record', record },
+  }
 }
 
 async function parsedOf(deps: ReceiveInboundDeps) {
@@ -49,6 +64,26 @@ function duplicateResult(messageId: string, quarantined: boolean, record: MailRe
   if (quarantined || record === undefined)
     return ok({ status: 'duplicate' as const, messageId, destination: { kind: 'quarantine' as const } })
   return ok({ status: 'duplicate' as const, messageId, destination: { kind: 'record' as const, record } })
+}
+
+async function submitToIntake(
+  deps: ReceiveInboundDeps,
+  formId: string,
+  parsed: Awaited<ReturnType<typeof parseEmail>>,
+): Promise<{ readonly accepted: boolean; readonly recordRef?: MailRecordRef }> {
+  if (deps.intake === undefined) return { accepted: false }
+  const result = await deps.intake.submit({
+    formId,
+    payload: {
+      email: parsed.from || deps.envelopeFrom,
+      subject: parsed.subject,
+      message: parsed.textBody,
+      ...(parsed.to[0] === undefined ? {} : { page: parsed.to[0] }),
+    },
+    receivedAt: deps.now,
+  })
+  if (!result.ok) return { accepted: false }
+  return { accepted: true, ...(result.value.recordRef === undefined ? {} : { recordRef: result.value.recordRef }) }
 }
 async function createInboundMessage(input: {
   readonly deps: ReceiveInboundDeps
@@ -83,8 +118,8 @@ async function acceptedSender(
 }
 
 async function announce(deps: ReceiveInboundDeps, record: MailRecordRef, messageId: string): Promise<void> {
-  await deps.store.addActivity({ record, verb: 'email.received', messageId, occurredAt: deps.now })
-  await deps.store.notify({ record, type: 'email_received' })
+  await deps.store.addActivityIfAbsent({ record, verb: 'email.received', messageId, occurredAt: deps.now })
+  await deps.store.notifyIfAbsent({ record, type: 'email_received', messageId })
 }
 
 /** Releases a quarantined message only after manager authorization has been checked. */

@@ -44,6 +44,12 @@ export interface EmailMessage {
   readonly error?: string
   readonly occurredAt: number
 }
+/** A decoded MIME attachment produced by the inbound parser. */
+export interface ParsedAttachment {
+  readonly filename: string
+  readonly contentType: string
+  readonly bytes: ArrayBuffer
+}
 export interface ParsedEmail {
   readonly messageId: string
   readonly inReplyTo?: string
@@ -52,6 +58,7 @@ export interface ParsedEmail {
   readonly cc: readonly string[]
   readonly subject: string
   readonly textBody: string
+  readonly attachments?: readonly ParsedAttachment[]
 }
 export type InboundDestination =
   | { readonly kind: 'record'; readonly record: MailRecordRef }
@@ -74,19 +81,26 @@ export interface MailStore {
   findIntakeFormByAlias(alias: string): Promise<{ readonly id: string; readonly active: boolean } | undefined>
   senderMatchesRecord(sender: string, record: MailRecordRef): Promise<boolean>
   senderMatchesActiveUser(sender: string): Promise<boolean>
-  addActivity(input: {
+  addActivityIfAbsent(input: {
     readonly record: MailRecordRef
     readonly verb: 'email.received'
     readonly messageId: string
     readonly occurredAt: number
-  }): Promise<void>
-  notify(input: { readonly record: MailRecordRef; readonly type: 'email_received' }): Promise<void>
+  }): Promise<'created' | 'duplicate'>
+  notifyIfAbsent(input: {
+    readonly record: MailRecordRef
+    readonly type: 'email_received'
+    readonly messageId: string
+  }): Promise<'created' | 'duplicate'>
   releaseMessage(messageId: string, record: MailRecordRef): Promise<Result<undefined, DomainError>>
 }
-export interface ParsedAttachment {
-  readonly filename: string
-  readonly contentType: string
-  readonly bytes: ArrayBuffer
+/** Explicit bridge from inbound intake aliases to the intake module's validation/dedupe command. */
+export interface InboundIntakePort {
+  submit(input: {
+    readonly formId: string
+    readonly payload: Readonly<Record<string, string>>
+    readonly receivedAt: number
+  }): Promise<Result<{ readonly status: 'accepted' | 'duplicate'; readonly recordRef?: MailRecordRef }, DomainError>>
 }
 export interface ReceiveInboundDeps {
   readonly store: MailStore
@@ -96,6 +110,7 @@ export interface ReceiveInboundDeps {
   readonly envelopeTo: string
   readonly raw: ArrayBuffer
   readonly parse?: (raw: ArrayBuffer) => Promise<ParsedEmail>
+  readonly intake?: InboundIntakePort
 }
 export interface ReceiveInboundResult {
   readonly status: 'received' | 'quarantined' | 'duplicate'

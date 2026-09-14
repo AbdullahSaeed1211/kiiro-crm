@@ -6,6 +6,7 @@ import { mapSendError } from './send-errors'
 export interface ResendMailSenderOptions {
   readonly apiKey: string
   readonly fetcher?: typeof fetch
+  readonly timeoutMs?: number
 }
 
 /** Sends through Resend without adding an SDK or logging message content. */
@@ -25,22 +26,31 @@ async function sendRequest(
   options: ResendMailSenderOptions,
   message: MailMessage,
 ): Promise<Result<{ readonly messageId: string }>> {
-  const response = await (options.fetcher ?? fetch)('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${options.apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      from: message.from,
-      to: [...message.to],
-      subject: message.subject,
-      html: message.html,
-      text: message.text,
-      ...(message.replyTo === undefined ? {} : { reply_to: message.replyTo }),
-    }),
-  })
-  if (!response.ok) return err(mapSendError({ code: responseCode(response.status) }))
-  const data: unknown = await response.json()
-  const id = messageIdOf(data)
-  return id === undefined ? err(mapSendError({ code: 'E_PROVIDER_ERROR' })) : ok({ messageId: id })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => {
+    controller.abort()
+  }, options.timeoutMs ?? 10_000)
+  try {
+    const response = await (options.fetcher ?? fetch)('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${options.apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        from: message.from,
+        to: [...message.to],
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        ...(message.replyTo === undefined ? {} : { reply_to: message.replyTo }),
+      }),
+      signal: controller.signal,
+    })
+    if (!response.ok) return err(mapSendError({ code: responseCode(response.status) }))
+    const data: unknown = await response.json()
+    const id = messageIdOf(data)
+    return id === undefined ? err(mapSendError({ code: 'E_PROVIDER_ERROR' })) : ok({ messageId: id })
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function responseCode(status: number): string {
