@@ -58,7 +58,6 @@ describe('first-pass analysis', () => {
     writeAttempt(root, attempt({ wp: 'M5-W3', attempt: 2 }))
 
     const analysis = analyzeRetro({
-      root,
       files: loadAttempts(root).files,
       config: loadConfig(root),
       lessons: [],
