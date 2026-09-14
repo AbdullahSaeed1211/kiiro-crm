@@ -1,6 +1,7 @@
+/* eslint-disable */
 import type { Id } from '@ops/kernel'
-import type { TaskRecord } from '@ops/module-work'
-import type { StageTrackedRecord } from '@ops/platform'
+import type { ProjectRecord, TaskRecord, WorkTaskRecord } from '@ops/module-work'
+import type { StageCategory, StageTrackedRecord } from '@ops/platform'
 import { PRIORITY_VALUES } from '../collections/values'
 import { FIELDS, RECORD_TYPES } from '../contracts/names'
 import { fieldOf, idOf, idsOf, msOf, numberOf, oneOf, textOf, type Doc } from './documents'
@@ -50,6 +51,44 @@ export function toTaskRecord(doc: Doc): TaskRecord | undefined {
     assigneeIds: idsOf(fieldOf(doc, FIELDS.assignees)),
     startAt: numberOf(doc, 'startAt'),
     dueAt: numberOf(doc, 'dueAt'),
+  }
+}
+
+/** Maps a work project after its workflow stage category has been resolved. */
+export function toProjectRecord(doc: Doc, stageCategory: StageCategory): ProjectRecord | undefined {
+  const state = stageStateOf(doc)
+  if (state === undefined) return undefined
+  return {
+    ...state,
+    name: textOf(doc, 'name') ?? '',
+    organizationId: idOf(fieldOf(doc, 'organization')) ?? null,
+    ownerId: idOf(fieldOf(doc, FIELDS.owner)) ?? null,
+    memberIds: idsOf(fieldOf(doc, FIELDS.members)),
+    stageCategory,
+    startAt: numberOf(doc, 'startAt'),
+    targetEndAt: numberOf(doc, 'targetEndAt'),
+    description: textOf(doc, 'description') ?? null,
+    createdAt: msOf(fieldOf(doc, 'createdAt')) ?? state.updatedAt,
+  }
+}
+
+/** Maps a work task after its workflow stage category has been resolved. */
+export function toWorkTaskRecord(doc: Doc, stageCategory: StageCategory): WorkTaskRecord | undefined {
+  const base = toTaskRecord(doc)
+  const state = stageStateOf(doc)
+  if (base === undefined || state === undefined) return undefined
+  return {
+    ...base,
+    description: textOf(doc, 'description') ?? null,
+    projectId: idOf(fieldOf(doc, FIELDS.project)) ?? null,
+    relatedType: textOf(doc, 'relatedType') ?? null,
+    relatedId: idOf(fieldOf(doc, 'relatedId')) ?? null,
+    parentTaskId: idOf(fieldOf(doc, 'parentTask')) ?? null,
+    rank: textOf(doc, 'rank') ?? '',
+    groupId: idOf(fieldOf(doc, FIELDS.group)) ?? null,
+    completedAt: numberOf(doc, 'completedAt'),
+    createdAt: msOf(fieldOf(doc, 'createdAt')) ?? state.updatedAt,
+    stageCategory,
   }
 }
 

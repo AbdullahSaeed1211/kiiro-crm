@@ -1,0 +1,72 @@
+import { CalendarMonth, type CalendarEvent } from '@ops/ui/composites/CalendarMonth'
+import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { PageContent } from '@ops/ui/composites/AppShell'
+import { PageHeader } from '@ops/ui/composites/PageHeader'
+import type { Metadata } from 'next'
+import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+
+export const dynamic = 'force-dynamic'
+export const metadata: Metadata = { title: 'Calendar · Workspace' }
+
+function dateInZone(value: number, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(value)
+  const get = (name: string) => parts.find((part) => part.type === name)?.value ?? '00'
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+function eventTone(priority: string): CalendarEvent['tone'] {
+  if (priority === 'urgent') return 'red'
+  if (priority === 'high') return 'amber'
+  return 'blue'
+}
+
+function monthInZone(value: number, timeZone: string): { readonly year: number; readonly month: number } {
+  const parts = new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: 'numeric' }).formatToParts(value)
+  const get = (name: string) => Number(parts.find((part) => part.type === name)?.value ?? 0)
+  return { year: get('year'), month: get('month') - 1 }
+}
+function queryMonth(input: {
+  readonly value: unknown
+  readonly fallback: number
+  readonly min: number
+  readonly max: number
+}): number {
+  const parsed = typeof input.value === 'string' ? Number(input.value) : Number.NaN
+  return Number.isInteger(parsed) && parsed >= input.min && parsed <= input.max ? parsed : input.fallback
+}
+
+/** Month calendar for scoped tasks, grouped by due date. */
+export default async function CalendarPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly month?: string; readonly year?: string }> }>) {
+  const model = await loadWorkReadModel()
+  const selected = monthInZone(Date.now(), model.timeZone)
+  const query = await searchParams
+  const year = queryMonth({ value: query.year, fallback: selected.year, min: 1970, max: 2100 })
+  const month = queryMonth({ value: query.month, fallback: selected.month + 1, min: 1, max: 12 }) - 1
+  const events: CalendarEvent[] = model.tasks
+    .filter(
+      (task): task is typeof task & { readonly dueAt: number } =>
+        task.dueAt !== null && !['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory),
+    )
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      date: dateInZone(task.dueAt, model.timeZone),
+      href: `/tasks/${task.id}`,
+      tone: eventTone(task.priority),
+    }))
+  return (
+    <>
+      <AppHeader breadcrumbs={[{ label: 'Calendar' }]} />
+      <PageContent>
+        <PageHeader title="Calendar" description="Tasks by due date." />
+        <CalendarMonth year={year} month={month} weekStartsOn={model.weekStartsOn} events={events} />
+      </PageContent>
+    </>
+  )
+}
