@@ -1,0 +1,62 @@
+{
+  "wp": "M3-W2",
+  "milestone": "M3",
+  "attempt": 5,
+  "runner": "worker",
+  "startedAt": "2026-09-14T09:10:54.944Z",
+  "finishedAt": "2026-09-14T09:11:22.796Z",
+  "gates": [
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 1856,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 4918,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 19673,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 941,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 1,
+      "durationMs": 391,
+      "failingLines": [
+        "FAIL packages/modules/work/src/ports/work.ts (critical path, lead-owned)",
+        "check:scope: M3-W2 24 changed, 1 failed, 1 flagged",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    }
+  ],
+  "scopeViolations": [
+    "packages/modules/work/src/ports/work.ts",
+    "apps/web/src/server/queries/work/read-models.ts"
+  ],
+  "filesChanged": 46,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "ACCESS_SCOPE",
+    "PARTIAL_WRITE",
+    "RACE_CONDITION",
+    "MISSING_TEST",
+    "CONTRACT_DRIFT",
+    "EDGE_CASE",
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": false
+}

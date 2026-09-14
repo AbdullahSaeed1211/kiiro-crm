@@ -10,6 +10,7 @@ import {
 } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
+import { TaskCreateForm } from './TaskCreateForm'
 import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
@@ -190,7 +191,7 @@ export default async function TasksPage({
     <>
       <AppHeader breadcrumbs={[{ label: PAGE_TITLE }]} />
       <PageContent>
-        <PageHeader title={PAGE_TITLE} count={result.total} />
+        <PageHeader title={PAGE_TITLE} count={result.total} actions={<TaskCreateForm />} />
         <DataTable
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
           key={`${formatTaskSort(sort)}:${String(result.page)}`}

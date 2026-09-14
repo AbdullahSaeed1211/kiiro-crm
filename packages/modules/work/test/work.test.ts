@@ -1,4 +1,8 @@
-import { asId } from '@ops/kernel'
+/* eslint-disable */
+import { asId, type Clock } from '@ops/kernel'
+import { createProject, createTask, moveTask, updateTask } from '../src'
+import type { ProjectRecord, WorkDeps, WorkRepository } from '../src'
+import type { Actor, Workflow } from '@ops/platform'
 import { describe, expect, it } from 'vitest'
 import { hasOpenChildren, myTasksBuckets, orderByRank, rankBetween, rebalanceRanks, subtaskDepth } from '../src'
 import type { WorkTaskRecord } from '../src'
@@ -21,6 +25,7 @@ const task = (id: string, extra: Partial<WorkTaskRecord> = {}): WorkTaskRecord =
   startAt: null,
   dueAt: null,
   completedAt: null,
+  stageCategory: 'open',
   createdAt: 0,
   updatedAt: 1,
   ...extra,
@@ -53,7 +58,7 @@ describe('work calendar and hierarchy invariants', () => {
     ])
     expect(subtaskDepth(grandchild, records)).toBe(2)
     expect(hasOpenChildren([child])).toBe(true)
-    expect(hasOpenChildren([task('done-child', { completedAt: 1 })])).toBe(false)
+    expect(hasOpenChildren([task('done-child', { completedAt: 1, stageCategory: 'done_success' })])).toBe(false)
   })
 })
 
@@ -72,7 +77,7 @@ describe('work ordering and assignment invariants', () => {
     const result = myTasksBuckets({
       tasks: [
         task('open', { dueAt: now }),
-        task('closed', { dueAt: now, completedAt: now }),
+        task('closed', { dueAt: now, completedAt: now, stageCategory: 'done_success' }),
         task('other', { dueAt: now, assigneeIds: [asId('other')] }),
       ],
       actor: { id: asId('staff') },
@@ -80,5 +85,121 @@ describe('work ordering and assignment invariants', () => {
       now,
     })
     expect(result.today.map((value) => value.id)).toEqual(['open'])
+  })
+})
+
+const actor = (role: Actor['role'], id = 'staff'): Actor => ({
+  id: asId(id),
+  role,
+  active: true,
+  groupIds: [asId('group')],
+  reportIds: [],
+})
+const workflow: Workflow = {
+  id: asId('workflow'),
+  recordType: 'task',
+  name: 'Tasks',
+  defaultStageId: asId('open'),
+  stages: [
+    { id: asId('open'), name: 'Open', category: 'open', color: 'blue', position: 0 },
+    { id: asId('done'), name: 'Done', category: 'done_success', color: 'green', position: 1 },
+  ],
+}
+const project = (id = 'project'): ProjectRecord => ({
+  id: asId(id),
+  name: id,
+  organizationId: null,
+  ownerId: asId('manager'),
+  memberIds: [asId('staff')],
+  workflowId: asId('workflow'),
+  stageId: asId('open'),
+  stageCategory: 'open',
+  stageEnteredAt: 0,
+  startAt: null,
+  targetEndAt: null,
+  description: null,
+  createdAt: 0,
+  updatedAt: 1,
+})
+function depsFor(input: Partial<WorkDeps> = {}): WorkDeps {
+  const repository = {
+    getProject: async () => project(),
+    loadDefaultWorkflow: async () => workflow,
+    loadWorkflow: async () => workflow,
+    getTask: async () => undefined,
+    listTasks: async () => [],
+    listChildren: async () => [],
+    createTask: async () => task('created'),
+    createProject: async () => project(),
+    updateTask: async () => undefined,
+    saveTaskMove: async () => undefined,
+  } as unknown as WorkRepository
+  const clock: Clock = { now: () => 10 }
+  return {
+    actor: actor('staff'),
+    can: () => true,
+    repo: repository,
+    uow: { run: async <T>(work: () => Promise<T>) => work() },
+    clock,
+    ...input,
+  }
+}
+
+describe('work commands enforce authorization and compare-and-set writes', () => {
+  it('applies the owner/manager/staff assignment matrix on create', async () => {
+    const staff = depsFor()
+    const staffResult = await createTask(staff, { title: 'outside assignment', assigneeIds: [asId('other')] })
+    expect(staffResult.ok).toBe(false)
+    const manager = depsFor({ actor: actor('manager', 'manager') })
+    const managerResult = await createTask(manager, { title: 'managed assignment', assigneeIds: [asId('other')] })
+    expect(managerResult.ok).toBe(true)
+    const owner = depsFor({ actor: actor('owner', 'owner') })
+    const projectResult = await createProject(owner, {
+      name: 'owned project',
+      ownerId: asId('other'),
+      memberIds: [asId('other')],
+    })
+    expect(projectResult.ok).toBe(true)
+  })
+
+  it('rejects protected task patches and stale same-stage updates before writing', async () => {
+    const current = task('current', { updatedAt: 5 })
+    let writes = 0
+    const deps = depsFor({
+      repo: {
+        ...depsFor().repo,
+        getTask: async () => current,
+        updateTask: async () => {
+          writes += 1
+          return current
+        },
+      } as WorkRepository,
+    })
+    expect(
+      (await updateTask(deps, { taskId: current.id, expectedUpdatedAt: 5, patch: { stageId: asId('done') } })).ok,
+    ).toBe(false)
+    expect((await updateTask(deps, { taskId: current.id, expectedUpdatedAt: 4, patch: { title: 'stale' } })).ok).toBe(
+      false,
+    )
+    expect(writes).toBe(0)
+  })
+
+  it('uses the atomic move port and rejects stale moves', async () => {
+    const current = task('moving', { updatedAt: 5 })
+    let atomicWrites = 0
+    const deps = depsFor({
+      repo: {
+        ...depsFor().repo,
+        getTask: async () => current,
+        saveTaskMove: async () => {
+          atomicWrites += 1
+          return current
+        },
+      } as WorkRepository,
+    })
+    expect((await moveTask(deps, { taskId: current.id, toStageId: asId('done'), expectedUpdatedAt: 5 })).ok).toBe(true)
+    expect(atomicWrites).toBe(1)
+    expect((await moveTask(deps, { taskId: current.id, toStageId: asId('done'), expectedUpdatedAt: 4 })).ok).toBe(false)
+    expect(atomicWrites).toBe(1)
   })
 })

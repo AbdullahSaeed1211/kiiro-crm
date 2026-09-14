@@ -7,11 +7,22 @@ import { FolderKanban } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { loadProject, type WorkListTask } from '../../../../server/queries/work/read-models'
+import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
+import ProjectBoard from './ProjectBoard'
+import ProjectActions from './ProjectActions'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Project · Workspace' }
 
-function projectTabs(tasks: readonly WorkListTask[]) {
+function projectTabs(
+  tasks: readonly WorkListTask[],
+  stages: readonly {
+    id: string
+    name: string
+    category: 'backlog' | 'open' | 'active' | 'waiting' | 'done_success' | 'done_failure' | 'cancelled'
+    color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink'
+  }[],
+) {
   return [
     {
       id: 'overview',
@@ -28,23 +39,21 @@ function projectTabs(tasks: readonly WorkListTask[]) {
     {
       id: 'board',
       label: 'Board',
-      content: (
-        <div className="space-y-2">
-          {tasks.map((task) => (
-            <a
-              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/30"
-              key={task.id}
-              href={`/tasks/${task.id}`}
-            >
-              <span>{task.title}</span>
-              <Badge variant="secondary">{task.stage}</Badge>
-            </a>
-          ))}
-          {tasks.length === 0 ? (
-            <EmptyState icon={FolderKanban} title="No project tasks" description="Add a task to start the project." />
-          ) : null}
-        </div>
-      ),
+      content:
+        tasks.length === 0 ? (
+          <EmptyState icon={FolderKanban} title="No project tasks" description="Add a task to start the project." />
+        ) : (
+          <ProjectBoard
+            stages={stages}
+            cards={tasks.map((task) => ({
+              id: task.id,
+              stageId: task.stageId,
+              title: task.title,
+              updatedAt: task.updatedAt,
+              meta: <Badge variant="secondary">{task.priority}</Badge>,
+            }))}
+          />
+        ),
     },
     {
       id: 'list',
@@ -65,6 +74,7 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
   const result = await loadProject(id)
   if (result === undefined) notFound()
   const { project, tasks } = result
+  const model = await loadWorkReadModel()
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Projects', href: '/projects' }, { label: project.name }]} />
@@ -73,7 +83,10 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
           title={project.name}
           labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
           stage={<Badge variant="secondary">{project.stage}</Badge>}
-          tabs={projectTabs(tasks)}
+          tabs={projectTabs(tasks, model.stages)}
+          actions={
+            <ProjectActions projectId={project.id} updatedAt={project.updatedAt} memberIds={project.memberIds} />
+          }
           aside={
             <div className="rounded-lg border p-4">
               <h2 className="mb-3 font-medium">Details</h2>

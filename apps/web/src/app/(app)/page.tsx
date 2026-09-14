@@ -10,18 +10,19 @@ import { loadWorkReadModel } from '../../server/queries/work/read-models'
 export const metadata: Metadata = { title: 'Dashboard · Workspace' }
 export const dynamic = 'force-dynamic'
 
-function day(value: number | null): string {
+function day(value: number | null, timeZone: string): string {
   return value === null
     ? 'No due date'
-    : new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(value)
+    : new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone }).format(value)
 }
 
 /** Work dashboard with concise, scoped cards for overdue and upcoming work. */
 export default async function DashboardPage() {
   const model = await loadWorkReadModel()
-  const open = model.tasks.filter((task) => task.completedAt === null)
+  const open = model.tasks.filter((task) => !['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory))
+  const mine = open.filter((task) => task.assigneeIds.includes(model.actorId))
   const now = Date.now()
-  const overdue = open.filter((task) => task.dueAt !== null && task.dueAt < now)
+  const overdue = mine.filter((task) => task.dueAt !== null && task.dueAt < now)
   const dueWeek = open.filter((task) => task.dueAt !== null && task.dueAt >= now && task.dueAt <= now + 7 * 86_400_000)
   return (
     <>
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
             {overdue.slice(0, 5).map((task) => (
               <a className="block border-t py-2 text-sm hover:text-primary" key={task.id} href={`/tasks/${task.id}`}>
                 {task.title}
-                <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt)}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt, model.timeZone)}</span>
               </a>
             ))}
             {overdue.length === 0 ? (
@@ -52,7 +53,7 @@ export default async function DashboardPage() {
             {dueWeek.slice(0, 5).map((task) => (
               <a className="block border-t py-2 text-sm hover:text-primary" key={task.id} href={`/tasks/${task.id}`}>
                 {task.title}
-                <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt)}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt, model.timeZone)}</span>
               </a>
             ))}
             {dueWeek.length === 0 ? (

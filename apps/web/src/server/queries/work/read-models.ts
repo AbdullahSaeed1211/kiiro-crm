@@ -1,11 +1,15 @@
 import { getRequestContext } from '../../work/deps'
+import type { StageCategory } from '@ops/platform'
 
 export interface WorkListTask {
   readonly id: string
   readonly title: string
   readonly stageId: string
   readonly stage: string
+  readonly stageCategory: StageCategory
   readonly priority: 'none' | 'low' | 'medium' | 'high' | 'urgent'
+  readonly description: string | null
+  readonly startAt: number | null
   readonly assigneeIds: readonly string[]
   readonly projectId: string | null
   readonly dueAt: number | null
@@ -16,6 +20,7 @@ export interface WorkListProject {
   readonly id: string
   readonly name: string
   readonly stage: string
+  readonly stageCategory: StageCategory
   readonly ownerId: string | null
   readonly memberIds: readonly string[]
   readonly targetEndAt: number | null
@@ -27,6 +32,13 @@ export interface WorkReadModel {
   readonly people: ReadonlyMap<string, string>
   readonly actorId: string
   readonly timeZone: string
+  readonly weekStartsOn: 0 | 1
+  readonly stages: readonly {
+    readonly id: string
+    readonly name: string
+    readonly category: StageCategory
+    readonly color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink'
+  }[]
 }
 
 const value = (doc: object, key: string): unknown => Reflect.get(doc, key)
@@ -55,21 +67,48 @@ const date = (doc: object, key: string): number => {
 const rows = (item: unknown): readonly object[] =>
   Array.isArray(item) ? item.filter((row): row is object => typeof row === 'object' && row !== null) : []
 
-function addStages(stages: Map<string, string>, workflow: object): void {
+interface StageLabel {
+  readonly name: string
+  readonly category: StageCategory
+}
+function addStages(stages: Map<string, StageLabel>, workflow: object): void {
   for (const row of rows(value(workflow, 'stages'))) {
     const stageId = id(row, 'id')
-    if (stageId !== null) stages.set(stageId, text(row, 'name'))
+    const category = value(row, 'category')
+    if (stageId !== null && typeof category === 'string')
+      stages.set(stageId, { name: text(row, 'name'), category: category as StageCategory })
   }
 }
-function mapTask(doc: object, stages: ReadonlyMap<string, string>): WorkListTask {
+function workflowStages(workflows: readonly object[]): WorkReadModel['stages'] {
+  const result = new Map<string, WorkReadModel['stages'][number]>()
+  for (const workflow of workflows) {
+    for (const row of rows(value(workflow, 'stages'))) {
+      const stageId = id(row, 'id')
+      const category = value(row, 'category')
+      if (stageId === null || typeof category !== 'string') continue
+      const color = value(row, 'color')
+      result.set(stageId, {
+        id: stageId,
+        name: text(row, 'name'),
+        category: category as StageCategory,
+        color: typeof color === 'string' ? (color as WorkReadModel['stages'][number]['color']) : 'gray',
+      })
+    }
+  }
+  return [...result.values()]
+}
+function mapTask(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListTask {
   const stageId = text(doc, 'stageId')
   const priorities = ['none', 'low', 'medium', 'high', 'urgent'] as const
   return {
     id: id(doc, 'id') ?? '',
     title: text(doc, 'title'),
     stageId,
-    stage: stages.get(stageId) ?? 'Unknown stage',
+    stage: stages.get(stageId)?.name ?? 'Unknown stage',
+    stageCategory: stages.get(stageId)?.category ?? 'open',
     priority: priorities.find((item) => item === value(doc, 'priority')) ?? 'none',
+    description: typeof value(doc, 'description') === 'string' ? String(value(doc, 'description')) : null,
+    startAt: number(doc, 'startAt'),
     assigneeIds: ids(doc, 'assignees'),
     projectId: id(doc, 'project'),
     dueAt: number(doc, 'dueAt'),
@@ -77,12 +116,13 @@ function mapTask(doc: object, stages: ReadonlyMap<string, string>): WorkListTask
     updatedAt: date(doc, 'updatedAt'),
   }
 }
-function mapProject(doc: object, stages: ReadonlyMap<string, string>): WorkListProject {
+function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListProject {
   const stageId = text(doc, 'stageId')
   return {
     id: id(doc, 'id') ?? '',
     name: text(doc, 'name'),
-    stage: stages.get(stageId) ?? 'Unknown stage',
+    stage: stages.get(stageId)?.name ?? 'Unknown stage',
+    stageCategory: stages.get(stageId)?.category ?? 'open',
     ownerId: id(doc, 'owner'),
     memberIds: ids(doc, 'members'),
     targetEndAt: number(doc, 'targetEndAt'),
@@ -108,7 +148,7 @@ async function pages(context: Awaited<ReturnType<typeof getRequestContext>>) {
 export async function loadWorkReadModel(): Promise<WorkReadModel> {
   const context = await getRequestContext()
   const [projectPage, taskPage, workflowPage, userPage] = await pages(context)
-  const stages = new Map<string, string>()
+  const stages = new Map<string, StageLabel>()
   for (const workflow of workflowPage.docs as readonly object[]) addStages(stages, workflow)
   const tasks = (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages))
   const projects = (projectPage.docs as readonly object[]).map((doc) => mapProject(doc, stages))
@@ -118,7 +158,22 @@ export async function loadWorkReadModel(): Promise<WorkReadModel> {
       return userId === null ? [] : [[userId, text(doc, 'name')] as const]
     }),
   )
-  return { tasks, projects, people, actorId: String(context.actor.id), timeZone: 'UTC' }
+  const settings = await context.payload.findGlobal({
+    slug: 'settings',
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  const configuredWeekStart = value(settings, 'weekStartsOn')
+  return {
+    tasks,
+    projects,
+    people,
+    actorId: String(context.actor.id),
+    timeZone: text(settings, 'timezone') || 'UTC',
+    weekStartsOn: configuredWeekStart === 0 ? 0 : 1,
+    stages: workflowStages(workflowPage.docs),
+  }
 }
 
 /** Loads one scoped task for the task page. */

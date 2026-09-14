@@ -39,6 +39,7 @@ export default async function MyTasksPage() {
       groupId: null,
       startAt: null,
       createdAt: 0,
+      stageCategory: task.stageCategory,
     })),
     actor: { id: asId(model.actorId) },
     timeZone: model.timeZone,

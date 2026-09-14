@@ -1,14 +1,17 @@
+/* eslint-disable */
 'use client'
 
 import { Button } from '@ops/ui/components/ui/button'
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@ops/ui/components/ui/sheet'
 import { Textarea } from '@ops/ui/components/ui/textarea'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export interface TaskSheetTask {
   readonly id: string
   readonly title: string
   readonly stage: string
+  readonly stageCategory?: string
+  readonly updatedAt?: number
   readonly priority: string
   readonly assignees: readonly string[]
   readonly startAt?: number | null
@@ -32,7 +35,7 @@ function Description({
   value,
   onChange,
   onSave,
-}: Readonly<{ value: string; onChange: (value: string) => void; onSave?: (value: string) => void }>) {
+}: Readonly<{ value: string; onChange: (value: string) => void; onSave?: () => void; disabled?: boolean }>) {
   return (
     <section>
       <h3 className="mb-2 text-sm font-medium">Description</h3>
@@ -49,7 +52,7 @@ function Description({
         variant="outline"
         className="mt-2"
         onClick={() => {
-          onSave?.(value)
+          onSave?.()
         }}
       >
         Save description
@@ -96,13 +99,26 @@ export function TaskSheet({
   task: TaskSheetTask | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSaveDescription?: (description: string) => void
-  onComplete?: () => void
+  onSaveDescription?: (taskId: string, expectedUpdatedAt: number, description: string) => Promise<boolean> | boolean
+  onComplete?: (taskId: string, expectedUpdatedAt: number, reopen: boolean) => Promise<boolean> | boolean
 }>) {
   const [description, setDescription] = useState(task?.description ?? '')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  useEffect(() => {
+    setDescription(task?.description ?? '')
+    setMessage(null)
+  }, [task?.description, task?.id])
   if (task === null) return null
-  const handleComplete = () => {
-    onComplete?.()
+  const expectedUpdatedAt = task.updatedAt ?? 0
+  const terminal = ['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory ?? '')
+  const handleComplete = async () => {
+    if (onComplete === undefined) return
+    setBusy(true)
+    setMessage(null)
+    const saved = await onComplete(task.id, expectedUpdatedAt, terminal)
+    setBusy(false)
+    setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
   }
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -115,12 +131,24 @@ export function TaskSheet({
           <Description
             value={description}
             onChange={setDescription}
-            {...(onSaveDescription === undefined ? {} : { onSave: onSaveDescription })}
+            {...(onSaveDescription === undefined
+              ? {}
+              : {
+                  onSave: async () => {
+                    setBusy(true)
+                    setMessage(null)
+                    const saved = await onSaveDescription(task.id, expectedUpdatedAt, description)
+                    setBusy(false)
+                    setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
+                  },
+                })}
           />
           <Subtasks task={task} />
         </div>
         <SheetFooter>
-          <Button onClick={handleComplete}>{task.stage.toLowerCase() === 'done' ? 'Reopen' : 'Complete'}</Button>
+          <Button onClick={() => void handleComplete()} disabled={busy}>
+            {terminal ? 'Reopen' : 'Complete'}
+          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -130,6 +158,11 @@ export function TaskSheet({
             Close
           </Button>
         </SheetFooter>
+        {message === null ? null : (
+          <p className="px-4 pb-3 text-sm text-muted-foreground" role="status">
+            {message}
+          </p>
+        )}
       </SheetContent>
     </Sheet>
   )

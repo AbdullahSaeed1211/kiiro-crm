@@ -1,5 +1,6 @@
 import type { Actor } from '@ops/platform'
 import type { WorkTaskRecord } from '../ports/work'
+import { TERMINAL_CATEGORIES } from '../domain/rules'
 
 export interface MyTaskBuckets {
   readonly overdue: readonly WorkTaskRecord[]
@@ -27,7 +28,7 @@ function bucketFor(due: string, today: string, nextWeek: string): keyof MyTaskBu
 }
 
 function isAssignedOpen(task: WorkTaskRecord, actorId: Actor['id']): boolean {
-  return task.completedAt === null && task.assigneeIds.includes(actorId)
+  return !TERMINAL_CATEGORIES.has(task.stageCategory) && task.assigneeIds.includes(actorId)
 }
 
 /** Buckets open assigned tasks using calendar days in the tenant timezone, including DST-safe boundaries. */

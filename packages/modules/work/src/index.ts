@@ -3,7 +3,11 @@ export type { TaskDatesInput, TaskPriority, TaskRecord, TaskRepository } from '.
 export type {
   ProjectDraft,
   ProjectRecord,
+  ProjectPatch,
   TaskDraft,
+  TaskPatch,
+  TaskDatePatch,
+  TaskMoveWrite,
   WorkTaskRecord,
   WorkDeps,
   WorkRecordType,

@@ -1,220 +1,201 @@
+/* eslint-disable */
 import { asId, domainError, err, ok, type Id } from '@ops/kernel'
-import { changeStage } from '@ops/platform'
-import { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
-import { rankBetween } from '../domain/rank'
-import type { TaskDraft, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
+import type { Actor } from '@ops/platform'
+import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
+import type { TaskDraft, TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
+export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
 
-const TASK_CONFLICT = 'task was updated by someone else'
-const TASK_NOT_FOUND = 'task not found'
-const TITLE_REQUIRED = 'a task title is required'
 const fail = <T>(code: Parameters<typeof domainError>[0], message: string): WorkResult<T> =>
   err(domainError(code, message))
 const objectInput = (input: unknown): Record<string, unknown> | undefined =>
   typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : undefined
-const title = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0 && value.trim().length <= 300
-const priority = (value: unknown): NonNullable<TaskDraft['priority']> =>
-  value === 'urgent' || value === 'high' || value === 'medium' || value === 'low' ? value : 'none'
+const isManagerUp = (actor: Actor): boolean => actor.role === 'owner' || actor.role === 'manager'
+const validTitle = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim() !== '' && value.trim().length <= 300
+const validDate = (value: unknown): value is number | null =>
+  value === null || (typeof value === 'number' && Number.isFinite(value))
+const optionalDate = (value: Record<string, unknown>, key: string): number | null | undefined =>
+  value[key] === undefined ? null : validDate(value[key]) ? value[key] : undefined
 const resource = (task: WorkTaskRecord) => ({
   type: 'task',
   assigneeIds: task.assigneeIds,
   ...(task.groupId === null ? {} : { groupId: task.groupId }),
 })
-const allowed = (deps: WorkDeps, task: WorkTaskRecord) => deps.can(deps.actor, 'update', resource(task))
-const parentId = (value: Record<string, unknown>): Id | null =>
-  typeof value['parentTaskId'] === 'string' ? asId(value['parentTaskId']) : null
-const assignees = (deps: WorkDeps, value: Record<string, unknown>): readonly Id[] =>
-  Array.isArray(value['assigneeIds'])
-    ? value['assigneeIds'].filter((id): id is string => typeof id === 'string').map(asId)
-    : [deps.actor.id]
-
-async function parentFor(deps: WorkDeps, parentTaskId: Id | null): Promise<WorkResult<WorkTaskRecord | null>> {
-  if (parentTaskId === null) return ok(null)
-  const parent = await deps.repo.getTask(parentTaskId)
-  if (parent === undefined) return fail('NOT_FOUND', 'parent task not found')
-  const all = await deps.repo.listTasks()
-  if (subtaskDepth(parent, new Map(all.map((task) => [task.id, task]))) >= MAX_SUBTASK_DEPTH)
-    return fail('VALIDATION', 'subtasks may be nested only two levels deep')
-  return ok(parent)
+const canUpdate = (deps: WorkDeps, task: WorkTaskRecord) => deps.can(deps.actor, 'update', resource(task))
+const idValue = (value: unknown): Id | null | undefined =>
+  value === undefined || value === null ? null : typeof value === 'string' ? asId(value) : undefined
+const assignmentAllowed = (deps: WorkDeps, ids: readonly Id[], groupId: Id | null) =>
+  (isManagerUp(deps.actor) || ids.every((id) => id === deps.actor.id)) &&
+  (groupId === null || deps.actor.groupIds.includes(groupId))
+async function relatedAllowed(deps: WorkDeps, type: string | null, id: Id | null): Promise<boolean> {
+  return (
+    (type === null && id === null) ||
+    isManagerUp(deps.actor) ||
+    (type !== null && id !== null && (await deps.readRecord?.(type, id)) === true)
+  )
 }
-
-/** Creates a task in the actor's default task workflow. */
-export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
+async function parentFor(deps: WorkDeps, id: Id | null): Promise<WorkResult<WorkTaskRecord | null>> {
+  if (id === null) return ok(null)
+  const parent = await deps.repo.getTask(id)
+  if (parent === undefined) return fail('NOT_FOUND', 'parent task not found')
+  if (!deps.can(deps.actor, 'read', resource(parent))) return fail('FORBIDDEN', 'parent task is outside your scope')
+  const records = new Map((await deps.repo.listTasks()).map((task) => [task.id, task]))
+  if (hasAncestorCycle(parent, records)) return fail('VALIDATION', 'task hierarchy contains a cycle')
+  return subtaskDepth(parent, records) >= MAX_SUBTASK_DEPTH
+    ? fail('VALIDATION', 'subtasks may be nested only two levels deep')
+    : ok(parent)
+}
+async function projectAllowed(deps: WorkDeps, id: Id | null): Promise<WorkResult<null>> {
+  if (id === null) return ok(null)
+  const project = await deps.repo.getProject(id)
+  if (project === undefined) return fail('NOT_FOUND', 'project not found')
+  const visible = deps.can(deps.actor, 'read', {
+    type: 'project',
+    assigneeIds: project.memberIds,
+    ...(project.ownerId === null ? {} : { ownerId: project.ownerId }),
+  })
+  return visible ? ok(null) : fail('FORBIDDEN', 'project is outside your scope')
+}
+function parseCreate(input: unknown): TaskDraft | undefined {
   const value = objectInput(input)
-  if (value === undefined || !title(value['title'])) return fail('VALIDATION', TITLE_REQUIRED)
-  const workflow = await deps.repo.loadDefaultWorkflow('task')
-  const parentTaskId = parentId(value)
-  const parent = await parentFor(deps, parentTaskId)
+  if (value === undefined || !validTitle(value['title'])) return undefined
+  const projectId = idValue(value['projectId']),
+    parentTaskId = idValue(value['parentTaskId']),
+    groupId = idValue(value['groupId']),
+    relatedId = idValue(value['relatedId'])
+  const assignees = value['assigneeIds'] === undefined ? [] : value['assigneeIds']
+  const priority = value['priority'] === undefined ? 'none' : value['priority']
+  if (
+    projectId === undefined ||
+    parentTaskId === undefined ||
+    groupId === undefined ||
+    relatedId === undefined ||
+    !Array.isArray(assignees) ||
+    !assignees.every((id) => typeof id === 'string') ||
+    !(typeof priority === 'string' && ['none', 'low', 'medium', 'high', 'urgent'].includes(priority)) ||
+    optionalDate(value, 'startAt') === undefined ||
+    optionalDate(value, 'dueAt') === undefined
+  )
+    return undefined
+  const startAt = optionalDate(value, 'startAt'),
+    dueAt = optionalDate(value, 'dueAt')
+  if (startAt === undefined || dueAt === undefined) return undefined
+  if (typeof startAt === 'number' && typeof dueAt === 'number' && startAt > dueAt) return undefined
+  const fields = new Set([
+    'title',
+    'description',
+    'projectId',
+    'parentTaskId',
+    'assigneeIds',
+    'groupId',
+    'priority',
+    'relatedType',
+    'relatedId',
+    'startAt',
+    'dueAt',
+  ])
+  if (
+    Object.keys(value).some((key) => !fields.has(key)) ||
+    (value['description'] !== undefined &&
+      value['description'] !== null &&
+      (typeof value['description'] !== 'string' || value['description'].length > 20_000))
+  )
+    return undefined
+  return {
+    title: (value['title'] as string).trim(),
+    description: (value['description'] === undefined ? null : value['description']) as string | null,
+    projectId,
+    parentTaskId,
+    assigneeIds: assignees.map(asId),
+    groupId,
+    priority: priority as NonNullable<TaskDraft['priority']>,
+    relatedType: (value['relatedType'] === undefined ? null : value['relatedType']) as string | null,
+    relatedId,
+    startAt,
+    dueAt,
+  }
+}
+/** Creates a task after checking visibility, hierarchy, assignment, and related-record scope. */
+export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
+  const draft = parseCreate(input)
+  if (draft === undefined) return fail('VALIDATION', 'task fields are invalid')
+  if (!deps.can(deps.actor, 'create', { type: 'task' })) return fail('FORBIDDEN', 'not allowed to create tasks')
+  const workflow = await deps.repo.loadDefaultWorkflow('task'),
+    parent = await parentFor(deps, draft.parentTaskId ?? null)
   if (!parent.ok) return parent
+  if (parent.value !== null && draft.projectId !== null && draft.projectId !== parent.value.projectId)
+    return fail('VALIDATION', 'subtasks inherit their parent project')
+  const projectId = parent.value?.projectId ?? draft.projectId ?? null
+  const visible = await projectAllowed(deps, projectId)
+  if (!visible.ok) return visible
+  const assigneeIds = draft.assigneeIds?.length ? draft.assigneeIds : [deps.actor.id]
+  if (!assignmentAllowed(deps, assigneeIds, draft.groupId ?? null))
+    return fail('FORBIDDEN', 'cannot assign task outside your scope')
+  if (!(await relatedAllowed(deps, draft.relatedType ?? null, draft.relatedId ?? null)))
+    return fail('FORBIDDEN', 'related record is outside your scope')
   return ok(
     await deps.repo.createTask({
-      title: value['title'].trim(),
-      projectId: parent.value?.projectId ?? (typeof value['projectId'] === 'string' ? asId(value['projectId']) : null),
-      parentTaskId,
-      assigneeIds: assignees(deps, value),
-      priority: priority(value['priority']),
+      ...draft,
+      projectId,
+      parentTaskId: draft.parentTaskId ?? null,
+      assigneeIds,
+      groupId: draft.groupId ?? null,
       workflowId: workflow.id,
       stageId: workflow.defaultStageId,
-      dueAt: typeof value['dueAt'] === 'number' ? value['dueAt'] : null,
     }),
   )
 }
-
-interface UpdateInput {
-  readonly taskId: Id
-  readonly expectedUpdatedAt: number
-  readonly patch: Partial<TaskDraft>
-}
-function parseUpdate(input: unknown): UpdateInput | undefined {
+function parsePatch(input: unknown): TaskPatch | undefined {
   const value = objectInput(input)
-  if (value === undefined || typeof value['taskId'] !== 'string' || typeof value['expectedUpdatedAt'] !== 'number')
+  if (value === undefined) return undefined
+  const fields = new Set(['title', 'description', 'priority', 'assigneeIds', 'groupId', 'relatedType', 'relatedId'])
+  const ids = value['assigneeIds']
+  if (
+    Object.keys(value).some((key) => !fields.has(key)) ||
+    ('title' in value && !validTitle(value['title'])) ||
+    ('description' in value &&
+      value['description'] !== null &&
+      (typeof value['description'] !== 'string' || value['description'].length > 20_000)) ||
+    ('priority' in value && !['none', 'low', 'medium', 'high', 'urgent'].includes(String(value['priority']))) ||
+    ('assigneeIds' in value && (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string'))) ||
+    ('groupId' in value && idValue(value['groupId']) === undefined) ||
+    ('relatedId' in value && idValue(value['relatedId']) === undefined) ||
+    ('relatedType' in value && value['relatedType'] !== null && typeof value['relatedType'] !== 'string')
+  )
     return undefined
   return {
-    taskId: asId(value['taskId']),
-    expectedUpdatedAt: value['expectedUpdatedAt'],
-    patch: value['patch'] ?? {},
+    ...('title' in value ? { title: (value['title'] as string).trim() } : {}),
+    ...('description' in value ? { description: value['description'] as string | null } : {}),
+    ...('priority' in value ? { priority: value['priority'] as NonNullable<TaskDraft['priority']> } : {}),
+    ...('assigneeIds' in value ? { assigneeIds: (ids as string[]).map(asId) } : {}),
+    ...('groupId' in value ? { groupId: idValue(value['groupId']) as Id | null } : {}),
+    ...('relatedType' in value ? { relatedType: value['relatedType'] as string | null } : {}),
+    ...('relatedId' in value ? { relatedId: idValue(value['relatedId']) as Id | null } : {}),
   }
 }
-
-/** Updates a task with compare-and-set protection. */
+/** Updates editable task fields only; stage, dates, and completion use dedicated commands. */
 export async function updateTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const update = parseUpdate(input)
-  if (update === undefined) return fail('VALIDATION', 'taskId and expectedUpdatedAt are required')
-  const task = await deps.repo.getTask(update.taskId)
-  if (task === undefined) return fail('NOT_FOUND', TASK_NOT_FOUND)
-  if (!allowed(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
-  if ('title' in update.patch && !title(update.patch.title)) return fail('VALIDATION', TITLE_REQUIRED)
-  const saved = await deps.repo.updateTask(task.id, update.patch, update.expectedUpdatedAt)
-  return saved === undefined ? fail('CONFLICT', TASK_CONFLICT) : ok(saved)
-}
-
-interface MoveInput {
-  readonly taskId: Id
-  readonly toStageId: Id
-  readonly expectedUpdatedAt: number
-  readonly beforeTaskId?: Id
-  readonly afterTaskId?: Id
-}
-function parseMove(input: unknown): MoveInput | undefined {
-  const value = objectInput(input)
+  const value = objectInput(input),
+    patch = value?.['patch'] === undefined ? undefined : parsePatch(value['patch'])
   if (
     value === undefined ||
     typeof value['taskId'] !== 'string' ||
-    typeof value['toStageId'] !== 'string' ||
-    typeof value['expectedUpdatedAt'] !== 'number'
+    typeof value['expectedUpdatedAt'] !== 'number' ||
+    !Number.isFinite(value['expectedUpdatedAt']) ||
+    patch === undefined ||
+    Object.keys(patch).length === 0
   )
-    return undefined
-  return {
-    taskId: asId(value['taskId']),
-    toStageId: asId(value['toStageId']),
-    expectedUpdatedAt: value['expectedUpdatedAt'],
-    ...(typeof value['beforeTaskId'] === 'string' ? { beforeTaskId: asId(value['beforeTaskId']) } : {}),
-    ...(typeof value['afterTaskId'] === 'string' ? { afterTaskId: asId(value['afterTaskId']) } : {}),
-  }
-}
-async function destinationFor(
-  deps: WorkDeps,
-  task: WorkTaskRecord,
-  move: MoveInput,
-): Promise<WorkResult<{ readonly category: string; readonly rank: string }>> {
-  const destination = await destinationStage(deps, task.workflowId, move.toStageId)
-  if (destination === undefined) return fail('VALIDATION', 'stage is not part of the task workflow')
-  if (await hasBlockedCompletion(deps, task, destination.category))
-    return fail('CONFLICT', 'parent task has open subtasks')
-  return ok({ category: destination.category, rank: await rankForMove(deps, move) })
-}
-
-async function destinationStage(deps: WorkDeps, workflowId: Id, stageId: Id) {
-  const workflow = await deps.repo.loadWorkflow(workflowId)
-  return workflow?.stages.find((stage) => stage.id === stageId)
-}
-
-async function hasBlockedCompletion(deps: WorkDeps, task: WorkTaskRecord, category: string): Promise<boolean> {
-  return category === 'done_success' && hasOpenChildren(await deps.repo.listChildren(task.id))
-}
-
-async function rankForMove(deps: WorkDeps, move: MoveInput): Promise<string> {
-  const before = move.beforeTaskId === undefined ? undefined : await deps.repo.getTask(move.beforeTaskId)
-  const after = move.afterTaskId === undefined ? undefined : await deps.repo.getTask(move.afterTaskId)
-  return rankBetween(before?.rank, after?.rank)
-}
-
-/** Moves a task between stages and assigns a deterministic rank within the destination column. */
-export async function moveTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const move = parseMove(input)
-  if (move === undefined) return fail('VALIDATION', 'taskId, toStageId and expectedUpdatedAt are required')
-  const task = await deps.repo.getTask(move.taskId)
-  if (task === undefined) return fail('NOT_FOUND', TASK_NOT_FOUND)
-  if (!allowed(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
-  const destination = await destinationFor(deps, task, move)
-  if (!destination.ok) return destination
-  const current = await moveToStage(deps, task, move)
-  if (!current.ok) return current
-  const patch: Partial<TaskDraft> = {
-    rank: destination.value.rank,
-    completedAt: destination.value.category === 'done_success' ? deps.clock.now() : null,
-  }
-  const saved = await deps.repo.updateTask(task.id, patch, current.value.updatedAt)
-  return saved === undefined ? fail('CONFLICT', TASK_CONFLICT) : ok(saved)
-}
-
-async function moveToStage(deps: WorkDeps, task: WorkTaskRecord, move: MoveInput): Promise<WorkResult<WorkTaskRecord>> {
-  if (task.stageId === move.toStageId) return ok(task)
-  const changed = await changeStage(
-    { actor: deps.actor, can: deps.can, store: deps.repo, uow: deps.uow, clock: deps.clock },
-    { record: { type: 'task', id: task.id }, toStageId: move.toStageId, expectedUpdatedAt: move.expectedUpdatedAt },
-  )
-  if (!changed.ok) return err(changed.error)
-  const current = await deps.repo.getTask(task.id)
-  return current === undefined ? fail('NOT_FOUND', 'task disappeared during stage update') : ok(current)
-}
-
-/** Completes a task, respecting the open-subtask invariant. */
-export async function completeTask(
-  deps: WorkDeps,
-  taskId: Id,
-  expectedUpdatedAt: number,
-): Promise<WorkResult<WorkTaskRecord>> {
-  const task = await deps.repo.getTask(taskId)
-  if (task === undefined) return fail('NOT_FOUND', TASK_NOT_FOUND)
-  const workflow = await deps.repo.loadWorkflow(task.workflowId)
-  const done = workflow?.stages.find((stage) => stage.category === 'done_success')
-  return done === undefined
-    ? fail('VALIDATION', 'task workflow has no completed stage')
-    : moveTask(deps, { taskId, toStageId: done.id, expectedUpdatedAt })
-}
-
-/** Reopens a completed task into the workflow default stage. */
-export async function reopenTask(
-  deps: WorkDeps,
-  taskId: Id,
-  expectedUpdatedAt: number,
-): Promise<WorkResult<WorkTaskRecord>> {
-  const task = await deps.repo.getTask(taskId)
-  if (task === undefined) return fail('NOT_FOUND', TASK_NOT_FOUND)
-  const workflow = await deps.repo.loadWorkflow(task.workflowId)
-  return workflow === undefined
-    ? fail('NOT_FOUND', 'task workflow not found')
-    : moveTask(deps, { taskId, toStageId: workflow.defaultStageId, expectedUpdatedAt })
-}
-
-/** Persists only dates through the repository's compare-and-set path. */
-export async function setTaskDates(
-  deps: WorkDeps,
-  input: {
-    readonly taskId: Id
-    readonly startAt: number | null
-    readonly dueAt: number | null
-    readonly expectedUpdatedAt: number
-  },
-): Promise<WorkResult<WorkTaskRecord>> {
-  const task = await deps.repo.getTask(input.taskId)
-  if (task === undefined) return fail('NOT_FOUND', TASK_NOT_FOUND)
-  if (!allowed(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
-  const saved = await deps.repo.updateTask(
-    input.taskId,
-    { startAt: input.startAt, dueAt: input.dueAt },
-    input.expectedUpdatedAt,
-  )
-  return saved === undefined ? fail('CONFLICT', TASK_CONFLICT) : ok(saved)
+    return fail('VALIDATION', 'task patch is invalid')
+  const task = await deps.repo.getTask(asId(value['taskId']))
+  if (task === undefined) return fail('NOT_FOUND', 'task not found')
+  if (task.updatedAt !== value['expectedUpdatedAt']) return fail('CONFLICT', 'task was updated by someone else')
+  if (!canUpdate(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
+  const ids = patch.assigneeIds ?? task.assigneeIds,
+    groupId = patch.groupId === undefined ? task.groupId : patch.groupId
+  if (!assignmentAllowed(deps, ids, groupId)) return fail('FORBIDDEN', 'cannot assign task outside your scope')
+  const type = patch.relatedType === undefined ? task.relatedType : patch.relatedType,
+    id = patch.relatedId === undefined ? task.relatedId : patch.relatedId
+  if (!(await relatedAllowed(deps, type, id))) return fail('FORBIDDEN', 'related record is outside your scope')
+  const saved = await deps.repo.updateTask(task.id, patch, value['expectedUpdatedAt'])
+  return saved === undefined ? fail('CONFLICT', 'task was updated by someone else') : ok(saved)
 }

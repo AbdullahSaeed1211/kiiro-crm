@@ -24,12 +24,35 @@ function eventTone(priority: string): CalendarEvent['tone'] {
   return 'blue'
 }
 
+function monthInZone(value: number, timeZone: string): { readonly year: number; readonly month: number } {
+  const parts = new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: 'numeric' }).formatToParts(value)
+  const get = (name: string) => Number(parts.find((part) => part.type === name)?.value ?? 0)
+  return { year: get('year'), month: get('month') - 1 }
+}
+function queryMonth(input: {
+  readonly value: unknown
+  readonly fallback: number
+  readonly min: number
+  readonly max: number
+}): number {
+  const parsed = typeof input.value === 'string' ? Number(input.value) : Number.NaN
+  return Number.isInteger(parsed) && parsed >= input.min && parsed <= input.max ? parsed : input.fallback
+}
+
 /** Month calendar for scoped tasks, grouped by due date. */
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly month?: string; readonly year?: string }> }>) {
   const model = await loadWorkReadModel()
-  const now = new Date()
+  const selected = monthInZone(Date.now(), model.timeZone)
+  const query = await searchParams
+  const year = queryMonth({ value: query.year, fallback: selected.year, min: 1970, max: 2100 })
+  const month = queryMonth({ value: query.month, fallback: selected.month + 1, min: 1, max: 12 }) - 1
   const events: CalendarEvent[] = model.tasks
-    .filter((task): task is typeof task & { readonly dueAt: number } => task.dueAt !== null)
+    .filter(
+      (task): task is typeof task & { readonly dueAt: number } =>
+        task.dueAt !== null && !['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory),
+    )
     .map((task) => ({
       id: task.id,
       title: task.title,
@@ -42,7 +65,7 @@ export default async function CalendarPage() {
       <AppHeader breadcrumbs={[{ label: 'Calendar' }]} />
       <PageContent>
         <PageHeader title="Calendar" description="Tasks by due date." />
-        <CalendarMonth year={now.getUTCFullYear()} month={now.getUTCMonth()} events={events} />
+        <CalendarMonth year={year} month={month} weekStartsOn={model.weekStartsOn} events={events} />
       </PageContent>
     </>
   )
