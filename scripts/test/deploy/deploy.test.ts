@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { deployTenants, restorePointCommand, rollbackCommand } from '../../lib/deploy/loop'
-import { WRANGLER } from '../../lib/provision/commands'
+import { OPENNEXT, shellRunner, WRANGLER } from '../../lib/provision/commands'
 import type { Tenant } from '../../lib/tenant-schema'
 import type { SmokeResult } from '../../smoke-tenant'
 
@@ -27,15 +27,19 @@ const makeTenant = (slug: string, deployOrder: number): Tenant => ({
   deployOrder,
 })
 
-const okay: SmokeResult = { ok: true, checks: [] }
-const failed: SmokeResult = { ok: false, checks: [{ name: 'health', ok: false, detail: 'injected failure' }] }
+const okay: SmokeResult = { ok: true, checks: [], executed: true }
+const failed: SmokeResult = {
+  ok: false,
+  checks: [{ name: 'health', ok: false, detail: 'injected failure', state: 'fail' }],
+  executed: true,
+}
 
 describe('deployment loop', () => {
   it('uses restore points and code-only rollback commands', () => {
     const alpha = makeTenant('alpha', 0)
     expect(restorePointCommand(alpha)).toBe(`${WRANGLER} d1 time-travel info ops-alpha --env alpha`)
     expect(rollbackCommand(alpha, 'v1.2.3')).toBe(
-      `${WRANGLER} rollback --name ops-alpha --message "v1.2.3 failed smoke"`,
+      `${WRANGLER} rollback --name ops-alpha --message "v1.2.3 failed smoke" --yes`,
     )
   })
 })
@@ -56,7 +60,7 @@ describe('deployment failure handling', () => {
       ['alpha', 'failed', true],
       ['beta', 'blocked', false],
     ])
-    expect(commands).toContain(`${WRANGLER} rollback --name ops-alpha --message "v1.0.0 failed smoke"`)
+    expect(commands).toContain(`${WRANGLER} rollback --name ops-alpha --message "v1.0.0 failed smoke" --yes`)
     expect(commands.some((command) => command.includes('ops-beta'))).toBe(false)
   })
 })
@@ -79,4 +83,10 @@ describe('deployment safety', () => {
   it('rejects release tags that could escape a shell argument', () => {
     expect(() => rollbackCommand(makeTenant('alpha', 0), 'v1.0.0";touch /tmp/pwned')).toThrow(/unsupported characters/)
   })
+
+  it('resolves the pinned OpenNext executable from the web workspace', async () => {
+    const result = await shellRunner(process.cwd())(`${OPENNEXT} --version`)
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('1.20.6')
+  }, 30_000)
 })

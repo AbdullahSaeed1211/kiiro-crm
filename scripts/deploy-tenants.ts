@@ -52,8 +52,20 @@ function smokeOptions(
 }
 
 async function probe(url: string, secret: string): Promise<boolean> {
-  const response = await fetch(url, { method: 'POST', headers: { 'x-internal-secret': secret } })
-  return response.ok
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort()
+  }, 10_000)
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'x-internal-secret': secret },
+      signal: controller.signal,
+    })
+    return response.ok
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 function statusOf(result: { readonly slug: string; readonly status: string }): string {

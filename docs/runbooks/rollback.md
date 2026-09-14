@@ -9,7 +9,7 @@ Use this procedure when a deployment fails after its smoke checks or when an ope
 3. Run the code-only rollback command for the failed tenant:
 
 ```sh
-pnpm --filter web exec wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
+pnpm --filter web exec wrangler rollback --name ops-<slug> --message "<tag> failed smoke" --yes
 ```
 
 4. Rerun the smoke checks against the restored version. Verify health, login, the R2 put/get/delete probe, and the test email.

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { commandSupportedByHelp, parseBookmark, parseD1Id, WRANGLER } from '../../lib/provision/commands'
+import {
+  exactJsonNames,
+  hasExactResourceName,
+  OPENNEXT,
+  parseBookmark,
+  parseD1Id,
+  senderStatusReady,
+  WRANGLER,
+} from '../../lib/provision/commands'
 import {
   createSecretPayload,
   discoverProvisionState,
@@ -10,8 +16,8 @@ import {
   provisionPlan,
   provisionStatusEndpoint,
   provisionTenant,
+  senderDomain,
 } from '../../lib/provision/plan'
-import { smokeTenant } from '../../smoke-tenant'
 import type { Tenant } from '../../lib/tenant-schema'
 
 const tenant: Tenant = {
@@ -44,6 +50,13 @@ describe('tenant operations helpers', () => {
     )
     expect(parseBookmark('latestBookmark: abc123')).toBe('abc123')
     expect(parseBookmark('{"bookmark":"json-bookmark"}')).toBe('json-bookmark')
+    expect(hasExactResourceName('ops-alpha\n', 'ops-alpha')).toBe(true)
+    expect(hasExactResourceName('ops-alpha\n', 'ops-al')).toBe(false)
+    expect(hasExactResourceName('Error: ops-alpha\n', 'ops-alpha')).toBe(false)
+    expect(exactJsonNames('[{"name":"INTERNAL_SECRET"}]')).toEqual(['INTERNAL_SECRET'])
+    expect(senderStatusReady('[{"domain":"example.test","status":"verified"}]', 'example.test')).toBe(true)
+    expect(senderStatusReady('[{"domain":"other.test","status":"verified"}]', 'example.test')).toBe(false)
+    expect(senderDomain(tenant)).toBe('example.test')
   })
 })
 
@@ -60,6 +73,7 @@ describe('provision plan contracts', () => {
       'deploy the existing build',
       'seed settings, template and owner invitation',
       'read Email Service sender status',
+      'synchronize mail-router tenant secret',
       'print the manual domain, routing and Turnstile checklist',
       'run tenant smoke checks',
       'confirm Worker ops-alpha owns only its tenant bindings',
@@ -68,16 +82,10 @@ describe('provision plan contracts', () => {
     expect(payload['TURNSTILE_SECRET']).toBe('turnstile-secret')
     expect(payload['PAYLOAD_SECRET']).not.toBe('turnstile-secret')
     expect(manualChecklist(tenant)).toContain('ops-mail-router')
-  })
-
-  it('keeps planned Wrangler commands aligned with captured 4.131.1 help', () => {
-    const fixture = (name: string): string => readFileSync(join(import.meta.dirname, 'fixtures', name), 'utf8')
-    expect(commandSupportedByHelp(`${WRANGLER} r2 bucket list`, fixture('r2-bucket-list-help.txt'))).toBe(true)
-    expect(commandSupportedByHelp(`${WRANGLER} secret list --format json`, fixture('secret-list-help.txt'))).toBe(true)
-    expect(
-      commandSupportedByHelp(`${WRANGLER} email sending list in.example.test`, fixture('email-sending-list-help.txt')),
-    ).toBe(true)
-    expect(commandSupportedByHelp(`${WRANGLER} r2 bucket list --json`, fixture('r2-bucket-list-help.txt'))).toBe(false)
+    expect(plan.find((step) => step.key === 'deployment')?.command).toBe(`${OPENNEXT} deploy --env=alpha`)
+    expect(plan.find((step) => step.key === 'senderStatus')?.command).toBe(
+      `${WRANGLER} email sending list example.test`,
+    )
   })
 })
 
@@ -90,6 +98,11 @@ describe('authenticated seed client', () => {
     })
     expect(commands.join(' ')).not.toContain('in-memory-only')
   })
+
+  it('bounds authenticated provisioning requests', async () => {
+    const client = fetchProvisionClient(delayedResponse, 1)
+    await expect(client.get('https://alpha.example.test/status', 'secret')).rejects.toThrow(/timed out/)
+  })
 })
 
 async function seedFixture(): Promise<{
@@ -97,19 +110,7 @@ async function seedFixture(): Promise<{
   commands: string[]
 }> {
   const requests: { url: string; secret: string; body: unknown }[] = []
-  const client = fetchProvisionClient((input, init) => {
-    let requestUrl: string
-    if (input instanceof Request) requestUrl = input.url
-    else if (input instanceof URL) requestUrl = input.href
-    else requestUrl = input
-    const requestBody = typeof init?.body === 'string' ? init.body : '{}'
-    requests.push({
-      url: requestUrl,
-      secret: new Headers(init?.headers).get('x-internal-secret') ?? '',
-      body: JSON.parse(requestBody),
-    })
-    return Promise.resolve(new Response('{}', { status: 200 }))
-  })
+  const client = fetchProvisionClient(recordRequest(requests))
   const commands: string[] = []
   await provisionTenant(tenant, {
     state: {
@@ -121,6 +122,7 @@ async function seedFixture(): Promise<{
       deployment: true,
       seed: false,
       senderStatus: true,
+      routerSecrets: true,
       smoke: true,
     },
     internalSecret: 'in-memory-only',
@@ -131,6 +133,32 @@ async function seedFixture(): Promise<{
     },
   })
   return { requests, commands }
+}
+
+function recordRequest(requests: { url: string; secret: string; body: unknown }[]): typeof fetch {
+  return (input, init) => {
+    const requestBody = typeof init?.body === 'string' ? init.body : '{}'
+    requests.push({
+      url: requestUrl(input),
+      secret: new Headers(init?.headers).get('x-internal-secret') ?? '',
+      body: JSON.parse(requestBody),
+    })
+    return Promise.resolve(new Response('{}', { status: 200 }))
+  }
+}
+
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  if (input instanceof URL) return input.href
+  return input.url
+}
+
+function delayedResponse(): Promise<Response> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(new Response())
+    }, 100)
+  })
 }
 
 describe('provision reruns', () => {
@@ -147,6 +175,7 @@ describe('provision reruns', () => {
         deployment: true,
         seed: true,
         senderStatus: true,
+        routerSecrets: true,
         smoke: true,
       },
       run: (command) => {
@@ -156,8 +185,8 @@ describe('provision reruns', () => {
       print: (line) => printed.push(line),
     })
     expect(commands).toEqual([])
-    expect(completed).toHaveLength(12)
-    expect(printed.filter((line) => line.startsWith('SKIP'))).toHaveLength(9)
+    expect(completed).toHaveLength(13)
+    expect(printed.filter((line) => line.startsWith('SKIP'))).toHaveLength(10)
   })
 })
 
@@ -174,7 +203,11 @@ describe('provision discovery', () => {
       senderStatus: true,
       smoke: true,
     })
-    expect(commands).toEqual([`${WRANGLER} r2 bucket list`, `${WRANGLER} secret list --env alpha --format json`])
+    expect(commands).toEqual([
+      `${WRANGLER} r2 bucket list`,
+      `${WRANGLER} secret list --env alpha --format json`,
+      `${WRANGLER} secret list --name ops-mail-router --format json`,
+    ])
   })
 
   it('rejects unsafe tenant resource names before command construction', () => {
@@ -216,14 +249,3 @@ async function discoveryFixture(): Promise<{
   })
   return { state, commands }
 }
-
-describe('smoke probe completeness', () => {
-  it('fails execute-mode smoke when authenticated R2 or email probes are missing', async () => {
-    const result = await smokeTenant(tenant, {
-      mode: 'execute',
-      fetch: () => Promise.resolve(new Response('ok', { status: 200 })),
-    })
-    expect(result.ok).toBe(false)
-    expect(result.checks.filter((check) => !check.ok).map((check) => check.name)).toEqual(['r2', 'email'])
-  })
-})

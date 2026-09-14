@@ -2,8 +2,17 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseJsonc } from '../jsonc'
-import { assertCommand, assertSafeToken, parseD1Id, WRANGLER, type CommandRunner } from './commands'
+import {
+  assertCommand,
+  assertSafeToken,
+  parseD1Id,
+  senderStatusReady,
+  OPENNEXT,
+  WRANGLER,
+  type CommandRunner,
+} from './commands'
 import { parseTenant, type Tenant } from '../tenant-schema'
+import { executeRouterSecrets, executeSeed, persistProvisionStatus } from './execution'
 export { discoverProvisionState, provisionStatusEndpoint } from './state'
 export { fetchProvisionClient } from './http'
 import { updateTenantD1Id } from './tenant-file'
@@ -19,6 +28,7 @@ export interface ProvisionState {
   deployment: boolean
   seed: boolean
   senderStatus: boolean
+  routerSecrets: boolean
   smoke: boolean
 }
 
@@ -45,7 +55,7 @@ export interface ProvisionDependencies {
 /** Minimal HTTP boundary for authenticated internal tenant operations. */
 export interface ProvisionHttpClient {
   post: (url: string, body: unknown, secret: string) => Promise<{ ok: boolean; status: number }>
-  get: (url: string, secret: string) => Promise<{ ok: boolean; status: number; body?: Partial<ProvisionState> }>
+  get: (url: string, secret: string) => Promise<{ ok: boolean; status: number; body?: unknown }>
 }
 
 interface StepContext {
@@ -65,6 +75,13 @@ export function workerName(tenant: Tenant): string {
 export function seedEndpoint(tenant: Tenant): string {
   if (tenant.hostType === 'workers_dev') return `https://${workerName(tenant)}.workers.dev/api/v1/internal/provision`
   return `https://${tenant.host ?? ''}/api/v1/internal/provision`
+}
+
+/** Returns the sender domain derived from the configured outbound address. */
+export function senderDomain(tenant: Tenant): string {
+  const domain = tenant.email.fromAddress.split('@')[1]
+  if (domain === undefined || domain === '') throw new Error('fromAddress must contain an outbound sender domain')
+  return domain
 }
 
 /** Creates the secret payload required by the tenant Worker. */
@@ -102,14 +119,17 @@ export function provisionPlan(tenant: Tenant): ProvisionStep[] {
     {
       key: 'deployment',
       label: 'deploy the existing build',
-      command: `opennextjs-cloudflare deploy --env=${tenant.slug}`,
+      command: `${OPENNEXT} deploy --env=${tenant.slug}`,
     },
     { key: 'seed', label: 'seed settings, template and owner invitation' },
     {
       key: 'senderStatus',
       label: 'read Email Service sender status',
-      command: `${WRANGLER} email sending list ${tenant.email.inboundDomain}`,
+      command: `${WRANGLER} email sending list ${senderDomain(tenant)}`,
     },
+    ...(tenant.hostType === 'platform'
+      ? [{ key: 'routerSecrets' as const, label: 'synchronize mail-router tenant secret' }]
+      : []),
     { key: 'checklist', label: 'print the manual domain, routing and Turnstile checklist' },
     { key: 'smoke', label: 'run tenant smoke checks', command: `pnpm tenant:smoke ${tenant.slug} --execute` },
     { key: 'validate', label: `confirm Worker ${worker} owns only its tenant bindings` },
@@ -176,11 +196,18 @@ async function executeStep(
 ): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
   const { tenant, deps } = context
   if (step.key === 'seed') return executeSeed(tenant, deps, context.secrets)
+  if (step.key === 'routerSecrets')
+    return executeRouterSecrets({ tenant, deps, existingSecretsFile: context.secretsFile, secrets: context.secrets })
   const command = commandForStep(step, context)
   const environment = step.key === 'migration' ? { CLOUDFLARE_ENV: tenant.slug } : undefined
   const result = await deps.run(command.value, environment)
   assertCommand(result, command.value)
   if (step.key === 'd1') writeProvisionedD1Id(tenant, deps, result.output)
+  if (step.key === 'senderStatus') {
+    if (!senderStatusReady(result.output, senderDomain(tenant)))
+      throw new Error(`Email Sending has no verified sender for ${senderDomain(tenant)}`)
+    await persistProvisionStatus({ tenant, deps, secrets: context.secrets, status: { senderStatus: true } })
+  }
   return { secretsFile: command.file, ...(command.secrets === undefined ? {} : { secrets: command.secrets }) }
 }
 
@@ -222,31 +249,6 @@ async function runProvisionStep(
   if (step.key === 'validate' || step.key === 'checklist')
     return { secretsFile: context.secretsFile, ...(context.secrets === undefined ? {} : { secrets: context.secrets }) }
   return executeStep(step, context)
-}
-
-async function executeSeed(
-  tenant: Tenant,
-  deps: ProvisionDependencies,
-  secrets: Record<string, string> | undefined,
-): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
-  const secret = secrets?.['INTERNAL_SECRET']
-  if (deps.http === undefined || secret === undefined)
-    throw new Error('authenticated provisioning client and INTERNAL_SECRET are required for seeding')
-  const response = await deps.http.post(
-    seedEndpoint(tenant),
-    {
-      displayName: tenant.displayName,
-      template: tenant.template,
-      owner: tenant.owner,
-      timezone: tenant.timezone,
-      locale: tenant.locale,
-      currency: tenant.currency,
-      intake: tenant.intake,
-    },
-    secret,
-  )
-  if (!response.ok) throw new Error(`tenant seed failed (HTTP ${String(response.status)})`)
-  return { secretsFile: undefined, secrets }
 }
 
 function writeProvisionedD1Id(tenant: Tenant, deps: ProvisionDependencies, output: string): void {

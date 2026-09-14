@@ -1,4 +1,11 @@
-import { assertCommand, assertSafeToken, parseBookmark, WRANGLER, type CommandRunner } from '../provision/commands'
+import {
+  assertCommand,
+  assertSafeToken,
+  OPENNEXT,
+  parseBookmark,
+  WRANGLER,
+  type CommandRunner,
+} from '../provision/commands'
 import { smokeTenant, type SmokeResult } from '../../smoke-tenant'
 import type { Tenant } from '../tenant-schema'
 
@@ -27,7 +34,7 @@ export function restorePointCommand(tenant: Tenant): string {
 /** The code-only rollback command. It never restores D1 data. */
 export function rollbackCommand(tenant: Tenant, tag: string): string {
   const safeTag = assertSafeToken(tag, 'release tag', /^v?[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$/)
-  return `${WRANGLER} rollback --name ops-${tenant.slug} --message "${safeTag} failed smoke"`
+  return `${WRANGLER} rollback --name ops-${tenant.slug} --message "${safeTag} failed smoke" --yes`
 }
 
 /** Runs restore point, migration, deployment and smoke in deploy order, stopping and rolling back on failure. */
@@ -75,7 +82,7 @@ async function deployOne(tenant: Tenant, tag: string, deps: DeploymentDependenci
 async function runMigrationAndDeploy(tenant: Tenant, run: CommandRunner): Promise<void> {
   const migrate = `CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`
   assertCommand(await run(migrate, { CLOUDFLARE_ENV: tenant.slug }), migrate)
-  const deploy = `opennextjs-cloudflare deploy --env=${tenant.slug}`
+  const deploy = `${OPENNEXT} deploy --env=${tenant.slug}`
   assertCommand(await run(deploy), deploy)
 }
 

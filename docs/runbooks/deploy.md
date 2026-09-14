@@ -20,12 +20,14 @@ The drill must print the rollback command for the first tenant and must not run 
 
 ## Tagged release
 
-The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs `pnpm verify:fast`, builds once, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard.
+The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs the complete `pnpm verify` gate, builds the OpenNext artifact once with the web workspace executable, verifies `apps/web/.open-next/worker.js` and its assets, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard.
 
 For an operator-run release, use the same sequence after reviewing the build:
 
 ```sh
-pnpm build
+pnpm verify
+pnpm --filter web exec opennextjs-cloudflare build
+test -f apps/web/.open-next/worker.js && test -d apps/web/.open-next/assets
 OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag vX.Y.Z --execute
 ```
 
@@ -34,7 +36,7 @@ For each tenant, the loop runs:
 ```text
 pnpm --filter web exec wrangler d1 time-travel info <database> --env <slug>
 CLOUDFLARE_ENV=<slug> pnpm --filter web exec payload migrate
-opennextjs-cloudflare deploy --env=<slug>
+pnpm --filter web exec opennextjs-cloudflare deploy --env=<slug>
 pnpm tenant:smoke <slug> --execute
 ```
 
@@ -43,7 +45,7 @@ pnpm tenant:smoke <slug> --execute
 After a restore bookmark exists, any migration, deploy, or smoke failure runs a code-only rollback:
 
 ```text
-pnpm --filter web exec wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
+pnpm --filter web exec wrangler rollback --name ops-<slug> --message "<tag> failed smoke" --yes
 ```
 
 The loop records the bookmark, marks the tenant failed, blocks later tenants, and exits nonzero. Code rollback preserves bindings and data. It never restores D1 data automatically.

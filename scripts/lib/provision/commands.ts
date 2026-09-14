@@ -8,6 +8,7 @@ export interface CommandResult {
 
 /** Wrangler executable resolved from the web package, which pins the supported CLI version. */
 export const WRANGLER = 'pnpm --filter web exec wrangler'
+export const OPENNEXT = 'pnpm --filter web exec opennextjs-cloudflare'
 
 /** Validates a value before it is interpolated into a shell command. */
 export function assertSafeToken(value: string, label: string, pattern: RegExp): string {
@@ -79,6 +80,60 @@ export function resourceId(output: string, name: string): string | undefined {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const nearby = new RegExp(`.{0,120}${escaped}.{0,120}`, 'is').exec(output)?.[0]
   return nearby === undefined ? undefined : parseD1Id(nearby)
+}
+
+/** Returns true only when a named table cell or JSON name exactly matches the requested resource. */
+export function hasExactResourceName(output: string, name: string): boolean {
+  const parsed = parseJsonArray(output)
+  if (parsed !== undefined)
+    return parsed.some((entry) => typeof entry === 'object' && entry !== null && entryName(entry) === name)
+  return output.split('\n').some((line) => {
+    const normalized = line.trim()
+    if (normalized === '' || /^(error|warning|failed)\b/i.test(normalized)) return false
+    return normalized.split(/\s{2,}|\t/).some((cell) => cell.trim() === name)
+  })
+}
+
+/** Parses a strict Wrangler JSON list into exact resource names; malformed output is never treated as success. */
+export function exactJsonNames(output: string): string[] {
+  const parsed = parseJsonArray(output)
+  return parsed === undefined
+    ? []
+    : parsed.flatMap((entry) => (typeof entry === 'object' && entry !== null ? [entryName(entry)] : []))
+}
+
+/** Accepts only an exact configured sender domain with a verified/active status. */
+export function senderStatusReady(output: string, expectedDomain: string): boolean {
+  const parsed = parseJsonArray(output)
+  if (parsed !== undefined) {
+    return parsed.some((entry) => {
+      if (typeof entry !== 'object' || entry === null) return false
+      const record = entry as Record<string, unknown>
+      const domain = record['domain'] ?? record['name']
+      const status = record['status'] ?? record['state']
+      return domain === expectedDomain && typeof status === 'string' && /^(active|enabled|verified)$/i.test(status)
+    })
+  }
+  return output.split('\n').some((line) => {
+    const normalized = line.trim()
+    if (normalized === '' || /^(error|warning|failed)\b/i.test(normalized)) return false
+    const cells = normalized.split(/\s{2,}|\t/).map((cell) => cell.trim())
+    return cells.includes(expectedDomain) && cells.some((cell) => /^(active|enabled|verified)$/i.test(cell))
+  })
+}
+
+function parseJsonArray(output: string): unknown[] | undefined {
+  try {
+    const value: unknown = JSON.parse(output.trim())
+    return Array.isArray(value) ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function entryName(entry: object): string {
+  const value = (entry as Record<string, unknown>)['name']
+  return typeof value === 'string' ? value : ''
 }
 
 /** Extracts a D1 time-travel bookmark from Wrangler output. */

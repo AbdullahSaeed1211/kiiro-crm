@@ -42,6 +42,11 @@ async function executeProvision(slug: string, root: string, tenant: ReturnType<t
   const http = fetchProvisionClient()
   const status = internalSecret === undefined ? undefined : { client: http, secret: internalSecret }
   const state = await discoverProvisionState({ tenant, run: runner, root, ...(status === undefined ? {} : { status }) })
+  if (state.secrets === true && internalSecret === undefined) {
+    throw new Error(
+      `INTERNAL_SECRET_${slug.toUpperCase().replaceAll('-', '_')} is required to resume an existing tenant; retrieve it from secure operator custody before rerunning`,
+    )
+  }
   await provisionTenant(tenant, {
     run: runner,
     root,

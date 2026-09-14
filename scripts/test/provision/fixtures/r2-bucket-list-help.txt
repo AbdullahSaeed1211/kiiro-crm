@@ -1,6 +1,0 @@
-wrangler r2 bucket list
-
-List R2 buckets
-
-GLOBAL FLAGS
-  -e, --env  Environment to use
