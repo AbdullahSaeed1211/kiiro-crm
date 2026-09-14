@@ -67,17 +67,24 @@ export type LeadListResult = Readonly<{
   readonly pageSize: number
   readonly stages: readonly KanbanStage[]
   readonly sources: readonly LookupRecord[]
+  readonly lostReasons: readonly LookupRecord[]
   readonly people: readonly LeadPerson[]
 }>
 
 function filterLeads(
   records: readonly LeadRecord[],
   params: Readonly<{ q?: string; stages?: readonly string[] }>,
+  stageCategories: ReadonlyMap<string, KanbanStage['category']>,
 ): LeadRecord[] {
   const q = params.q?.trim().toLowerCase() ?? ''
   const stageIds = new Set(params.stages ?? [])
   return records.filter((lead) => {
     if (stageIds.size > 0 && !stageIds.has(lead.stageId)) return false
+    if (
+      stageIds.size === 0 &&
+      ['done_success', 'done_failure', 'cancelled'].includes(stageCategories.get(lead.stageId) ?? '')
+    )
+      return false
     if (q === '') return true
     return [lead.title, lead.firstName, lead.lastName, lead.email, lead.companyName, lead.phone]
       .filter((value): value is string => typeof value === 'string')
@@ -110,13 +117,15 @@ export async function listLeads(
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
-  const [records, workflow, sources] = await Promise.all([
+  const [records, workflow, sources, lostReasons] = await Promise.all([
     repo.list('lead'),
     repo.loadDefaultWorkflow('lead'),
     repo.listLookups('source'),
+    repo.listLookups('lostReason'),
   ])
-  const filtered = filterLeads(records, params)
   const stages = toStages(workflow)
+  const stageCategories = new Map(stages.map((stage) => [stage.id, stage.category]))
+  const filtered = filterLeads(records, params, stageCategories)
   const sourceMap = lookupMap(sources)
   const people = await loadLeadPeople(context, filtered)
   const items = filtered.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people }))
@@ -128,6 +137,7 @@ export async function listLeads(
     pageSize: PAGE_SIZE,
     stages,
     sources,
+    lostReasons,
     people: [...people.values()],
   }
 }

@@ -29,15 +29,22 @@ export default async function LeadBoardPage({
       </div>
     ),
   }))
+  const query = new URLSearchParams()
+  if (params.q) query.set('q', Array.isArray(params.q) ? (params.q[0] ?? '') : params.q)
+  parseLeadStages(params.stage).forEach((stage) => {
+    query.append('stage', stage)
+  })
+  const queryString = query.toString()
+  const tableHref = queryString === '' ? '/leads' : `/leads?${queryString}`
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Leads', href: '/leads' }, { label: 'Board' }]} />
+      <AppHeader breadcrumbs={[{ label: 'Leads', href: tableHref }, { label: 'Board' }]} />
       <PageContent>
         <PageHeader
           title="Lead board"
           count={result.total}
           actions={
-            <a className="text-sm text-muted-foreground hover:text-foreground" href="/leads">
+            <a className="text-sm text-muted-foreground hover:text-foreground" href={tableHref}>
               Table view
             </a>
           }
@@ -45,6 +52,7 @@ export default async function LeadBoardPage({
         <LeadBoard
           stages={result.stages}
           cards={cards}
+          lostReasons={result.lostReasons}
           labels={{
             expand: 'Expand {name}',
             collapse: 'Collapse {name}',

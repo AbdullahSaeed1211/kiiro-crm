@@ -5,12 +5,20 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
 
+function hrefWithQuery(path: string, query: string): string {
+  return query === '' ? path : `${path}?${query}`
+}
+
 export function LeadListControls({ stages }: Readonly<{ stages: readonly KanbanStage[] }>) {
   const router = useRouter()
   const pathname = usePathname()
   const search = useSearchParams()
   const q = search.get('q') ?? ''
   const selected = search.getAll('stage')
+  const queryParams = new URLSearchParams(search.toString())
+  queryParams.delete('view')
+  const query = queryParams.toString()
+  const boardHref = hrefWithQuery('/leads/board', query)
   const navigate = useCallback(
     (input: Readonly<{ query: string; stages: readonly string[] }>) => {
       const { query, stages } = input
@@ -48,13 +56,13 @@ export function LeadListControls({ stages }: Readonly<{ stages: readonly KanbanS
       />
       <a
         className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-        href="/leads?view=board"
+        href={boardHref}
       >
         Board
       </a>
       <a
         className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-        href="/leads"
+        href={hrefWithQuery('/leads', query)}
       >
         Table
       </a>

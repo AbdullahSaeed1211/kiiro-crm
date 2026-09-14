@@ -1,8 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { asId } from '@ops/kernel'
 import { runConvertLead, runCreateLead, runMarkLost, runMoveLead, runUpdateLead } from '@ops/module-crm'
 import { getCrmDeps } from '../deps'
+import { leadStageMoveError } from './types'
 
 export type LeadActionResult<T = unknown> =
   | { readonly ok: true; readonly data: T }
@@ -14,6 +16,35 @@ function adapt<T>(
     | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } },
 ): LeadActionResult<T> {
   return result.ok ? { ok: true, data: result.value as T } : { ok: false, error: result.error }
+}
+
+interface LeadActionError {
+  readonly ok: false
+  readonly error: { readonly code: string; readonly message: string }
+}
+
+function invalidTerminalMove(message: string): LeadActionError {
+  return { ok: false, error: { code: 'VALIDATION', message } }
+}
+
+function moveInput(input: unknown): { leadId: string; toStageId: string } | null {
+  if (typeof input !== 'object' || input === null) return null
+  const value = input as { leadId?: unknown; toStageId?: unknown }
+  return typeof value.leadId === 'string' && typeof value.toStageId === 'string'
+    ? { leadId: value.leadId, toStageId: value.toStageId }
+    : null
+}
+
+async function validateLeadMoveDestination(input: unknown): Promise<LeadActionError | null> {
+  const value = moveInput(input)
+  if (value === null) return invalidTerminalMove('Choose a valid lead stage.')
+  const deps = await getCrmDeps()
+  const lead = await deps.repo.get('lead', asId(value.leadId))
+  if (lead === undefined) return { ok: false, error: { code: 'NOT_FOUND', message: 'lead not found' } }
+  const workflow = await deps.repo.loadWorkflow(lead.workflowId)
+  const stage = workflow?.stages.find((candidate) => candidate.id === asId(value.toStageId))
+  const error = stage === undefined ? null : leadStageMoveError(stage)
+  return error === null ? null : invalidTerminalMove(error)
 }
 
 /** Creates a lead and revalidates the Leads routes. */
@@ -30,6 +61,8 @@ export async function updateLead(input: unknown): Promise<LeadActionResult> {
 
 /** Moves a lead between workflow stages for board interactions. */
 export async function moveLead(input: unknown): Promise<LeadActionResult<{ stageId: string; updatedAt: number }>> {
+  const invalid = await validateLeadMoveDestination(input)
+  if (invalid !== null) return invalid
   const result = await runMoveLead(await getCrmDeps(), input)
   if (result.ok) {
     revalidatePath('/leads')

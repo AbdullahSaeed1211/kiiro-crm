@@ -2,6 +2,7 @@
 
 import { RecordForm, type RecordFieldConfig } from '@ops/ui'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { createLead } from '../../../server/crm/leads/actions'
 
 const fields = (sources: readonly { id: string; name: string }[]): readonly RecordFieldConfig[] => [
@@ -22,17 +23,27 @@ const fields = (sources: readonly { id: string; name: string }[]): readonly Reco
 
 export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: string; name: string }[] }>) {
   const router = useRouter()
+  const [error, setError] = useState<string | undefined>()
   return (
-    <RecordForm
-      fields={fields(sources)}
-      labels={{ submit: 'Create lead', saving: 'Creating…', cancel: 'Cancel', required: 'This field is required' }}
-      onCancel={() => {
-        router.push('/leads')
-      }}
-      onSubmit={async (values) => {
-        const result = await createLead({ ...values, assigneeIds: [] })
-        if (result.ok) router.push(`/leads/${(result.data as { id: string }).id}`)
-      }}
-    />
+    <div className="grid gap-4">
+      {error === undefined ? null : (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <RecordForm
+        fields={fields(sources)}
+        labels={{ submit: 'Create lead', saving: 'Creating…', cancel: 'Cancel', required: 'This field is required' }}
+        onCancel={() => {
+          router.push('/leads')
+        }}
+        onSubmit={async (values) => {
+          setError(undefined)
+          const result = await createLead({ ...values, assigneeIds: [] })
+          if (result.ok) router.push(`/leads/${(result.data as { id: string }).id}`)
+          else setError(result.error.message)
+        }}
+      />
+    </div>
   )
 }

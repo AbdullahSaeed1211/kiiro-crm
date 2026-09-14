@@ -119,7 +119,6 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
     stages: parseLeadStages(params.stage),
     page: Number(params.page) || 1,
   })
-  const view = Array.isArray(params.view) ? params.view[0] : params.view
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Leads' }]} />
@@ -137,17 +136,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
           }
         />
         <LeadListControls stages={result.stages} />
-        {view === 'board' ? (
-          <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-            Board view is available at{' '}
-            <a className="underline" href="/leads/board">
-              /leads/board
-            </a>
-            .
-          </p>
-        ) : (
-          <LeadTable result={result} params={params} />
-        )}
+        <LeadTable result={result} params={params} />
       </PageContent>
     </>
   )

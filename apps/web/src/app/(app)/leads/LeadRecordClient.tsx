@@ -13,93 +13,92 @@ function formatDate(value: number): string {
   return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(value)
 }
 
+function AsideField({ label, value }: Readonly<{ label: string; value: string }>) {
+  return (
+    <div>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="mt-1">{value}</dd>
+    </div>
+  )
+}
+
+function optionalValue(value: string | null): string {
+  return value ?? '—'
+}
+
+function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
+  const lead = data.item.lead
+  if (lead.convertedAt !== null)
+    return (
+      <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
+        Converted {formatDate(lead.convertedAt)}
+      </p>
+    )
+  if (data.item.stage.category === 'done_failure')
+    return (
+      <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+        Lost{lead.lostNote ? `: ${lead.lostNote}` : ''}
+      </p>
+    )
+  return null
+}
+
 function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
   const lead = data.item.lead
+  const details = [
+    ['Email', optionalValue(lead.email)],
+    ['Phone', optionalValue(lead.phone)],
+    ['Company', optionalValue(lead.companyName)],
+    ['Source', optionalValue(data.item.source?.name ?? null)],
+  ] as const
+  const meta = [
+    ['Created', formatDate(lead.createdAt)],
+    ['Updated', formatDate(lead.updatedAt)],
+    ['Stage entered', formatDate(lead.stageEnteredAt)],
+  ] as const
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-lg border p-4">
         <h2 className="text-sm font-medium">Details</h2>
         <dl className="mt-3 grid gap-3 text-sm">
-          <div>
-            <dt className="text-muted-foreground">Email</dt>
-            <dd className="mt-1">{lead.email ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Phone</dt>
-            <dd className="mt-1">{lead.phone ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Company</dt>
-            <dd className="mt-1">{lead.companyName ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Source</dt>
-            <dd className="mt-1">{data.item.source?.name ?? '—'}</dd>
-          </div>
+          {details.map(([label, value]) => (
+            <AsideField key={label} label={label} value={value} />
+          ))}
         </dl>
       </section>
       <section className="rounded-lg border p-4">
         <h2 className="text-sm font-medium">Meta</h2>
         <dl className="mt-3 grid gap-3 text-sm">
-          <div>
-            <dt className="text-muted-foreground">Created</dt>
-            <dd className="mt-1">{formatDate(lead.createdAt)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Updated</dt>
-            <dd className="mt-1">{formatDate(lead.updatedAt)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Stage entered</dt>
-            <dd className="mt-1">{formatDate(lead.stageEnteredAt)}</dd>
-          </div>
+          {meta.map(([label, value]) => (
+            <AsideField key={label} label={label} value={value} />
+          ))}
         </dl>
       </section>
-      {lead.convertedAt === null ? null : (
-        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
-          Converted {formatDate(lead.convertedAt)}
-        </p>
-      )}
+      <LeadStatusBanners data={data} />
     </div>
   )
 }
 
 function LeadActions({
   isConverted,
+  isTerminal,
   onConvert,
   onLost,
-}: Readonly<{ isConverted: boolean; onConvert: () => void; onLost: () => void }>) {
+}: Readonly<{ isConverted: boolean; isTerminal: boolean; onConvert: () => void; onLost: () => void }>) {
   return (
     <div className="flex gap-2">
-      <Button type="button" size="sm" variant="outline" disabled={isConverted} onClick={onConvert}>
+      <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onConvert}>
         Convert
       </Button>
-      <Button type="button" size="sm" variant="outline" disabled={isConverted} onClick={onLost}>
+      <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onLost}>
         Mark lost
       </Button>
     </div>
   )
 }
 
-function LeadRecordLayout({
-  data,
-  isConverted,
-  activity,
-  onConvert,
-  onLost,
-  onSaveTitle,
-  onChangeStage,
-}: Readonly<{
-  data: LeadPageData
-  isConverted: boolean
-  activity: readonly ActivityEntry[]
-  onConvert: () => void
-  onLost: () => void
-  onSaveTitle: (title: string) => void
-  onChangeStage: (stageId: string) => void
-}>) {
-  const lead = data.item.lead
-  const tabs = [
+function leadTabs(activity: readonly ActivityEntry[]) {
+  return [
     {
       id: 'activity',
       label: 'Activity',
@@ -126,39 +125,74 @@ function LeadRecordLayout({
       content: <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No files attached.</p>,
     },
   ]
+}
+
+function leadOwner(owner: LeadPageData['item']['owner']) {
+  return owner === null ? null : (
+    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+      <Avatar size="sm">
+        <AvatarFallback>{owner.name.slice(0, 1)}</AvatarFallback>
+      </Avatar>
+      {owner.name}
+    </span>
+  )
+}
+
+function LeadRecordLayout({
+  data,
+  isConverted,
+  isTerminal,
+  error,
+  activity,
+  onConvert,
+  onLost,
+  onSaveTitle,
+  onChangeStage,
+}: Readonly<{
+  data: LeadPageData
+  isConverted: boolean
+  isTerminal: boolean
+  error: string | undefined
+  activity: readonly ActivityEntry[]
+  onConvert: () => void
+  onLost: () => void
+  onSaveTitle: (title: string) => void
+  onChangeStage: (stageId: string) => void
+}>) {
+  const lead = data.item.lead
   return (
-    <RecordPageLayout
-      labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel title' }}
-      breadcrumbs={
-        <a href="/leads" className="text-sm text-muted-foreground hover:text-foreground">
-          Leads
-        </a>
-      }
-      title={lead.title}
-      onTitleChange={onSaveTitle}
-      stage={
-        <StageSelect
-          stages={data.stages}
-          value={lead.stageId}
-          onChange={onChangeStage}
-          labels={{ label: 'Stage', terminalGroup: 'Closed', placeholder: 'Select stage' }}
-          disabled={isConverted}
-        />
-      }
-      owner={
-        data.item.owner ? (
-          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Avatar size="sm">
-              <AvatarFallback>{data.item.owner.name.slice(0, 1)}</AvatarFallback>
-            </Avatar>
-            {data.item.owner.name}
-          </span>
-        ) : null
-      }
-      actions={<LeadActions isConverted={isConverted} onConvert={onConvert} onLost={onLost} />}
-      tabs={tabs}
-      aside={<LeadAside data={data} />}
-    />
+    <>
+      {error === undefined ? null : (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <RecordPageLayout
+        labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel title' }}
+        breadcrumbs={
+          <a href="/leads" className="text-sm text-muted-foreground hover:text-foreground">
+            Leads
+          </a>
+        }
+        title={lead.title}
+        onTitleChange={onSaveTitle}
+        stage={
+          <StageSelect
+            stages={data.stages}
+            value={lead.stageId}
+            onChange={onChangeStage}
+            labels={{ label: 'Stage', terminalGroup: 'Closed', placeholder: 'Select stage' }}
+            disabled={isConverted || isTerminal}
+          />
+        }
+        owner={leadOwner(data.item.owner)}
+        actions={
+          <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
+        }
+        tabs={leadTabs(activity)}
+        aside={<LeadAside data={data} />}
+      />
+    </>
   )
 }
 
@@ -166,8 +200,10 @@ export function LeadRecordClient({ data }: Readonly<{ data: LeadPageData }>) {
   const router = useRouter()
   const [convertOpen, setConvertOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
+  const [actionError, setActionError] = useState<string | undefined>()
   const lead = data.item.lead
   const isConverted = lead.convertedAt !== null
+  const isTerminal = ['done_success', 'done_failure', 'cancelled'].includes(data.item.stage.category)
   const activity: ActivityEntry[] = useMemo(
     () =>
       data.activities.map((entry) => ({
@@ -180,18 +216,30 @@ export function LeadRecordClient({ data }: Readonly<{ data: LeadPageData }>) {
     [data.activities],
   )
   const saveTitle = async (title: string) => {
+    setActionError(undefined)
     const result = await updateLead({ id: lead.id, expectedUpdatedAt: lead.updatedAt, patch: { title } })
     if (result.ok) router.refresh()
+    else {
+      setActionError(result.error.message)
+      if (result.error.code === 'CONFLICT') router.refresh()
+    }
   }
   const changeStage = async (stageId: string) => {
+    setActionError(undefined)
     const result = await moveLead({ leadId: lead.id, toStageId: stageId, expectedUpdatedAt: lead.updatedAt })
     if (result.ok) router.refresh()
+    else {
+      setActionError(result.error.message)
+      if (result.error.code === 'CONFLICT') router.refresh()
+    }
   }
   return (
     <>
       <LeadRecordLayout
         data={data}
         isConverted={isConverted}
+        isTerminal={isTerminal}
+        error={actionError}
         activity={activity}
         onSaveTitle={(title) => {
           void saveTitle(title)
