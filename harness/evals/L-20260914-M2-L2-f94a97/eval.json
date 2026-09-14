@@ -1,0 +1,13 @@
+{
+  "lesson": "L-20260914-M2-L2-f94a97",
+  "repro": {
+    "cwd": "harness/evals/L-20260914-M2-L2-f94a97/repro",
+    "command": "echo 'TODO: implement the repro step of L-20260914-M2-L2-f94a97' >&2; exit 1",
+    "expectExitCode": "nonzero"
+  },
+  "fixed": {
+    "cwd": "harness/evals/L-20260914-M2-L2-f94a97/fixed",
+    "command": "echo 'TODO: implement the fixed step of L-20260914-M2-L2-f94a97' >&2; exit 1",
+    "expectExitCode": "zero"
+  }
+}
