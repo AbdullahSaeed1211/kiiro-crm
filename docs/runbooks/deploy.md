@@ -1,0 +1,53 @@
+# Deploy tenants
+
+Use the tagged deployment loop to release one build to every tenant in `deployOrder`. The loop records a D1 restore bookmark, applies migrations, deploys the Worker, runs smoke checks, and stops at the first failure.
+
+## Local drill
+
+The deployment command is a dry run unless `--execute` and `OPS_ALLOW_LIVE=1` are both present. Run the normal preview before a release:
+
+```sh
+pnpm tenants:deploy --tag v0.0.0
+```
+
+Exercise the failure path locally with an injected health failure:
+
+```sh
+pnpm tenants:deploy --tag v0.0.0 --fail-smoke
+```
+
+The drill must print the rollback command for the first tenant and must not run migration, deployment, or smoke commands for later tenants.
+
+## Tagged release
+
+The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs `pnpm verify:fast`, builds once, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard.
+
+For an operator-run release, use the same sequence after reviewing the build:
+
+```sh
+pnpm build
+OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag vX.Y.Z --execute
+```
+
+For each tenant, the loop runs:
+
+```text
+wrangler d1 time-travel info <database> --env <slug>
+CLOUDFLARE_ENV=<slug> pnpm --filter web exec payload migrate
+opennextjs-cloudflare deploy --env=<slug>
+pnpm tenant:smoke <slug> --execute
+```
+
+## Failure handling
+
+After a restore bookmark exists, any migration, deploy, or smoke failure runs a code-only rollback:
+
+```text
+wrangler rollback --name ops-<slug> --message "<tag> failed smoke"
+```
+
+The loop records the bookmark, marks the tenant failed, blocks later tenants, and exits nonzero. Code rollback preserves bindings and data. It never restores D1 data automatically.
+
+## Release evidence
+
+Record the tag, tenant status, restore bookmark, smoke check results, rollback result when applicable, and the command exit code. Keep credentials, cookies, intake payloads, and email bodies out of the evidence.

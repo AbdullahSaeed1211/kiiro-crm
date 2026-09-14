@@ -1,0 +1,48 @@
+name: deploy tenants
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: tenant-deployments
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      OPS_ALLOW_LIVE: '1'
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify the release
+        run: pnpm verify:fast
+
+      - name: Build once
+        run: pnpm build
+
+      - name: Deploy tenants in deploy order
+        run: pnpm tenants:deploy --tag "${GITHUB_REF_NAME}" --execute

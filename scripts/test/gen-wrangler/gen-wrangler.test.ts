@@ -1,6 +1,13 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { assertIsolated, baseConfig, loadTenants, renderWranglerConfig, tenantEnv } from '../../gen-wrangler'
+import {
+  assertIsolated,
+  baseConfig,
+  loadTenants,
+  renderMailRouterConfig,
+  renderWranglerConfig,
+  tenantEnv,
+} from '../../gen-wrangler'
 import { parseJsonc } from '../../lib/jsonc'
 import { parseTenant, type Tenant } from '../../lib/tenant-schema'
 
@@ -78,5 +85,24 @@ describe('gen-wrangler', () => {
     expect(() => {
       assertIsolated([tenant('alpha', 0), shared])
     }).toThrow(/r2:ops-alpha/)
+  })
+})
+
+describe('mail-router config', () => {
+  it('generates only platform tenant service bindings for the mail router', () => {
+    const custom = { ...tenant('custom', 1), hostType: 'custom' as const }
+    const rendered = parseJsonc(renderMailRouterConfig([tenant('alpha', 0), custom])) as Record<string, unknown>
+    expect(rendered).toMatchObject({
+      name: 'ops-mail-router',
+      services: [{ binding: 'TENANT_ALPHA', service: 'ops-alpha' }],
+    })
+    expect(JSON.stringify(rendered)).not.toContain('ops-custom')
+  })
+
+  it('requires platform tenants to use the shared inbound domain', () => {
+    const other = { ...tenant('beta', 1), email: { ...tenant('beta', 1).email, inboundDomain: 'other.example.test' } }
+    expect(() => {
+      assertIsolated([tenant('alpha', 0), other])
+    }).toThrow(/share one inbound domain/)
   })
 })

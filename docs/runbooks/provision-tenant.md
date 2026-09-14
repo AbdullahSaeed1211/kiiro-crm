@@ -1,0 +1,30 @@
+# Provision a tenant
+
+Use this procedure to create one isolated tenant instance. The command validates the tenant definition, creates its D1 database and R2 bucket when absent, generates Wrangler bindings, uploads secrets, applies migrations, deploys the existing build, seeds the tenant, checks sender status, prints the manual checklist, and runs smoke checks.
+
+## Before you start
+
+Confirm that the tenant file exists at `tenants/<slug>.jsonc` and contains a unique slug, D1 name, R2 bucket, rate-limit namespaces, owner, sender, inbound domain, and intake origins. The tenant schema rejects malformed hosts, email addresses, UUIDs, URLs, and namespace ids.
+
+For local validation, use the dry run. It contacts no Cloudflare service and never creates a secret file.
+
+```sh
+pnpm tenant:provision <slug> --dry-run
+```
+
+For an authorized operator run, provide `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `TURNSTILE_SECRET_<SLUG>` in the process environment. The command also accepts `TURNSTILE_SECRET` as a fallback for a one-tenant operator shell.
+
+## Procedure
+
+1. Run `pnpm gen:wrangler` and inspect both generated files. The web Worker environment must contain only the tenant's D1, R2, service, email, rate-limit, and variable bindings. The mail router must contain a service binding only for platform-hosted tenants.
+2. Run `OPS_ALLOW_LIVE=1 pnpm tenant:provision <slug> --execute` from the repository root. The command writes a D1 id to the tenant file when Wrangler creates the database. The temporary secret file is mode `0600` and is removed after `wrangler secret bulk` returns.
+3. Complete the printed checklist. Confirm the custom domain, Email Routing catch-all, Turnstile hostnames, and mail-router deployment for a platform-hosted tenant.
+4. Save the command output with the release evidence. Do not copy secret values into logs, tickets, or reports.
+
+## Rerun behavior
+
+Reruns are safe. A tenant file with a D1 id skips D1 creation. The executable path checks the R2 bucket, D1 database, Wrangler secret names, and generated configuration before running steps. Payload migration, tenant seeding, and the smoke probes are idempotent operations. A failed step stops the run, so rerun after resolving that step and retain the existing resource ids.
+
+## Expected result
+
+The command exits with code 0 only after all steps complete. A failed command exits nonzero and includes the failed step without printing credentials or request bodies.
