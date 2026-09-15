@@ -10,6 +10,16 @@ function toServiceMessage(message: MailMessage): EmailServiceMessage {
     subject: message.subject,
     html: message.html,
     text: message.text,
+    ...(message.attachments === undefined
+      ? {}
+      : {
+          attachments: message.attachments.map((attachment) => ({
+            content: attachment.content,
+            filename: attachment.filename,
+            type: attachment.contentType,
+            disposition: 'attachment' as const,
+          })),
+        }),
     ...(message.replyTo === undefined ? {} : { replyTo: message.replyTo }),
     ...(message.headers === undefined ? {} : { headers: { ...message.headers } }),
   }

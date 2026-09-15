@@ -40,6 +40,14 @@ async function sendRequest(
         subject: message.subject,
         html: message.html,
         text: message.text,
+        ...(message.attachments === undefined
+          ? {}
+          : {
+              attachments: message.attachments.map((attachment) => ({
+                content: attachment.content,
+                filename: attachment.filename,
+              })),
+            }),
         ...(message.replyTo === undefined ? {} : { reply_to: message.replyTo }),
       }),
       signal: controller.signal,

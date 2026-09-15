@@ -1,121 +1,20 @@
-/* eslint-disable complexity, max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/restrict-template-expressions, sonarjs/no-nested-functions, sonarjs/no-nested-template-literals -- workflow editing keeps stage ordering and default-stage invariants in one transaction-oriented surface. */
+/* eslint-disable complexity, max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, sonarjs/no-nested-functions -- creation and card composition remain a single settings workflow surface. */
 'use client'
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import type { ActionResult } from '../../../../server/actions/settings'
+import {
+  newStage,
+  isTerminal,
+  RECORD_TYPES,
+  title,
+  type ConfigAction,
+  type Stage,
+  type Workflow,
+} from './workflow-model'
+import { StageRow } from './workflow-stage-row'
 
-interface Stage {
-  id: string
-  name: string
-  category: string
-  color: string
-  position: number
-  probability?: number
-}
-interface Workflow {
-  id: string
-  recordType: string
-  name: string
-  stages: Stage[]
-  defaultStageId: string
-}
-type ConfigAction = (input: unknown) => Promise<ActionResult>
-
-const RECORD_TYPES = ['organization', 'contact', 'lead', 'deal', 'project', 'task'] as const
-const CATEGORIES = [
-  ['backlog', 'Backlog'],
-  ['open', 'Open'],
-  ['active', 'Active'],
-  ['waiting', 'Waiting'],
-  ['done_success', 'Won / done'],
-  ['done_failure', 'Lost / failed'],
-  ['cancelled', 'Cancelled'],
-] as const
-const COLORS = ['gray', 'blue', 'green', 'amber', 'red', 'violet', 'teal', 'pink'] as const
-const isTerminal = (category: string) => ['done_success', 'done_failure', 'cancelled'].includes(category)
-const title = (value: string) => `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`
-const newStage = (): Stage => ({ id: crypto.randomUUID(), name: '', category: 'open', color: 'blue', position: 0 })
-
-function StageRow({
-  stage,
-  index,
-  onChange,
-  onRemove,
-}: Readonly<{ stage: Stage; index: number; onChange: (changes: Partial<Stage>) => void; onRemove: () => void }>) {
-  return (
-    <div className="grid gap-2 rounded-md border bg-muted/20 p-3 sm:grid-cols-[2rem_minmax(0,1fr)_9rem_8rem_6rem_auto] sm:items-end">
-      <span className="pb-2 text-xs font-medium text-muted-foreground" aria-label={`Stage ${index + 1}`}>
-        {index + 1}
-      </span>
-      <label className="grid gap-1 text-xs">
-        <span className="font-medium">Name</span>
-        <input
-          className="h-9 rounded-md border bg-background px-2 text-sm"
-          maxLength={60}
-          value={stage.name}
-          onChange={(event) => {
-            onChange({ name: event.target.value })
-          }}
-        />
-      </label>
-      <label className="grid gap-1 text-xs">
-        <span className="font-medium">Category</span>
-        <select
-          className="h-9 rounded-md border bg-background px-2"
-          value={stage.category}
-          onChange={(event) => {
-            onChange({ category: event.target.value })
-          }}
-        >
-          {CATEGORIES.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1 text-xs">
-        <span className="font-medium">Colour</span>
-        <select
-          className="h-9 rounded-md border bg-background px-2"
-          value={stage.color}
-          onChange={(event) => {
-            onChange({ color: event.target.value })
-          }}
-        >
-          {COLORS.map((value) => (
-            <option key={value} value={value}>
-              {title(value)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1 text-xs">
-        <span className="font-medium">Probability</span>
-        <input
-          className="h-9 rounded-md border bg-background px-2"
-          type="number"
-          min={0}
-          max={100}
-          value={stage.probability ?? ''}
-          onChange={(event) => {
-            onChange({ probability: event.target.value === '' ? undefined : Number(event.target.value) })
-          }}
-        />
-      </label>
-      <button
-        className="h-9 rounded-md px-2 text-xs text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        type="button"
-        aria-label={`Remove ${stage.name || `stage ${index + 1}`}`}
-        onClick={onRemove}
-      >
-        Remove
-      </button>
-    </div>
-  )
-}
-
+/* Workflow creation and card editing remain one focused settings surface. */
 function WorkflowCard({
   workflow,
   action,

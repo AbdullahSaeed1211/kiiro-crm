@@ -19,7 +19,7 @@ export type {
   ScopeExtension,
   ScopeFilter,
 } from './contracts/access'
-export type { MailMessage, MailSender, StageStore, UnitOfWork } from './contracts/ports'
+export type { MailAttachment, MailMessage, MailSender, StageStore, UnitOfWork } from './contracts/ports'
 export type { NotificationInput, NotificationStore, NotificationType } from './contracts/notifications'
 export { can, inScope, isManagerUp } from './permissions/policy'
 export { createScopeFilter, MATCH_NOTHING } from './permissions/scope'

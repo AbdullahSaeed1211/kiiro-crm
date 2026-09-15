@@ -1,4 +1,5 @@
 import config from '@payload-config'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getPayload, type Payload, type PayloadRequest } from 'payload'
 import { authenticate } from '../../../../../server/collaboration/auth'
 import { canReadParent } from '../../../../../server/collaboration/parents'
@@ -14,6 +15,7 @@ export const dynamic = 'force-dynamic'
 const MAX_RECIPIENTS = 50
 const MAX_SUBJECT = 998
 const MAX_BODY = 200_000
+const MAX_TOTAL_ATTACHMENT_BYTES = 5 * 1024 * 1024 - 128 * 1024
 type RecordType = 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal'
 
 function isEmail(value: string): boolean {
@@ -65,12 +67,20 @@ function parseInput(value: unknown): SendInput | Response {
   }
 }
 
-async function attachmentsBelongToRecord(
+interface AuthorizedAttachment {
+  readonly id: string
+  readonly fileKey: string
+  readonly fileName: string
+  readonly mime: string
+  readonly sizeBytes: number
+}
+
+async function loadAttachments(
   payload: Payload,
   input: SendInput,
   user: Record<string, unknown>,
-): Promise<boolean> {
-  if (input.attachmentIds.length === 0) return true
+): Promise<readonly AuthorizedAttachment[] | null> {
+  if (input.attachmentIds.length === 0) return []
   const result = await payload.find({
     collection: 'attachments',
     where: {
@@ -86,7 +96,28 @@ async function attachmentsBelongToRecord(
     overrideAccess: false,
     user,
   })
-  return result.docs.length === input.attachmentIds.length
+  if (result.docs.length !== input.attachmentIds.length) return null
+  // eslint-disable-next-line complexity -- malformed attachment records are rejected at one normalization boundary.
+  const attachments = result.docs.flatMap((doc) => {
+    const value = doc as unknown as Record<string, unknown>
+    const id = typeof value.id === 'string' ? value.id : null
+    const fileKey = typeof value.fileKey === 'string' ? value.fileKey : null
+    const fileName = typeof value.fileName === 'string' ? value.fileName : null
+    const mime = typeof value.mime === 'string' ? value.mime : null
+    const sizeBytes = typeof value.sizeBytes === 'number' ? value.sizeBytes : null
+    return id === null || fileKey === null || fileName === null || mime === null || sizeBytes === null
+      ? []
+      : [{ id, fileKey, fileName, mime, sizeBytes }]
+  })
+  return attachments.length === input.attachmentIds.length ? attachments : null
+}
+
+function base64(bytes: ArrayBuffer): string {
+  const data = new Uint8Array(bytes)
+  let binary = ''
+  for (let index = 0; index < data.length; index += 0x8000)
+    binary += String.fromCharCode(...data.subarray(index, Math.min(index + 0x8000, data.length)))
+  return btoa(binary)
 }
 
 function requestForUser(payload: Payload, user: Record<string, unknown>): PayloadRequest {
@@ -108,7 +139,21 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = parseInput(body)
   if (parsed instanceof Response) return parsed
   if (!(await canReadParent(payload, context, parsed))) return forbidden()
-  if (!(await attachmentsBelongToRecord(payload, parsed, context.user))) return forbidden()
+  const attachments = await loadAttachments(payload, parsed, context.user)
+  if (attachments === null) return forbidden()
+  if (attachments.reduce((total, attachment) => total + attachment.sizeBytes, 0) > MAX_TOTAL_ATTACHMENT_BYTES)
+    return badRequest('Attachments exceed the 5 MiB message limit.')
+  const { env } = await getCloudflareContext({ async: true })
+  const mailAttachments = []
+  for (const attachment of attachments) {
+    const object = await env.R2.get(attachment.fileKey)
+    if (object === null) return Response.json({ error: 'Attachment is no longer available.' }, { status: 409 })
+    mailAttachments.push({
+      filename: attachment.fileName,
+      contentType: attachment.mime,
+      content: base64(await object.arrayBuffer()),
+    })
+  }
 
   const requestPayload = requestForUser(payload, context.user)
   const provisionalId = `queued-${crypto.randomUUID()}`
@@ -149,6 +194,7 @@ export async function POST(request: Request): Promise<Response> {
       subject: parsed.subject,
       text: parsed.textBody,
       html: `<p>${parsed.textBody.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br />')}</p>`,
+      ...(mailAttachments.length === 0 ? {} : { attachments: mailAttachments }),
     })
     const providerId =
       typeof result === 'object' && result !== null && 'messageId' in result ? result.messageId : undefined

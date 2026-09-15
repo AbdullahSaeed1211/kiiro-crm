@@ -7,6 +7,7 @@ export interface EmailServiceMessage {
   text: string
   replyTo?: string
   headers?: Record<string, string>
+  attachments?: { content: string; filename: string; type: string; disposition: 'attachment' }[]
 }
 
 /** Result of a successful Email Service `send()` call. */

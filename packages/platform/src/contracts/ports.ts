@@ -37,6 +37,13 @@ export interface MailMessage {
   readonly text: string
   readonly replyTo?: string
   readonly headers?: Readonly<Record<string, string>>
+  readonly attachments?: readonly MailAttachment[]
+}
+
+export interface MailAttachment {
+  readonly filename: string
+  readonly contentType: string
+  readonly content: string
 }
 
 /** Outbound email port implemented by Cloudflare Email Service, Resend or the console. */

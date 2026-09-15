@@ -31,12 +31,25 @@ export function payloadEmailAdapter(options: PayloadEmailAdapterOptions) {
     defaultFromName: options.fromName,
     sendEmail: async (message: object) => {
       const to = field(message, 'to')
+      const rawAttachments: unknown = field(message, 'attachments')
+      const attachments = Array.isArray(rawAttachments)
+        ? rawAttachments.flatMap((entry: unknown) => {
+            if (typeof entry !== 'object' || entry === null) return []
+            const filename = textOf(field(entry, 'filename'))
+            const content = field(entry, 'content')
+            const contentType = textOf(field(entry, 'contentType'))
+            return typeof content === 'string' && filename !== ''
+              ? [{ filename, contentType: contentType || 'application/octet-stream', content }]
+              : []
+          })
+        : []
       const result = await options.sender.send({
         from,
         to: (Array.isArray(to) ? to : [to]).map(addressOf).filter((address) => address !== undefined),
         subject: textOf(field(message, 'subject')),
         html: textOf(field(message, 'html')),
         text: textOf(field(message, 'text')),
+        ...(attachments.length === 0 ? {} : { attachments }),
       })
       if (!result.ok) throw new Error(`Email send failed (${result.error.code})`)
       return result.value

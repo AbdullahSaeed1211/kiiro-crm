@@ -3,6 +3,9 @@ import type { MailMessage, MailSender } from '@ops/platform'
 import { describe, expect, it } from 'vitest'
 import { payloadEmailAdapter } from '../../src/mail/payload-email-adapter'
 
+const ATTACHMENT_CONTENT = 'JVBERi0xLjQ='
+const RECIPIENT = 'a@example.test'
+
 function recordingSender(fail = false) {
   const sent: MailMessage[] = []
   const sender: MailSender = {
@@ -21,7 +24,7 @@ describe('payloadEmailAdapter', () => {
     const { sender, sent } = recordingSender()
     const adapter = payloadEmailAdapter({ ...options, sender })()
     const result = await adapter.sendEmail({
-      to: ['a@example.test', { address: 'b@example.test' }],
+      to: [RECIPIENT, { address: 'b@example.test' }],
       subject: 'Hi',
       html: '<p>x</p>',
       text: 'x',
@@ -42,6 +45,19 @@ describe('payloadEmailAdapter', () => {
   it('throws when the sender fails', async () => {
     const { sender } = recordingSender(true)
     const adapter = payloadEmailAdapter({ ...options, sender })()
-    await expect(adapter.sendEmail({ to: 'a@example.test' })).rejects.toThrow('UNAVAILABLE')
+    await expect(adapter.sendEmail({ to: RECIPIENT })).rejects.toThrow('UNAVAILABLE')
+  })
+
+  it('maps Payload attachments to the platform sender', async () => {
+    const { sender, sent } = recordingSender()
+    const adapter = payloadEmailAdapter({ ...options, sender })()
+    await adapter.sendEmail({
+      to: RECIPIENT,
+      subject: 'Attached',
+      attachments: [{ filename: 'brief.pdf', content: ATTACHMENT_CONTENT, contentType: 'application/pdf' }],
+    })
+    expect(sent[0]?.attachments).toEqual([
+      { filename: 'brief.pdf', contentType: 'application/pdf', content: ATTACHMENT_CONTENT },
+    ])
   })
 })

@@ -4,6 +4,8 @@ import { CloudflareMailSender } from '../../src/mail/cloudflare-mail-sender'
 import type { EmailServiceMessage, EmailServiceResult } from '../../src/mail/send-email-binding'
 import { isSenderNotVerified } from '../../src/mail/send-errors'
 
+/* eslint-disable max-lines-per-function -- wire mapping cases intentionally remain together. */
+
 const MESSAGE: MailMessage = {
   from: 'Workspace <no-reply@notify.example.test>',
   to: ['person@example.test'],
@@ -40,6 +42,17 @@ describe('CloudflareMailSender', () => {
     const { sender, calls } = senderWith(() => Promise.resolve({ messageId: 'msg-2' }))
     await sender.send(MESSAGE)
     expect(calls[0]).toStrictEqual(MESSAGE)
+  })
+
+  it('passes base64 attachments through to Email Service', async () => {
+    const { sender, calls } = senderWith(() => Promise.resolve({ messageId: 'msg-attachment' }))
+    await sender.send({
+      ...MESSAGE,
+      attachments: [{ filename: 'brief.pdf', contentType: 'application/pdf', content: 'JVBERi0xLjQ=' }],
+    })
+    expect(calls[0]?.attachments).toEqual([
+      { filename: 'brief.pdf', type: 'application/pdf', content: 'JVBERi0xLjQ=', disposition: 'attachment' },
+    ])
   })
 
   it.each([
