@@ -155,7 +155,7 @@ export function AppFrame({
   return (
     <AppShell
       defaultOpen={defaultOpen}
-      utilities={<WorkspaceTools />}
+      utilities={<WorkspaceTools locale={locale} />}
       sidebar={
         <AppSidebar
           appName={appName}
