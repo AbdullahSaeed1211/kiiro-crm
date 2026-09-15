@@ -36,7 +36,10 @@ export function SavedViewList({
     <>
       <ul className="divide-y rounded-lg border" aria-label="Saved views">
         {views.map((view) => (
-          <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm" key={view.id}>
+          <li
+            className="flex flex-col items-stretch gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+            key={view.id}
+          >
             {editingId === view.id ? (
               <label className="min-w-48 flex-1">
                 <span className="sr-only">Saved view name</span>
@@ -59,8 +62,8 @@ export function SavedViewList({
             ) : (
               <span className="min-w-48 flex-1 truncate font-medium">{view.name}</span>
             )}
-            <span className="flex shrink-0 flex-wrap items-center justify-end gap-3">
-              <span className="text-xs text-muted-foreground">
+            <span className="flex w-full flex-wrap items-center justify-start gap-3 sm:w-auto sm:justify-end">
+              <span className="text-xs text-muted-foreground sm:whitespace-nowrap">
                 {recordTypeLabel(view.recordType)} · {view.ownerId === null ? 'Shared' : 'Personal'} · {view.kind}
               </span>
               {view.pinned ? <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">Pinned</span> : null}

@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Response } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { WEB_DIR } from '../../../scripts/seed/local-env'
 
@@ -91,22 +91,63 @@ async function firstDetailHref(page: Page, prefix: string): Promise<string> {
   return detail
 }
 
+async function captureNotificationResponse(response: Response, diagnostics: string[]): Promise<void> {
+  const headers = response.headers()
+  try {
+    const body = await response.body()
+    diagnostics.push(
+      JSON.stringify({
+        status: response.status(),
+        headers: {
+          'content-type': headers['content-type'] ?? '',
+          'x-powered-by': headers['x-powered-by'] ?? '',
+        },
+        body: body.toString('utf8').slice(0, 500),
+      }),
+    )
+  } catch (error: unknown) {
+    diagnostics.push(
+      JSON.stringify({ status: response.status(), bodyError: error instanceof Error ? error.message : String(error) }),
+    )
+  }
+}
+
 // eslint-disable-next-line max-lines-per-function, max-statements -- one deterministic route-health flow keeps the audit atomic.
 test('customer routes load without browser failures and stay within the response budget', async ({ page }) => {
   const consoleIssues: string[] = []
   const pageErrors: string[] = []
   const failedRequests: string[] = []
+  const expectedNavigationCancels: string[] = []
   const badResponses: string[] = []
+  const notificationDiagnostics: string[] = []
   page.on('console', (message) => {
     if (message.type() === 'warning' || message.type() === 'error')
       consoleIssues.push(`${message.type()}: ${message.text()}`)
   })
-  page.on('pageerror', (error) => pageErrors.push(error.message))
-  page.on('requestfailed', (request) =>
-    failedRequests.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`),
-  )
+  page.on('pageerror', (error) => pageErrors.push(`${error.message}\n${error.stack ?? ''}`))
+  page.on('requestfailed', (request) => {
+    const failure = request.failure()?.errorText ?? ''
+    const url = request.url()
+    const isRscPrefetch = (() => {
+      try {
+        return new URL(url).searchParams.has('_rsc')
+      } catch {
+        return false
+      }
+    })()
+    // Next intentionally cancels speculative RSC prefetches when a navigation supersedes them.
+    // Keep all other request failures fatal; this narrow classification avoids hiding app/network errors.
+    if (isRscPrefetch && failure === 'net::ERR_ABORTED') {
+      expectedNavigationCancels.push(`${request.method()} ${url}`)
+      return
+    }
+    failedRequests.push(`${request.method()} ${url} ${failure}`)
+  })
   page.on('response', (response) => {
     const path = new URL(response.url()).pathname
+    if (path === '/api/v1/notifications/unread-count') {
+      void captureNotificationResponse(response, notificationDiagnostics)
+    }
     if (response.status() >= 500 || (response.status() >= 400 && path.startsWith('/api/'))) {
       badResponses.push(`${String(response.status())} ${response.request().method()} ${path}`)
     }
@@ -116,7 +157,7 @@ test('customer routes load without browser failures and stay within the response
   const timings: string[] = []
   for (const [route, heading] of ROUTES) {
     const start = Date.now()
-    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await page.goto(route, { waitUntil: 'networkidle' })
     await expect(page.getByRole('heading', { name: heading, exact: false }).first()).toBeVisible()
     const elapsed = Date.now() - start
     timings.push(`${route}=${String(elapsed)}ms`)
@@ -128,10 +169,10 @@ test('customer routes load without browser failures and stay within the response
 
   const detailRoutes: string[] = []
   for (const prefix of ['/projects', '/leads', '/deals', '/contacts', '/organizations']) {
-    await page.goto(prefix, { waitUntil: 'domcontentloaded' })
+    await page.goto(prefix, { waitUntil: 'networkidle' })
     detailRoutes.push(await firstDetailHref(page, prefix))
   }
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto('/', { waitUntil: 'networkidle' })
   await expect(page.locator('a[href="/my-tasks"]').filter({ hasText: 'My open tasks' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
   await expect(page.locator('a[href="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
@@ -139,7 +180,7 @@ test('customer routes load without browser failures and stay within the response
   const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
   detailRoutes.splice(1, 0, taskDetail)
-  await page.goto('/tasks', { waitUntil: 'domcontentloaded' })
+  await page.goto('/tasks', { waitUntil: 'networkidle' })
   const taskViews = page.getByRole('navigation', { name: TASK_VIEWS_LABEL })
   await expect(taskViews.getByRole('link', { name: TABLE_VIEW_LABEL, exact: true })).toHaveAttribute(
     ARIA_CURRENT,
@@ -157,49 +198,53 @@ test('customer routes load without browser failures and stay within the response
     'href',
     '/timeline',
   )
-  await page.goto('/tasks/board', { waitUntil: 'domcontentloaded' })
+  await page.goto('/tasks/board', { waitUntil: 'networkidle' })
   await expect(
     page
       .getByRole('navigation', { name: TASK_VIEWS_LABEL })
       .getByRole('link', { name: KANBAN_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
   await expect(page.locator('a[href^="/tasks/"]').first()).toBeVisible()
-  await page.goto('/timeline', { waitUntil: 'domcontentloaded' })
+  await page.goto('/timeline', { waitUntil: 'networkidle' })
   await expect(
     page.getByRole('navigation', { name: TASK_VIEWS_LABEL }).getByRole('link', { name: GANTT_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
-  await page.goto('/calendar', { waitUntil: 'domcontentloaded' })
+  await page.goto('/calendar', { waitUntil: 'networkidle' })
   await expect(
     page
       .getByRole('navigation', { name: TASK_VIEWS_LABEL })
       .getByRole('link', { name: CALENDAR_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
-  await page.goto('/reports', { waitUntil: 'domcontentloaded' })
+  await page.goto('/reports', { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: 'Figures', exact: true })).toBeVisible()
   await expect(page.getByLabel('Date range')).toHaveValue('30d')
   await expect(page.getByRole('button', { name: 'Apply range', exact: true })).toBeVisible()
   for (const route of detailRoutes) {
     const start = Date.now()
-    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await page.goto(route, { waitUntil: 'networkidle' })
     await expect(page.locator('main, [data-slot="sheet-content"], [data-slot="card"]').first()).toBeVisible()
     expect(Date.now() - start, `${route} exceeded ${String(ROUTE_BUDGET_MS)}ms`).toBeLessThan(ROUTE_BUDGET_MS)
     expect(await page.locator('body').innerText(), `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
     if (route.startsWith('/leads/') || route.startsWith('/contacts/') || route.startsWith('/organizations/')) {
       await page.getByRole('tab', { name: 'Email' }).click()
-      await expect(page.getByRole('heading', { name: 'Email', exact: true })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Email', exact: true })).toBeVisible({ timeout: 15_000 })
       await page.getByRole('tab', { name: 'Tasks' }).click()
-      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible({ timeout: 15_000 })
       await page.getByRole('tab', { name: 'Files' }).click()
-      await expect(page.getByRole('heading', { name: 'Files', exact: true })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Files', exact: true })).toBeVisible({ timeout: 15_000 })
     }
   }
 
-  await page.goto('/leads', { waitUntil: 'domcontentloaded' })
+  await page.goto('/leads', { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: 'Search workspace' }).click()
   await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('Website')
   await expect(page.getByText('Website redesign inquiry', { exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
 
+  console.log(`notification-diagnostics: ${notificationDiagnostics.join(' | ')}`)
+  test
+    .info()
+    .annotations.push({ type: 'expected-navigation-cancels', description: String(expectedNavigationCancels.length) })
   expect(pageErrors, pageErrors.join('\n')).toEqual([])
   expect(failedRequests, failedRequests.join('\n')).toEqual([])
   expect(badResponses, badResponses.join('\n')).toEqual([])

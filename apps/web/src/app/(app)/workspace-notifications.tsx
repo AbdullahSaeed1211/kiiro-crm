@@ -53,20 +53,18 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
   const shellCopy = SHELL_COPY[locale]
 
   useEffect(() => {
-    void fetch('/api/v1/notifications/unread-count', { credentials: 'same-origin' })
+    if (!open) return
+    const controller = new AbortController()
+    setLoading(true)
+    void fetch('/api/v1/notifications/unread-count', { credentials: 'same-origin', signal: controller.signal })
       .then((response) => response.json())
       .then((data) => {
-        setCount((data as { count?: number }).count ?? 0)
+        if (!controller.signal.aborted) setCount((data as { count?: number }).count ?? 0)
       })
       .catch(() => {
-        setCount(0)
+        if (!controller.signal.aborted) setCount(0)
       })
-  }, [])
-
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    void fetch('/api/v1/notifications', { credentials: 'same-origin' })
+    void fetch('/api/v1/notifications', { credentials: 'same-origin', signal: controller.signal })
       .then((response) => response.json())
       .then((data) => {
         setItems((data as { notifications?: readonly NotificationItem[] }).notifications ?? [])
@@ -75,8 +73,11 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
         setItems([])
       })
       .finally(() => {
-        setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       })
+    return () => {
+      controller.abort()
+    }
   }, [open])
 
   const select = async (item: NotificationItem) => {
