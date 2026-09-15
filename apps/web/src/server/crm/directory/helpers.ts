@@ -13,6 +13,9 @@ import type {
 function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
+function record(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null
+}
 function refId(value: unknown): string | null {
   if (typeof value === 'string') return value
   if (value !== null && typeof value === 'object' && 'id' in value) {
@@ -25,16 +28,20 @@ function refId(value: unknown): string | null {
 function textList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
-// eslint-disable-next-line complexity -- attachment records are normalized fail-closed in one boundary.
+function attachment(value: unknown): { readonly id: string; readonly fileName: string } | null {
+  if (typeof value === 'string') return { id: value, fileName: value }
+  const entry = record(value)
+  if (entry === null) return null
+  const id = text(entry.id)
+  if (id === null) return null
+  return { id, fileName: text(entry.fileName) ?? id }
+}
+
 function attachmentList(value: unknown): { readonly id: string; readonly fileName: string }[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((entry) => {
-    if (typeof entry === 'string') return [{ id: entry, fileName: entry }]
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) return []
-    const record = entry as Record<string, unknown>
-    const id = typeof record.id === 'string' ? record.id : null
-    const fileName = typeof record.fileName === 'string' ? record.fileName : id
-    return id === null || fileName === null ? [] : [{ id, fileName }]
+    const item = attachment(entry)
+    return item === null ? [] : [item]
   })
 }
 

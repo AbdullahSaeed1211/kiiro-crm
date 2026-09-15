@@ -107,7 +107,8 @@ export default async function InboxPage({
         ) : (
           <ol className="grid gap-3" aria-label="Email threads">
             {threads.map((thread) => {
-              const message = thread[0]!
+              const message = thread.at(0)
+              if (!message) return null
               const href = recordHref(message)
               return (
                 <li className="rounded-xl border bg-card p-4" key={message.threadKey}>
