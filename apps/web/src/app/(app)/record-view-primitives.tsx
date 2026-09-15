@@ -4,9 +4,11 @@ import type { RecordPageTab } from '@ops/ui/composites/RecordPageLayout'
 import { ArrowUpRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { ActivityItem, EmailThreadMessage } from '../../server/crm/directory/data'
+import type { RecordAttachment, RelatedTask } from '../../server/crm/directory/types'
 import { hasRelationItems } from '../../server/crm/directory/utils'
 import { RecordActivityComposer } from './record-activity-composer'
 import { RecordEmailThread } from './record-email-thread'
+import { RecordFilesTab, RelatedTasksTab } from './record-related-tabs'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
@@ -101,12 +103,40 @@ export function Meta({ createdAt, updatedAt }: Readonly<{ createdAt: number; upd
   )
 }
 
+// eslint-disable-next-line max-params -- the optional related context keeps tab construction explicit at each record boundary.
 export function recordTabs(
   activity: ReactNode,
   emailMessages: readonly EmailThreadMessage[] = [],
+  related?: Readonly<{
+    recordType: string
+    recordId: string
+    tasks: readonly RelatedTask[]
+    attachments: readonly RecordAttachment[]
+  }>,
 ): readonly RecordPageTab[] {
-  return [
+  const tabs: RecordPageTab[] = [
     { id: 'activity', label: 'Activity', content: activity },
-    { id: 'email', label: 'Email', content: <RecordEmailThread messages={emailMessages} /> },
   ]
+  if (related !== undefined) {
+    tabs.push(
+      {
+        id: 'tasks',
+        label: 'Tasks',
+        content: <RelatedTasksTab tasks={related.tasks} recordType={related.recordType} recordId={related.recordId} />,
+      },
+      {
+        id: 'files',
+        label: 'Files',
+        content: (
+          <RecordFilesTab
+            attachments={related.attachments}
+            recordType={related.recordType}
+            recordId={related.recordId}
+          />
+        ),
+      },
+    )
+  }
+  tabs.push({ id: 'email', label: 'Email', content: <RecordEmailThread messages={emailMessages} /> })
+  return tabs
 }

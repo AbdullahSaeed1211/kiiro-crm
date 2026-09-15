@@ -1,24 +1,10 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { Role } from '@ops/platform'
 import { requireRole } from '../../../server/auth/context'
-
-const LINKS = [
-  ['General', '/settings/general'],
-  ['Branding', '/settings/branding'],
-  ['Modules', '/settings/modules'],
-  ['Terminology', '/settings/terminology'],
-  ['Members', '/settings/members'],
-  ['Groups', '/settings/groups'],
-  ['Workflows', '/settings/workflows'],
-  ['Fields', '/settings/fields'],
-  ['Views', '/settings/views'],
-  ['Notifications', '/settings/notifications'],
-  ['Import', '/settings/import'],
-  ['Profile', '/settings/profile'],
-] as const
+import { SettingsNav } from './settings-nav'
+import { normalizeLocale } from '../../../i18n/config'
 
 export async function SettingsPage({
   title,
@@ -26,23 +12,15 @@ export async function SettingsPage({
   roles,
   children,
 }: Readonly<{ title: string; description: string; roles: readonly Role[]; children?: ReactNode }>) {
-  await requireRole(...roles)
+  const context = await requireRole(...roles)
+  const settings = (await context.payload.findGlobal({ slug: 'settings', depth: 0, req: context.req })) as unknown as Record<string, unknown>
+  const locale = normalizeLocale(settings.locale)
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Settings' }, { label: title }]} />
       <PageContent>
-        <div className="grid w-full gap-8 md:grid-cols-[13rem_1fr]">
-          <nav aria-label="Settings" className="space-y-1">
-            {LINKS.map(([label, href]) => (
-              <Link
-                className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                href={href}
-                key={href}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
+        <div className="grid w-full gap-8 md:grid-cols-[14rem_minmax(0,1fr)]">
+          <SettingsNav role={context.actor.role} locale={locale} />
           <section className="min-w-0 max-w-3xl space-y-6">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -61,7 +39,7 @@ export async function SettingsPage({
 }
 
 export function SettingsForm({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="space-y-4 rounded-xl border bg-background p-6 shadow-sm">{children}</div>
+  return <div className="ops-settings-form space-y-4 rounded-xl border bg-background p-6 shadow-sm">{children}</div>
 }
 
 export function SettingRow({ label, value }: Readonly<{ label: string; value: string }>) {

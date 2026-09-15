@@ -29,6 +29,21 @@ export interface InboxEmailMessage extends EmailThreadMessage {
   readonly recordId: string | null
 }
 
+export interface RelatedTask {
+  readonly id: string
+  readonly title: string
+  readonly priority: string
+  readonly dueAt: number | null
+  readonly completedAt: number | null
+}
+
+export interface RecordAttachment {
+  readonly id: string
+  readonly fileName: string
+  readonly mime: string
+  readonly sizeBytes: number
+}
+
 export interface OrganizationListItem {
   readonly record: OrganizationRecord
   readonly owner: PersonSummary | null

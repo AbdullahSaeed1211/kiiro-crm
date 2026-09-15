@@ -99,14 +99,20 @@ function LeadActions({
   )
 }
 
-function leadTabs(activity: readonly ActivityEntry[], emailMessages: LeadPageData['emailMessages']) {
+function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[]) {
   return recordTabs(
     <ActivityFeed
       entries={activity}
       labels={{ heading: 'Activity', empty: 'No activity yet', loadMore: 'Load more', systemActor: 'System' }}
       locale="en"
     />,
-    emailMessages,
+    data.emailMessages,
+    {
+      recordType: 'lead',
+      recordId: data.item.lead.id,
+      tasks: data.relatedTasks,
+      attachments: data.attachments,
+    },
   )
 }
 
@@ -181,7 +187,7 @@ function LeadRecordLayout({
             <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
           </div>
         }
-        tabs={leadTabs(activity, data.emailMessages)}
+        tabs={leadTabs(data, activity)}
         aside={<LeadAside data={data} />}
       />
     </>

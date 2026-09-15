@@ -8,6 +8,8 @@ import type {
   EmailThreadMessage,
   OrganizationRelations,
   PersonSummary,
+  RecordAttachment,
+  RelatedTask,
 } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
 import { safeExternalHref } from '../../server/crm/directory/utils'
@@ -103,9 +105,11 @@ export function OrganizationRecordView({
     relations: OrganizationRelations
     activity: readonly ActivityItem[]
     emailMessages: readonly EmailThreadMessage[]
+    relatedTasks: readonly RelatedTask[]
+    attachments: readonly RecordAttachment[]
   }
 }>) {
-  const { record, owner, relations, activity, emailMessages } = data
+  const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }, { label: record.name }]} />
@@ -132,6 +136,7 @@ export function OrganizationRecordView({
           tabs={recordTabs(
             <Activity entries={activity} recordType="organization" recordId={record.id} />,
             emailMessages,
+            { recordType: 'organization', recordId: record.id, tasks: relatedTasks, attachments },
           )}
           aside={<OrganizationAside record={record} owner={owner} relations={relations} />}
         />

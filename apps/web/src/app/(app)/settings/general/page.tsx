@@ -3,6 +3,7 @@ import { requireRole } from '../../../../server/auth/context'
 import { updateSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
+import { LOCALE_LABELS } from '../../../../i18n/config'
 
 export const metadata: Metadata = { title: 'General' }
 export const dynamic = 'force-dynamic'
@@ -38,8 +39,8 @@ export default async function GeneralSettingsPage() {
                 label: 'Locale',
                 type: 'select',
                 options: [
-                  { value: 'en', label: 'English' },
-                  { value: 'es', label: 'Spanish' },
+                  { value: 'en', label: LOCALE_LABELS.en },
+                  { value: 'es', label: LOCALE_LABELS.es },
                 ],
               },
               { name: 'currency', label: 'Currency' },

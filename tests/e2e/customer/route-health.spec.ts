@@ -131,9 +131,13 @@ test('customer routes load without browser failures and stay within the response
     await expect(page.locator('main, [data-slot="sheet-content"], [data-slot="card"]').first()).toBeVisible()
     expect(Date.now() - start, `${route} exceeded ${String(ROUTE_BUDGET_MS)}ms`).toBeLessThan(ROUTE_BUDGET_MS)
     expect(await page.locator('body').innerText(), `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
-    if (route.startsWith('/contacts/') || route.startsWith('/organizations/')) {
+    if (route.startsWith('/leads/') || route.startsWith('/contacts/') || route.startsWith('/organizations/')) {
       await page.getByRole('tab', { name: 'Email' }).click()
       await expect(page.getByRole('heading', { name: 'Email', exact: true })).toBeVisible()
+      await page.getByRole('tab', { name: 'Tasks' }).click()
+      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible()
+      await page.getByRole('tab', { name: 'Files' }).click()
+      await expect(page.getByRole('heading', { name: 'Files', exact: true })).toBeVisible()
     }
   }
 

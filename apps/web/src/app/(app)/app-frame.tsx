@@ -20,26 +20,27 @@ import {
 import { usePathname } from 'next/navigation'
 import { useEffect, type ReactNode } from 'react'
 import { WorkspaceTools } from './workspace-tools'
+import { SHELL_COPY, type Locale } from '../../i18n/config'
 
-type NavLink = readonly [label: string, href: string, icon: LucideIcon]
+type NavLink = readonly [key: string, href: string, icon: LucideIcon]
 
 const GENERAL: readonly NavLink[] = [
-  ['Dashboard', '/', LayoutDashboard],
-  ['My tasks', '/my-tasks', CircleCheckBig],
+  ['dashboard', '/', LayoutDashboard],
+  ['myTasks', '/my-tasks', CircleCheckBig],
 ]
 
 const CRM: readonly NavLink[] = [
-  ['Leads', '/leads', UserPlus],
-  ['Deals', '/deals', Handshake],
-  ['Organizations', '/organizations', Building2],
-  ['Contacts', '/contacts', Contact],
+  ['leads', '/leads', UserPlus],
+  ['deals', '/deals', Handshake],
+  ['organizations', '/organizations', Building2],
+  ['contacts', '/contacts', Contact],
 ]
 
 const WORK: readonly NavLink[] = [
-  ['Projects', '/projects', FolderKanban],
-  ['Tasks', '/tasks', ListTodo],
-  ['Calendar', '/calendar', CalendarDays],
-  ['Timeline', '/timeline', ChartGantt],
+  ['projects', '/projects', FolderKanban],
+  ['tasks', '/tasks', ListTodo],
+  ['calendar', '/calendar', CalendarDays],
+  ['timeline', '/timeline', ChartGantt],
 ]
 
 // Exact match for the dashboard, prefix match for sections with detail routes (spec §16.2).
@@ -52,31 +53,39 @@ function navGroups({
   modules,
   terminology,
   role,
+  locale,
 }: Readonly<{
   pathname: string
   modules: Readonly<Record<string, boolean>>
   terminology: Readonly<Record<string, unknown>>
   role: string
+  locale: Locale
 }>): NavGroup[] {
-  const item = ([label, href, icon]: NavLink) => ({ label, href, icon, active: isActive(pathname, href) })
+  const copy = SHELL_COPY[locale]
   const label = (key: string, fallback: string) => {
     const value = terminology[key]
     return typeof value === 'string' && value !== '' ? value : fallback
   }
+  const item = ([key, href, icon]: NavLink) => ({
+    label: label(key, copy[key] ?? key),
+    href,
+    icon,
+    active: isActive(pathname, href),
+  })
   const groups: NavGroup[] = [{ id: 'general', items: GENERAL.map(item) }]
   if (modules.mail && (role === 'owner' || role === 'manager'))
-    groups[0] = { id: 'general', items: [...GENERAL.map(item), item(['Inbox', '/inbox', Mail])] }
+    groups[0] = { id: 'general', items: [...GENERAL.map(item), item(['inbox', '/inbox', Mail])] }
   if (modules.crm)
     groups.push({
       id: 'crm',
-      label: label('crmGroup', 'CRM'),
-      items: CRM.map(([text, href, icon]) => item([label(text.toLowerCase(), text), href, icon])),
+      label: label('crmGroup', copy.crm),
+      items: CRM.map(item),
     })
   if (modules.work)
     groups.push({
       id: 'work',
-      label: label('workGroup', 'Work'),
-      items: WORK.map(([text, href, icon]) => item([label(text.toLowerCase().replaceAll(' ', ''), text), href, icon])),
+      label: label('workGroup', copy.work),
+      items: WORK.map(item),
     })
   return groups
 }
@@ -113,6 +122,7 @@ export function AppFrame({
   userName,
   userEmail,
   role,
+  locale,
   children,
 }: Readonly<{
   defaultOpen: boolean
@@ -123,14 +133,15 @@ export function AppFrame({
   userName: string
   userEmail: string
   role: string
+  locale: Locale
   children: ReactNode
 }>) {
   const pathname = usePathname()
   useEffect(() => {
     const segment = pathname.split('/').find(Boolean)
-    let label = 'Dashboard'
-    if (segment !== undefined)
-      label = segment === 'my-tasks' ? 'My tasks' : `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`
+    const copy = SHELL_COPY[locale]
+    const segmentKey = segment === 'my-tasks' ? 'myTasks' : segment
+    const label = segmentKey === undefined ? copy.dashboard : (copy[segmentKey] ?? `${segmentKey.charAt(0).toUpperCase()}${segmentKey.slice(1)}`)
     const title = `${label} · ${appName}`
     document.title = title
     const timer = window.setTimeout(() => {
@@ -139,7 +150,7 @@ export function AppFrame({
     return () => {
       window.clearTimeout(timer)
     }
-  }, [appName, pathname])
+  }, [appName, locale, pathname])
   return (
     <AppShell
       defaultOpen={defaultOpen}
@@ -158,7 +169,7 @@ export function AppFrame({
               />
             )
           }
-          groups={navGroups({ pathname, modules, terminology, role })}
+          groups={navGroups({ pathname, modules, terminology, role, locale })}
           footer={<SidebarAccount name={userName} email={userEmail} role={role} />}
         />
       }

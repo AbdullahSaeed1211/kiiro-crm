@@ -1,5 +1,13 @@
+/* eslint-disable max-lines -- related record loaders share the same authorization and normalization boundary. */
 import type { RequestContext } from '../../work/deps'
-import type { ActivityItem, EmailThreadMessage, InboxEmailMessage, PersonSummary } from './types'
+import type {
+  ActivityItem,
+  EmailThreadMessage,
+  InboxEmailMessage,
+  PersonSummary,
+  RecordAttachment,
+  RelatedTask,
+} from './types'
 
 function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null
@@ -122,6 +130,65 @@ export async function listInboxMessages(context: RequestContext): Promise<readon
     return message === null || message.id === ''
       ? []
       : [{ ...message, recordType, recordId }]
+  })
+}
+
+export async function listRelatedTasks(
+  context: RequestContext,
+  recordType: string,
+  recordId: string,
+): Promise<readonly RelatedTask[]> {
+  const result = await context.payload.find({
+    collection: 'tasks',
+    where: { and: [{ relatedType: { equals: recordType } }, { relatedId: { equals: recordId } }] },
+    sort: '-createdAt',
+    limit: 50,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    user: context.req.user,
+    req: context.req,
+  })
+  return result.docs.flatMap((entry) => {
+    const value = entry as unknown as Record<string, unknown>
+    const id = text(value.id)
+    const title = text(value.title)
+    if (id === null || title === null) return []
+    return [
+      {
+        id,
+        title,
+        priority: text(value.priority) ?? 'none',
+        dueAt: typeof value.dueAt === 'number' ? value.dueAt : null,
+        completedAt: typeof value.completedAt === 'number' ? value.completedAt : null,
+      },
+    ]
+  })
+}
+
+export async function listRecordAttachments(
+  context: RequestContext,
+  recordType: string,
+  recordId: string,
+): Promise<readonly RecordAttachment[]> {
+  const result = await context.payload.find({
+    collection: 'attachments',
+    where: { and: [{ recordType: { equals: recordType } }, { recordId: { equals: recordId } }] },
+    sort: '-createdAt',
+    limit: 50,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    user: context.req.user,
+    req: context.req,
+  })
+  return result.docs.flatMap((entry) => {
+    const value = entry as unknown as Record<string, unknown>
+    const id = text(value.id)
+    const fileName = text(value.fileName)
+    const mime = text(value.mime)
+    const sizeBytes = typeof value.sizeBytes === 'number' ? value.sizeBytes : 0
+    return id === null || fileName === null || mime === null ? [] : [{ id, fileName, mime, sizeBytes }]
   })
 }
 

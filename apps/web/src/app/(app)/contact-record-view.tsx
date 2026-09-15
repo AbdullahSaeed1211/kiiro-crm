@@ -3,7 +3,7 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
 import type { ContactRecord } from '@ops/module-crm'
-import type { ActivityItem, ContactRelations, EmailThreadMessage, PersonSummary } from '../../server/crm/directory/data'
+import type { ActivityItem, ContactRelations, EmailThreadMessage, PersonSummary, RecordAttachment, RelatedTask } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
 import { CopyButton } from './copy-button'
 import { RecordActionLinks } from './record-action-links'
@@ -94,9 +94,11 @@ export function ContactRecordView({
     relations: ContactRelations
     activity: readonly ActivityItem[]
     emailMessages: readonly EmailThreadMessage[]
+    relatedTasks: readonly RelatedTask[]
+    attachments: readonly RecordAttachment[]
   }
 }>) {
-  const { record, owner, relations, activity, emailMessages } = data
+  const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
   const title = displayName(record)
   return (
     <>
@@ -121,7 +123,12 @@ export function ContactRecordView({
               phone={record.phone}
             />
           }
-          tabs={recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages)}
+          tabs={recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages, {
+            recordType: 'contact',
+            recordId: record.id,
+            tasks: relatedTasks,
+            attachments,
+          })}
           aside={<ContactAside record={record} owner={owner} relations={relations} />}
         />
       </PageContent>

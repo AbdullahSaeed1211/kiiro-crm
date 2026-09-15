@@ -1,11 +1,28 @@
+/* eslint-disable max-lines -- directory data keeps list and authorized detail loaders together. */
 import { createCrmRepository } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
 import { getRequestContext } from '../../work/deps'
-import { listActivities, listEmailMessages, listProjects, loadPeople } from './helpers'
-import type { ActivityItem, ContactListItem, EmailThreadMessage, OrganizationListItem, PersonSummary } from './types'
+import { listActivities, listEmailMessages, listProjects, listRecordAttachments, listRelatedTasks, loadPeople } from './helpers'
+import type {
+  ActivityItem,
+  ContactListItem,
+  EmailThreadMessage,
+  OrganizationListItem,
+  PersonSummary,
+  RecordAttachment,
+  RelatedTask,
+} from './types'
 import { displayName, type DirectorySort } from './utils'
 
-export type { ActivityItem, ContactListItem, InboxEmailMessage, OrganizationListItem, PersonSummary } from './types'
+export type {
+  ActivityItem,
+  ContactListItem,
+  InboxEmailMessage,
+  OrganizationListItem,
+  PersonSummary,
+  RecordAttachment,
+  RelatedTask,
+} from './types'
 export type { EmailThreadMessage } from './types'
 
 const DIRECTORY_PAGE_SIZE = 50
@@ -167,6 +184,8 @@ export async function getOrganization(id: string): Promise<{
   readonly relations: OrganizationRelations
   readonly activity: readonly ActivityItem[]
   readonly emailMessages: readonly EmailThreadMessage[]
+  readonly relatedTasks: readonly RelatedTask[]
+  readonly attachments: readonly RecordAttachment[]
 } | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
@@ -176,11 +195,13 @@ export async function getOrganization(id: string): Promise<{
     repo.list('deal'),
   ])
   if (record === undefined) return null
-  const [people, projects, activity, emailMessages] = await Promise.all([
+  const [people, projects, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
     listProjects(context, record.id),
     listActivities(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
     listEmailMessages(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
+    listRelatedTasks(context, 'organization', record.id),
+    listRecordAttachments(context, 'organization', record.id),
   ])
   return {
     record,
@@ -192,15 +213,20 @@ export async function getOrganization(id: string): Promise<{
     },
     activity,
     emailMessages,
+    relatedTasks,
+    attachments,
   }
 }
 
+// eslint-disable-next-line max-lines-per-function -- contact detail loads relations, timeline, mail, tasks, and files together.
 export async function getContact(id: string): Promise<{
   readonly record: ContactRecord
   readonly owner: PersonSummary | null
   readonly relations: ContactRelations
   readonly activity: readonly ActivityItem[]
   readonly emailMessages: readonly EmailThreadMessage[]
+  readonly relatedTasks: readonly RelatedTask[]
+  readonly attachments: readonly RecordAttachment[]
 } | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
@@ -211,10 +237,12 @@ export async function getContact(id: string): Promise<{
     repo.list('deal'),
   ])
   if (record === undefined) return null
-  const [people, activity, emailMessages] = await Promise.all([
+  const [people, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
     listActivities(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
     listEmailMessages(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
+    listRelatedTasks(context, 'contact', record.id),
+    listRecordAttachments(context, 'contact', record.id),
   ])
   const organization =
     record.organizationId === null ? null : (organizations.find((item) => item.id === record.organizationId) ?? null)
@@ -233,6 +261,8 @@ export async function getContact(id: string): Promise<{
     },
     activity,
     emailMessages,
+    relatedTasks,
+    attachments,
   }
 }
 
