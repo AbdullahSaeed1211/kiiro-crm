@@ -75,6 +75,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             defaultOpen={sidebarOpen}
             appName={appName}
             logoUrl={brand.logoUrl ?? '/api/v1/brand/logo'}
+            compactLogoUrl={brand.faviconUrl}
             modules={{
               crm: modulesValue.crm !== false,
               work: modulesValue.work !== false,

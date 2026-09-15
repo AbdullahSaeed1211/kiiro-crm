@@ -133,6 +133,7 @@ export function AppFrame({
   defaultOpen,
   appName,
   logoUrl,
+  compactLogoUrl,
   modules,
   terminology,
   userName,
@@ -144,6 +145,7 @@ export function AppFrame({
   defaultOpen: boolean
   appName: string
   logoUrl: string
+  compactLogoUrl: string
   modules: Readonly<Record<string, boolean>>
   terminology: Readonly<Record<string, unknown>>
   userName: string
@@ -173,7 +175,7 @@ export function AppFrame({
   return (
     <AppShell
       defaultOpen={defaultOpen}
-      utilities={<WorkspaceTools locale={locale} appName={appName} />}
+      utilities={<WorkspaceTools locale={locale} appName={appName} compactLogoUrl={compactLogoUrl} />}
       sidebar={
         <AppSidebar
           appName={appName}
@@ -181,7 +183,7 @@ export function AppFrame({
             <img className="max-h-8 max-w-36 object-contain" src={logoUrl} alt={appName} width={144} height={29} />
           }
           compactLogo={
-            <img className="size-6 object-contain" src="/api/v1/brand/favicon" alt="" width={24} height={24} />
+            <img className="size-6 object-contain" src={compactLogoUrl} alt="" width={24} height={24} />
           }
           groups={navGroups({ pathname, modules, terminology, role, locale })}
           footer={<SidebarAccount name={userName} email={userEmail} role={role} locale={locale} />}
