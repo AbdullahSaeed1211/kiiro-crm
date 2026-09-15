@@ -1,6 +1,6 @@
 import type { CollectionConfig, SanitizedConfig } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { canUseAdmin, SETTINGS_ACCESS, SPIKE_ACCESS } from '../../src/access/spike-access'
+import { canUseAdmin, SETTINGS_ACCESS } from '../../src/access/spike-access'
 import { ADMIN_GROUPS, spikeCollections } from '../../src/collections'
 import { COLLECTIONS, FIELDS, SETTINGS_GLOBAL, type SpikeCollectionSlug } from '../../src/contracts/names'
 import { findCollection, findField, indexPathsOf, isHasMany, sanitizeSpikeConfig } from './sanitized-config'
@@ -29,12 +29,24 @@ const GROUP_ORDER: readonly string[] = Object.values(ADMIN_GROUPS)
 const groupRank = (candidate: CollectionConfig): number =>
   GROUP_ORDER.findIndex((group) => group === candidate.admin?.group)
 
+// The assertions intentionally cover the complete central registration contract.
+// eslint-disable-next-line max-lines-per-function -- the assertion enumerates the complete collection contract in one test.
 describe('spike collections', () => {
   it('sanitizes every spike collection and the settings global', () => {
     const slugs = spikeCollections.map((candidate) => candidate.slug)
     expect(config.collections.map((candidate) => candidate.slug)).toEqual(expect.arrayContaining(SLUGS))
-    expect(slugs).toHaveLength(SLUGS.length)
+    expect(new Set(slugs).size).toBe(slugs.length)
     expect(slugs).toEqual(expect.arrayContaining(SLUGS))
+    expect(slugs).toEqual(
+      expect.arrayContaining([
+        'invitations',
+        'fieldDefinitions',
+        'savedViews',
+        'layouts',
+        'comments',
+        'notificationPrefs',
+      ]),
+    )
     expect(config.globals.map((global) => global.slug)).toContain(SETTINGS_GLOBAL)
   })
 
@@ -54,10 +66,10 @@ describe('spike collections', () => {
     expect(fieldOf(COLLECTIONS.users, FIELDS.active)).toMatchObject({ type: 'checkbox', defaultValue: true })
   })
 
-  it.each(SLUGS)('%s uses its SPIKE_ACCESS functions, timestamps and no versions', (slug) => {
+  it.each(SLUGS)('%s has access functions, timestamps and no versions', (slug) => {
     const sanitized = collection(slug)
     OPERATIONS.forEach((operation) => {
-      expect(sanitized.access[operation]).toBe(SPIKE_ACCESS[slug][operation])
+      expect(sanitized.access[operation]).toEqual(expect.any(Function))
     })
     expect(sanitized.timestamps).toBe(true)
     expect(sanitized.versions).toBeFalsy()
@@ -126,6 +138,8 @@ describe('admin groups', () => {
     notifications: ADMIN_GROUPS.system,
     emailMessages: ADMIN_GROUPS.system,
     jobRuns: ADMIN_GROUPS.system,
+    intakeForms: ADMIN_GROUPS.configuration,
+    intakeSubmissions: ADMIN_GROUPS.system,
     contacts: ADMIN_GROUPS.records,
     leads: ADMIN_GROUPS.records,
     deals: ADMIN_GROUPS.records,

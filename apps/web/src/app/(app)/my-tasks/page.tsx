@@ -7,8 +7,9 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { CircleCheckBig } from 'lucide-react'
 import type { Metadata } from 'next'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+import { taskHref } from '../task-navigation'
 
-export const metadata: Metadata = { title: 'My tasks · Workspace' }
+export const metadata: Metadata = { title: 'My tasks' }
 export const dynamic = 'force-dynamic'
 
 const SECTIONS = [
@@ -54,7 +55,7 @@ export default async function MyTasksPage() {
           {SECTIONS.map(([key, label]) => {
             const rows = buckets[key]
             return (
-              <section className="rounded-lg border bg-card" key={key}>
+              <section className="ops-dashboard-card" key={key}>
                 <header className="flex items-center justify-between border-b px-4 py-3">
                   <h2 className="font-medium">{label}</h2>
                   <span className="text-sm text-muted-foreground">{rows.length}</span>
@@ -65,7 +66,7 @@ export default async function MyTasksPage() {
                   <ul>
                     {rows.map((task) => (
                       <li className="border-b px-4 py-3 last:border-0" key={task.id}>
-                        <a className="font-medium hover:text-primary" href={`/tasks/${task.id}`}>
+                        <a className="font-medium hover:text-primary" href={taskHref(task.id, '/my-tasks')}>
                           {task.title}
                         </a>
                         <span className="ml-3 text-xs text-muted-foreground">{task.priority}</span>

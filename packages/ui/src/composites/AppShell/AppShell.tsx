@@ -10,15 +10,20 @@ export type AppShellProps = Readonly<{
   defaultOpen?: boolean
   /** The page: an `AppHeader` followed by `PageContent`. */
   children: ReactNode
+  /** Persistent workspace controls rendered above each page header. */
+  utilities?: ReactNode
 }>
 
 /** Application frame (spec §16.1): tooltip and sidebar providers, the sidebar and an inset for the page. */
-export function AppShell({ sidebar, defaultOpen = true, children }: AppShellProps) {
+export function AppShell({ sidebar, defaultOpen = true, children, utilities }: AppShellProps) {
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={defaultOpen}>
         {sidebar}
-        <SidebarInset>{children}</SidebarInset>
+        <SidebarInset className="ops-shell-inset">
+          {utilities === undefined ? null : <div className="ops-shell-utilities">{utilities}</div>}
+          {children}
+        </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
   )

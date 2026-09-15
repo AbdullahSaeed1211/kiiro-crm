@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- query matcher fixtures use Vitest asymmetric matchers. */
 import { describe, expect, it } from 'vitest'
 import { createDueItemSource } from '../../src/repositories'
 import { fakePayload } from './fake-payload'
@@ -40,7 +41,7 @@ describe('createDueItemSource query', () => {
     const open = { or: [{ stageId: { not_in: ['s-done', 's-lost'] } }, { stageId: { exists: false } }] }
     expect(calls.map((call) => call.args)).toMatchObject([
       { collection: 'workflows', where: { recordType: { equals: 'task' } }, overrideAccess: true },
-      { collection: 'tasks', where: { and: [...WINDOW, open] }, sort: 'dueAt', limit: 50, overrideAccess: true },
+      { collection: 'tasks', where: { and: [...WINDOW, open] }, sort: 'updatedAt', limit: 50, overrideAccess: true },
     ])
   })
 
@@ -69,5 +70,21 @@ describe('createDueItemSource results', () => {
       { record: { type: 'task', id: 'at-start' }, title: 'Task at-start', assigneeIds: ['u1'], dueAt: FROM },
       { record: { type: 'task', id: 'no-stage' }, title: 'Task no-stage', assigneeIds: ['u1'], dueAt: 1_500 },
     ])
+  })
+
+  it('continues after the supplied updatedAt/id cursor', async () => {
+    const docs = [
+      { ...task('before', 1_100), updatedAt: new Date(1_500).toISOString() },
+      { ...task('same', 1_200), updatedAt: new Date(1_500).toISOString() },
+      { ...task('after', 1_300), updatedAt: new Date(1_500).toISOString() },
+      { ...task('newer', 1_400), updatedAt: new Date(1_600).toISOString() },
+    ]
+    const { source, calls } = setup([workflow], docs)
+    const rows = await source.listDueWithin(FROM, TO, 50, { id: 'before', updatedAt: 1_500 })
+
+    expect(rows.map((row) => row.record.id)).toEqual(['same', 'newer'])
+    expect(calls[1]?.args).toMatchObject({
+      where: { and: [expect.objectContaining({ and: [...WINDOW, expect.any(Object)] }), { or: expect.any(Array) }] },
+    })
   })
 })

@@ -12,7 +12,7 @@ import type {
   WorkRepository,
   WorkTaskRecord,
 } from '@ops/module-work'
-import type { StageStore, Workflow } from '@ops/platform'
+import type { StageStore, StageTransition, Workflow } from '@ops/platform'
 import type { CollectionSlug, PayloadRequest, Where } from 'payload'
 import { COLLECTIONS, FIELDS, RECORD_TYPES } from '../contracts/names'
 import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
@@ -110,6 +110,9 @@ function taskData(draft: TaskDraft): Record<string, unknown> {
     dueAt: draft.dueAt ?? null,
     completedAt: draft.completedAt ?? null,
   }
+}
+function transitionData({ record, workflowId, ...rest }: StageTransition): Record<string, unknown> {
+  return { recordType: record.type, recordId: record.id, workflow: workflowId, ...rest }
 }
 function projectPatchData(patch: ProjectPatch): Record<string, unknown> {
   return {
@@ -246,7 +249,7 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
           },
         })
         if (doc === undefined) return undefined
-        await createAsSystem(req, COLLECTIONS.stageTransitions, input.transition)
+        await createAsSystem(req, COLLECTIONS.stageTransitions, transitionData(input.transition))
         return mapTask(req, doc)
       }),
     deleteTask: async (id) => {

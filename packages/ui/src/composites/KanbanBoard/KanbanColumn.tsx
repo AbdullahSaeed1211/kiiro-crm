@@ -91,7 +91,7 @@ export function KanbanColumn({
       aria-label={stage.name}
       data-stage-id={stage.id}
       className={cn(
-        'flex shrink-0 snap-start flex-col gap-2 rounded-lg bg-muted/50 p-2 transition-colors',
+        'ops-kanban-column flex shrink-0 snap-start flex-col gap-2 rounded-lg bg-muted/50 p-2 transition-colors',
         collapsed ? 'w-12 items-center' : 'w-72',
         over && 'bg-muted ring-2 ring-ring/50',
       )}

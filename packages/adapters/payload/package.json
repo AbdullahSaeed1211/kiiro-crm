@@ -9,6 +9,8 @@
   "dependencies": {
     "@ops/kernel": "workspace:*",
     "@ops/module-crm": "workspace:*",
+    "@ops/module-intake": "workspace:*",
+    "@ops/module-mail": "workspace:*",
     "@ops/module-work": "workspace:*",
     "@ops/platform": "workspace:*"
   },

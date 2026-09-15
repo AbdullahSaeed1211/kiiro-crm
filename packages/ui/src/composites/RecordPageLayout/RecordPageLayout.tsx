@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ops/ui/components/ui/tabs'
@@ -80,7 +81,6 @@ function RecordTitle({
       }}
     >
       <Input
-        autoFocus
         aria-label={titleLabel}
         value={draft}
         onChange={(event) => {
@@ -112,19 +112,33 @@ export function RecordPageLayout({
   defaultTab,
   className,
 }: RecordPageLayoutProps) {
-  const initialTab = defaultTab ?? tabs[0]?.id
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const fallbackTab = defaultTab ?? tabs[0]?.id
+  const requestedTab = searchParams.get('tab')
+  const activeTab = requestedTab !== null && tabs.some((tab) => tab.id === requestedTab) ? requestedTab : fallbackTab
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', value)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
   return (
-    <div className={cn('flex min-h-0 flex-col gap-4', className)}>
+    <div className={cn('ops-record-page flex min-h-0 flex-col gap-4', className)}>
       {breadcrumbs === undefined ? null : <nav aria-label={labels.breadcrumb}>{breadcrumbs}</nav>}
-      <header className="flex flex-wrap items-center gap-2 border-b pb-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <header className="flex flex-wrap items-start gap-3 border-b pb-3">
+        <div className="ops-record-title-row flex min-w-0 flex-1 basis-full items-center gap-2 md:basis-auto">
           <RecordTitle title={title} titleLabel={titleLabel} onTitleChange={onTitleChange} labels={labels} />
           {stage}
           {owner}
         </div>
-        {actions === undefined ? null : <div className="flex items-center gap-2">{actions}</div>}
+        {actions === undefined ? null : (
+          <div className="ops-record-actions flex w-full min-w-0 items-center justify-start gap-2 md:w-auto md:flex-none md:justify-end">
+            {actions}
+          </div>
+        )}
       </header>
-      <Tabs defaultValue={initialTab} className="min-h-0">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-0">
         <TabsList variant="line">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} disabled={tab.disabled}>
@@ -132,7 +146,7 @@ export function RecordPageLayout({
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="ops-record-grid grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0">
             {tabs.map((tab) => (
               <TabsContent key={tab.id} value={tab.id} className="mt-4">
@@ -140,7 +154,7 @@ export function RecordPageLayout({
               </TabsContent>
             ))}
           </div>
-          {aside === undefined ? null : <aside className="min-w-0">{aside}</aside>}
+          {aside === undefined ? null : <aside className="ops-record-aside min-w-0">{aside}</aside>}
         </div>
       </Tabs>
     </div>

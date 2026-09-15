@@ -26,7 +26,9 @@ function money({
 }: Readonly<{ amountMinor: number; currency: string | null; locale: string; mixedLabel: string }>): string {
   if (amountMinor === 0) return '—'
   if (currency === null) return mixedLabel
-  return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amountMinor / 100)
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(
+    amountMinor / 100,
+  )
 }
 
 function Metric({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -81,7 +83,11 @@ export default async function ReportsPage({
         <form method="get" className="ops-surface-card flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
           <label className="grid gap-1 text-xs font-medium">
             <span>{copy.range}</span>
-            <select name="range" defaultValue={range.key} className="h-9 min-w-40 rounded-md border bg-background px-2 text-sm">
+            <select
+              name="range"
+              defaultValue={range.key}
+              className="h-9 min-w-40 rounded-md border bg-background px-2 text-sm"
+            >
               {options.map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -91,13 +97,26 @@ export default async function ReportsPage({
           </label>
           <label className="grid gap-1 text-xs font-medium">
             <span>{copy.from}</span>
-            <input name="from" type="date" defaultValue={range.fromDate} className="h-9 rounded-md border bg-background px-2 text-sm" />
+            <input
+              name="from"
+              type="date"
+              defaultValue={range.fromDate}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+            />
           </label>
           <label className="grid gap-1 text-xs font-medium">
             <span>{copy.to}</span>
-            <input name="to" type="date" defaultValue={range.toDate} className="h-9 rounded-md border bg-background px-2 text-sm" />
+            <input
+              name="to"
+              type="date"
+              defaultValue={range.toDate}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+            />
           </label>
-          <button type="submit" className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+          <button
+            type="submit"
+            className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
             {copy.apply}
           </button>
           <output className="text-xs text-muted-foreground" aria-live="polite">
@@ -108,7 +127,15 @@ export default async function ReportsPage({
           <Metric label={copy.openTasks} value={number(figures.totals.openTasks, locale)} />
           <Metric label={copy.completedTasks} value={number(figures.totals.completedTasks, locale)} />
           <Metric label={copy.overdueTasks} value={number(figures.totals.overdueTasks, locale)} />
-          <Metric label={copy.pipeline} value={money({ amountMinor: figures.totals.pipelineMinor, currency: figures.totals.pipelineCurrency, locale, mixedLabel: copy.mixedCurrency })} />
+          <Metric
+            label={copy.pipeline}
+            value={money({
+              amountMinor: figures.totals.pipelineMinor,
+              currency: figures.totals.pipelineCurrency,
+              locale,
+              mixedLabel: copy.mixedCurrency,
+            })}
+          />
           <Metric label={copy.leads} value={number(figures.totals.leads, locale)} />
           <Metric label={copy.deals} value={number(figures.totals.deals, locale)} />
           <Metric label={copy.wonDeals} value={number(figures.totals.wonDeals, locale)} />
@@ -136,13 +163,22 @@ export default async function ReportsPage({
                 <tbody>
                   {figures.owners.map((owner) => (
                     <tr key={owner.id ?? 'unassigned'} className="border-t">
-                      <th scope="row" className="px-4 py-3 text-left font-medium">{owner.id === null ? copy.unassigned : owner.name}</th>
+                      <th scope="row" className="px-4 py-3 text-left font-medium">
+                        {owner.id === null ? copy.unassigned : owner.name}
+                      </th>
                       <td className="px-4 py-3 text-right tabular-nums">{number(owner.openTasks, locale)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{number(owner.completedTasks, locale)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{number(owner.overdueTasks, locale)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{number(owner.leads, locale)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{number(owner.deals, locale)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{money({ amountMinor: owner.pipelineMinor, currency: owner.pipelineCurrency, locale, mixedLabel: copy.mixedCurrency })}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {money({
+                          amountMinor: owner.pipelineMinor,
+                          currency: owner.pipelineCurrency,
+                          locale,
+                          mixedLabel: copy.mixedCurrency,
+                        })}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

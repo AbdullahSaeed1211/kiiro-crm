@@ -1,15 +1,14 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, CollectionSlug, RelationshipField } from 'payload'
 import { authHooks } from '../../hooks/auth/auth'
+import { canUseAdmin } from '../../access/spike-access'
 import { ADMIN_GROUPS } from '../fields'
 import { peopleAccess, userFieldRead } from './access'
 import { INVITATION_STATUS_VALUES, PEOPLE_COLLECTIONS, PEOPLE_ROLE_VALUES } from './values'
 
-const relation = (name: string, relationTo: string, options: Record<string, unknown> = {}) => ({
-  name,
-  type: 'relationship' as const,
-  relationTo,
-  ...options,
-})
+const relation = (name: string, relationTo: string, options: Record<string, unknown> = {}): RelationshipField =>
+  // Generated collection unions lag leaf registration until `payload generate:types` runs.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+  ({ name, type: 'relationship', relationTo: relationTo as unknown as CollectionSlug, ...options }) as RelationshipField
 
 const text = (name: string, options: Record<string, unknown> = {}) => ({ name, type: 'text' as const, ...options })
 const epoch = (name: string, options: Record<string, unknown> = {}) => ({
@@ -28,12 +27,13 @@ type AccessConfig = NonNullable<CollectionConfig['access']>
 interface BaseDefinition {
   readonly slug: string
   readonly group: string
+  readonly useAsTitle?: string
   readonly fields: CollectionConfig['fields']
   readonly access: AccessConfig
 }
-const base = ({ slug, group, fields, access }: BaseDefinition): CollectionConfig => ({
+const base = ({ slug, group, useAsTitle, fields, access }: BaseDefinition): CollectionConfig => ({
   slug,
-  admin: { group, useAsTitle: 'name' },
+  admin: { group, ...(useAsTitle === undefined ? {} : { useAsTitle }) },
   fields,
   access,
   timestamps: true,
@@ -44,6 +44,7 @@ export const peopleUsersCollection: CollectionConfig = {
   ...base({
     slug: PEOPLE_COLLECTIONS.users,
     group: ADMIN_GROUPS.people,
+    useAsTitle: 'name',
     fields: [
       text('name', { required: true, maxLength: 120 }),
       text('avatar', { maxLength: 500, access: { read: userFieldRead('avatar') } }),
@@ -58,10 +59,10 @@ export const peopleUsersCollection: CollectionConfig = {
         access: { read: userFieldRead('role') },
       },
       { name: 'active', type: 'checkbox', defaultValue: true, index: true, access: { read: userFieldRead('active') } },
-      { ...relation('groups', PEOPLE_COLLECTIONS.groups), hasMany: true, access: { read: userFieldRead('groups') } },
-      { ...relation('reportsTo', PEOPLE_COLLECTIONS.users), access: { read: userFieldRead('reportsTo') } },
+      relation('groups', PEOPLE_COLLECTIONS.groups, { hasMany: true, access: { read: userFieldRead('groups') } }),
+      relation('reportsTo', PEOPLE_COLLECTIONS.users, { access: { read: userFieldRead('reportsTo') } }),
     ],
-    access: peopleAccess.users,
+    access: { ...peopleAccess.users, admin: canUseAdmin },
   }),
   auth: {
     tokenExpiration: 604800,
@@ -87,6 +88,7 @@ export const peopleUsersCollection: CollectionConfig = {
 export const peopleGroupsCollection: CollectionConfig = base({
   slug: PEOPLE_COLLECTIONS.groups,
   group: ADMIN_GROUPS.people,
+  useAsTitle: 'name',
   fields: [text('name', { required: true, unique: true, index: true, maxLength: 120 })],
   access: {
     read: peopleAccess.groups.read,
@@ -99,6 +101,7 @@ export const peopleGroupsCollection: CollectionConfig = base({
 export const invitationsCollection: CollectionConfig = base({
   slug: PEOPLE_COLLECTIONS.invitations,
   group: ADMIN_GROUPS.people,
+  useAsTitle: 'email',
   fields: [
     text('tokenHash', { required: true, unique: true, index: true, maxLength: 64 }),
     { name: 'email', type: 'email', required: true, index: true },
@@ -112,7 +115,7 @@ export const invitationsCollection: CollectionConfig = base({
       index: true,
     },
     relation('invitedBy', PEOPLE_COLLECTIONS.users),
-    { ...relation('groups', PEOPLE_COLLECTIONS.groups), hasMany: true },
+    relation('groups', PEOPLE_COLLECTIONS.groups, { hasMany: true }),
     relation('reportsTo', PEOPLE_COLLECTIONS.users),
     epoch('expiresAt', { required: true, index: true }),
     epoch('acceptedAt'),

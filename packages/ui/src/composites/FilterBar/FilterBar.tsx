@@ -143,7 +143,9 @@ export function FilterBar({
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       <SearchField value={draftQuery} labels={labels} onChange={setDraftQuery} />
-      {showStageFilter ? <StageFilter selected={draftStages} options={stageOptions} labels={labels} onToggle={chooseStage} /> : null}
+      {showStageFilter ? (
+        <StageFilter selected={draftStages} options={stageOptions} labels={labels} onToggle={chooseStage} />
+      ) : null}
       {active ? (
         <Button type="button" variant="ghost" size="sm" onClick={clear}>
           <X aria-hidden />

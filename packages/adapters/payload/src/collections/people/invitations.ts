@@ -1,4 +1,4 @@
-export const INVITATION_DAYS = 7
+const INVITATION_DAYS = 7
 
 export function createInvitationToken(): string {
   const bytes = new Uint8Array(32)

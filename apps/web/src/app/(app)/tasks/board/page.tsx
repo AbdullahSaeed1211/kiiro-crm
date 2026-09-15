@@ -101,7 +101,11 @@ export default async function TaskBoardPage() {
             </div>
           }
         />
-        <TaskBoard stages={toStages(workflow)} cards={records.map((task) => toCard(task, locale))} labels={labelsFor(locale)} />
+        <TaskBoard
+          stages={toStages(workflow)}
+          cards={records.map((task) => toCard(task, locale))}
+          labels={labelsFor(locale)}
+        />
       </PageContent>
     </>
   )

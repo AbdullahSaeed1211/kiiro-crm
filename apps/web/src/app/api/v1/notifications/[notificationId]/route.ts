@@ -1,9 +1,16 @@
 import config from '@payload-config'
-import { getPayload } from 'payload'
+import { getPayload, type PayloadRequest } from 'payload'
 import { authenticate } from '../../../../../server/collaboration/auth'
 import { payloadNotFoundOrDenied, unauthorized } from '../../../../../server/collaboration/responses'
 
 export const dynamic = 'force-dynamic'
+
+function requestForUser(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  user: Record<string, unknown>,
+): PayloadRequest {
+  return { payload, user } as unknown as PayloadRequest
+}
 
 interface Params {
   readonly params: Promise<{ notificationId: string }>
@@ -14,6 +21,7 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
   const payload = await getPayload({ config })
   const context = await authenticate(payload, request)
   if (context === null) return unauthorized()
+  const req = requestForUser(payload, context.user)
   const { notificationId } = await params
   try {
     const notification = await payload.update({
@@ -23,6 +31,7 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
       depth: 0,
       overrideAccess: false,
       user: context.user,
+      req,
     })
     return Response.json({ notification })
   } catch (error) {

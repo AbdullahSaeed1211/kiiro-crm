@@ -1,4 +1,4 @@
-import type { ProvisionHttpClient } from './plan'
+import type { ProvisionHttpClient } from './types'
 
 /** Creates an HTTP client that keeps the internal secret in a header, never in argv or logs. */
 export function fetchProvisionClient(request: typeof fetch = fetch, timeoutMs = 15_000): ProvisionHttpClient {

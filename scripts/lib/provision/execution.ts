@@ -1,7 +1,7 @@
 import { existsSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { assertCommand, hasExactResourceName, WRANGLER } from './commands'
-import type { ProvisionDependencies, ProvisionState } from './plan'
+import type { ProvisionDependencies, ProvisionState } from './types'
 import type { Tenant } from '../tenant-schema'
 
 interface StepResult {

@@ -2,61 +2,18 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseJsonc } from '../jsonc'
-import {
-  assertCommand,
-  assertSafeToken,
-  parseD1Id,
-  senderStatusReady,
-  OPENNEXT,
-  WRANGLER,
-  type CommandRunner,
-} from './commands'
+import { assertCommand, assertSafeToken, parseD1Id, senderStatusReady, OPENNEXT, WRANGLER } from './commands'
 import { parseTenant, type Tenant } from '../tenant-schema'
 import { executeRouterSecrets, executeSeed, persistProvisionStatus } from './execution'
+import type { ProvisionDependencies, ProvisionState, ProvisionStep } from './types'
+export type { ProvisionDependencies, ProvisionHttpClient, ProvisionState, ProvisionStep } from './types'
 export { discoverProvisionState, provisionStatusEndpoint } from './state'
 export { fetchProvisionClient } from './http'
 import { updateTenantD1Id } from './tenant-file'
 export { updateTenantD1Id } from './tenant-file'
 
 /** The observable completion state for the eleven provisioning steps. */
-export interface ProvisionState {
-  d1: boolean
-  r2: boolean
-  wrangler: boolean
-  secrets: boolean
-  migration: boolean
-  deployment: boolean
-  seed: boolean
-  senderStatus: boolean
-  routerSecrets: boolean
-  smoke: boolean
-}
-
 /** Commands needed to provision a tenant, in their required order. */
-export interface ProvisionStep {
-  readonly key: keyof ProvisionState | 'validate' | 'checklist'
-  readonly label: string
-  readonly command?: string
-}
-
-/** Dependencies for an executable or fully mocked provisioning run. */
-export interface ProvisionDependencies {
-  readonly run: CommandRunner
-  readonly state?: Partial<ProvisionState>
-  readonly check?: (step: keyof ProvisionState) => Promise<boolean>
-  readonly root?: string
-  readonly turnstileSecret?: string
-  readonly writeD1Id?: (id: string) => void
-  readonly print?: (line: string) => void
-  readonly http?: ProvisionHttpClient
-  readonly internalSecret?: string
-}
-
-/** Minimal HTTP boundary for authenticated internal tenant operations. */
-export interface ProvisionHttpClient {
-  post: (url: string, body: unknown, secret: string) => Promise<{ ok: boolean; status: number }>
-  get: (url: string, secret: string) => Promise<{ ok: boolean; status: number; body?: unknown }>
-}
 
 interface StepContext {
   readonly tenant: Tenant
@@ -114,7 +71,7 @@ export function provisionPlan(tenant: Tenant): ProvisionStep[] {
     {
       key: 'migration',
       label: 'apply backward-compatible Payload migrations',
-      command: `CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`,
+      command: `PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`,
     },
     {
       key: 'deployment',
@@ -199,7 +156,8 @@ async function executeStep(
   if (step.key === 'routerSecrets')
     return executeRouterSecrets({ tenant, deps, existingSecretsFile: context.secretsFile, secrets: context.secrets })
   const command = commandForStep(step, context)
-  const environment = step.key === 'migration' ? { CLOUDFLARE_ENV: tenant.slug } : undefined
+  const environment =
+    step.key === 'migration' ? { CLOUDFLARE_ENV: tenant.slug, PAYLOAD_REMOTE_BINDINGS: '1' } : undefined
   const result = await deps.run(command.value, environment)
   assertCommand(result, command.value)
   if (step.key === 'd1') writeProvisionedD1Id(tenant, deps, result.output)

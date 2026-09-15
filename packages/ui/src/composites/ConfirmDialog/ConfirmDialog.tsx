@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactElement } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,7 @@ export type ConfirmDialogProps = Readonly<{
   description?: string
   labels: ConfirmDialogLabels
   onConfirm: () => void | Promise<void>
-  trigger?: ReactNode
+  trigger?: ReactElement
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -64,7 +64,7 @@ export function ConfirmDialog({
   }
   return (
     <AlertDialog open={isOpen} onOpenChange={setOpen}>
-      {trigger === undefined ? null : <AlertDialogTrigger>{trigger}</AlertDialogTrigger>}
+      {trigger === undefined ? null : <AlertDialogTrigger render={trigger} />}
       <AlertDialogContent className={cn(className)}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

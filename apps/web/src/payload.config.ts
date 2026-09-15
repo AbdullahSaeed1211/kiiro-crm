@@ -76,6 +76,9 @@ export default buildConfig({
   admin: {
     user: COLLECTIONS.users,
     importMap: { baseDir: path.resolve(dirname) },
+    components: {
+      graphics: { Logo: './components/payload/BlankLogo#BlankLogo' },
+    },
   },
   // Payload appends its own collections to this array, so it gets a copy.
   collections: [...spikeCollections],

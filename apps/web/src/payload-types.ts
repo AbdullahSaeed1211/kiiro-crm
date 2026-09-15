@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     users: User;
     groups: Group;
+    invitations: Invitation;
     organizations: Organization;
     contacts: Contact;
     leads: Lead;
@@ -76,10 +77,17 @@ export interface Config {
     projects: Project;
     tasks: Task;
     workflows: Workflow;
+    fieldDefinitions: FieldDefinition;
+    savedViews: SavedView;
+    layouts: Layout;
     sources: Source;
     lostReasons: LostReason;
+    notificationPrefs: NotificationPref;
+    intakeForms: IntakeForm;
+    intakeSubmissions: IntakeSubmission;
     activity: Activity;
     stageTransitions: StageTransition;
+    comments: Comment;
     attachments: Attachment;
     notifications: Notification;
     emailMessages: EmailMessage;
@@ -93,6 +101,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     groups: GroupsSelect<false> | GroupsSelect<true>;
+    invitations: InvitationsSelect<false> | InvitationsSelect<true>;
     organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
     contacts: ContactsSelect<false> | ContactsSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
@@ -100,10 +109,17 @@ export interface Config {
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
+    fieldDefinitions: FieldDefinitionsSelect<false> | FieldDefinitionsSelect<true>;
+    savedViews: SavedViewsSelect<false> | SavedViewsSelect<true>;
+    layouts: LayoutsSelect<false> | LayoutsSelect<true>;
     sources: SourcesSelect<false> | SourcesSelect<true>;
     lostReasons: LostReasonsSelect<false> | LostReasonsSelect<true>;
+    notificationPrefs: NotificationPrefsSelect<false> | NotificationPrefsSelect<true>;
+    intakeForms: IntakeFormsSelect<false> | IntakeFormsSelect<true>;
+    intakeSubmissions: IntakeSubmissionsSelect<false> | IntakeSubmissionsSelect<true>;
     activity: ActivitySelect<false> | ActivitySelect<true>;
     stageTransitions: StageTransitionsSelect<false> | StageTransitionsSelect<true>;
+    comments: CommentsSelect<false> | CommentsSelect<true>;
     attachments: AttachmentsSelect<false> | AttachmentsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
@@ -158,6 +174,8 @@ export interface UserAuthOperations {
 export interface User {
   id: string;
   name: string;
+  avatar?: string | null;
+  invitationId?: string | null;
   role: 'owner' | 'manager' | 'staff';
   active?: boolean | null;
   groups?: (string | Group)[] | null;
@@ -188,6 +206,26 @@ export interface User {
 export interface Group {
   id: string;
   name: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invitations".
+ */
+export interface Invitation {
+  id: string;
+  tokenHash: string;
+  email: string;
+  role: 'owner' | 'manager' | 'staff';
+  status: 'pending' | 'accepting' | 'accepted' | 'revoked' | 'expired';
+  invitedBy?: (string | null) | User;
+  groups?: (string | Group)[] | null;
+  reportsTo?: (string | null) | User;
+  expiresAt: number;
+  acceptedAt?: number | null;
+  claimId?: string | null;
+  claimedAt?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -450,6 +488,203 @@ export interface Task {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fieldDefinitions".
+ */
+export interface FieldDefinition {
+  id: string;
+  recordType: 'organization' | 'contact' | 'lead' | 'deal' | 'project' | 'task';
+  key: string;
+  label: string;
+  type: 'text' | 'textarea' | 'number' | 'currency' | 'date' | 'select' | 'multiSelect' | 'checkbox' | 'email' | 'url';
+  required?: boolean | null;
+  options?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  visibility?: ('all' | 'manager_up') | null;
+  sensitive?: boolean | null;
+  hidden?: boolean | null;
+  position?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "savedViews".
+ */
+export interface SavedView {
+  id: string;
+  recordType: string;
+  owner?: (string | null) | User;
+  name: string;
+  kind: 'table' | 'board' | 'calendar' | 'timeline';
+  filter?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sort:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  columns:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  pinned?: boolean | null;
+  isDefault?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "layouts".
+ */
+export interface Layout {
+  id: string;
+  recordType: string;
+  sidebarFields:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  quickCreateFields:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notificationPrefs".
+ */
+export interface NotificationPref {
+  id: string;
+  user: string | User;
+  channels:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  digestLocalTime?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "intakeForms".
+ */
+export interface IntakeForm {
+  id: string;
+  key: string;
+  name: string;
+  active: boolean;
+  targetRecordType: 'lead';
+  fieldMap:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  allowedOrigins?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  requireTurnstile: boolean;
+  serverKeyHashes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  defaultOwner?: (string | null) | User;
+  defaultAssignees?: (string | User)[] | null;
+  defaultSource?: (string | null) | Source;
+  notifyUsers?: (string | User)[] | null;
+  notifyGroups?: (string | Group)[] | null;
+  successMessage: string;
+  redirectUrl?: string | null;
+  emailAlias?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "intakeSubmissions".
+ */
+export interface IntakeSubmission {
+  id: string;
+  form: string | IntakeForm;
+  channel: 'web' | 'server' | 'email';
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  receivedAt: number;
+  origin: string;
+  ipHash: string;
+  userAgent: string;
+  payload:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  dedupeKey: string;
+  status: 'accepted' | 'duplicate' | 'rejected_spam' | 'rejected_invalid';
+  recordType?: 'lead' | null;
+  recordId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "activity".
  */
 export interface Activity {
@@ -510,15 +745,41 @@ export interface StageTransition {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: string;
+  recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
+  recordId: string;
+  author: string | User;
+  body: string;
+  mentions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  editedAt?: number | null;
+  deletedAt?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "attachments".
  */
 export interface Attachment {
   id: string;
   recordType: 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal';
   recordId: string;
+  fileKey: string;
   fileName: string;
+  mime: string;
   sizeBytes: number;
-  uploadedBy?: (string | null) | User;
+  uploadedBy: string | User;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -559,13 +820,7 @@ export interface Notification {
     | boolean
     | null;
   dedupeKey: string;
-  /**
-   * UTC time in milliseconds since 1970-01-01
-   */
   readAt?: number | null;
-  /**
-   * UTC time in milliseconds since 1970-01-01
-   */
   emailedAt?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -674,6 +929,10 @@ export interface PayloadLockedDocument {
         value: string | Group;
       } | null)
     | ({
+        relationTo: 'invitations';
+        value: string | Invitation;
+      } | null)
+    | ({
         relationTo: 'organizations';
         value: string | Organization;
       } | null)
@@ -702,6 +961,18 @@ export interface PayloadLockedDocument {
         value: string | Workflow;
       } | null)
     | ({
+        relationTo: 'fieldDefinitions';
+        value: string | FieldDefinition;
+      } | null)
+    | ({
+        relationTo: 'savedViews';
+        value: string | SavedView;
+      } | null)
+    | ({
+        relationTo: 'layouts';
+        value: string | Layout;
+      } | null)
+    | ({
         relationTo: 'sources';
         value: string | Source;
       } | null)
@@ -710,12 +981,28 @@ export interface PayloadLockedDocument {
         value: string | LostReason;
       } | null)
     | ({
+        relationTo: 'notificationPrefs';
+        value: string | NotificationPref;
+      } | null)
+    | ({
+        relationTo: 'intakeForms';
+        value: string | IntakeForm;
+      } | null)
+    | ({
+        relationTo: 'intakeSubmissions';
+        value: string | IntakeSubmission;
+      } | null)
+    | ({
         relationTo: 'activity';
         value: string | Activity;
       } | null)
     | ({
         relationTo: 'stageTransitions';
         value: string | StageTransition;
+      } | null)
+    | ({
+        relationTo: 'comments';
+        value: string | Comment;
       } | null)
     | ({
         relationTo: 'attachments';
@@ -781,6 +1068,8 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  avatar?: T;
+  invitationId?: T;
   role?: T;
   active?: T;
   groups?: T;
@@ -808,6 +1097,25 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface GroupsSelect<T extends boolean = true> {
   name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invitations_select".
+ */
+export interface InvitationsSelect<T extends boolean = true> {
+  tokenHash?: T;
+  email?: T;
+  role?: T;
+  status?: T;
+  invitedBy?: T;
+  groups?: T;
+  reportsTo?: T;
+  expiresAt?: T;
+  acceptedAt?: T;
+  claimId?: T;
+  claimedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -959,6 +1267,52 @@ export interface WorkflowsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fieldDefinitions_select".
+ */
+export interface FieldDefinitionsSelect<T extends boolean = true> {
+  recordType?: T;
+  key?: T;
+  label?: T;
+  type?: T;
+  required?: T;
+  options?: T;
+  visibility?: T;
+  sensitive?: T;
+  hidden?: T;
+  position?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "savedViews_select".
+ */
+export interface SavedViewsSelect<T extends boolean = true> {
+  recordType?: T;
+  owner?: T;
+  name?: T;
+  kind?: T;
+  filter?: T;
+  sort?: T;
+  columns?: T;
+  pinned?: T;
+  isDefault?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "layouts_select".
+ */
+export interface LayoutsSelect<T extends boolean = true> {
+  recordType?: T;
+  sidebarFields?: T;
+  quickCreateFields?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "sources_select".
  */
 export interface SourcesSelect<T extends boolean = true> {
@@ -972,6 +1326,60 @@ export interface SourcesSelect<T extends boolean = true> {
  */
 export interface LostReasonsSelect<T extends boolean = true> {
   name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notificationPrefs_select".
+ */
+export interface NotificationPrefsSelect<T extends boolean = true> {
+  user?: T;
+  channels?: T;
+  digestLocalTime?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "intakeForms_select".
+ */
+export interface IntakeFormsSelect<T extends boolean = true> {
+  key?: T;
+  name?: T;
+  active?: T;
+  targetRecordType?: T;
+  fieldMap?: T;
+  allowedOrigins?: T;
+  requireTurnstile?: T;
+  serverKeyHashes?: T;
+  defaultOwner?: T;
+  defaultAssignees?: T;
+  defaultSource?: T;
+  notifyUsers?: T;
+  notifyGroups?: T;
+  successMessage?: T;
+  redirectUrl?: T;
+  emailAlias?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "intakeSubmissions_select".
+ */
+export interface IntakeSubmissionsSelect<T extends boolean = true> {
+  form?: T;
+  channel?: T;
+  receivedAt?: T;
+  origin?: T;
+  ipHash?: T;
+  userAgent?: T;
+  payload?: T;
+  dedupeKey?: T;
+  status?: T;
+  recordType?: T;
+  recordId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1009,12 +1417,29 @@ export interface StageTransitionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments_select".
+ */
+export interface CommentsSelect<T extends boolean = true> {
+  recordType?: T;
+  recordId?: T;
+  author?: T;
+  body?: T;
+  mentions?: T;
+  editedAt?: T;
+  deletedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "attachments_select".
  */
 export interface AttachmentsSelect<T extends boolean = true> {
   recordType?: T;
   recordId?: T;
+  fileKey?: T;
   fileName?: T;
+  mime?: T;
   sizeBytes?: T;
   uploadedBy?: T;
   updatedAt?: T;
@@ -1130,6 +1555,8 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Setting {
   id: string;
   appName?: string | null;
+  logoFileKey?: string | null;
+  faviconFileKey?: string | null;
   timezone: string;
   locale: 'en' | 'es';
   currency: string;
@@ -1144,6 +1571,15 @@ export interface Setting {
     intake?: boolean | null;
     mail?: boolean | null;
   };
+  terminology?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   stalledDays: number;
   email: {
     fromName?: string | null;
@@ -1172,6 +1608,8 @@ export interface Setting {
  */
 export interface SettingsSelect<T extends boolean = true> {
   appName?: T;
+  logoFileKey?: T;
+  faviconFileKey?: T;
   timezone?: T;
   locale?: T;
   currency?: T;
@@ -1190,6 +1628,7 @@ export interface SettingsSelect<T extends boolean = true> {
         intake?: T;
         mail?: T;
       };
+  terminology?: T;
   stalledDays?: T;
   email?:
     | T

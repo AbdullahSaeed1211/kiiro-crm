@@ -1,6 +1,6 @@
 import config from '@payload-config'
 import { resolveActor } from '@ops/adapter-payload'
-import { can, type Actor, type Role } from '@ops/platform'
+import { type Actor, type Role } from '@ops/platform'
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
@@ -27,8 +27,3 @@ export async function requireRole(...roles: readonly Role[]): Promise<ProductCon
   if (!roles.includes(context.actor.role)) notFound()
   return context
 }
-
-export const canManageAdmin = (actor: Actor): boolean => can(actor, 'admin_panel', { type: 'users' })
-export const canManageSettings = (actor: Actor): boolean => can(actor, 'manage_settings', { type: 'settings' })
-export const canManageMembers = (actor: Actor, role: Role): boolean =>
-  can(actor, 'manage_members', { type: 'users', role })

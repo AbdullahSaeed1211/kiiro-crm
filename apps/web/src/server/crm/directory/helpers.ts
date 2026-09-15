@@ -127,9 +127,7 @@ export async function listInboxMessages(context: RequestContext): Promise<readon
     const message = emailMessage(value)
     const recordType = text(value.recordType)
     const recordId = text(value.recordId)
-    return message === null || message.id === ''
-      ? []
-      : [{ ...message, recordType, recordId }]
+    return message === null || message.id === '' ? [] : [{ ...message, recordType, recordId }]
   })
 }
 

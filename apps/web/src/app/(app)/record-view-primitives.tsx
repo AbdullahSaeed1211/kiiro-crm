@@ -114,9 +114,7 @@ export function recordTabs(
     attachments: readonly RecordAttachment[]
   }>,
 ): readonly RecordPageTab[] {
-  const tabs: RecordPageTab[] = [
-    { id: 'activity', label: 'Activity', content: activity },
-  ]
+  const tabs: RecordPageTab[] = [{ id: 'activity', label: 'Activity', content: activity }]
   if (related !== undefined) {
     tabs.push(
       {

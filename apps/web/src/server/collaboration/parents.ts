@@ -34,5 +34,3 @@ export async function canReadParent(
   })
   return result.docs.length > 0
 }
-
-export { RECORD_COLLECTIONS }

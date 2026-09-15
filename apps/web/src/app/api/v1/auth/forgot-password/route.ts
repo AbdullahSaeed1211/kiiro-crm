@@ -1,4 +1,4 @@
-/* eslint-disable complexity */
+/* eslint-disable complexity -- the route intentionally collapses all account states into one safe response while preserving rate-limit errors. */
 import { authBody, errorResponse, payloadForAuth, stringOf } from '../../../../../server/auth/api'
 
 export async function POST(request: Request): Promise<Response> {

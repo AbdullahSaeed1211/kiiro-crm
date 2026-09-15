@@ -13,7 +13,10 @@ const VIEWS: readonly { id: TaskWorkspaceView; labelKey: 'table' | 'board' | 'ca
 ]
 
 /** Compact navigation between the task workspace's supported representations. */
-export function TaskWorkspaceViews({ active, locale = 'en' }: Readonly<{ active: TaskWorkspaceView; locale?: Locale }>) {
+export function TaskWorkspaceViews({
+  active,
+  locale = 'en',
+}: Readonly<{ active: TaskWorkspaceView; locale?: Locale }>) {
   const copy = TASK_COPY[locale]
   return (
     <nav aria-label={copy.views} className="inline-flex max-w-full items-center rounded-lg border border-border p-0.5">

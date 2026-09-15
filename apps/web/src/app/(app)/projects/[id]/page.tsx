@@ -12,7 +12,7 @@ import ProjectBoard from './ProjectBoard'
 import ProjectActions from './ProjectActions'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Project · Workspace' }
+export const metadata: Metadata = { title: 'Project' }
 
 function projectTabs(
   tasks: readonly WorkListTask[],
@@ -41,7 +41,16 @@ function projectTabs(
       label: 'Board',
       content:
         tasks.length === 0 ? (
-          <EmptyState icon={FolderKanban} title="No project tasks" description="Add a task to start the project." />
+          <EmptyState
+            icon={FolderKanban}
+            title="No project tasks"
+            description="Create a task from the Tasks workspace, then assign it to this project."
+            action={
+              <a className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground" href="/tasks">
+                Open tasks
+              </a>
+            }
+          />
         ) : (
           <ProjectBoard
             stages={stages}
@@ -64,17 +73,15 @@ function projectTabs(
         </p>
       ),
     },
-    { id: 'files', label: 'Files', content: <p className="text-sm text-muted-foreground">No files attached yet.</p> },
   ]
 }
 
 /** Project record with Overview, Board, List and Files tabs. */
 export default async function ProjectPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
-  const result = await loadProject(id)
+  const [result, model] = await Promise.all([loadProject(id), loadWorkReadModel()])
   if (result === undefined) notFound()
   const { project, tasks } = result
-  const model = await loadWorkReadModel()
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Projects', href: '/projects' }, { label: project.name }]} />
@@ -85,10 +92,15 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
           stage={<Badge variant="secondary">{project.stage}</Badge>}
           tabs={projectTabs(tasks, model.stages)}
           actions={
-            <ProjectActions projectId={project.id} updatedAt={project.updatedAt} memberIds={project.memberIds} />
+            <ProjectActions
+              projectId={project.id}
+              updatedAt={project.updatedAt}
+              memberIds={project.memberIds}
+              people={[...model.people.entries()]}
+            />
           }
           aside={
-            <div className="rounded-lg border p-4">
+            <div className="ops-detail-card rounded-lg border p-4">
               <h2 className="mb-3 font-medium">Details</h2>
               <dl className="space-y-2 text-sm">
                 <div>
@@ -100,7 +112,9 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
                   <dd>
                     {project.targetEndAt === null
                       ? 'No target'
-                      : new Date(project.targetEndAt).toLocaleDateString('en')}
+                      : new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: model.timeZone }).format(
+                          project.targetEndAt,
+                        )}
                   </dd>
                 </div>
               </dl>

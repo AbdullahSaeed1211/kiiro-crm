@@ -12,7 +12,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
 } from '@ops/ui/components/ui/sidebar'
 
 /** One sidebar link (spec §16.2); the label arrives translated. */
@@ -49,7 +48,7 @@ function BrandMark({ appName, logo }: Readonly<{ appName: string; logo: ReactNod
     return <span className="flex size-8 shrink-0 items-center justify-center">{logo}</span>
   }
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
+    <span className="ops-brand-mark flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
       {appName.charAt(0).toUpperCase()}
     </span>
   )
@@ -91,8 +90,8 @@ function NavSection({ group }: Readonly<{ group: NavGroup }>) {
 /** Inset sidebar that collapses to icons (spec §16.1–§16.2): brand header, navigation groups and an optional footer. */
 export function AppSidebar({ appName, logo, homeHref = '/', groups, footer }: AppSidebarProps) {
   return (
-    <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader>
+    <Sidebar variant="inset" collapsible="icon" className="ops-app-sidebar">
+      <SidebarHeader className="ops-sidebar-brand">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" tooltip={appName} render={<a href={homeHref} />}>
@@ -108,7 +107,6 @@ export function AppSidebar({ appName, logo, homeHref = '/', groups, footer }: Ap
         ))}
       </SidebarContent>
       {footer === undefined ? null : <SidebarFooter>{footer}</SidebarFooter>}
-      <SidebarRail />
     </Sidebar>
   )
 }

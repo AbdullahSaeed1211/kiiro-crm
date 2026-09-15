@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-lines-per-function, max-statements, sonarjs/cognitive-complexity, @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable complexity, max-lines-per-function, max-statements, sonarjs/cognitive-complexity, @typescript-eslint/no-unnecessary-condition -- invitation acceptance is one compare-and-set transaction with deliberate race handling. */
 import { createUnitOfWork } from '@ops/adapter-payload'
 import {
   authBody,

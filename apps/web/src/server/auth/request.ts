@@ -1,5 +1,5 @@
 // Error and request parsing helpers stay dependency-light so route boundary tests do not boot Payload.
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity -- status extraction intentionally handles the complete external error shape.
 export function errorResponse(error: unknown, fallback = 'Unable to complete the request.'): Response {
   const candidate =
     typeof error === 'object' && error !== null && 'status' in error && typeof error.status === 'number'

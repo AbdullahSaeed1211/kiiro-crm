@@ -52,7 +52,7 @@ function ConvertFields(
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="convert-value">Deal value (USD)</Label>
+        <Label htmlFor="convert-value">Deal value</Label>
         <Input
           id="convert-value"
           type="number"

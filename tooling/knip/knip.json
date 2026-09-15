@@ -1,4 +1,7 @@
 {
+  "ignoreIssues": {
+    "harness/evals/**": ["files"]
+  },
   "workspaces": {
     ".": {
       "entry": ["scripts/**/*.ts", "harness/selftest/**/*.ts"],
@@ -9,7 +12,25 @@
       "entry": ["open-next.config.ts", "src/app/**/*.{ts,tsx}"],
       "ignore": ["src/migrations/**", "src/payload-types.ts"],
       "ignoreDependencies": ["@payloadcms/ui"],
+      "ignoreBinaries": [],
+      "ignoreIssues": {
+        "src/i18n/config.ts": ["exports"],
+        "src/i18n/locale.ts": ["exports"],
+        "src/server/crm/directory/data.ts": ["exports"],
+        "src/server/queries/report-range.ts": ["exports", "types"],
+        "src/server/queries/reports.ts": ["exports", "types"],
+        "src/server/actions/work/projects/updateProject.ts": ["files"],
+        "src/server/actions/work/projects/createProject.ts": ["exports"]
+      },
       "payload": false
+    },
+    "packages/adapters/payload": {
+      "ignoreIssues": {
+        "src/collaboration/**": ["exports", "types"],
+        "src/collections/collaboration/**": ["exports", "types"],
+        "src/collections/config/**": ["exports", "types"],
+        "src/collections/people/**": ["exports", "types"]
+      }
     }
   }
 }

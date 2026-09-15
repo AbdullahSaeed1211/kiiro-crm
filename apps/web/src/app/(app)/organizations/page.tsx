@@ -7,7 +7,7 @@ import {
   queryValue,
 } from '../../../server/crm/directory/data'
 
-export const metadata: Metadata = { title: 'Organizations · Workspace' }
+export const metadata: Metadata = { title: 'Organizations' }
 export const dynamic = 'force-dynamic'
 
 export default async function OrganizationsPage({

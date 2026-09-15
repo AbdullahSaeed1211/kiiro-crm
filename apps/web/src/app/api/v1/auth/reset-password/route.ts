@@ -1,4 +1,4 @@
-/* eslint-disable complexity */
+/* eslint-disable complexity -- reset handling keeps token validation, password policy, session creation, and safe error mapping together. */
 import {
   authBody,
   errorResponse,

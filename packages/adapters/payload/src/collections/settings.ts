@@ -31,6 +31,8 @@ export const settingsGlobal: GlobalConfig = {
   admin: { group: ADMIN_GROUPS.configuration },
   fields: [
     textField('appName', { maxLength: 60 }),
+    textField('logoFileKey', { maxLength: 500 }),
+    textField('faviconFileKey', { maxLength: 500 }),
     {
       ...textField('timezone', { required: true }),
       defaultValue: 'UTC',
@@ -61,6 +63,7 @@ export const settingsGlobal: GlobalConfig = {
       type: 'group',
       fields: [moduleToggle('crm'), moduleToggle('work'), moduleToggle('intake'), moduleToggle('mail')],
     },
+    { name: 'terminology', type: 'json', defaultValue: {} },
     { name: 'stalledDays', type: 'number', required: true, defaultValue: 14, min: 1, max: 365 },
     {
       name: 'email',

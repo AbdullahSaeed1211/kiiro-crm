@@ -103,7 +103,7 @@ export function KanbanBoard({ stages, cards, labels, onMove, onConflict }: Kanba
   )
 
   return (
-    <div className="flex min-h-96 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:snap-none">
+    <div className="ops-kanban-board flex min-h-96 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:snap-none">
       {stages.map((stage) => (
         <KanbanColumn
           key={stage.id}

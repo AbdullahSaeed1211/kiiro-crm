@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-statements, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable complexity, max-statements, @typescript-eslint/no-unsafe-assignment -- the test exercises every supported configuration collection through one shared transaction. */
 import { describe, expect, it } from 'vitest'
 import { peopleCollections, peopleUsersCollection } from '../../src/collections/people/collections'
 import { authHooks } from '../../src/hooks/auth/auth'
@@ -11,7 +11,7 @@ import {
 import { sharedViewAccess } from '../../src/collections/config/access'
 import type { PayloadRequest } from 'payload'
 
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line max-lines-per-function -- the test enumerates all durable collection fields in one contract assertion.
 describe('people and configuration collections', () => {
   it('declares the people vertical collections with durable timestamps', () => {
     expect(peopleCollections.map((collection) => collection.slug)).toEqual([
@@ -23,6 +23,12 @@ describe('people and configuration collections', () => {
     expect(
       peopleCollections.every((collection) => collection.timestamps === true && collection.versions === false),
     ).toBe(true)
+    expect(peopleCollections.map((collection) => collection.admin?.useAsTitle)).toEqual([
+      'name',
+      'name',
+      'email',
+      undefined,
+    ])
   })
 
   it('declares the configuration vertical and settings fields', () => {

@@ -42,6 +42,7 @@ export interface TaskListItem {
 export interface TaskListQuery {
   readonly page: number
   readonly sort: TaskSort
+  readonly view?: 'all' | 'open' | 'mine'
 }
 
 /** One page of tasks plus the total across all pages. */

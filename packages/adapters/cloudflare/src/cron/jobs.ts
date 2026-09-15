@@ -1,7 +1,8 @@
 /* eslint-disable sonarjs/no-duplicate-string -- job names are persisted protocol identifiers. */
 import { ok, type Id } from '@ops/kernel'
-import type { NotificationStore, RecordRef } from '@ops/platform'
-import type { CronJob } from './cron-job'
+import type { NotificationStore } from '@ops/platform'
+import type { CronJob, JobBatch, JobCursor, JobRunStore, JobTarget } from './cron-job'
+export type { JobBatch, JobCursor, JobTarget } from './cron-job'
 import {
   asBatch,
   claim,
@@ -18,42 +19,11 @@ import {
   startOfLocalDay,
 } from './job-support'
 
-/** Stable ordering cursor persisted in `jobRuns` for capped jobs. */
-export interface JobCursor {
-  readonly updatedAt: number
-  readonly id: string
-}
-
-/** A capped page and the last row cursor returned by a job source. */
-export interface JobBatch<T> {
-  readonly rows: readonly T[]
-  readonly nextCursor?: JobCursor
-}
-
-/** A minimal job-run store. Its unique claim must be backed by `(job, windowStart)` in persistence. */
-export interface JobRunStore {
-  claim(job: string, window: string): Promise<boolean>
-  getCursor?(job: string): Promise<JobCursor | undefined>
-  saveCursor?(job: string, cursor: JobCursor | undefined): Promise<void>
-}
-
 /** A pending invitation supplied by the jobs composition root. */
 export interface ExpiredInvitation {
   readonly id: Id
   readonly expiresAt: number
   readonly updatedAt?: number
-}
-
-/** A task or record that can receive a daily notification. */
-export interface JobTarget {
-  readonly record: RecordRef
-  readonly title: string
-  readonly ownerId?: Id
-  readonly assigneeIds?: readonly Id[]
-  readonly stageName?: string
-  readonly stalledDays?: number
-  readonly updatedAt?: number
-  readonly digestLocalTime?: string
 }
 
 /** A rejected submission row that can be deleted with cursor continuation. */

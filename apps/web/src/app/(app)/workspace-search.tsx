@@ -56,7 +56,11 @@ function iconFor(recordType: string) {
   return recordType in ICONS ? ICONS[recordType as keyof typeof ICONS] : Search
 }
 
-function emptyCopy({ query, loading, copy }: Readonly<{ query: string; loading: boolean; copy: Readonly<Record<string, string>> }>): string {
+function emptyCopy({
+  query,
+  loading,
+  copy,
+}: Readonly<{ query: string; loading: boolean; copy: Readonly<Record<string, string>> }>): string {
   if (loading) return copy.searching
   if (query.length < 2) return copy.minChars
   return copy.noMatches

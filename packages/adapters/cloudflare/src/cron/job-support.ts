@@ -1,15 +1,20 @@
 /* eslint-disable complexity, sonarjs/cognitive-complexity -- timezone and cursor helpers encode state-machine edge cases. */
 import type { Id } from '@ops/kernel'
 import type { NotificationStore } from '@ops/platform'
-import type { CronWindow } from './cron-job'
+import type { CronWindow, JobBatch, JobCursor, JobRunStore, JobTarget } from './cron-job'
 import { localDateFormatter } from './local-date'
-import type { JobBatch, JobCursor, JobTarget, ScheduledJobsDeps } from './jobs'
+
+interface JobStateDeps {
+  readonly notifications: NotificationStore
+  readonly runs?: JobRunStore
+  readonly limit?: number
+}
 
 export const JOB_LIMIT = 200
 export const HOUR_MS = 60 * 60 * 1000
 export const DAY_MS = 24 * HOUR_MS
 
-export function jobWindow(job: string, window: CronWindow): string {
+function jobWindow(job: string, window: CronWindow): string {
   return `${job}:${String(window.start)}`
 }
 
@@ -93,16 +98,16 @@ function cursorOf(row: unknown): JobCursor {
   return { id, updatedAt }
 }
 
-export async function claim(deps: ScheduledJobsDeps, name: string, window: CronWindow): Promise<boolean> {
+export async function claim(deps: JobStateDeps, name: string, window: CronWindow): Promise<boolean> {
   return deps.runs === undefined || (await deps.runs.claim(name, jobWindow(name, window)))
 }
 
-export async function cursorOfJob(deps: ScheduledJobsDeps, name: string): Promise<JobCursor | undefined> {
+export async function cursorOfJob(deps: JobStateDeps, name: string): Promise<JobCursor | undefined> {
   return deps.runs?.getCursor?.(name)
 }
 
 export async function saveCursor(input: {
-  readonly deps: ScheduledJobsDeps
+  readonly deps: JobStateDeps
   readonly name: string
   readonly rows: readonly unknown[]
   readonly next?: JobCursor | undefined

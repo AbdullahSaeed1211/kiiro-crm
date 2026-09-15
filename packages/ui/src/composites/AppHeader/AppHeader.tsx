@@ -52,7 +52,7 @@ export function AppHeader({ breadcrumbs, actions }: AppHeaderProps) {
   const levels = breadcrumbs.slice(-MAX_LEVELS)
   const lastIndex = levels.length - 1
   return (
-    <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-4 md:rounded-t-xl">
+    <header className="ops-app-header sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-4 md:rounded-t-xl">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="my-auto mr-2 data-vertical:h-4" />
       <Breadcrumb className="min-w-0">

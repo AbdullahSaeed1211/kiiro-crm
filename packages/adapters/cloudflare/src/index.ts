@@ -24,7 +24,7 @@ export {
 } from './intake/turnstile'
 export { InMemoryRateLimiter, createRateLimiter, type RateLimitBinding } from './intake/rate-limit'
 export { handleIntakeRequest, type IntakeRequestDeps } from './intake/request'
-export type { CronJob, CronJobOutcome, CronWindow } from './cron/cron-job'
+export type { CronJob, CronJobOutcome, CronWindow, JobBatch, JobCursor, JobRunStore, JobTarget } from './cron/cron-job'
 export {
   createDueSoonJob,
   DUE_SOON_HORIZON_MS,
@@ -43,11 +43,7 @@ export {
   createStalledJob,
   startOfLocalDay,
   type ExpiredInvitation,
-  type JobBatch,
-  type JobCursor,
-  type JobRunStore,
   type JobSources,
-  type JobTarget,
   type RejectedSubmission,
   type ScheduledJobsDeps,
 } from './cron/jobs'

@@ -35,6 +35,7 @@ function Description({
   value,
   onChange,
   onSave,
+  disabled = false,
 }: Readonly<{ value: string; onChange: (value: string) => void; onSave?: () => void; disabled?: boolean }>) {
   return (
     <section>
@@ -44,19 +45,22 @@ function Description({
         onChange={(event) => {
           onChange(event.target.value)
         }}
-        placeholder="Add a description"
+        placeholder="Add a description…"
         rows={7}
       />
-      <Button
-        size="sm"
-        variant="outline"
-        className="mt-2"
-        onClick={() => {
-          onSave?.()
-        }}
-      >
-        Save description
-      </Button>
+      {onSave === undefined ? null : (
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2"
+          disabled={disabled}
+          onClick={() => {
+            void onSave()
+          }}
+        >
+          {disabled ? 'Saving…' : 'Save description'}
+        </Button>
+      )}
     </section>
   )
 }
@@ -95,12 +99,14 @@ export function TaskSheet({
   onOpenChange,
   onSaveDescription,
   onComplete,
+  renderAsPage = false,
 }: Readonly<{
   task: TaskSheetTask | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaveDescription?: (taskId: string, expectedUpdatedAt: number, description: string) => Promise<boolean> | boolean
   onComplete?: (taskId: string, expectedUpdatedAt: number, reopen: boolean) => Promise<boolean> | boolean
+  renderAsPage?: boolean
 }>) {
   const [description, setDescription] = useState(task?.description ?? '')
   const [busy, setBusy] = useState(false)
@@ -120,49 +126,62 @@ export function TaskSheet({
     setBusy(false)
     setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
   }
+  const detail = (
+    <>
+      <SheetHeader>
+        {renderAsPage ? (
+          <h1 className="font-heading text-xl font-semibold text-foreground">{task.title}</h1>
+        ) : (
+          <SheetTitle>{task.title}</SheetTitle>
+        )}
+        <TaskMeta task={task} />
+      </SheetHeader>
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4">
+        <Description
+          value={description}
+          onChange={setDescription}
+          disabled={busy}
+          {...(onSaveDescription === undefined
+            ? {}
+            : {
+                onSave: async () => {
+                  setBusy(true)
+                  setMessage(null)
+                  const saved = await onSaveDescription(task.id, expectedUpdatedAt, description)
+                  setBusy(false)
+                  setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
+                },
+              })}
+        />
+        <Subtasks task={task} />
+      </div>
+      <SheetFooter className="shrink-0 flex-row border-t">
+        {onComplete === undefined ? null : (
+          <Button className="flex-1" onClick={() => void handleComplete()} disabled={busy}>
+            {busy ? (terminal ? 'Reopening…' : 'Completing…') : terminal ? 'Reopen' : 'Complete'}
+          </Button>
+        )}
+        <Button className="flex-1" variant="outline" onClick={() => onOpenChange(false)}>
+          Close
+        </Button>
+      </SheetFooter>
+      {message === null ? null : (
+        <p className="px-4 pb-3 text-sm text-muted-foreground" role="status" aria-live="polite">
+          {message}
+        </p>
+      )}
+    </>
+  )
+  if (renderAsPage)
+    return (
+      <section className="mx-auto flex min-h-[min(720px,calc(100vh-2rem))] max-w-3xl flex-col overflow-hidden rounded-xl border bg-card shadow-sm">
+        {detail}
+      </section>
+    )
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[560px]">
-        <SheetHeader>
-          <SheetTitle>{task.title}</SheetTitle>
-          <TaskMeta task={task} />
-        </SheetHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4">
-          <Description
-            value={description}
-            onChange={setDescription}
-            {...(onSaveDescription === undefined
-              ? {}
-              : {
-                  onSave: async () => {
-                    setBusy(true)
-                    setMessage(null)
-                    const saved = await onSaveDescription(task.id, expectedUpdatedAt, description)
-                    setBusy(false)
-                    setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
-                  },
-                })}
-          />
-          <Subtasks task={task} />
-        </div>
-        <SheetFooter>
-          <Button onClick={() => void handleComplete()} disabled={busy}>
-            {terminal ? 'Reopen' : 'Complete'}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false)
-            }}
-          >
-            Close
-          </Button>
-        </SheetFooter>
-        {message === null ? null : (
-          <p className="px-4 pb-3 text-sm text-muted-foreground" role="status">
-            {message}
-          </p>
-        )}
+      <SheetContent side="right" className="w-full overflow-hidden overscroll-contain sm:max-w-[560px]">
+        {detail}
       </SheetContent>
     </Sheet>
   )

@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function, max-statements */
+/* eslint-disable max-lines-per-function, max-statements -- this test models the full two-request race in one deterministic fixture. */
 import { describe, expect, it } from 'vitest'
 import {
   claimInvitationWithCas,

@@ -122,7 +122,9 @@ export default async function DashboardPage() {
               <span className="block text-sm font-medium">{copy.figures}</span>
               <span className="mt-1 block text-xs text-muted-foreground">{copy.figuresDescription}</span>
             </span>
-            <span aria-hidden className="text-muted-foreground transition-transform group-hover:translate-x-0.5">→</span>
+            <span aria-hidden className="text-muted-foreground transition-transform group-hover:translate-x-0.5">
+              →
+            </span>
           </a>
         ) : null}
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">

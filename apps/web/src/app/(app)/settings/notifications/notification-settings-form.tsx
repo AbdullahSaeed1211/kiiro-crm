@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function, max-params */
+/* eslint-disable max-lines-per-function, max-params -- the settings form owns one authorized save boundary and its channel matrix. */
 'use client'
 
 import { useRouter } from 'next/navigation'

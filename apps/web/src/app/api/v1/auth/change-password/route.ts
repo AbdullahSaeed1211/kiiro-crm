@@ -1,4 +1,4 @@
-/* eslint-disable max-statements */
+/* eslint-disable max-statements -- this authentication transaction must validate, re-authenticate, and update one account atomically. */
 import {
   authBody,
   errorResponse,

@@ -13,7 +13,11 @@ export async function SettingsPage({
   children,
 }: Readonly<{ title: string; description: string; roles: readonly Role[]; children?: ReactNode }>) {
   const context = await requireRole(...roles)
-  const settings = (await context.payload.findGlobal({ slug: 'settings', depth: 0, req: context.req })) as unknown as Record<string, unknown>
+  const settings = (await context.payload.findGlobal({
+    slug: 'settings',
+    depth: 0,
+    req: context.req,
+  })) as unknown as Record<string, unknown>
   const locale = normalizeLocale(settings.locale)
   return (
     <>

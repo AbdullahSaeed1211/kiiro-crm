@@ -1,4 +1,4 @@
-/* eslint-disable max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/consistent-type-definitions, no-nested-ternary, sonarjs/no-nested-conditional */
+/* eslint-disable max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/consistent-type-definitions, no-nested-ternary, sonarjs/no-nested-conditional -- editor keeps field draft, validation, and persistence in one focused settings surface. */
 'use client'
 
 import { useRouter } from 'next/navigation'

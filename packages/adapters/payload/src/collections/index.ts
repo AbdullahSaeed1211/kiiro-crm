@@ -1,19 +1,26 @@
 import type { CollectionConfig } from 'payload'
 import { activityCollection } from './activity'
-import { attachmentsCollection } from './attachments'
+import {
+  collaborationAttachmentsCollection,
+  collaborationNotificationsCollection,
+  commentsCollection,
+  layoutsCollection,
+  notificationPrefsCollection,
+  savedViewsCollection,
+} from './collaboration'
 import { contactsCollection } from './contacts'
 import { dealsCollection } from './deals'
 import { emailMessagesCollection } from './email-messages'
-import { groupsCollection } from './groups'
+import { fieldDefinitionsCollection } from './config'
 import { jobRunsCollection } from './job-runs'
+import { intakeFormsCollection, intakeSubmissionsCollection } from './intake'
 import { leadsCollection } from './leads'
 import { lostReasonsCollection, sourcesCollection } from './lookups'
-import { notificationsCollection } from './notifications'
 import { organizationsCollection } from './organizations'
 import { projectsCollection } from './projects'
 import { stageTransitionsCollection } from './stage-transitions'
 import { tasksCollection } from './tasks'
-import { usersCollection } from './users'
+import { invitationsCollection, peopleGroupsCollection, peopleUsersCollection } from './people'
 import { workflowsCollection } from './workflows'
 
 export { ADMIN_GROUPS } from './fields'
@@ -24,8 +31,9 @@ export { settingsGlobal } from './settings'
  * Read-only because Payload appends its own collections to the array it is given; pass `[...spikeCollections]`.
  */
 export const spikeCollections: readonly CollectionConfig[] = [
-  usersCollection,
-  groupsCollection,
+  peopleUsersCollection,
+  peopleGroupsCollection,
+  invitationsCollection,
   organizationsCollection,
   contactsCollection,
   leadsCollection,
@@ -33,12 +41,19 @@ export const spikeCollections: readonly CollectionConfig[] = [
   projectsCollection,
   tasksCollection,
   workflowsCollection,
+  fieldDefinitionsCollection,
+  savedViewsCollection,
+  layoutsCollection,
   sourcesCollection,
   lostReasonsCollection,
+  notificationPrefsCollection,
+  intakeFormsCollection,
+  intakeSubmissionsCollection,
   activityCollection,
   stageTransitionsCollection,
-  attachmentsCollection,
-  notificationsCollection,
+  commentsCollection,
+  collaborationAttachmentsCollection,
+  collaborationNotificationsCollection,
   emailMessagesCollection,
   jobRunsCollection,
 ]

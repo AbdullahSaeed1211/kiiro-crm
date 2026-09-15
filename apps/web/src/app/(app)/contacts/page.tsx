@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { DirectoryListHeader, ContactsTable } from '../directory-view'
 import { listContacts, parseDirectoryPage, parseDirectorySort, queryValue } from '../../../server/crm/directory/data'
 
-export const metadata: Metadata = { title: 'Contacts · Workspace' }
+export const metadata: Metadata = { title: 'Contacts' }
 export const dynamic = 'force-dynamic'
 
 export default async function ContactsPage({

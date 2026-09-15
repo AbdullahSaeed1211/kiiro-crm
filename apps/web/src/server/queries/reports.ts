@@ -69,14 +69,24 @@ function emptyCounts(): FigureCounts {
 }
 
 function ownerName(id: string | null, people: ReadonlyMap<string, string>): string {
-  return id === null ? 'Unassigned' : people.get(id) ?? 'Unknown owner'
+  return id === null ? 'Unassigned' : (people.get(id) ?? 'Unknown owner')
 }
 
-function figureFor(map: Map<string, FigureAccumulator>, id: string | null, people: ReadonlyMap<string, string>): FigureAccumulator {
+function figureFor(
+  map: Map<string, FigureAccumulator>,
+  id: string | null,
+  people: ReadonlyMap<string, string>,
+): FigureAccumulator {
   const key = id ?? '__unassigned__'
   const existing = map.get(key)
   if (existing !== undefined) return existing
-  const created: FigureAccumulator = { id, name: ownerName(id, people), ...emptyCounts(), pipelineMinor: 0, pipelineCurrency: null }
+  const created: FigureAccumulator = {
+    id,
+    name: ownerName(id, people),
+    ...emptyCounts(),
+    pipelineMinor: 0,
+    pipelineCurrency: null,
+  }
   map.set(key, created)
   return created
 }
@@ -95,14 +105,23 @@ function currencyTotal(
   return { pipelineMinor: current.pipelineMinor, pipelineCurrency: null }
 }
 
-function taskMetrics(task: WorkReadModel['tasks'][number], range: ReportRange, now: number): { include: boolean; open: boolean; completed: boolean; overdue: boolean } {
+function taskMetrics(
+  task: WorkReadModel['tasks'][number],
+  range: ReportRange,
+  now: number,
+): { include: boolean; open: boolean; completed: boolean; overdue: boolean } {
   const completed = inRange(task.completedAt, range)
   const due = inRange(task.dueAt, range)
   const open = !TERMINAL_TASKS.has(task.stageCategory)
   return { include: due || completed, open, completed, overdue: open && task.dueAt !== null && task.dueAt < now }
 }
 
-function addTaskCounts({ target, task, range, now }: Readonly<{ target: FigureCounts; task: WorkReadModel['tasks'][number]; range: ReportRange; now: number }>): boolean {
+function addTaskCounts({
+  target,
+  task,
+  range,
+  now,
+}: Readonly<{ target: FigureCounts; task: WorkReadModel['tasks'][number]; range: ReportRange; now: number }>): boolean {
   const metrics = taskMetrics(task, range, now)
   if (!metrics.include) return false
   target.openTasks += metrics.open && inRange(task.dueAt, range) ? 1 : 0
@@ -115,12 +134,21 @@ function addLeadCount(target: FigureCounts): void {
   target.leads += 1
 }
 
-function dealMetrics(deal: DealRecord, workflow: Workflow | undefined, range: ReportRange): { created: boolean; won: boolean; open: boolean; include: boolean } {
+function dealMetrics(
+  deal: DealRecord,
+  workflow: Workflow | undefined,
+  range: ReportRange,
+): { created: boolean; won: boolean; open: boolean; include: boolean } {
   const created = inRange(deal.createdAt, range)
   const closed = inRange(deal.closedAt, range)
   if (!created && !closed) return { created: false, won: false, open: false, include: false }
   const category = terminalStage(workflow, deal)
-  return { created, won: category === 'done_success' && closed, open: category === undefined || !TERMINAL_TASKS.has(category), include: true }
+  return {
+    created,
+    won: category === 'done_success' && closed,
+    open: category === undefined || !TERMINAL_TASKS.has(category),
+    include: true,
+  }
 }
 
 function addDealCounts(target: FigureCounts, metrics: ReturnType<typeof dealMetrics>): void {
@@ -128,14 +156,30 @@ function addDealCounts(target: FigureCounts, metrics: ReturnType<typeof dealMetr
   target.wonDeals += metrics.won ? 1 : 0
 }
 
-function addPipeline(target: Pick<FigureAccumulator, 'pipelineMinor' | 'pipelineCurrency'>, deal: DealRecord, open: boolean): void {
+function addPipeline(
+  target: Pick<FigureAccumulator, 'pipelineMinor' | 'pipelineCurrency'>,
+  deal: DealRecord,
+  open: boolean,
+): void {
   if (!open || deal.value === null) return
   const next = currencyTotal(target, deal.value.amountMinor, deal.value.currency)
   target.pipelineMinor = next.pipelineMinor
   target.pipelineCurrency = next.pipelineCurrency
 }
 
-function aggregateTasks({ model, range, now, figures, totals }: Readonly<{ model: WorkReadModel; range: ReportRange; now: number; figures: Map<string, FigureAccumulator>; totals: FigureCounts }>): void {
+function aggregateTasks({
+  model,
+  range,
+  now,
+  figures,
+  totals,
+}: Readonly<{
+  model: WorkReadModel
+  range: ReportRange
+  now: number
+  figures: Map<string, FigureAccumulator>
+  totals: FigureCounts
+}>): void {
   for (const task of model.tasks) {
     if (!addTaskCounts({ target: totals, task, range, now })) continue
     for (const id of task.assigneeIds.length > 0 ? task.assigneeIds : [null]) {
@@ -144,7 +188,19 @@ function aggregateTasks({ model, range, now, figures, totals }: Readonly<{ model
   }
 }
 
-function aggregateLeads({ leads, range, people, figures, totals }: Readonly<{ leads: readonly LeadRecord[]; range: ReportRange; people: ReadonlyMap<string, string>; figures: Map<string, FigureAccumulator>; totals: FigureCounts }>): void {
+function aggregateLeads({
+  leads,
+  range,
+  people,
+  figures,
+  totals,
+}: Readonly<{
+  leads: readonly LeadRecord[]
+  range: ReportRange
+  people: ReadonlyMap<string, string>
+  figures: Map<string, FigureAccumulator>
+  totals: FigureCounts
+}>): void {
   for (const lead of leads) {
     if (!inRange(lead.createdAt, range)) continue
     const id = lead.ownerId === null ? null : String(lead.ownerId)
@@ -153,7 +209,21 @@ function aggregateLeads({ leads, range, people, figures, totals }: Readonly<{ le
   }
 }
 
-function aggregateDeals({ deals, workflow, range, people, figures, totals }: Readonly<{ deals: readonly DealRecord[]; workflow: Workflow | undefined; range: ReportRange; people: ReadonlyMap<string, string>; figures: Map<string, FigureAccumulator>; totals: FigureCounts & Pick<FigureAccumulator, 'pipelineMinor' | 'pipelineCurrency'> }>): void {
+function aggregateDeals({
+  deals,
+  workflow,
+  range,
+  people,
+  figures,
+  totals,
+}: Readonly<{
+  deals: readonly DealRecord[]
+  workflow: Workflow | undefined
+  range: ReportRange
+  people: ReadonlyMap<string, string>
+  figures: Map<string, FigureAccumulator>
+  totals: FigureCounts & Pick<FigureAccumulator, 'pipelineMinor' | 'pipelineCurrency'>
+}>): void {
   for (const deal of deals) {
     const metrics = dealMetrics(deal, workflow, range)
     if (!metrics.include) continue
@@ -190,7 +260,9 @@ export async function loadReportFigures(
   return {
     range,
     totals,
-    owners: [...figures.values()].sort((a, b) => b.openTasks + b.pipelineMinor - (a.openTasks + a.pipelineMinor) || a.name.localeCompare(b.name)),
+    owners: [...figures.values()].sort(
+      (a, b) => b.openTasks + b.pipelineMinor - (a.openTasks + a.pipelineMinor) || a.name.localeCompare(b.name),
+    ),
     locale: model.locale,
     timeZone: model.timeZone,
   }

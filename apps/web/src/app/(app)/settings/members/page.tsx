@@ -127,7 +127,9 @@ export default async function MembersSettingsPage() {
             reportsTo: typeof user.reportsTo === 'string' ? user.reportsTo : '',
           }}
         />
-      ) : <span className="text-xs text-muted-foreground">Managed by role policy</span>,
+      ) : (
+        <span className="text-xs text-muted-foreground">Managed by role policy</span>
+      ),
     })),
     ...invitations.docs.map((invitation) => ({
       id: invitation.id,

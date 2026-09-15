@@ -64,7 +64,7 @@
       "workers_dev": false,
       "routes": [
         {
-          "pattern": "mirchmedia.platform-domain.invalid",
+          "pattern": "crm.mirchmedia.com",
           "custom_domain": true
         }
       ],
@@ -113,11 +113,11 @@
       ],
       "vars": {
         "TENANT_SLUG": "mirchmedia",
-        "APP_ORIGIN": "https://mirchmedia.platform-domain.invalid",
-        "INBOUND_DOMAIN": "in.example.test",
+        "APP_ORIGIN": "https://crm.mirchmedia.com",
+        "INBOUND_DOMAIN": "in.mirchmedia.com",
         "TURNSTILE_HOSTNAMES": "www.mirchmedia.com,web.mirchmedia.com",
         "MAIL_TRANSPORT": "cloudflare",
-        "MAIL_FROM_ADDRESS": "no-reply@example.test",
+        "MAIL_FROM_ADDRESS": "no-reply@notify.mirchmedia.com",
         "MAIL_FROM_NAME": "Mirch Media"
       },
       "triggers": {

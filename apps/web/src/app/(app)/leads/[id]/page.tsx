@@ -6,7 +6,7 @@ import { LeadRecordClient } from '../LeadRecordClient'
 export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ id: string }> }>): Promise<Metadata> {
   const data = await getLeadPage((await params).id)
-  return { title: data ? `${data.item.lead.title} · Leads · Workspace` : 'Lead · Workspace' }
+  return { title: data ? `${data.item.lead.title} · Leads` : 'Lead' }
 }
 
 export default async function LeadPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {

@@ -20,7 +20,3 @@ export async function authenticate(payload: Payload, request: Request): Promise<
   const role = roleValue === 'owner' || roleValue === 'manager' ? roleValue : 'staff'
   return { user, id: user.id, role }
 }
-
-export function isManagerUp(context: AuthContext): boolean {
-  return context.role === 'owner' || context.role === 'manager'
-}

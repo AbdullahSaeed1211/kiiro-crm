@@ -1,5 +1,4 @@
-/* eslint-disable complexity, max-lines-per-function, @typescript-eslint/no-unnecessary-condition, sonarjs/different-types-comparison */
-
+/* eslint-disable complexity, max-lines-per-function, @typescript-eslint/no-unnecessary-condition, sonarjs/different-types-comparison -- the claim flow intentionally models Payload's atomic and variable-shaped responses. */
 export interface InvitationClaimDocument extends Record<string, unknown> {
   readonly id: string | number
 }

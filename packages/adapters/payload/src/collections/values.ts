@@ -1,8 +1,5 @@
-import type { NotificationType, Role, StageCategory, StageColor } from '@ops/platform'
+import type { NotificationType, StageCategory, StageColor } from '@ops/platform'
 import { RECORD_TYPES } from '../contracts/names'
-
-/** User roles of decision D-27, first the most privileged. */
-export const ROLE_VALUES = ['owner', 'manager', 'staff'] as const satisfies readonly Role[]
 
 /** Record types that workflows, activity, attachments and polymorphic references may name in the spike. */
 export const RECORD_TYPE_VALUES = Object.values(RECORD_TYPES)

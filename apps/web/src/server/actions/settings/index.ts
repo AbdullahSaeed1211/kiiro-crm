@@ -243,36 +243,82 @@ export async function deleteConfiguration(input: unknown): Promise<ActionResult>
   }
 }
 
-// eslint-disable-next-line complexity, max-statements, sonarjs/cognitive-complexity -- default-state changes clear sibling defaults in one authorized transaction.
-export async function setSavedViewState(input: unknown): Promise<ActionResult> {
-  const context = await requireRole('owner', 'manager')
-  const data = recordOf(input)
+async function clearSiblingDefaults(
+  dataPayload: ReturnType<typeof payloadData>,
+  view: { readonly id: string | number; readonly owner?: unknown; readonly recordType?: unknown },
+  req: ProductContext['req'],
+): Promise<void> {
+  const owner = typeof view.owner === 'string' ? view.owner : null
+  const where =
+    owner === null
+      ? {
+          and: [
+            { recordType: { equals: view.recordType } },
+            { or: [{ owner: { equals: null } }, { owner: { exists: false } }] },
+          ],
+        }
+      : { and: [{ recordType: { equals: view.recordType } }, { owner: { equals: owner } }] }
+  const siblings = await dataPayload.find({
+    collection: 'savedViews',
+    where,
+    limit: 100,
+    depth: 0,
+    overrideAccess: false,
+    req,
+  })
+  await Promise.all(
+    siblings.docs
+      .filter(
+        (sibling): sibling is NonNullable<typeof sibling> =>
+          sibling !== undefined && String(sibling.id) !== String(view.id) && sibling.isDefault === true,
+      )
+      .map((sibling) =>
+        dataPayload.update({
+          collection: 'savedViews',
+          id: sibling.id,
+          data: { isDefault: false },
+          overrideAccess: false,
+          req,
+        }),
+      ),
+  )
+}
+
+function savedViewStateInput(
+  data: Record<string, unknown>,
+): { readonly id: string; readonly pinned?: boolean; readonly isDefault?: boolean } | ActionResult {
   const id = stringValue(data.id)
   const pinned = typeof data.pinned === 'boolean' ? data.pinned : undefined
   const isDefault = typeof data.isDefault === 'boolean' ? data.isDefault : undefined
-  if (id === undefined || (pinned === undefined && isDefault === undefined))
-    return { ok: false, error: 'A view and a state change are required.' }
+  return id === undefined || (pinned === undefined && isDefault === undefined)
+    ? { ok: false, error: 'A view and a state change are required.' }
+    : { id, ...(pinned === undefined ? {} : { pinned }), ...(isDefault === undefined ? {} : { isDefault }) }
+}
+
+export async function setSavedViewState(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const parsed = savedViewStateInput(recordOf(input))
+  if ('ok' in parsed) return parsed
   try {
     const dataPayload = payloadData(context.payload)
-    const found = await dataPayload.find({ collection: 'savedViews', where: { id: { equals: id } }, limit: 1, depth: 0, overrideAccess: false, req: context.req })
+    const found = await dataPayload.find({
+      collection: 'savedViews',
+      where: { id: { equals: parsed.id } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: false,
+      req: context.req,
+    })
     const view = found.docs.at(0)
     if (view === undefined) return { ok: false, error: 'Saved view not found.' }
-    if (isDefault === true) {
-      const owner = typeof view.owner === 'string' ? view.owner : null
-      const where = owner === null
-        ? { and: [{ recordType: { equals: view.recordType } }, { or: [{ owner: { equals: null } }, { owner: { exists: false } }] }] }
-        : { and: [{ recordType: { equals: view.recordType } }, { owner: { equals: owner } }] }
-      const siblings = await dataPayload.find({ collection: 'savedViews', where, limit: 100, depth: 0, overrideAccess: false, req: context.req })
-      await Promise.all(
-        siblings.docs
-          .filter((sibling): sibling is NonNullable<typeof sibling> => sibling !== undefined && sibling.id !== id && sibling.isDefault === true)
-          .map((sibling) => dataPayload.update({ collection: 'savedViews', id: sibling.id, data: { isDefault: false }, overrideAccess: false, req: context.req })),
-      )
-    }
+    if (parsed.isDefault === true) await clearSiblingDefaults(dataPayload, view, context.req)
     await dataPayload.update({
       collection: 'savedViews',
-      id,
-      data: { ...(pinned === undefined ? {} : { pinned }), ...(isDefault === undefined ? {} : { isDefault }) },
+      id: parsed.id,
+      data: {
+        ...(parsed.pinned === undefined ? {} : { pinned: parsed.pinned }),
+        ...(parsed.isDefault === undefined ? {} : { isDefault: parsed.isDefault }),
+      },
       overrideAccess: false,
       req: context.req,
     })
@@ -447,37 +493,72 @@ export async function resendInvitation(input: unknown): Promise<ActionResult> {
   }
 }
 
-// eslint-disable-next-line complexity, max-statements, sonarjs/cognitive-complexity -- member updates validate target and proposed role before one guarded write.
-export async function saveMember(input: unknown): Promise<ActionResult> {
-  const context = await requireRole('owner', 'manager')
-  const data = recordOf(input)
+function memberUpdateInput(data: Record<string, unknown>):
+  | {
+      readonly id: string
+      readonly role: Role
+      readonly active: boolean
+      readonly groups: string[]
+      readonly reportsTo: string | null
+    }
+  | ActionResult {
   const id = stringValue(data.id)
   const role = stringValue(data.role) as Role | undefined
-  const active = data.active === true || data.active === 'true'
-  const groups = Array.isArray(data.groups) ? data.groups.filter((value): value is string => typeof value === 'string') : []
-  const reportsTo = data.reportsTo === null || data.reportsTo === '' ? null : stringValue(data.reportsTo)
-  if (id === undefined || role === undefined || !['owner', 'manager', 'staff'].includes(role))
+  const active = booleanValue(data.active)
+  const groups = stringArray(data.groups)
+  const reportsTo = nullableString(data.reportsTo)
+  if (id === undefined || role === undefined || !isRole(role))
     return { ok: false, error: 'Member and role are required.' }
-  if (id === context.actor.id && !active) return { ok: false, error: 'You cannot deactivate your own account.' }
+  return { id, role, active, groups, reportsTo: reportsTo ?? null }
+}
+
+function booleanValue(value: unknown): boolean {
+  return value === true || value === 'true'
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
+}
+
+function nullableString(value: unknown): string | null {
+  return value === null || value === '' ? null : (stringValue(value) ?? null)
+}
+
+function isRole(value: string): value is Role {
+  return value === 'owner' || value === 'manager' || value === 'staff'
+}
+
+async function loadManagedMember(context: ProductContext, id: string) {
+  const found = await context.payload.find({
+    collection: 'users',
+    where: { id: { equals: id } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  const member = found.docs.at(0)
+  if (member === undefined || typeof member.role !== 'string') return { ok: false as const, error: 'Member not found.' }
+  if (!can(context.actor, 'manage_members', { type: 'users', role: member.role }))
+    return { ok: false as const, error: 'You cannot manage this member.' }
+  return { ok: true as const, member }
+}
+
+export async function saveMember(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const parsed = memberUpdateInput(recordOf(input))
+  if ('ok' in parsed) return parsed
+  if (parsed.id === context.actor.id && !parsed.active)
+    return { ok: false, error: 'You cannot deactivate your own account.' }
   try {
-    const found = await context.payload.find({
-      collection: 'users',
-      where: { id: { equals: id } },
-      limit: 1,
-      depth: 0,
-      overrideAccess: false,
-      req: context.req,
-    })
-    const member = found.docs.at(0)
-    if (member === undefined || typeof member.role !== 'string') return { ok: false, error: 'Member not found.' }
-    if (!can(context.actor, 'manage_members', { type: 'users', role: member.role }))
-      return { ok: false, error: 'You cannot manage this member.' }
-    if (!can(context.actor, 'manage_members', { type: 'users', role }))
+    const managed = await loadManagedMember(context, parsed.id)
+    if (!managed.ok) return managed
+    if (!can(context.actor, 'manage_members', { type: 'users', role: parsed.role }))
       return { ok: false, error: 'You cannot assign this role.' }
     await context.payload.update({
       collection: 'users',
-      id,
-      data: { role, active, groups, reportsTo },
+      id: parsed.id,
+      data: { role: parsed.role, active: parsed.active, groups: parsed.groups, reportsTo: parsed.reportsTo },
       overrideAccess: false,
       req: context.req,
     })

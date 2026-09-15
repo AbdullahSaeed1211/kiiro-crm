@@ -94,11 +94,19 @@ function navGroups({
   return groups
 }
 
-function SidebarAccount({ name, email, role, locale }: Readonly<{ name: string; email: string; role: string; locale: Locale }>) {
+function SidebarAccount({
+  name,
+  email,
+  role,
+  locale,
+}: Readonly<{ name: string; email: string; role: string; locale: Locale }>) {
   const settingsLabel = SHELL_COPY[locale].settings
   return (
     <div className="space-y-1">
-      <a className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/settings/profile">
+      <a
+        className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        href="/settings/profile"
+      >
         <span className="ops-brand-mark grid size-8 place-items-center text-xs font-semibold text-primary-foreground">
           {name.charAt(0).toUpperCase()}
         </span>
@@ -107,7 +115,10 @@ function SidebarAccount({ name, email, role, locale }: Readonly<{ name: string; 
           <span className="block truncate text-[10px] text-muted-foreground">{email || role}</span>
         </span>
       </a>
-      <a className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={role === 'staff' ? '/settings/profile' : '/settings/general'}>
+      <a
+        className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        href={role === 'staff' ? '/settings/profile' : '/settings/general'}
+      >
         <span className="grid size-8 place-items-center">
           <Settings className="size-4" aria-hidden />
         </span>
@@ -146,7 +157,10 @@ export function AppFrame({
     const segment = pathname.split('/').find(Boolean)
     const copy = SHELL_COPY[locale]
     const segmentKey = segment === 'my-tasks' ? 'myTasks' : segment
-    const label = segmentKey === undefined ? copy.dashboard : (copy[segmentKey] ?? `${segmentKey.charAt(0).toUpperCase()}${segmentKey.slice(1)}`)
+    const label =
+      segmentKey === undefined
+        ? copy.dashboard
+        : (copy[segmentKey] ?? `${segmentKey.charAt(0).toUpperCase()}${segmentKey.slice(1)}`)
     const title = `${label} · ${appName}`
     document.title = title
     const timer = window.setTimeout(() => {

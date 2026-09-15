@@ -85,7 +85,7 @@ function DealFields({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="deal-value">Value (USD)</Label>
+          <Label htmlFor="deal-value">Value</Label>
           <Input id="deal-value" name="value" inputMode="decimal" placeholder="12000" />
         </div>
         <div className="grid gap-2">

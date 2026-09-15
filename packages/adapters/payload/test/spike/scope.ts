@@ -112,7 +112,13 @@ async function expectSeededReports(payload: Payload): Promise<void> {
 
 async function createReport(payload: Payload, name: string, reportsTo: Id): Promise<Id> {
   const data = { email: `${name}@example.test`, name, role: 'staff', password: DEV_PASSWORD, reportsTo }
-  const doc = await payload.create({ collection: COLLECTIONS.users, data, depth: 0, overrideAccess: true })
+  const doc = await payload.create({
+    collection: COLLECTIONS.users,
+    data,
+    depth: 0,
+    overrideAccess: true,
+    context: { authOperation: 'provisioning' },
+  })
   return asId(String(doc.id))
 }
 

@@ -14,7 +14,7 @@ import { invitationExpiresAt, invitationUsable } from '../../src/collections/peo
 const EMAIL = 'person@example.test'
 
 // The auth suite intentionally keeps boundary cases together.
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line max-lines-per-function -- the fixture covers the complete auth hook matrix in one scenario.
 describe('people auth invariants', () => {
   it('enforces the password policy on every set-password path', () => {
     expect(passwordPolicy('short', EMAIL)).not.toBe(true)

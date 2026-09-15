@@ -80,12 +80,13 @@ export async function getDealListData(): Promise<DealListData> {
   return { items, organizations, contacts, workflow, total: deals.length, lostReasons }
 }
 
-export async function getDealDetailData(id: string): Promise<DealDetailData | null> {
-  const context = await getRequestContext()
-  const deps = dealDeps(context)
-  const deal = await deps.repo.get('deal', asId(id))
-  if (deal === undefined) return null
-  const [workflow, organization, organizations, allContacts, lostReasons, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
+async function loadDealDetailParts({
+  context,
+  deps,
+  deal,
+  id,
+}: Readonly<{ context: RequestContext; deps: CrmDeps; deal: DealRecord; id: string }>) {
+  return Promise.all([
     deps.repo.loadWorkflow(deal.workflowId),
     deal.organizationId === null ? Promise.resolve(undefined) : deps.repo.get('organization', deal.organizationId),
     deps.repo.list('organization'),
@@ -96,6 +97,24 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
     listRelatedTasks(context, 'deal', id),
     listRecordAttachments(context, 'deal', id),
   ])
+}
+
+export async function getDealDetailData(id: string): Promise<DealDetailData | null> {
+  const context = await getRequestContext()
+  const deps = dealDeps(context)
+  const deal = await deps.repo.get('deal', asId(id))
+  if (deal === undefined) return null
+  const [
+    workflow,
+    organization,
+    organizations,
+    allContacts,
+    lostReasons,
+    activity,
+    emailMessages,
+    relatedTasks,
+    attachments,
+  ] = await loadDealDetailParts({ context, deps, deal, id })
   if (workflow === undefined) return null
   return {
     deal,

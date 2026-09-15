@@ -3,10 +3,13 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Metadata } from 'next'
+import { TASK_COPY } from '../../../i18n/config'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+import { taskHref } from '../task-navigation'
+import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Calendar · Workspace' }
+export const metadata: Metadata = { title: 'Calendar' }
 
 function dateInZone(value: number, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -48,6 +51,7 @@ export default async function CalendarPage({
   const query = await searchParams
   const year = queryMonth({ value: query.year, fallback: selected.year, min: 1970, max: 2100 })
   const month = queryMonth({ value: query.month, fallback: selected.month + 1, min: 1, max: 12 }) - 1
+  const copy = TASK_COPY[model.locale]
   const events: CalendarEvent[] = model.tasks
     .filter(
       (task): task is typeof task & { readonly dueAt: number } =>
@@ -57,15 +61,26 @@ export default async function CalendarPage({
       id: task.id,
       title: task.title,
       date: dateInZone(task.dueAt, model.timeZone),
-      href: `/tasks/${task.id}`,
+      href: taskHref(task.id, '/calendar'),
       tone: eventTone(task.priority),
     }))
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Calendar' }]} />
+      <AppHeader breadcrumbs={[{ label: copy.calendar }]} />
       <PageContent>
-        <PageHeader title="Calendar" description="Tasks by due date." />
-        <CalendarMonth year={year} month={month} weekStartsOn={model.weekStartsOn} events={events} />
+        <PageHeader
+          title={copy.calendar}
+          description={copy.calendarDescription}
+          actions={<TaskWorkspaceViews active="calendar" locale={model.locale} />}
+        />
+        <CalendarMonth
+          year={year}
+          month={month}
+          weekStartsOn={model.weekStartsOn}
+          locale={model.locale}
+          labels={{ previous: copy.previousMonth, next: copy.nextMonth }}
+          events={events}
+        />
       </PageContent>
     </>
   )

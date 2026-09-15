@@ -56,7 +56,7 @@ export interface IntakeSubmission {
 /** Persistence and side effects required by `submitIntake`. */
 export interface IntakeStore {
   findByDedupeKey(dedupeKey: string): Promise<IntakeSubmission | undefined>
-  insertSubmission(submission: Omit<IntakeSubmission, 'id'>): Promise<Result<IntakeSubmission>>
+  insertSubmission(submission: Omit<IntakeSubmission, 'id'>): Promise<Result<IntakeSubmission, DomainError>>
   markDuplicate(dedupeKey: string, recordRef?: IntakeSubmission['recordRef']): Promise<void>
   createLead(input: Readonly<Record<string, unknown>>): Promise<{ readonly id: string }>
   addComment(input: {

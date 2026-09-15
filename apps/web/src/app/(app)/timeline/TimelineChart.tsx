@@ -19,7 +19,11 @@ function isZoom(value: unknown): value is GanttZoom {
 }
 
 /** Timeline chart with a zoom toggle; persists bar changes through `setTaskDates`. */
-export function TimelineChart({ title, tasks, locale }: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale }>) {
+export function TimelineChart({
+  title,
+  tasks,
+  locale,
+}: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale }>) {
   const router = useRouter()
   const copy = TASK_COPY[locale]
   const zooms: readonly { value: GanttZoom; label: string }[] = [

@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/restrict-template-expressions, sonarjs/no-nested-functions, sonarjs/no-nested-template-literals */
+/* eslint-disable complexity, max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/restrict-template-expressions, sonarjs/no-nested-functions, sonarjs/no-nested-template-literals -- workflow editing keeps stage ordering and default-stage invariants in one transaction-oriented surface. */
 'use client'
 
 import { useRouter } from 'next/navigation'

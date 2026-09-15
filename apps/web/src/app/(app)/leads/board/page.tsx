@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../../server/crm/leads/queries'
 import { LeadBoard } from '../LeadBoard'
 
-export const metadata: Metadata = { title: 'Lead board · Workspace' }
+export const metadata: Metadata = { title: 'Lead board' }
 export const dynamic = 'force-dynamic'
 
 export default async function LeadBoardPage({
@@ -44,7 +44,10 @@ export default async function LeadBoardPage({
           title="Lead board"
           count={result.total}
           actions={
-            <a className="text-sm text-muted-foreground hover:text-foreground" href={tableHref}>
+            <a
+              className="ops-action-button rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              href={tableHref}
+            >
               Table view
             </a>
           }

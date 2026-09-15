@@ -24,7 +24,10 @@ function kindOf(value: unknown): SavedViewSummary['kind'] {
 }
 
 /** Lists only the shared/personal saved views the signed-in actor may read. */
-export async function listSavedViews(recordType: string, requestContext?: RequestContext): Promise<readonly SavedViewSummary[]> {
+export async function listSavedViews(
+  recordType: string,
+  requestContext?: RequestContext,
+): Promise<readonly SavedViewSummary[]> {
   const context = requestContext ?? (await getRequestContext())
   const result = await context.payload.find({
     collection: 'savedViews',

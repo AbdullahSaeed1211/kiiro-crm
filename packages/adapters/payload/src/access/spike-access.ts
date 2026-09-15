@@ -59,6 +59,8 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   },
   [COLLECTIONS.emailMessages]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.jobRuns]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.intakeForms]: { read: managerUp, ...managedByLeads },
+  [COLLECTIONS.intakeSubmissions]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.contacts]: scopedRecord(RECORD_TYPES.contacts),
   [COLLECTIONS.leads]: scopedRecord(RECORD_TYPES.leads),
   [COLLECTIONS.deals]: scopedRecord(RECORD_TYPES.deals),

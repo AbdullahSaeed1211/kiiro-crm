@@ -52,7 +52,9 @@ export default async function InboxPage() {
       <header className="border-b px-4 py-4 md:px-6">
         <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Communications</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Inbox</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Inbound and outbound email linked to your workspace records.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Inbound and outbound email linked to your workspace records.
+        </p>
       </header>
       <main className="mx-auto w-full max-w-5xl p-4 md:p-6">
         {messages.length === 0 ? (
@@ -74,14 +76,35 @@ export default async function InboxPage() {
                         {message.direction === 'inbound' ? message.from : message.to.join(', ') || 'Unknown recipient'}
                       </p>
                     </div>
-                    <time className="shrink-0 text-xs tabular-nums text-muted-foreground" dateTime={new Date(message.occurredAt).toISOString()}>
+                    <time
+                      className="shrink-0 text-xs tabular-nums text-muted-foreground"
+                      dateTime={new Date(message.occurredAt).toISOString()}
+                    >
                       {DATE_FORMAT.format(message.occurredAt)} · {messageLabel(message)}
                     </time>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{message.textBody || 'No message body.'}</p>
+                  <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
+                    {message.textBody || 'No message body.'}
+                  </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
-                    {href === null ? <span className="text-muted-foreground">Unlinked record</span> : <Link className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href}>Open linked record</Link>}
-                    {reply === null ? null : <a className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={reply}>Reply in mail</a>}
+                    {href === null ? (
+                      <span className="text-muted-foreground">Unlinked record</span>
+                    ) : (
+                      <Link
+                        className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        href={href}
+                      >
+                        Open linked record
+                      </Link>
+                    )}
+                    {reply === null ? null : (
+                      <a
+                        className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        href={reply}
+                      >
+                        Reply in mail
+                      </a>
+                    )}
                   </div>
                 </li>
               )

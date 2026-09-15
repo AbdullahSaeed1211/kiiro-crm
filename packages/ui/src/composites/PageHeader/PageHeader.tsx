@@ -13,7 +13,7 @@ export type PageHeaderProps = Readonly<{
 /** Page title row (spec §15.3, §17.5): title with optional count and description, plus an actions slot. */
 export function PageHeader({ title, count, description, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-2">
+    <div className="ops-page-header flex flex-wrap items-start justify-between gap-2">
       <div className="flex min-w-0 flex-col gap-1">
         <h1 className="flex items-baseline gap-2 text-xl font-semibold">
           <span className="truncate">{title}</span>

@@ -1,8 +1,7 @@
 /* eslint-disable complexity -- the capped notification loop and cursor continuation are one atomic job operation. */
 import { ok, type Id } from '@ops/kernel'
 import type { NotificationStore, RecordRef } from '@ops/platform'
-import type { CronJob, CronJobOutcome, CronWindow } from './cron-job'
-import type { JobCursor, JobRunStore } from './jobs'
+import type { CronJob, CronJobOutcome, CronWindow, JobCursor, JobRunStore } from './cron-job'
 import { localDateFormatter } from './local-date'
 
 // Job name in logs and in the cron route's `ran` list, as named in spec §13.

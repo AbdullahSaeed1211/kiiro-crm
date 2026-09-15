@@ -17,7 +17,11 @@ export function WorkspaceTools({ locale, appName }: Readonly<{ locale: Locale; a
   }
   return (
     <>
-      {isMobile ? <span translate="no" className="mr-auto min-w-0 max-w-[9rem] truncate text-sm font-semibold">{appName}</span> : null}
+      {isMobile ? (
+        <span translate="no" className="mr-auto min-w-0 max-w-[9rem] truncate text-sm font-semibold">
+          {appName}
+        </span>
+      ) : null}
       <WorkspaceSearch locale={locale} />
       <WorkspaceNotifications locale={locale} />
       <Button variant="ghost" size="icon-sm" aria-label="Toggle color theme" onClick={toggleTheme}>

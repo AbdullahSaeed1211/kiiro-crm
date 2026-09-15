@@ -64,7 +64,9 @@ export function SavedViewList({
                 {recordTypeLabel(view.recordType)} · {view.ownerId === null ? 'Shared' : 'Personal'} · {view.kind}
               </span>
               {view.pinned ? <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">Pinned</span> : null}
-              {view.isDefault ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default</span> : null}
+              {view.isDefault ? (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default</span>
+              ) : null}
               <button
                 className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 disabled={pendingId !== null || editingId !== null}

@@ -3,7 +3,6 @@ import type { InboundEmailMessage } from '../contracts/worker'
 /** A tenant target used by the platform-domain mail router. */
 export interface MailRouterTarget {
   fetch(request: Request): Promise<Response>
-  readonly internalSecret: string
 }
 
 /** Router environment with tenant bindings indexed by slug. */
@@ -11,6 +10,7 @@ export interface MailRouterEnv {
   readonly platformDomain: string
   readonly tenants: ReadonlyMap<string, MailRouterTarget>
   readonly appOrigin: string
+  readonly secrets: ReadonlyMap<string, string>
 }
 
 /** Routes `<slug>--<local>@in.<PLATFORM_DOMAIN>` to one tenant and rejects every ambiguous address. */
@@ -23,7 +23,8 @@ export async function routePlatformInbound(env: MailRouterEnv, message: InboundE
   const separator = local.indexOf('--')
   const slug = separator > 0 ? local.slice(0, separator) : ''
   const target = env.tenants.get(slug)
-  if (target === undefined || local.slice(separator + 2) === '') {
+  const internalSecret = env.secrets.get(slug)
+  if (target === undefined || internalSecret === undefined || local.slice(separator + 2) === '') {
     message.setReject('Unknown recipient')
     return
   }
@@ -35,7 +36,7 @@ export async function routePlatformInbound(env: MailRouterEnv, message: InboundE
       'content-type': 'message/rfc822',
       'x-envelope-from': message.from,
       'x-envelope-to': message.to,
-      'x-internal-secret': target.internalSecret,
+      'x-internal-secret': internalSecret,
     },
   })
   const response = await target.fetch(request)

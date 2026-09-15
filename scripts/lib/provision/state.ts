@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { exactJsonNames, hasExactResourceName, resourceId, WRANGLER, type CommandRunner } from './commands'
-import type { ProvisionHttpClient, ProvisionState } from './plan'
+import type { ProvisionHttpClient, ProvisionState } from './types'
 import type { Tenant } from '../tenant-schema'
 import { updateTenantD1Id } from './tenant-file'
 

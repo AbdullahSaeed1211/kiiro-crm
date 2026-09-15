@@ -1,9 +1,5 @@
-export const SUPPORTED_LOCALES = ['en', 'es'] as const
-export type Locale = (typeof SUPPORTED_LOCALES)[number]
-
-export function normalizeLocale(value: unknown): Locale {
-  return value === 'es' ? 'es' : 'en'
-}
+export { normalizeLocale, SUPPORTED_LOCALES, type Locale } from './locale'
+import type { Locale } from './locale'
 
 export const LOCALE_LABELS: Readonly<Record<Locale, string>> = {
   en: 'English',

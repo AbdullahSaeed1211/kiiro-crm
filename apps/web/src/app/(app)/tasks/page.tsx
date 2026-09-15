@@ -146,7 +146,11 @@ function DueCell({ dueAt }: Readonly<{ dueAt: number | null }>) {
   )
 }
 
-function toRow({ task, returnTo, locale }: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale }>): DataTableRow {
+function toRow({
+  task,
+  returnTo,
+  locale,
+}: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale }>): DataTableRow {
   return {
     id: task.id,
     cells: {
@@ -164,7 +168,11 @@ function toRow({ task, returnTo, locale }: Readonly<{ task: TaskListItem; return
   }
 }
 
-function taskColumns({ sort, view, locale }: Readonly<{ sort: TaskSort; view: string; locale: Locale }>): DataTableColumn[] {
+function taskColumns({
+  sort,
+  view,
+  locale,
+}: Readonly<{ sort: TaskSort; view: string; locale: Locale }>): DataTableColumn[] {
   const copy = TASK_COPY[locale]
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
@@ -226,7 +234,6 @@ function taskModeOf(view: string, savedView: SavedViewSummary | undefined): 'all
 }
 
 /** Tasks list (spec §17.5). */
-// eslint-disable-next-line max-lines-per-function -- the route owns table URL state and the task-workspace header.
 export default async function TasksPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
@@ -239,10 +246,7 @@ export default async function TasksPage({
     title: titleParam,
   } = await searchParams
   const context = await getRequestContext()
-  const [savedViews, locale] = await Promise.all([
-    listSavedViews('task', context),
-    loadWorkspaceLocale(context),
-  ])
+  const [savedViews, locale] = await Promise.all([listSavedViews('task', context), loadWorkspaceLocale(context)])
   const copy = TASK_COPY[locale]
   const sort = parseTaskSort(firstValue(sortParam))
   const view = parseTaskView(firstValue(viewParam), savedViews)
@@ -298,13 +302,7 @@ export default async function TasksPage({
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
           pagination={paginationOf({ result, sort: effectiveSort, view })}
           labels={labelsFor(locale)}
-          emptyState={
-            <EmptyState
-              icon={ListTodo}
-              title={copy.noTasks}
-              description={copy.noTasksDescription}
-            />
-          }
+          emptyState={<EmptyState icon={ListTodo} title={copy.noTasks} description={copy.noTasksDescription} />}
         />
       </PageContent>
     </>

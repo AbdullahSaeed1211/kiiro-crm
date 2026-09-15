@@ -108,7 +108,11 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
           <SheetDescription>{copy.description}</SheetDescription>
         </SheetHeader>
         <div className="space-y-2 overflow-y-auto px-4 pb-6">
-          {loading ? <p className="py-8 text-center text-sm text-muted-foreground" aria-live="polite">{copy.loading}</p> : null}
+          {loading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground" aria-live="polite">
+              {copy.loading}
+            </p>
+          ) : null}
           {!loading && items.length === 0 ? (
             <div className="grid place-items-center gap-2 py-12 text-center text-sm text-muted-foreground">
               <CheckCircle2 className="size-6" aria-hidden />

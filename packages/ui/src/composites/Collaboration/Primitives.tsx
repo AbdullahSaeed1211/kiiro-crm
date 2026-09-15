@@ -160,7 +160,10 @@ export function AvatarStack({
   const visible = users.slice(0, max)
   const remainder = users.length - visible.length
   return (
-    <div className="flex items-center -space-x-2" aria-label={`${String(users.length)} ${users.length === 1 ? 'user' : 'users'}`}>
+    <div
+      className="flex items-center -space-x-2"
+      aria-label={`${String(users.length)} ${users.length === 1 ? 'user' : 'users'}`}
+    >
       {visible.map((user) => (
         <UserAvatar key={user.id} name={user.name} />
       ))}

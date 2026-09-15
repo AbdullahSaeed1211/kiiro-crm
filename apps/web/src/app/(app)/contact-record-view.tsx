@@ -3,7 +3,14 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
 import type { ContactRecord } from '@ops/module-crm'
-import type { ActivityItem, ContactRelations, EmailThreadMessage, PersonSummary, RecordAttachment, RelatedTask } from '../../server/crm/directory/data'
+import type {
+  ActivityItem,
+  ContactRelations,
+  EmailThreadMessage,
+  PersonSummary,
+  RecordAttachment,
+  RelatedTask,
+} from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
 import { CopyButton } from './copy-button'
 import { RecordActionLinks } from './record-action-links'

@@ -22,7 +22,7 @@ export function CommentComposer({
   onChange,
   onSubmit,
   users = [],
-  placeholder = 'Write a comment...',
+  placeholder = 'Write a comment…',
 }: Readonly<{
   value: string
   onChange: (value: string) => void
@@ -40,9 +40,6 @@ export function CommentComposer({
         }}
       />
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost">
-          Cancel
-        </Button>
         <Button
           size="sm"
           onClick={() => {

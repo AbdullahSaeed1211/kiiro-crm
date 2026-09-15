@@ -32,12 +32,14 @@ function rangeKey(value: unknown): ReportRangeKey {
 
 /** Resolves a bounded reporting range from URL state, defaulting to the last 30 calendar days. */
 // eslint-disable-next-line complexity -- the five preset branches are intentionally explicit and mutually exclusive.
-export function resolveReportRange(input: {
-  readonly range?: unknown
-  readonly from?: unknown
-  readonly to?: unknown
-  readonly now?: number
-} = {}): ReportRange {
+export function resolveReportRange(
+  input: {
+    readonly range?: unknown
+    readonly from?: unknown
+    readonly to?: unknown
+    readonly now?: number
+  } = {},
+): ReportRange {
   const now = input.now ?? Date.now()
   const today = startOfDay(now)
   const key = rangeKey(input.range)

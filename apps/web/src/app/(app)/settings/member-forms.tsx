@@ -216,18 +216,34 @@ export function MemberActions({
   }
   return (
     <details className="max-w-sm">
-      <summary className="cursor-pointer rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Edit access</summary>
+      <summary className="cursor-pointer rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        Edit access
+      </summary>
       <div className="mt-3 grid gap-3 rounded-md border bg-muted/20 p-3 text-xs">
         <label className="grid gap-1">
           <span className="font-medium">Role</span>
-          <select className="h-9 rounded-md border bg-background px-2 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50" value={role} onChange={(event) => { setRole(event.target.value) }} disabled={pending}>
+          <select
+            className="h-9 rounded-md border bg-background px-2 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            value={role}
+            onChange={(event) => {
+              setRole(event.target.value)
+            }}
+            disabled={pending}
+          >
             <option value="staff">Staff</option>
             <option value="manager">Manager</option>
             <option value="owner">Owner</option>
           </select>
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={active} onChange={(event) => { setActive(event.target.checked) }} disabled={pending} />
+          <input
+            type="checkbox"
+            checked={active}
+            onChange={(event) => {
+              setActive(event.target.checked)
+            }}
+            disabled={pending}
+          />
           <span className="font-medium">Account active</span>
         </label>
         <label className="grid gap-1">
@@ -236,22 +252,48 @@ export function MemberActions({
             className="min-h-20 rounded-md border bg-background px-2 py-1 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             multiple
             value={selectedGroups}
-            onChange={(event) => { setSelectedGroups(Array.from(event.target.selectedOptions, (option) => option.value)) }}
+            onChange={(event) => {
+              setSelectedGroups(Array.from(event.target.selectedOptions, (option) => option.value))
+            }}
             disabled={pending}
           >
             {groups.length === 0 ? <option disabled>No groups created yet</option> : null}
-            {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
           </select>
         </label>
         <label className="grid gap-1">
           <span className="font-medium">Reports to</span>
-          <select className="h-9 rounded-md border bg-background px-2 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50" value={reportsTo} onChange={(event) => { setReportsTo(event.target.value) }} disabled={pending}>
+          <select
+            className="h-9 rounded-md border bg-background px-2 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            value={reportsTo}
+            onChange={(event) => {
+              setReportsTo(event.target.value)
+            }}
+            disabled={pending}
+          >
             <option value="">No manager</option>
-            {reports.map((report) => <option key={report.id} value={report.id}>{report.name}</option>)}
+            {reports.map((report) => (
+              <option key={report.id} value={report.id}>
+                {report.name}
+              </option>
+            ))}
           </select>
         </label>
-        {message === undefined ? null : <span className="text-muted-foreground" role="status" aria-live="polite">{message}</span>}
-        <button className="h-9 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" type="button" onClick={() => void save()} disabled={pending}>
+        {message === undefined ? null : (
+          <span className="text-muted-foreground" role="status" aria-live="polite">
+            {message}
+          </span>
+        )}
+        <button
+          className="h-9 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          type="button"
+          onClick={() => void save()}
+          disabled={pending}
+        >
           {pending ? 'Saving…' : 'Save access'}
         </button>
       </div>
