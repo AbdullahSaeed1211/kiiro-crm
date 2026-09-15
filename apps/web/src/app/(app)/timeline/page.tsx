@@ -8,6 +8,7 @@ import { getWorkDeps } from '../../../server/work/deps'
 import type { TaskRecord } from '../../../server/work/task-repository'
 import type { TimelineTask } from './save-dates'
 import { TimelineChart } from './TimelineChart'
+import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
 const PAGE_TITLE = 'Timeline'
 
@@ -39,11 +40,19 @@ export default async function TimelinePage() {
           <TimelineChart title={PAGE_TITLE} tasks={tasks} />
         ) : (
           <>
-            <PageHeader title={PAGE_TITLE} />
+            <PageHeader title={PAGE_TITLE} actions={<TaskWorkspaceViews active="gantt" />} />
             <EmptyState
               icon={ChartGantt}
               title="No dated tasks"
               description="Tasks with a start or due date show up here."
+              action={
+                <a
+                  className="ops-action-button inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground"
+                  href="/tasks"
+                >
+                  New task
+                </a>
+              }
             />
           </>
         )}

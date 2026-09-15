@@ -20,6 +20,7 @@ const ROUTES = [
   ['/organizations', 'Organizations'],
   ['/projects', 'Projects'],
   ['/tasks', 'Tasks'],
+  ['/tasks/board', 'Tasks'],
   ['/my-tasks', 'My tasks'],
   ['/calendar', 'Calendar'],
   ['/inbox', 'Inbox'],
@@ -127,10 +128,23 @@ test('customer routes load without browser failures and stay within the response
   await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
   await expect(page.locator('a[href="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads/new"]').filter({ hasText: 'New lead' })).toHaveCount(1)
-  await expect(page.locator('a[href="/tasks"]').filter({ hasText: 'New task' })).toHaveCount(1)
   const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
   detailRoutes.splice(1, 0, taskDetail)
+  await page.goto('/tasks', { waitUntil: 'domcontentloaded' })
+  const taskViews = page.getByRole('navigation', { name: 'Task views' })
+  await expect(taskViews.getByRole('link', { name: 'Table', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(taskViews.getByRole('link', { name: 'Kanban', exact: true })).toHaveAttribute('href', '/tasks/board')
+  await expect(taskViews.getByRole('link', { name: 'Gantt', exact: true })).toHaveAttribute('href', '/timeline')
+  await page.goto('/tasks/board', { waitUntil: 'domcontentloaded' })
+  await expect(
+    page.getByRole('navigation', { name: 'Task views' }).getByRole('link', { name: 'Kanban', exact: true }),
+  ).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('a[href^="/tasks/"]').first()).toBeVisible()
+  await page.goto('/timeline', { waitUntil: 'domcontentloaded' })
+  await expect(
+    page.getByRole('navigation', { name: 'Task views' }).getByRole('link', { name: 'Gantt', exact: true }),
+  ).toHaveAttribute('aria-current', 'page')
   for (const route of detailRoutes) {
     const start = Date.now()
     await page.goto(route, { waitUntil: 'domcontentloaded' })

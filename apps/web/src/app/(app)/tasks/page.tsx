@@ -14,6 +14,7 @@ import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { TaskCreateForm } from './TaskCreateForm'
 import { TaskViewMenu } from './TaskViewMenu'
+import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 import { taskHref } from '../task-navigation'
 import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -254,6 +255,7 @@ export default async function TasksPage({
           count={result.total}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <TaskWorkspaceViews active="table" />
               <TaskViewMenu
                 selectedId={view}
                 customViews={savedViews.map((savedView) => ({

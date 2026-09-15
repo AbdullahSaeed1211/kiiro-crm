@@ -7,6 +7,9 @@ import { CalendarDays, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, 
 import type { Metadata } from 'next'
 import { getWorkDeps } from '../../../../server/work/deps'
 import type { TaskPriority, TaskRecord } from '../../../../server/work/task-repository'
+import { taskHref } from '../../task-navigation'
+import { TaskCreateForm } from '../TaskCreateForm'
+import { TaskWorkspaceViews } from '../TaskWorkspaceViews'
 import { TaskBoard } from './TaskBoard'
 
 const SECTION = 'Tasks'
@@ -72,7 +75,14 @@ function toStages(workflow: Workflow): KanbanStage[] {
 
 function toCard(task: TaskRecord): KanbanCard {
   const { id, stageId, title, updatedAt } = task
-  return { id, stageId, title, updatedAt, meta: <TaskMeta task={task} /> }
+  return {
+    id,
+    stageId,
+    title,
+    updatedAt,
+    href: taskHref(id, '/tasks/board'),
+    meta: <TaskMeta task={task} />,
+  }
 }
 
 /** Task board (spec §17.5). */
@@ -83,7 +93,16 @@ export default async function TaskBoardPage() {
     <>
       <AppHeader breadcrumbs={[{ label: SECTION, href: '/tasks' }, { label: 'Board' }]} />
       <PageContent>
-        <PageHeader title={SECTION} count={records.length} />
+        <PageHeader
+          title={SECTION}
+          count={records.length}
+          actions={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <TaskWorkspaceViews active="board" />
+              <TaskCreateForm />
+            </div>
+          }
+        />
         <TaskBoard stages={toStages(workflow)} cards={records.map(toCard)} labels={LABELS} />
       </PageContent>
     </>

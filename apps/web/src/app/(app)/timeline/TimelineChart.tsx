@@ -5,6 +5,7 @@ import { GanttView, type GanttBar, type GanttViewLabels, type GanttZoom } from '
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 import { createDatesSaver, type TimelineTask } from './save-dates'
 
 const LABELS: GanttViewLabels = { title: 'Title', start: 'Start', due: 'Due', saveFailed: 'Could not save the dates' }
@@ -67,7 +68,16 @@ export function TimelineChart({ title, tasks }: Readonly<{ title: string; tasks:
   )
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={title} count={tasks.length} actions={zoomToggle} />
+      <PageHeader
+        title={title}
+        count={tasks.length}
+        actions={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <TaskWorkspaceViews active="gantt" />
+            {zoomToggle}
+          </div>
+        }
+      />
       <GanttView bars={bars} zoom={zoom} onDatesChange={onDatesChange} labels={LABELS} />
     </div>
   )
