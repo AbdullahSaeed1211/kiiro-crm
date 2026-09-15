@@ -23,7 +23,7 @@ export type SpikeCase = readonly [title: string, run: (stack: LocalStack) => Pro
 
 /** Emails of the users `scripts/seed/data.ts` creates. */
 export const SEEDED_EMAILS = {
-  owner: 'owner@example.test',
+  owner: 'mirchads@gmail.com',
   manager: 'manager@example.test',
   staff1: 'staff1@example.test',
   staff2: 'staff2@example.test',

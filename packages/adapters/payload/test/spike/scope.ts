@@ -31,10 +31,25 @@ const STAFF1_PROJECTS = ['Website redesign']
 const REPORT_PROJECT = 'Project owned by an indirect report'
 
 const byName = (a: string, b: string): number => a.localeCompare(b)
+const clientLabel = (key: string): string =>
+  key
+    .split('-')
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(' ')
 
 const SEEDED_NAMES = {
-  tasks: TASKS.map((task) => task.title).toSorted(byName),
-  projects: PROJECTS.map((project) => project.name).toSorted(byName),
+  tasks: [
+    ...TASKS.map((task) => task.title),
+    ...ORGANIZATIONS.filter((organization) => organization.key !== 'example').map(
+      (organization) => `Kick off ${clientLabel(organization.key)} delivery`,
+    ),
+  ].toSorted(byName),
+  projects: [
+    ...PROJECTS.map((project) => project.name),
+    ...ORGANIZATIONS.filter((organization) => organization.key !== 'example').map(
+      (organization) => `${clientLabel(organization.key)} delivery`,
+    ),
+  ].toSorted(byName),
   organizations: ORGANIZATIONS.map((organization) => organization.name).toSorted(byName),
 }
 
