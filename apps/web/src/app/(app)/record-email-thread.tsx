@@ -56,6 +56,7 @@ export function RecordEmailThread({
                     className="shrink-0 text-xs tabular-nums text-muted-foreground"
                     dateTime={new Date(message.occurredAt).toISOString()}
                   >
+                    {message.direction === 'inbound' ? 'Unread · ' : ''}
                     {formatDate(message.occurredAt, undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -70,6 +71,17 @@ export function RecordEmailThread({
                 <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
                   {message.textBody || 'No message body.'}
                 </p>
+                {message.attachments.length === 0 ? null : (
+                  <ul className="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Attachments">
+                    {message.attachments.map((attachment) => (
+                      <li key={attachment.id}>
+                        <a className="text-primary underline" href={`/api/v1/files/${attachment.id}`}>
+                          {attachment.fileName}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             )
           })}

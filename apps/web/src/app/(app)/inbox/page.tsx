@@ -53,6 +53,17 @@ export default async function InboxPage({
   const status = params.status === 'failed' ? params.status : undefined
   const messages = await listInboxMessages(context, { direction, status })
   const format = dateFormat(locale)
+  const threads = [
+    ...messages
+      .reduce((groups, message) => {
+        const key = message.threadKey
+        const current = groups.get(key) ?? []
+        current.push(message)
+        groups.set(key, current)
+        return groups
+      }, new Map<string, InboxEmailMessage[]>())
+      .values(),
+  ]
   return (
     <>
       <header className="border-b px-4 py-4 md:px-6">
@@ -94,11 +105,13 @@ export default async function InboxPage({
             {copy.empty}
           </section>
         ) : (
-          <ol className="grid gap-3" aria-label="Email messages">
-            {messages.map((message) => {
+          <ol className="grid gap-3" aria-label="Email threads">
+            {threads.map((thread) => {
+              const message = thread[0]
+              if (message === undefined) return null
               const href = recordHref(message)
               return (
-                <li className="rounded-xl border bg-card p-4" key={message.id}>
+                <li className="rounded-xl border bg-card p-4" key={message.threadKey}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h2 className="truncate font-medium">{message.subject}</h2>
@@ -116,9 +129,37 @@ export default async function InboxPage({
                       {format.format(message.occurredAt)} · {messageLabel(message)}
                     </time>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
-                    {message.textBody || 'No message body.'}
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {thread.length} message{thread.length === 1 ? '' : 's'} ·{' '}
+                    {message.direction === 'inbound' ? 'Unread' : 'Read'}
                   </p>
+                  <details className="mt-3 rounded-md border border-dashed p-3">
+                    <summary className="cursor-pointer text-sm font-medium">View conversation</summary>
+                    <ol className="mt-3 grid gap-3">
+                      {thread.toReversed().map((item) => (
+                        <li className="border-t pt-3 first:border-0 first:pt-0" key={item.id}>
+                          <p className="text-xs text-muted-foreground">
+                            {item.direction === 'inbound' ? item.from : item.to.join(', ') || copy.unknownRecipient} ·{' '}
+                            {format.format(item.occurredAt)} · {messageLabel(item)}
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">
+                            {item.textBody || 'No message body.'}
+                          </p>
+                          {item.attachments.length === 0 ? null : (
+                            <ul className="mt-2 flex flex-wrap gap-2 text-xs">
+                              {item.attachments.map((attachment) => (
+                                <li key={attachment.id}>
+                                  <a className="text-primary underline" href={`/api/v1/files/${attachment.id}`}>
+                                    {attachment.fileName}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
                     {href === null ? (
                       <span className="text-muted-foreground">{copy.unlinked}</span>

@@ -22,6 +22,8 @@ export interface EmailThreadMessage {
   readonly textBody: string
   readonly status: 'queued' | 'sent' | 'failed' | 'received' | 'quarantined'
   readonly occurredAt: number
+  readonly threadKey: string
+  readonly attachments: readonly { readonly id: string; readonly fileName: string }[]
 }
 
 export interface InboxEmailMessage extends EmailThreadMessage {

@@ -25,6 +25,16 @@ function refId(value: unknown): string | null {
 function textList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
+function attachmentList(value: unknown): { readonly id: string; readonly fileName: string }[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    if (typeof entry === 'string') return [{ id: entry, fileName: entry }]
+    if (typeof entry !== 'object' || entry === null || !('id' in entry)) return []
+    const id = typeof entry.id === 'string' ? entry.id : null
+    const fileName = 'fileName' in entry && typeof entry.fileName === 'string' ? entry.fileName : id
+    return id === null || fileName === null ? [] : [{ id, fileName }]
+  })
+}
 
 // eslint-disable-next-line complexity -- normalization keeps malformed persisted mail out of the UI boundary.
 function emailMessage(value: Record<string, unknown>): EmailThreadMessage | null {
@@ -40,15 +50,18 @@ function emailMessage(value: Record<string, unknown>): EmailThreadMessage | null
   )
     return null
   const normalizedStatus = status as EmailThreadMessage['status']
+  const subject = text(value.subject) ?? '(no subject)'
   return {
     id: text(value.id) ?? '',
     direction,
     from,
     to: textList(value.to),
-    subject: text(value.subject) ?? '(no subject)',
+    subject,
     textBody: text(value.textBody) ?? '',
     status: normalizedStatus,
     occurredAt,
+    threadKey: text(value.inReplyTo) ?? subject.trim().toLowerCase(),
+    attachments: attachmentList(value.attachments),
   }
 }
 
