@@ -23,6 +23,9 @@ const ROUTES = [
   ['/calendar', 'Calendar'],
   ['/timeline', 'Timeline'],
   ['/settings/general', 'General'],
+  ['/settings/profile', 'Profile'],
+  ['/settings/branding', 'Branding'],
+  ['/settings/terminology', 'Terminology'],
   ['/settings/members', 'Members'],
   ['/settings/notifications', 'Notifications'],
   ['/settings/email', 'Email'],
@@ -195,6 +198,16 @@ test('configuration surfaces expose real controls and import starters', async ({
     'href',
     '/api/v1/import/template/lead',
   )
+})
+
+test('workspace settings reopen with tenant values intact', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/profile')
+  await expect(page.getByLabel('Name')).toHaveValue('Vivek Thapar')
+  await page.goto('/settings/branding')
+  await expect(page.getByLabel('Corner radius')).toHaveValue('md')
+  await page.goto('/settings/general')
+  await expect(page.getByLabel('Workspace name')).toHaveValue('Mirch Media')
 })
 
 // eslint-disable-next-line max-statements -- this guard covers the full saved-view lifecycle in one browser flow.

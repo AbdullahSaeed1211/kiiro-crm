@@ -2,11 +2,13 @@ import type { Metadata } from 'next'
 import { saveProfile } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
+import { requireRole } from '../../../../server/auth/context'
 
-export const metadata: Metadata = { title: 'Profile · Workspace' }
+export const metadata: Metadata = { title: 'Profile' }
 export const dynamic = 'force-dynamic'
 
-export default function ProfileSettingsPage() {
+export default async function ProfileSettingsPage() {
+  const context = await requireRole('owner', 'manager', 'staff')
   return (
     <SettingsPage
       title="Profile"
@@ -17,6 +19,7 @@ export default function ProfileSettingsPage() {
         <SettingsActionForm
           action={saveProfile}
           fields={[{ name: 'name', label: 'Name' }]}
+          initialValues={{ name: typeof context.user.name === 'string' ? context.user.name : '' }}
           submitLabel="Save profile"
         />
         <div className="border-t pt-4">

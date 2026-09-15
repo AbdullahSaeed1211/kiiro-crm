@@ -4,7 +4,7 @@ import { updateSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 
-export const metadata: Metadata = { title: 'General · Workspace' }
+export const metadata: Metadata = { title: 'General' }
 export const dynamic = 'force-dynamic'
 
 export default async function GeneralSettingsPage() {
@@ -33,7 +33,15 @@ export default async function GeneralSettingsPage() {
             fields={[
               { name: 'appName', label: 'Workspace name' },
               { name: 'timezone', label: 'Time zone' },
-              { name: 'locale', label: 'Locale' },
+              {
+                name: 'locale',
+                label: 'Locale',
+                type: 'select',
+                options: [
+                  { value: 'en', label: 'English' },
+                  { value: 'es', label: 'Spanish' },
+                ],
+              },
               { name: 'currency', label: 'Currency' },
               { name: 'weekStartsOn', label: 'Week starts on', type: 'number' },
               { name: 'stalledDays', label: 'Stalled after (days)', type: 'number' },
