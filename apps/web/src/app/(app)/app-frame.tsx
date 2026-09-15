@@ -90,7 +90,8 @@ function navGroups({
   return groups
 }
 
-function SidebarAccount({ name, email, role }: Readonly<{ name: string; email: string; role: string }>) {
+function SidebarAccount({ name, email, role, locale }: Readonly<{ name: string; email: string; role: string; locale: Locale }>) {
+  const settingsLabel = SHELL_COPY[locale].settings
   return (
     <div className="space-y-1">
       <a className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/settings/profile">
@@ -106,7 +107,7 @@ function SidebarAccount({ name, email, role }: Readonly<{ name: string; email: s
         <span className="grid size-8 place-items-center">
           <Settings className="size-4" aria-hidden />
         </span>
-        <span className="text-sm group-data-[collapsible=icon]:hidden">Settings</span>
+        <span className="text-sm group-data-[collapsible=icon]:hidden">{settingsLabel}</span>
       </a>
     </div>
   )
@@ -170,7 +171,7 @@ export function AppFrame({
             )
           }
           groups={navGroups({ pathname, modules, terminology, role, locale })}
-          footer={<SidebarAccount name={userName} email={userEmail} role={role} />}
+          footer={<SidebarAccount name={userName} email={userEmail} role={role} locale={locale} />}
         />
       }
     >

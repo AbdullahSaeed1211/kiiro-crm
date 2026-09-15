@@ -14,12 +14,12 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
   en: {
     dashboard: 'Dashboard', myTasks: 'My tasks', inbox: 'Inbox', leads: 'Leads', deals: 'Deals',
     organizations: 'Organizations', contacts: 'Contacts', projects: 'Projects', tasks: 'Tasks',
-    calendar: 'Calendar', timeline: 'Timeline', crm: 'CRM', work: 'Work',
+    calendar: 'Calendar', timeline: 'Timeline', crm: 'CRM', work: 'Work', settings: 'Settings',
   },
   es: {
     dashboard: 'Inicio', myTasks: 'Mis tareas', inbox: 'Bandeja de entrada', leads: 'Prospectos', deals: 'Oportunidades',
     organizations: 'Organizaciones', contacts: 'Contactos', projects: 'Proyectos', tasks: 'Tareas',
-    calendar: 'Calendario', timeline: 'Cronología', crm: 'CRM', work: 'Trabajo',
+    calendar: 'Calendario', timeline: 'Cronología', crm: 'CRM', work: 'Trabajo', settings: 'Configuración',
   },
 }
 

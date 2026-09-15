@@ -50,7 +50,7 @@ export function SettingsNav({ role, locale }: Readonly<{ role: Role; locale: Loc
   const groupCopy = SETTINGS_COPY[locale]
   const itemCopy = SETTINGS_ITEM_COPY[locale]
   return (
-    <nav aria-label="Settings" className="ops-settings-nav space-y-5">
+    <nav aria-label={locale === 'es' ? 'Configuración' : 'Settings'} className="ops-settings-nav space-y-5">
       {GROUPS.map(([groupKey, links]) => {
         const visible = links.filter(([, , , roles]) => roles.includes(role))
         if (visible.length === 0) return null
