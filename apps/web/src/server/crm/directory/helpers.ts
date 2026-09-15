@@ -46,7 +46,7 @@ function attachmentList(value: unknown): { readonly id: string; readonly fileNam
 }
 
 // eslint-disable-next-line complexity -- normalization keeps malformed persisted mail out of the UI boundary.
-function emailMessage(value: Record<string, unknown>): EmailThreadMessage | null {
+function emailMessage(value: Record<string, unknown>, viewerId?: string): EmailThreadMessage | null {
   const direction = value.direction
   const status = value.status
   const from = text(value.from)
@@ -60,6 +60,7 @@ function emailMessage(value: Record<string, unknown>): EmailThreadMessage | null
     return null
   const normalizedStatus = status as EmailThreadMessage['status']
   const subject = text(value.subject) ?? '(no subject)'
+  const readBy = Array.isArray(value.readBy) ? value.readBy.filter((item): item is string => typeof item === 'string') : []
   return {
     id: text(value.id) ?? '',
     direction,
@@ -69,7 +70,8 @@ function emailMessage(value: Record<string, unknown>): EmailThreadMessage | null
     textBody: text(value.textBody) ?? '',
     status: normalizedStatus,
     occurredAt,
-    threadKey: text(value.inReplyTo) ?? subject.trim().toLowerCase(),
+    threadKey: text(value.inReplyTo) ?? (text(value.messageId) ?? text(value.id) ?? subject.trim().toLowerCase()),
+    isRead: direction === 'outbound' || (viewerId !== undefined && readBy.includes(viewerId)),
     attachments: attachmentList(value.attachments),
   }
 }
@@ -129,7 +131,7 @@ export async function listEmailMessages(
     req: context.req,
   })
   return result.docs.flatMap((entry) => {
-    const message = emailMessage(entry as unknown as Record<string, unknown>)
+    const message = emailMessage(entry as unknown as Record<string, unknown>, String(context.actor.id))
     return message === null || message.id === '' ? [] : [message]
   })
 }
@@ -158,7 +160,7 @@ export async function listInboxMessages(
   })
   return result.docs.flatMap((entry) => {
     const value = entry as unknown as Record<string, unknown>
-    const message = emailMessage(value)
+    const message = emailMessage(value, String(context.actor.id))
     const recordType = text(value.recordType)
     const recordId = text(value.recordId)
     return message === null || message.id === '' ? [] : [{ ...message, recordType, recordId }]

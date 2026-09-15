@@ -859,6 +859,15 @@ export interface EmailMessage {
   textBody?: string | null;
   htmlFileKey?: string | null;
   attachments?: (string | Attachment)[] | null;
+  readBy?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   status: 'queued' | 'sent' | 'failed' | 'received' | 'quarantined';
   error?: string | null;
   /**
@@ -1486,6 +1495,7 @@ export interface EmailMessagesSelect<T extends boolean = true> {
   textBody?: T;
   htmlFileKey?: T;
   attachments?: T;
+  readBy?: T;
   status?: T;
   error?: T;
   occurredAt?: T;

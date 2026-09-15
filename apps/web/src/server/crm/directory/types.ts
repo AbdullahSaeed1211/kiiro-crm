@@ -23,6 +23,7 @@ export interface EmailThreadMessage {
   readonly status: 'queued' | 'sent' | 'failed' | 'received' | 'quarantined'
   readonly occurredAt: number
   readonly threadKey: string
+  readonly isRead: boolean
   readonly attachments: readonly { readonly id: string; readonly fileName: string }[]
 }
 

@@ -5,6 +5,7 @@ import { listInboxMessages } from '../../../server/crm/directory/helpers'
 import type { InboxEmailMessage } from '../../../server/crm/directory/types'
 import { INBOX_COPY } from '../../../i18n/config'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
+import { EmailReadButton } from '../email-read-button'
 
 export const metadata: Metadata = { title: 'Inbox' }
 export const dynamic = 'force-dynamic'
@@ -41,6 +42,20 @@ function messageLabel(message: InboxEmailMessage): string {
   return 'Sent'
 }
 
+function groupThreads(messages: readonly InboxEmailMessage[]): InboxEmailMessage[][] {
+  const groups = new Map<string, InboxEmailMessage[]>()
+  for (const message of messages) {
+    const current = groups.get(message.threadKey) ?? []
+    current.push(message)
+    groups.set(message.threadKey, current)
+  }
+  return [...groups.values()]
+}
+
+function threadIsUnread(thread: readonly InboxEmailMessage[]): boolean {
+  return thread.some((item) => item.direction === 'inbound' && !item.isRead)
+}
+
 // eslint-disable-next-line max-lines-per-function -- inbox keeps filter controls and message rendering together for stable SSR semantics.
 export default async function InboxPage({
   searchParams,
@@ -53,17 +68,7 @@ export default async function InboxPage({
   const status = params.status === 'failed' ? params.status : undefined
   const messages = await listInboxMessages(context, { direction, status })
   const format = dateFormat(locale)
-  const threads = [
-    ...messages
-      .reduce((groups, message) => {
-        const key = message.threadKey
-        const current = groups.get(key) ?? []
-        current.push(message)
-        groups.set(key, current)
-        return groups
-      }, new Map<string, InboxEmailMessage[]>())
-      .values(),
-  ]
+  const threads = groupThreads(messages)
   return (
     <>
       <header className="border-b px-4 py-4 md:px-6">
@@ -106,6 +111,7 @@ export default async function InboxPage({
           </section>
         ) : (
           <ol className="grid gap-3" aria-label="Email threads">
+            {/* eslint-disable-next-line complexity -- each thread card owns its linked-record, unread, and attachment states. */}
             {threads.map((thread) => {
               const message = thread.at(0)
               if (!message) return null
@@ -128,10 +134,13 @@ export default async function InboxPage({
                     >
                       {format.format(message.occurredAt)} · {messageLabel(message)}
                     </time>
+                    {message.direction === 'inbound' ? (
+                      <EmailReadButton messageId={message.id} initialRead={message.isRead} label="Mark read" />
+                    ) : null}
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
                     {thread.length} message{thread.length === 1 ? '' : 's'} ·{' '}
-                    {message.direction === 'inbound' ? 'Unread' : 'Read'}
+                    {threadIsUnread(thread) ? 'Unread' : 'Read'}
                   </p>
                   <details className="mt-3 rounded-md border border-dashed p-3">
                     <summary className="cursor-pointer text-sm font-medium">View conversation</summary>

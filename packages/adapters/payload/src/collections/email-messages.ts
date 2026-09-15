@@ -31,6 +31,7 @@ export const emailMessagesCollection = spikeCollection({
     // Object key of the HTML body in file storage; bodies are too large for a D1 row.
     textField('htmlFileKey', { maxLength: 500 }),
     hasManyTo('attachments', COLLECTIONS.attachments),
+    { name: 'readBy', type: 'json', defaultValue: [] },
     selectOf('status', EMAIL_STATUS_VALUES, { required: true }),
     textField('error', { maxLength: 2000 }),
     epochMs('occurredAt', { required: true }),

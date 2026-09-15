@@ -2,6 +2,7 @@
 import type { EmailThreadMessage } from '../../server/crm/directory/data'
 import { RecordEmailComposer } from './record-email-composer'
 import { formatDate } from '../../i18n/format'
+import { EmailReadButton } from './email-read-button'
 
 function statusLabel(message: EmailThreadMessage): string {
   if (message.status === 'failed') return 'Failed'
@@ -57,7 +58,6 @@ export function RecordEmailThread({
                     className="shrink-0 text-xs tabular-nums text-muted-foreground"
                     dateTime={new Date(message.occurredAt).toISOString()}
                   >
-                    {message.direction === 'inbound' ? 'Unread · ' : ''}
                     {formatDate(message.occurredAt, undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -68,6 +68,9 @@ export function RecordEmailThread({
                     })}{' '}
                     · {statusLabel(message)}
                   </time>
+                  {message.direction === 'inbound' ? (
+                    <EmailReadButton messageId={message.id} initialRead={message.isRead} label="Mark read" />
+                  ) : null}
                 </div>
                 <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
                   {message.textBody || 'No message body.'}
