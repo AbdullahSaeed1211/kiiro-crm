@@ -104,6 +104,7 @@ function DealRecordView({ data }: Readonly<{ data: DealDetailData }>) {
       tabs={recordTabs(<ActivityCard activity={data.activity} />, data.emailMessages, {
         recordType: 'deal',
         recordId: data.deal.id,
+        recipient: data.contacts.find((contact) => contact.id === data.deal.primaryContactId)?.email,
         tasks: data.relatedTasks,
         attachments: data.attachments,
       })}

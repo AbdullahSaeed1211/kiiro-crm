@@ -133,6 +133,7 @@ export function ContactRecordView({
           tabs={recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages, {
             recordType: 'contact',
             recordId: record.id,
+            recipient: record.email,
             tasks: relatedTasks,
             attachments,
           })}

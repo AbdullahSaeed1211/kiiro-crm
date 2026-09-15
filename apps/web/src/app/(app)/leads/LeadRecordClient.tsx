@@ -110,6 +110,7 @@ function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[]) {
     {
       recordType: 'lead',
       recordId: data.item.lead.id,
+      recipient: data.item.lead.email,
       tasks: data.relatedTasks,
       attachments: data.attachments,
     },

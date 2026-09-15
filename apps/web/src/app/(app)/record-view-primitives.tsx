@@ -110,6 +110,7 @@ export function recordTabs(
   related?: Readonly<{
     recordType: string
     recordId: string
+    recipient?: string | null
     tasks: readonly RelatedTask[]
     attachments: readonly RecordAttachment[]
   }>,
@@ -135,6 +136,17 @@ export function recordTabs(
       },
     )
   }
-  tabs.push({ id: 'email', label: 'Email', content: <RecordEmailThread messages={emailMessages} /> })
+  tabs.push({
+    id: 'email',
+    label: 'Email',
+    content: (
+      <RecordEmailThread
+        messages={emailMessages}
+        recordType={related?.recordType ?? 'record'}
+        recordId={related?.recordId ?? ''}
+        defaultTo={related?.recipient}
+      />
+    ),
+  })
   return tabs
 }

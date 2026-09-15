@@ -1,4 +1,5 @@
 import type { EmailThreadMessage } from '../../server/crm/directory/data'
+import { RecordEmailComposer } from './record-email-composer'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en', {
   month: 'short',
@@ -9,14 +10,6 @@ const DATE_FORMAT = new Intl.DateTimeFormat('en', {
   timeZone: 'UTC',
 })
 
-function replyHref(message: EmailThreadMessage): string | null {
-  const recipient = message.direction === 'inbound' ? message.from : message.to[0]
-  if (recipient.trim() === '') return null
-  const subject = message.subject.toLowerCase().startsWith('re:') ? message.subject : `Re: ${message.subject}`
-  const body = `\n\n— Previous message —\n${message.textBody}`
-  return `mailto:${recipient}?${new URLSearchParams({ subject, body }).toString()}`
-}
-
 function statusLabel(message: EmailThreadMessage): string {
   if (message.status === 'failed') return 'Failed'
   if (message.status === 'queued') return 'Queued'
@@ -24,7 +17,17 @@ function statusLabel(message: EmailThreadMessage): string {
   return message.direction === 'inbound' ? 'Received' : 'Sent'
 }
 
-export function RecordEmailThread({ messages }: Readonly<{ messages: readonly EmailThreadMessage[] }>) {
+export function RecordEmailThread({
+  messages,
+  recordType,
+  recordId,
+  defaultTo,
+}: Readonly<{
+  messages: readonly EmailThreadMessage[]
+  recordType: string
+  recordId: string
+  defaultTo?: string | null
+}>) {
   return (
     <section className="rounded-xl border bg-card p-4" aria-labelledby="record-email-heading">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -36,6 +39,7 @@ export function RecordEmailThread({ messages }: Readonly<{ messages: readonly Em
         </div>
         <span className="text-xs text-muted-foreground">{messages.length} messages</span>
       </div>
+      <RecordEmailComposer recordType={recordType} recordId={recordId} defaultTo={defaultTo} />
       {messages.length === 0 ? (
         <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
           No email messages yet. Use the Email action above to start a conversation.
@@ -43,7 +47,6 @@ export function RecordEmailThread({ messages }: Readonly<{ messages: readonly Em
       ) : (
         <ol className="mt-4 grid gap-3">
           {messages.map((message) => {
-            const reply = replyHref(message)
             return (
               <li
                 key={message.id}
@@ -67,14 +70,6 @@ export function RecordEmailThread({ messages }: Readonly<{ messages: readonly Em
                 <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
                   {message.textBody || 'No message body.'}
                 </p>
-                {reply === null ? null : (
-                  <a
-                    className="mt-3 inline-flex rounded-sm text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    href={reply}
-                  >
-                    {message.direction === 'inbound' ? 'Reply' : 'Email recipient'}
-                  </a>
-                )}
               </li>
             )
           })}

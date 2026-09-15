@@ -1,5 +1,6 @@
 /* eslint-disable max-lines -- related record loaders share the same authorization and normalization boundary. */
 import type { RequestContext } from '../../work/deps'
+import type { Where } from 'payload'
 import type {
   ActivityItem,
   EmailThreadMessage,
@@ -111,9 +112,20 @@ export async function listEmailMessages(
   })
 }
 
-export async function listInboxMessages(context: RequestContext): Promise<readonly InboxEmailMessage[]> {
+export async function listInboxMessages(
+  context: RequestContext,
+  options: Readonly<{
+    direction?: 'inbound' | 'outbound'
+    status?: 'queued' | 'sent' | 'failed' | 'received' | 'quarantined'
+  }> = {},
+): Promise<readonly InboxEmailMessage[]> {
+  const filters: Where[] = [
+    ...(options.direction === undefined ? [] : [{ direction: { equals: options.direction } }]),
+    ...(options.status === undefined ? [] : [{ status: { equals: options.status } }]),
+  ]
   const result = await context.payload.find({
     collection: 'emailMessages',
+    ...(filters.length === 0 ? {} : { where: { and: filters } }),
     sort: '-occurredAt',
     limit: 100,
     pagination: false,

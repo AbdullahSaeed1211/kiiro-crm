@@ -374,3 +374,17 @@ test('customer surfaces default to light mode under a dark operating-system pref
   await page.goto('/login')
   await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
 })
+
+test('record email composer validates, confirms and persists a sent message', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/contacts', { waitUntil: 'networkidle' })
+  const detail = await firstDetailHref(page, '/contacts')
+  await page.goto(detail, { waitUntil: 'networkidle' })
+  await page.getByRole('tab', { name: 'Email' }).click()
+  await page.locator('#email-to').fill('recipient@example.com')
+  await page.locator('#email-subject').fill('Follow-up')
+  await page.locator('#email-body').fill('Thanks for the update.')
+  page.once('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('Message sent.', { timeout: 15_000 })
+})

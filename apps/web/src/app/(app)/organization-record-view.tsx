@@ -136,7 +136,13 @@ export function OrganizationRecordView({
           tabs={recordTabs(
             <Activity entries={activity} recordType="organization" recordId={record.id} />,
             emailMessages,
-            { recordType: 'organization', recordId: record.id, tasks: relatedTasks, attachments },
+            {
+              recordType: 'organization',
+              recordId: record.id,
+              recipient: record.email,
+              tasks: relatedTasks,
+              attachments,
+            },
           )}
           aside={<OrganizationAside record={record} owner={owner} relations={relations} />}
         />
