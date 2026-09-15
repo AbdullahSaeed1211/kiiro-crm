@@ -529,9 +529,12 @@ select:focus {
   color: var(--sidebar-foreground);
   background: var(--sidebar);
   border-right: 1px solid var(--sidebar-border);
+  z-index: 1;
 }
 
 .ops-auth-panel {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -676,6 +679,7 @@ select:focus {
     padding: 0.85rem 1rem;
     border-right: 0;
     border-bottom: 1px solid var(--sidebar-border);
+    z-index: auto;
   }
 
   .ops-auth-brand-copy {
@@ -683,6 +687,8 @@ select:focus {
   }
 
   .ops-auth-panel {
+    grid-column: auto;
+    grid-row: auto;
     flex: 1;
     padding: 0.75rem;
   }
