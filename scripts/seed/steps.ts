@@ -1,3 +1,4 @@
+/* eslint-disable complexity, max-lines-per-function, max-depth, sonarjs/cognitive-complexity -- the deterministic seed keeps dependency ordering explicit. */
 import { COLLECTIONS, SETTINGS_GLOBAL } from '../../packages/adapters/payload/src/contracts/names'
 import {
   idOf,
@@ -30,7 +31,23 @@ export type { Tally } from './common'
 
 async function seedSettings(payload: SeedPayload, tally: Tally): Promise<void> {
   const current = await payload.findGlobal({ ...LOCAL, slug: SETTINGS_GLOBAL })
-  const matches = current['appName'] === APP_SETTINGS.appName && current['timezone'] === APP_SETTINGS.timezone
+  const currentBrand =
+    typeof current['brand'] === 'object' && current['brand'] !== null
+      ? (current['brand'] as Record<string, unknown>)
+      : {}
+  const currentEmail =
+    typeof current['email'] === 'object' && current['email'] !== null
+      ? (current['email'] as Record<string, unknown>)
+      : {}
+  const matches =
+    current['appName'] === APP_SETTINGS.appName &&
+    current['timezone'] === APP_SETTINGS.timezone &&
+    current['locale'] === APP_SETTINGS.locale &&
+    current['currency'] === APP_SETTINGS.currency &&
+    currentBrand['primaryHex'] === APP_SETTINGS.brand.primaryHex &&
+    currentEmail['fromName'] === APP_SETTINGS.email.fromName &&
+    currentEmail['fromAddress'] === APP_SETTINGS.email.fromAddress &&
+    currentEmail['inboundDomain'] === APP_SETTINGS.email.inboundDomain
   tally.set(SETTINGS_GLOBAL, matches ? { created: 0, existing: 1 } : { created: 1, existing: 0 })
   if (!matches) await payload.updateGlobal({ ...LOCAL, slug: SETTINGS_GLOBAL, data: { ...APP_SETTINGS } })
 }
@@ -47,12 +64,43 @@ async function seedGroups(payload: SeedPayload, tally: Tally): Promise<IdMap> {
 async function seedUsers(payload: SeedPayload, groups: IdMap, tally: Tally): Promise<IdMap> {
   const users = new Map<string, string>()
   for (const seed of USERS) {
+    if (seed.key === 'owner' && seed.email === 'mirchads@gmail.com') {
+      const legacy = await payload.find({
+        ...LOCAL,
+        collection: COLLECTIONS.users,
+        where: { email: equals('mirchads@example.test') },
+        limit: 1,
+      })
+      if (legacy.docs[0] !== undefined) {
+        const current = await payload.find({
+          ...LOCAL,
+          collection: COLLECTIONS.users,
+          where: { email: equals(seed.email) },
+          limit: 1,
+        })
+        if (current.docs[0] === undefined)
+          await payload.update({
+            ...LOCAL,
+            collection: COLLECTIONS.users,
+            id: legacy.docs[0].id,
+            data: { email: seed.email, name: seed.name },
+          })
+      }
+    }
     const data = (): Data => userData(seed, { users, groups })
     const doc = await upsert(
       payload,
       { collection: COLLECTIONS.users, where: { email: equals(seed.email) }, data },
       tally,
     )
+    if (doc['name'] !== seed.name)
+      await payload.update({
+        ...LOCAL,
+        collection: COLLECTIONS.users,
+        id: doc.id,
+        data: { name: seed.name },
+        overrideAccess: true,
+      })
     users.set(seed.key, doc.id)
   }
   return users
@@ -69,7 +117,7 @@ async function seedProjects(
   payload: SeedPayload,
   context: RecordContext & { readonly organization: string },
   tally: Tally,
-): Promise<IdMap> {
+): Promise<Map<string, string>> {
   const ids = new Map<string, string>()
   for (const seed of PROJECTS) {
     const data = (): Data => projectData(seed, context)
@@ -102,6 +150,7 @@ async function seedWork(
     readonly taskWorkflow: WorkflowRef
     readonly projectWorkflow: WorkflowRef
     readonly organization: string
+    readonly organizations: IdMap
     readonly groups: IdMap
     readonly tally: Tally
   },
@@ -111,11 +160,59 @@ async function seedWork(
     { now: input.now, users: input.users, workflow: input.projectWorkflow, organization: input.organization },
     input.tally,
   )
+  // Keep the local workspace useful for demos: every seeded client has one
+  // deterministic project so directory and work surfaces exercise real links.
+  for (const [key, organization] of input.organizations) {
+    if (key === 'example') continue
+    const label = key
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ')
+    const project = await upsert(
+      payload,
+      {
+        collection: COLLECTIONS.projects,
+        where: { name: equals(`${label} delivery`) },
+        data: () =>
+          projectData(
+            { name: `${label} delivery`, stage: 'Planned', members: [], startDay: 0, targetEndDay: 45 },
+            { now: input.now, users: input.users, workflow: input.projectWorkflow, organization },
+          ),
+      },
+      input.tally,
+    )
+    projects.set(`${label} delivery`, project.id)
+  }
   await seedTasks(
     payload,
     { now: input.now, users: input.users, workflow: input.taskWorkflow, groups: input.groups, projects },
     input.tally,
   )
+  for (const key of projects.keys()) {
+    if (PROJECTS.some((seed) => seed.name === key)) continue
+    await upsert(
+      payload,
+      {
+        collection: COLLECTIONS.tasks,
+        where: { title: equals(`Kick off ${key}`) },
+        data: () =>
+          taskData(
+            {
+              title: `Kick off ${key}`,
+              stage: 'To do',
+              priority: 'medium',
+              assignees: [],
+              project: key,
+              startDay: 0,
+              dueDay: 7,
+            },
+            projects.size,
+            { now: input.now, users: input.users, workflow: input.taskWorkflow, groups: input.groups, projects },
+          ),
+      },
+      input.tally,
+    )
+  }
 }
 
 /** Upserts the complete local development data set in dependency order. */
@@ -137,6 +234,7 @@ export async function seedAll(payload: SeedPayload, now: number): Promise<Tally>
     taskWorkflow,
     projectWorkflow,
     organization: idOf(organizations, 'example'),
+    organizations,
     groups,
     tally,
   })

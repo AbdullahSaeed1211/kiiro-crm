@@ -34,11 +34,17 @@ export function ruleNames(body: string): string[] {
     .filter((rule) => rule !== '')
 }
 
-/** Finds eslint-disable directives in `text` that name a rule from `gated`. */
+/** Returns whether a directive documents its intentional exception after `--`. */
+function hasReason(body: string): boolean {
+  return /\s-{2,}\s+\S/.test(body)
+}
+
+/** Finds unreasoned eslint-disable directives in `text` that name a rule from `gated`. */
 export function gatedDisables(text: string, gated: ReadonlySet<string>): GatedDisable[] {
   return [...text.matchAll(DIRECTIVE)].flatMap((match) => {
+    const body = match[1] ?? match[2] ?? ''
     const line = text.slice(0, match.index).split('\n').length
-    const rules = ruleNames(match[1] ?? match[2] ?? '').filter((rule) => gated.has(rule))
+    const rules = hasReason(body) ? [] : ruleNames(body).filter((rule) => gated.has(rule))
     return rules.map((rule) => ({ line, rule }))
   })
 }

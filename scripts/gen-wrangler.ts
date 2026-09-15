@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseJsonc } from './lib/jsonc'
 import { isMain } from './lib/report'
-import { parseTenant, type Tenant } from './lib/tenant-schema'
+import { isPlatformHosted, parseTenant, type Tenant } from './lib/tenant-schema'
 
 type Config = Record<string, unknown>
 
@@ -17,6 +17,7 @@ interface BindingInput {
 }
 
 const OUTPUT = 'apps/web/wrangler.jsonc'
+const MAIL_ROUTER_OUTPUT = 'apps/mail-router/wrangler.jsonc'
 const CRON_EVERY_15_MINUTES = '*/15 * * * *'
 const LOCAL_D1_ID = '00000000-0000-0000-0000-000000000000'
 const HEADER = [
@@ -96,6 +97,12 @@ export function assertIsolated(tenants: readonly Tenant[]): void {
   ])
   const shared = new Set(owned.filter((value, index) => owned.indexOf(value) !== index))
   if (shared.size > 0) throw new Error(`tenants share resources: ${[...shared].join(', ')}`)
+
+  const platformInboundDomains = tenants.filter(isPlatformHosted).map((tenant) => tenant.email.inboundDomain)
+  const distinctInboundDomains = new Set(platformInboundDomains)
+  if (distinctInboundDomains.size > 1) {
+    throw new Error(`platform tenants must share one inbound domain: ${[...distinctInboundDomains].join(', ')}`)
+  }
 }
 
 /** Reads and validates every `tenants/*.jsonc` below `root`, ordered by `deployOrder`. */
@@ -113,8 +120,33 @@ export function renderWranglerConfig(tenants: readonly Tenant[]): string {
   return `${HEADER}\n${JSON.stringify({ ...baseConfig(), env }, null, 2)}\n`
 }
 
+/** Renders the shared mail router with one service binding for each platform-hosted tenant. */
+export function renderMailRouterConfig(tenants: readonly Tenant[]): string {
+  assertIsolated(tenants)
+  const platformTenants = tenants.filter(isPlatformHosted)
+  const inboundDomain = platformTenants[0]?.email.inboundDomain
+  const config: Config = {
+    $schema: 'node_modules/wrangler/config-schema.json',
+    name: 'ops-mail-router',
+    main: 'src/index.ts',
+    compatibility_date: '2025-08-15',
+    compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
+    observability: { enabled: true },
+    ...(inboundDomain === undefined ? {} : { routes: [{ pattern: inboundDomain, custom_domain: true }] }),
+    services: platformTenants.map((tenant) => ({
+      binding: `TENANT_${tenant.slug.toUpperCase().replaceAll('-', '_')}`,
+      service: `ops-${tenant.slug}`,
+    })),
+    vars: { PLATFORM_DOMAIN: inboundDomain?.startsWith('in.') ? inboundDomain.slice(3) : (inboundDomain ?? '') },
+  }
+  return `${HEADER}\n${JSON.stringify(config, null, 2)}\n`
+}
+
 if (isMain(import.meta.url)) {
   const root = process.cwd()
-  writeFileSync(join(root, OUTPUT), renderWranglerConfig(loadTenants(root)))
+  const tenants = loadTenants(root)
+  writeFileSync(join(root, OUTPUT), renderWranglerConfig(tenants))
+  writeFileSync(join(root, MAIL_ROUTER_OUTPUT), renderMailRouterConfig(tenants))
   console.log(`gen-wrangler: wrote ${OUTPUT}`)
+  console.log(`gen-wrangler: wrote ${MAIL_ROUTER_OUTPUT}`)
 }

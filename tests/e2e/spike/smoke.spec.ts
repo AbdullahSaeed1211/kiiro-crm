@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { expect as baseExpect, test, type Page, type Response } from '@playwright/test'
-import { DEV_PASSWORD } from '../../../scripts/seed/data'
+import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { parseDevVars, WEB_DIR } from '../../../scripts/seed/local-env'
 
 // Runs against `pnpm dev` on a database prepared by `pnpm db:reset:local && pnpm seed:dev`.
-const OWNER_EMAIL = 'owner@example.test'
+const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
 const CRON_PATH = '/api/v1/internal/cron'
 const CARD = '[data-card-id]'
 const BAR = '.wx-bar'
@@ -18,7 +18,7 @@ const LOCK_STALE_MS = 60_000
 const LOCK_POLL_MS = 100
 
 // First requests compile pages on `next dev`.
-test.describe.configure({ timeout: 120_000 })
+test.describe.configure({ mode: 'serial', timeout: 120_000 })
 const expect = baseExpect.configure({ timeout: 30_000 })
 
 function devInternalSecret(): string {
@@ -50,17 +50,43 @@ function tryLock(): boolean {
 async function signIn(page: Page): Promise<void> {
   while (!tryLock()) await delay(LOCK_POLL_MS)
   try {
-    await page.goto('/admin/login')
-    await page.locator('#field-email').fill(OWNER_EMAIL)
-    await page.locator('#field-password').fill(DEV_PASSWORD)
-    const login = page.waitForResponse(isPostTo('/api/users/login'))
-    await page.locator('button[type="submit"]').click()
+    await page.goto('/login')
+    await page.getByLabel('Email').fill(OWNER_EMAIL)
+    await page.getByLabel('Password').fill(DEV_PASSWORD)
+    const login = page.waitForResponse(isPostTo('/api/v1/auth/login'))
+    await page.getByRole('button', { name: 'Sign in' }).click()
     expect((await login).status()).toBe(200)
-    await page.waitForURL((url) => !url.pathname.startsWith('/admin/login'))
+    await page.waitForURL((url) => url.pathname === '/')
   } finally {
     rmSync(SIGN_IN_LOCK, { recursive: true, force: true })
   }
 }
+
+async function expectContained(page: Page, route: string): Promise<void> {
+  await page.goto(route)
+  const dimensions = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, viewport: innerWidth }))
+  expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewport)
+}
+
+test('customer shell uses the custom login, workspace tools, and contained responsive layouts', async ({ page }) => {
+  await page.goto('/tasks')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+
+  await signIn(page)
+  await expect(page.getByText('Mirch Media', { exact: true })).toHaveCount(1)
+  expect(await page.locator('a[href="/projects"]').count()).toBeGreaterThan(0)
+  if (page.viewportSize()?.width !== 390)
+    expect(await page.locator('a[href="/settings/general"]').count()).toBeGreaterThan(0)
+  await expect(page.locator('a[href^="/admin"]')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Search workspace' }).click()
+  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('Website')
+  await expect(page.getByText('Website redesign inquiry', { exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  for (const route of ['/', '/leads', '/deals/board', '/settings/general']) await expectContained(page, route)
+})
 
 const boardCard = (page: Page, title: string) => page.locator(CARD, { hasText: title })
 const boardColumn = (page: Page, stage: string) => page.getByRole('region', { name: stage, exact: true })

@@ -11,6 +11,7 @@ export type Doc = Readonly<Data> & { readonly id: string }
 interface Access {
   readonly overrideAccess: true
   readonly depth: 0
+  readonly context: { readonly authOperation: 'provisioning' }
 }
 
 /** The part of the Payload Local API the seed uses. */
@@ -28,7 +29,7 @@ interface PayloadModule {
 }
 
 /** Options every seed call passes: no access checks and no populated relationships. */
-export const LOCAL: Access = { overrideAccess: true, depth: 0 }
+export const LOCAL: Access = { overrideAccess: true, depth: 0, context: { authOperation: 'provisioning' } }
 
 /** Starts Payload with the web app's config; the working directory must be the web app so Wrangler finds its config. */
 export async function loadPayload(): Promise<SeedPayload> {

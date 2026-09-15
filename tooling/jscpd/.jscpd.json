@@ -18,10 +18,10 @@
     "apps/web/src/app/(payload)/**",
     "**/.open-next/**",
     "**/.next/**",
-    "docs/**"
-    ,"harness/metrics/**"
-    ,"harness/evals/**"
-    ,"harness/lessons/**"
-    ,"**/pnpm-lock.yaml"
+    "docs/**",
+    "harness/metrics/**",
+    "harness/evals/**",
+    "harness/lessons/**",
+    "**/pnpm-lock.yaml"
   ]
 }

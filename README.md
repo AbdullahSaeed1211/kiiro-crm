@@ -89,16 +89,16 @@ pnpm dev              # http://localhost:3000
 
 Both scripts refuse to run when `NODE_ENV=production`, `CLOUDFLARE_ENV` or `PAYLOAD_REMOTE_BINDINGS` is set.
 
-The seed creates four users, all with the password `DevPassword123!`:
+The seed creates four users, all with the password `mirchads@123`:
 
-| Email                  | Role                      |
-| ---------------------- | ------------------------- |
-| `owner@example.test`   | owner                     |
-| `manager@example.test` | manager                   |
-| `staff1@example.test`  | staff (Design group)      |
-| `staff2@example.test`  | staff (Development group) |
+| Email                   | Role                      |
+| ----------------------- | ------------------------- |
+| `mirchads@example.test` | owner                     |
+| `manager@example.test`  | manager                   |
+| `staff1@example.test`   | staff (Design group)      |
+| `staff2@example.test`   | staff (Development group) |
 
-Sign in at `/admin/login`; product login pages do not exist yet, and the board and timeline redirect there without a session. Pages:
+Sign in at `/login`; protected product pages redirect there without a session. The administrative Payload panel remains at `/admin` and is not part of customer navigation. Pages:
 
 | Path             | Content                                             |
 | ---------------- | --------------------------------------------------- |

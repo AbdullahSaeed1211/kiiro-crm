@@ -1,19 +1,18 @@
-// First customer tenant, kept as the local sample (spec §20.8). Not provisioned: `host` waits for PLATFORM_DOMAIN (Q-003)
-// and `d1.id` is written by provisioning (M7).
+// Confirmed first customer tenant. Remote provisioning remains an explicit operator action.
 {
   "slug": "mirchmedia",
   "displayName": "Mirch Media",
-  "hostType": "platform",
-  "host": "mirchmedia.platform-domain.invalid",
+  "hostType": "custom",
+  "host": "crm.mirchmedia.com",
   "template": "agency",
-  "timezone": "America/New_York",
+  "timezone": "Asia/Kolkata",
   "locale": "en",
-  "currency": "USD",
-  "owner": { "email": "owner@example.test", "name": "Owner" },
+  "currency": "INR",
+  "owner": { "email": "mirchads@gmail.com", "name": "Vivek Thapar" },
   "email": {
     "fromName": "Mirch Media",
-    "fromAddress": "no-reply@example.test",
-    "inboundDomain": "in.example.test",
+    "fromAddress": "no-reply@notify.mirchmedia.com",
+    "inboundDomain": "in.mirchmedia.com",
     "inboundLocalPrefix": "mirchmedia--",
   },
   "d1": { "name": "ops-mirchmedia" },

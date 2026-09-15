@@ -1,0 +1,8 @@
+{
+  "transition": {
+    "record": { "type": "task", "id": "task-1" },
+    "workflowId": "workflow-1",
+    "fromStageId": "backlog",
+    "toStageId": "doing"
+  }
+}

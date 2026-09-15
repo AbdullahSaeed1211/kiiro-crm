@@ -1,0 +1,5 @@
+{
+  "loginPath": "/login",
+  "protectedRedirect": "/login",
+  "customerLinks": ["/", "/leads", "/settings/profile"]
+}

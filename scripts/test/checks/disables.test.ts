@@ -29,6 +29,11 @@ describe('check:disables parsing', () => {
       { line: 4, rule: 'max-depth' },
     ])
   })
+
+  it('accepts a gated directive with an explicit inline reason', () => {
+    const gated = new Set(['complexity'])
+    expect(gatedDisables('// eslint-disable-next-line complexity -- bounded parser state machine', gated)).toEqual([])
+  })
 })
 
 describe('check:disables scan', () => {

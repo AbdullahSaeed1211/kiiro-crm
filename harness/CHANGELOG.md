@@ -7,3 +7,5 @@
 | 2026-09-14 | Protocol requires worker-pushed completion, forbids lead status polling, and treats every fix or post-review remediation commit as retry evidence  | M2 CRM review loop       |
 | 2026-09-14 | Retro first-pass metrics now require one green, no-finding attempt; added regression coverage and completed the five M2 lesson evals               | M2 retro lessons         |
 | 2026-09-14 | Corrected the first-pass regression test to match the `analyzeRetro` contract; recorded the review correction with truthful scope evidence         | M2-L2-a3                 |
+| 2026-09-14 | Added a customer-auth regression lesson and executable eval for the `/login` boundary, protected redirects, and exclusion of administrative links  | M3-L1-c0ffee             |
+| 2026-09-14 | Added a task-board transition regression lesson and executable eval for flattening domain stage-transition payloads before Payload writes          | M3-L1-b0a1d0             |

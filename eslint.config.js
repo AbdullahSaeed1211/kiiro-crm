@@ -12,6 +12,7 @@ export default defineConfig(
       '.codex/**',
       'scripts/fixtures/**',
       'harness/selftest/**',
+      'harness/evals/**',
       '**/.open-next/**',
       '**/.wrangler/**',
       '**/.next/**',

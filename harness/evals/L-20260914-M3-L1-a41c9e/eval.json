@@ -1,0 +1,15 @@
+{
+  "lesson": "L-20260914-M3-L1-a41c9e",
+  "repro": {
+    "cwd": "harness/evals/L-20260914-M3-L1-a41c9e/repro",
+    "command": "pnpm exec tsx ../../../../scripts/harness/eval-fixtures/completion-evidence.ts",
+    "expectExitCode": "nonzero",
+    "expectOutput": "missing required outputs"
+  },
+  "fixed": {
+    "cwd": "harness/evals/L-20260914-M3-L1-a41c9e/fixed",
+    "command": "pnpm exec tsx ../../../../scripts/harness/eval-fixtures/completion-evidence.ts",
+    "expectExitCode": "zero",
+    "expectOutput": "completion evidence covers 2 required outputs"
+  }
+}

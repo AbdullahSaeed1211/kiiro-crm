@@ -1,9 +1,21 @@
 /** Password of every seeded user. */
 // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- local development password fixed by spec §6.9
-export const DEV_PASSWORD = 'DevPassword123!'
+export const DEV_PASSWORD = 'mirchads@123'
 
 /** Settings global values the seed ensures. */
-export const APP_SETTINGS = { appName: 'Demo Workspace', timezone: 'America/New_York' } as const
+export const APP_SETTINGS = {
+  appName: 'Mirch Media',
+  timezone: 'Asia/Kolkata',
+  locale: 'en',
+  currency: 'INR',
+  brand: { primaryHex: '#E45735', radius: 'md' },
+  email: {
+    fromName: 'Mirch Media',
+    fromAddress: 'no-reply@notify.mirchmedia.com',
+    inboundDomain: 'in.mirchmedia.com',
+    inboundLocalPrefix: 'mirchmedia--',
+  },
+} as const
 
 /** Key a seed uses to refer to a seeded user. */
 export type UserKey = 'owner' | 'manager' | 'staff1' | 'staff2'
@@ -65,7 +77,7 @@ export const GROUPS: readonly string[] = [DESIGN, DEVELOPMENT]
 
 /** Seeded users; a user appears after the user it reports to. */
 export const USERS: readonly UserSeed[] = [
-  { key: 'owner', email: 'owner@example.test', name: 'Demo Owner', role: 'owner' },
+  { key: 'owner', email: 'mirchads@gmail.com', name: 'Vivek Thapar', role: 'owner' },
   { key: 'manager', email: 'manager@example.test', name: 'Demo Manager', role: 'manager' },
   {
     key: 'staff1',

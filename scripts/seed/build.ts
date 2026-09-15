@@ -1,4 +1,4 @@
-import { DEV_PASSWORD, type ProjectSeed, type TaskSeed, type UserSeed, type WorkflowSeed } from './data'
+import { APP_SETTINGS, DEV_PASSWORD, type ProjectSeed, type TaskSeed, type UserSeed, type WorkflowSeed } from './data'
 import type { ContactSeed, DealSeed, LeadSeed, OrganizationSeed } from './crm-types'
 
 type Data = Record<string, unknown>
@@ -170,7 +170,7 @@ export function dealData(
     contacts: seed.contacts.map((key) => idOf(context.contacts, key)),
     primaryContact: idOf(context.contacts, seed.primaryContact),
     valueAmountMinor: seed.valueAmountMinor,
-    valueCurrency: 'USD',
+    valueCurrency: APP_SETTINGS.currency,
     expectedCloseAt: atDay(context.now, seed.expectedCloseDay),
     closedAt: terminal ? atDay(context.now, seed.expectedCloseDay) : null,
     owner: idOf(context.users, seed.owner),

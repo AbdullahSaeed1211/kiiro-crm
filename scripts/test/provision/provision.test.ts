@@ -83,6 +83,9 @@ describe('provision plan contracts', () => {
     expect(payload['PAYLOAD_SECRET']).not.toBe('turnstile-secret')
     expect(manualChecklist(tenant)).toContain('ops-mail-router')
     expect(plan.find((step) => step.key === 'deployment')?.command).toBe(`${OPENNEXT} deploy --env=alpha`)
+    expect(plan.find((step) => step.key === 'migration')?.command).toBe(
+      'PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=alpha pnpm --filter web exec payload migrate',
+    )
     expect(plan.find((step) => step.key === 'senderStatus')?.command).toBe(
       `${WRANGLER} email sending list example.test`,
     )

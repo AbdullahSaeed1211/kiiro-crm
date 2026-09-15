@@ -1,4 +1,4 @@
-// eslint-disable-next-line complexity -- planted gated rule
+// eslint-disable-next-line complexity
 export const one = 1
 /* eslint-disable max-lines, no-console */
 export const two = 2

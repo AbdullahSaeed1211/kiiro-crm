@@ -26,6 +26,20 @@ export const ORGANIZATIONS: readonly OrganizationSeed[] = [
     email: 'hello@harbor-pine.example.test',
     source: 'Website form',
   },
+  ...(
+    [
+      ['austin-optics', 'Austin Optics'],
+      ['etcpa', 'ETCPA'],
+      ['shapiro-law-office', 'Shapiro Law Office'],
+      ['shapiro-the-hero', 'Shapiro The Hero'],
+      ['agr-gold', 'AGR Gold'],
+      ['fast-track', 'Fast Track'],
+      ['pbnj', 'Property Buyer New Jersey'],
+      ['green-vision', 'Green Vision'],
+      ['mirch-media', 'Mirch Media'],
+      ['baller-squad', 'Baller Squad'],
+    ] as const
+  ).map(([key, name]) => ({ key, name, website: '', phone: '', email: '' })),
 ]
 
 export const CONTACTS: readonly ContactSeed[] = [
