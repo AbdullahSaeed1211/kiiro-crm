@@ -115,6 +115,9 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
           const payload = data as { results?: readonly SearchResult[] }
           setResults(payload.results ?? [])
         })
+        .catch(() => {
+          if (!controller.signal.aborted) setResults([])
+        })
         .finally(() => {
           setLoading(false)
         })
@@ -168,7 +171,7 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
         <Command shouldFilter={false}>
           <CommandInput placeholder={copy.placeholder} value={query} onValueChange={setQuery} />
           <CommandList>
-            <CommandEmpty>{emptyCopy({ query, loading, copy })}</CommandEmpty>
+            <CommandEmpty aria-live="polite">{emptyCopy({ query, loading, copy })}</CommandEmpty>
             {query.trim().length < 2 ? (
               <>
                 <CommandGroup heading={copy.navigate}>

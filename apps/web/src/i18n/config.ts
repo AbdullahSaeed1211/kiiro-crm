@@ -41,3 +41,8 @@ export const SEARCH_COPY: Readonly<Record<Locale, Readonly<Record<string, string
     button: 'Buscar en el espacio', title: 'Buscar en el espacio', description: 'Encuentra registros de clientes y trabajo.', placeholder: 'Buscar personas, oportunidades, proyectos, tareas…', searching: 'Buscando…', minChars: 'Escribe al menos dos caracteres.', noMatches: 'No hay coincidencias.', navigate: 'Navegar', create: 'Crear', records: 'Registros', newLead: 'Nuevo prospecto', newContact: 'Nuevo contacto', newOrganization: 'Nueva organización', enter: '↵',
   },
 }
+
+export const NOTIFICATION_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
+  en: { label: 'Notifications', description: 'Updates that need your attention.', loading: 'Loading updates…', caughtUp: 'You’re all caught up.' },
+  es: { label: 'Notificaciones', description: 'Novedades que requieren tu atención.', loading: 'Cargando novedades…', caughtUp: 'Estás al día.' },
+}

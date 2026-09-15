@@ -16,7 +16,7 @@ export function WorkspaceTools({ locale }: Readonly<{ locale: Locale }>) {
   return (
     <>
       <WorkspaceSearch locale={locale} />
-      <WorkspaceNotifications />
+      <WorkspaceNotifications locale={locale} />
       <Button variant="ghost" size="icon-sm" aria-label="Toggle color theme" onClick={toggleTheme}>
         {theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />}
       </Button>
