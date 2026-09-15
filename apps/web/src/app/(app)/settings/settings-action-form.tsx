@@ -26,7 +26,7 @@ function FieldControl({
   if (field.type === 'select')
     return (
       <select
-        className="h-10 rounded-md border bg-background px-3"
+        className="h-10 rounded-md border bg-background px-3 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         name={field.name}
         onChange={(event) => onChange(event.target.value)}
         value={value}
@@ -40,7 +40,7 @@ function FieldControl({
     )
   return (
     <input
-      className="h-10 rounded-md border bg-background px-3"
+      className="h-10 rounded-md border bg-background px-3 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       name={field.name}
       autoComplete="off"
       onChange={(event) => onChange(event.target.value)}
@@ -106,7 +106,7 @@ export function SettingsActionForm({
         </p>
       )}
       <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         disabled={pending}
         type="submit"
       >

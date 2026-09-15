@@ -14,6 +14,7 @@ import {
 
 export type ActionResult =
   { readonly ok: true; readonly data?: unknown } | { readonly ok: false; readonly error: string }
+const MEMBERS_SETTINGS_PATH = '/settings/members'
 const recordOf = (input: unknown): Record<string, unknown> =>
   typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
 const stringValue = (value: unknown): string | undefined =>
@@ -242,6 +243,46 @@ export async function deleteConfiguration(input: unknown): Promise<ActionResult>
   }
 }
 
+// eslint-disable-next-line complexity, max-statements, sonarjs/cognitive-complexity -- default-state changes clear sibling defaults in one authorized transaction.
+export async function setSavedViewState(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const data = recordOf(input)
+  const id = stringValue(data.id)
+  const pinned = typeof data.pinned === 'boolean' ? data.pinned : undefined
+  const isDefault = typeof data.isDefault === 'boolean' ? data.isDefault : undefined
+  if (id === undefined || (pinned === undefined && isDefault === undefined))
+    return { ok: false, error: 'A view and a state change are required.' }
+  try {
+    const dataPayload = payloadData(context.payload)
+    const found = await dataPayload.find({ collection: 'savedViews', where: { id: { equals: id } }, limit: 1, depth: 0, overrideAccess: false, req: context.req })
+    const view = found.docs.at(0)
+    if (view === undefined) return { ok: false, error: 'Saved view not found.' }
+    if (isDefault === true) {
+      const owner = typeof view.owner === 'string' ? view.owner : null
+      const where = owner === null
+        ? { and: [{ recordType: { equals: view.recordType } }, { or: [{ owner: { equals: null } }, { owner: { exists: false } }] }] }
+        : { and: [{ recordType: { equals: view.recordType } }, { owner: { equals: owner } }] }
+      const siblings = await dataPayload.find({ collection: 'savedViews', where, limit: 100, depth: 0, overrideAccess: false, req: context.req })
+      await Promise.all(
+        siblings.docs
+          .filter((sibling): sibling is NonNullable<typeof sibling> => sibling !== undefined && sibling.id !== id && sibling.isDefault === true)
+          .map((sibling) => dataPayload.update({ collection: 'savedViews', id: sibling.id, data: { isDefault: false }, overrideAccess: false, req: context.req })),
+      )
+    }
+    await dataPayload.update({
+      collection: 'savedViews',
+      id,
+      data: { ...(pinned === undefined ? {} : { pinned }), ...(isDefault === undefined ? {} : { isDefault }) },
+      overrideAccess: false,
+      req: context.req,
+    })
+    revalidatePath('/settings/views')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to update saved view.' }
+  }
+}
+
 export async function saveProfile(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager', 'staff')
   const name = stringValue(recordOf(input).name)
@@ -337,7 +378,7 @@ export async function inviteMember(input: unknown): Promise<ActionResult> {
     })
     if (pending.docs.length > 0) return { ok: false, error: 'A pending invitation already exists for this email.' }
     const token = await createInvitation({ dataPayload, context, email, role })
-    revalidatePath('/settings/members')
+    revalidatePath(MEMBERS_SETTINGS_PATH)
     const origin = process.env.APP_ORIGIN || 'http://localhost:3000'
     return { ok: true, data: { token, inviteUrl: `${origin.replace(/\/$/u, '')}/invite/${token}` } }
   } catch (error) {
@@ -357,7 +398,7 @@ export async function revokeInvitation(input: unknown): Promise<ActionResult> {
       overrideAccess: false,
       req: context.req,
     })
-    revalidatePath('/settings/members')
+    revalidatePath(MEMBERS_SETTINGS_PATH)
     return { ok: true }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unable to revoke invitation.' }
@@ -398,11 +439,52 @@ export async function resendInvitation(input: unknown): Promise<ActionResult> {
       overrideAccess: false,
       req: context.req,
     })
-    revalidatePath('/settings/members')
+    revalidatePath(MEMBERS_SETTINGS_PATH)
     const origin = process.env.APP_ORIGIN || 'http://localhost:3000'
     return { ok: true, data: { inviteUrl: `${origin.replace(/\/$/u, '')}/invite/${token}` } }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unable to resend invitation.' }
+  }
+}
+
+// eslint-disable-next-line complexity, max-statements, sonarjs/cognitive-complexity -- member updates validate target and proposed role before one guarded write.
+export async function saveMember(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const data = recordOf(input)
+  const id = stringValue(data.id)
+  const role = stringValue(data.role) as Role | undefined
+  const active = data.active === true || data.active === 'true'
+  const groups = Array.isArray(data.groups) ? data.groups.filter((value): value is string => typeof value === 'string') : []
+  const reportsTo = data.reportsTo === null || data.reportsTo === '' ? null : stringValue(data.reportsTo)
+  if (id === undefined || role === undefined || !['owner', 'manager', 'staff'].includes(role))
+    return { ok: false, error: 'Member and role are required.' }
+  if (id === context.actor.id && !active) return { ok: false, error: 'You cannot deactivate your own account.' }
+  try {
+    const found = await context.payload.find({
+      collection: 'users',
+      where: { id: { equals: id } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: false,
+      req: context.req,
+    })
+    const member = found.docs.at(0)
+    if (member === undefined || typeof member.role !== 'string') return { ok: false, error: 'Member not found.' }
+    if (!can(context.actor, 'manage_members', { type: 'users', role: member.role }))
+      return { ok: false, error: 'You cannot manage this member.' }
+    if (!can(context.actor, 'manage_members', { type: 'users', role }))
+      return { ok: false, error: 'You cannot assign this role.' }
+    await context.payload.update({
+      collection: 'users',
+      id,
+      data: { role, active, groups, reportsTo },
+      overrideAccess: false,
+      req: context.req,
+    })
+    revalidatePath(MEMBERS_SETTINGS_PATH)
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Unable to update member access.' }
   }
 }
 

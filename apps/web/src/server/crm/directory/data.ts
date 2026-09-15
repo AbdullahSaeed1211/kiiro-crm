@@ -5,7 +5,7 @@ import { listActivities, listEmailMessages, listProjects, loadPeople } from './h
 import type { ActivityItem, ContactListItem, EmailThreadMessage, OrganizationListItem, PersonSummary } from './types'
 import { displayName, type DirectorySort } from './utils'
 
-export type { ActivityItem, ContactListItem, OrganizationListItem, PersonSummary } from './types'
+export type { ActivityItem, ContactListItem, InboxEmailMessage, OrganizationListItem, PersonSummary } from './types'
 export type { EmailThreadMessage } from './types'
 
 const DIRECTORY_PAGE_SIZE = 50

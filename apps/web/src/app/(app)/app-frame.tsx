@@ -12,6 +12,7 @@ import {
   Handshake,
   LayoutDashboard,
   ListTodo,
+  Mail,
   Settings,
   UserPlus,
   type LucideIcon,
@@ -50,10 +51,12 @@ function navGroups({
   pathname,
   modules,
   terminology,
+  role,
 }: Readonly<{
   pathname: string
   modules: Readonly<Record<string, boolean>>
   terminology: Readonly<Record<string, unknown>>
+  role: string
 }>): NavGroup[] {
   const item = ([label, href, icon]: NavLink) => ({ label, href, icon, active: isActive(pathname, href) })
   const label = (key: string, fallback: string) => {
@@ -61,6 +64,8 @@ function navGroups({
     return typeof value === 'string' && value !== '' ? value : fallback
   }
   const groups: NavGroup[] = [{ id: 'general', items: GENERAL.map(item) }]
+  if (modules.mail && (role === 'owner' || role === 'manager'))
+    groups[0] = { id: 'general', items: [...GENERAL.map(item), item(['Inbox', '/inbox', Mail])] }
   if (modules.crm)
     groups.push({
       id: 'crm',
@@ -79,7 +84,7 @@ function navGroups({
 function SidebarAccount({ name, email, role }: Readonly<{ name: string; email: string; role: string }>) {
   return (
     <div className="space-y-1">
-      <a className="ops-sidebar-user" href="/settings/profile">
+      <a className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/settings/profile">
         <span className="ops-brand-mark grid size-8 place-items-center text-xs font-semibold text-primary-foreground">
           {name.charAt(0).toUpperCase()}
         </span>
@@ -88,7 +93,7 @@ function SidebarAccount({ name, email, role }: Readonly<{ name: string; email: s
           <span className="block truncate text-[10px] text-muted-foreground">{email || role}</span>
         </span>
       </a>
-      <a className="ops-sidebar-user" href={role === 'staff' ? '/settings/profile' : '/settings/general'}>
+      <a className="ops-sidebar-user focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={role === 'staff' ? '/settings/profile' : '/settings/general'}>
         <span className="grid size-8 place-items-center">
           <Settings className="size-4" aria-hidden />
         </span>
@@ -153,7 +158,7 @@ export function AppFrame({
               />
             )
           }
-          groups={navGroups({ pathname, modules, terminology })}
+          groups={navGroups({ pathname, modules, terminology, role })}
           footer={<SidebarAccount name={userName} email={userEmail} role={role} />}
         />
       }

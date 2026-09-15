@@ -1,5 +1,5 @@
 import type { RequestContext } from '../../work/deps'
-import type { ActivityItem, EmailThreadMessage, PersonSummary } from './types'
+import type { ActivityItem, EmailThreadMessage, InboxEmailMessage, PersonSummary } from './types'
 
 function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null
@@ -100,6 +100,28 @@ export async function listEmailMessages(
   return result.docs.flatMap((entry) => {
     const message = emailMessage(entry as unknown as Record<string, unknown>)
     return message === null || message.id === '' ? [] : [message]
+  })
+}
+
+export async function listInboxMessages(context: RequestContext): Promise<readonly InboxEmailMessage[]> {
+  const result = await context.payload.find({
+    collection: 'emailMessages',
+    sort: '-occurredAt',
+    limit: 100,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    user: context.req.user,
+    req: context.req,
+  })
+  return result.docs.flatMap((entry) => {
+    const value = entry as unknown as Record<string, unknown>
+    const message = emailMessage(value)
+    const recordType = text(value.recordType)
+    const recordId = text(value.recordId)
+    return message === null || message.id === ''
+      ? []
+      : [{ ...message, recordType, recordId }]
   })
 }
 

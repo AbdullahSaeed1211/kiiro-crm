@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { inviteMember, resendInvitation, revokeInvitation } from '../../../../server/actions/settings'
-import { InviteMemberForm, InvitationActions } from '../member-forms'
+import { inviteMember, resendInvitation, revokeInvitation, saveMember } from '../../../../server/actions/settings'
+import { InviteMemberForm, InvitationActions, MemberActions } from '../member-forms'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'
+import { can } from '@ops/platform'
 import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
 
 export const metadata: Metadata = { title: 'Members' }
@@ -80,9 +81,10 @@ function AccessTable({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
   )
 }
 
+// eslint-disable-next-line max-lines-per-function -- page assembles users, invitations, and responsive access controls.
 export default async function MembersSettingsPage() {
   const context = await requireRole('owner', 'manager')
-  const [users, invitations] = await Promise.all([
+  const [users, invitations, groups] = await Promise.all([
     context.payload.find({
       collection: 'users',
       depth: 0,
@@ -99,8 +101,11 @@ export default async function MembersSettingsPage() {
       overrideAccess: false,
       req: context.req,
     }),
+    context.payload.find({ collection: 'groups', depth: 0, limit: 100, sort: 'name', req: context.req }),
   ])
   const workModel = await loadWorkReadModel()
+  const groupOptions = groups.docs.map((group) => ({ id: group.id, name: group.name }))
+  const reportOptions = users.docs.map((user) => ({ id: user.id, name: user.name || user.email }))
   const rows: AccessRow[] = [
     ...users.docs.map((user) => ({
       id: user.id,
@@ -109,7 +114,20 @@ export default async function MembersSettingsPage() {
       role: user.role,
       status: user.active === true ? 'Active' : 'Inactive',
       lastInvitation: 'Not sent',
-      actions: <span className="text-xs text-muted-foreground">Managed by role policy</span>,
+      actions: can(context.actor, 'manage_members', { type: 'users', role: user.role }) ? (
+        <MemberActions
+          action={saveMember}
+          groups={groupOptions}
+          reports={reportOptions.filter((report) => report.id !== user.id)}
+          member={{
+            id: user.id,
+            role: user.role,
+            active: user.active === true,
+            groups: (user.groups ?? []).map((group) => (typeof group === 'string' ? group : group.id)),
+            reportsTo: typeof user.reportsTo === 'string' ? user.reportsTo : '',
+          }}
+        />
+      ) : <span className="text-xs text-muted-foreground">Managed by role policy</span>,
     })),
     ...invitations.docs.map((invitation) => ({
       id: invitation.id,

@@ -21,6 +21,7 @@ const ROUTES = [
   ['/tasks', 'Tasks'],
   ['/my-tasks', 'My tasks'],
   ['/calendar', 'Calendar'],
+  ['/inbox', 'Inbox'],
   ['/timeline', 'Timeline'],
   ['/settings/general', 'General'],
   ['/settings/profile', 'Profile'],
@@ -186,6 +187,7 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
   await page.keyboard.press('Escape')
 })
 
+// eslint-disable-next-line max-statements -- this guard covers the settings surfaces that must stay actionable.
 test('configuration surfaces expose real controls and import starters', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings/modules')
@@ -202,12 +204,20 @@ test('configuration surfaces expose real controls and import starters', async ({
   await expect(page.getByRole('heading', { name: 'Notifications', exact: true })).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Assigned to you in-app' })).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Assigned to you email' })).toBeVisible()
+  await page.goto('/settings/members')
+  await expect(page.getByRole('heading', { name: 'Members', exact: true })).toBeVisible()
+  const editAccess = page.locator('summary:visible', { hasText: 'Edit access' }).first()
+  await expect(editAccess).toBeVisible()
+  await editAccess.click()
+  await expect(page.getByRole('button', { name: 'Save access', exact: true }).first()).toBeVisible()
 })
 
 test('workspace settings reopen with tenant values intact', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings/profile')
   await expect(page.getByLabel('Name')).toHaveValue('Vivek Thapar')
+  await expect(page.getByRole('heading', { name: 'Change password', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Change password', exact: true })).toBeVisible()
   await page.goto('/settings/branding')
   await expect(page.getByLabel('Corner radius')).toHaveValue('md')
   await page.goto('/settings/general')
@@ -226,6 +236,10 @@ test('saved views use typed controls and support rename and deletion', async ({ 
   await page.getByRole('button', { name: 'Save view' }).click()
   await expect(page.getByText(name, { exact: true })).toBeVisible()
   const row = page.getByRole('listitem').filter({ hasText: name })
+  await row.getByRole('button', { name: 'Pin', exact: true }).click()
+  await expect(row.getByText('Pinned', { exact: true })).toBeVisible()
+  await row.getByRole('button', { name: 'Set default', exact: true }).click()
+  await expect(row.getByRole('button', { name: 'Default', exact: true })).toBeDisabled()
   const renamed = `${name} renamed`
   await row.getByRole('button', { name: 'Edit' }).click()
   await page.getByLabel('Saved view name').fill(renamed)

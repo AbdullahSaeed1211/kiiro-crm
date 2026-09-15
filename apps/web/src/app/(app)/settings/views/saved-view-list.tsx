@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable complexity, max-lines-per-function -- one compact list owns rename, cancel, and delete feedback. */
 
-import { deleteConfiguration, saveConfiguration } from '../../../../server/actions/settings'
+import { deleteConfiguration, saveConfiguration, setSavedViewState } from '../../../../server/actions/settings'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -12,7 +12,15 @@ function recordTypeLabel(value: string): string {
 export function SavedViewList({
   views,
 }: Readonly<{
-  views: readonly { id: string; recordType: string; name: string; kind: string; ownerId: string | null }[]
+  views: readonly {
+    id: string
+    recordType: string
+    name: string
+    kind: string
+    ownerId: string | null
+    pinned: boolean
+    isDefault: boolean
+  }[]
 }>) {
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -51,10 +59,46 @@ export function SavedViewList({
             ) : (
               <span className="min-w-48 flex-1 truncate font-medium">{view.name}</span>
             )}
-            <span className="flex shrink-0 items-center gap-3">
+            <span className="flex shrink-0 flex-wrap items-center justify-end gap-3">
               <span className="text-xs text-muted-foreground">
                 {recordTypeLabel(view.recordType)} · {view.ownerId === null ? 'Shared' : 'Personal'} · {view.kind}
               </span>
+              {view.pinned ? <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">Pinned</span> : null}
+              {view.isDefault ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default</span> : null}
+              <button
+                className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                disabled={pendingId !== null || editingId !== null}
+                type="button"
+                aria-pressed={view.pinned}
+                onClick={() => {
+                  setPendingId(view.id)
+                  setError('')
+                  void setSavedViewState({ id: view.id, pinned: !view.pinned }).then((result) => {
+                    setPendingId(null)
+                    if (!result.ok) setError(result.error)
+                    else router.refresh()
+                  })
+                }}
+              >
+                {view.pinned ? 'Unpin' : 'Pin'}
+              </button>
+              <button
+                className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                disabled={pendingId !== null || editingId !== null || view.isDefault}
+                type="button"
+                aria-pressed={view.isDefault}
+                onClick={() => {
+                  setPendingId(view.id)
+                  setError('')
+                  void setSavedViewState({ id: view.id, isDefault: true }).then((result) => {
+                    setPendingId(null)
+                    if (!result.ok) setError(result.error)
+                    else router.refresh()
+                  })
+                }}
+              >
+                {view.isDefault ? 'Default' : 'Set default'}
+              </button>
               {editingId === view.id ? (
                 <>
                   <button

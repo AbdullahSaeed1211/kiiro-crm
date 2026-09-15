@@ -12,9 +12,10 @@ This is the release-review inventory for tenant-facing CRM surfaces. The owner n
 | Settings `/settings/*`                                        | Twenty + Frappe CRM | Grouped role-aware IA, consistent row grammar, routed forms                                       | settings IA browser guard                                | Conformant; no full-screen modal settings                                                   |
 | Command palette (all app routes)                              | Plane               | Keyboard shortcut, centered bounded dialog, useful defaults, reset on close                       | command-palette browser guard                            | Conformant; search remains the product's authorized API                                     |
 | Activity/comments on records                                  | Plane + Huly        | Chronology, actor/action language, comment composer, pending/error feedback                       | route-health + record activity implementation            | Conformant; linked email messages have a dedicated responsive thread tab                    |
-| Email/intake `/settings/email`, `/settings/intake`            | Agentic Inbox       | Clear setup state, explicit send/intake boundaries, role-safe configuration                       | route-health + build + record email thread               | Conformant for setup and record-linked inbound threads; replies open the tenant mail client |
+| Email/intake `/inbox`, `/settings/email`, `/settings/intake`  | Agentic Inbox       | Clear setup state, explicit send/intake boundaries, role-safe configuration                       | route-health + build + record email thread + inbox       | Partial: setup, manager inbox, and record-linked inbound threads are live; thread filters/composer remain Phase 2 |
 | Import `/settings/import`                                    | Frappe CRM           | Downloadable per-record CSV starters, custom-field columns, explicit importer handoff           | production build + authenticated route guard             | Conformant; templates are generated from the tenant's configured fields                    |
 | Auth/onboarding `/login`, `/invite/*`, `/onboarding`          | Twenty + Frappe CRM | Prefilled deterministic seed, clear validation, no admin branding leakage, business-neutral setup | auth/provision tests + route-health + typed preset guard | Conformant; tenant presets are stored with the workspace                                    |
+| Profile/access `/settings/profile`, `/settings/members`, `/settings/groups` | Twenty + Frappe CRM | Prefilled identity, password rotation, role-safe member lifecycle, groups and reporting lines | route-health + focused settings checks | Conformant; member mutations remain capability-guarded server actions |
 
 ## Release evidence
 
@@ -25,9 +26,9 @@ This is the release-review inventory for tenant-facing CRM surfaces. The owner n
 ## Known intentional deviations
 
 - Explicit `panel=1`/`returnTo` URL state is used instead of Next intercepted routes; this preserves deep links and reloadability without introducing a second navigation tree.
-- Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders remain outside the current UI contract. Rename and delete are available from the settings list with the collection ownership policy enforced server-side.
+- Saved views currently apply task sort and simple `status` filters; arbitrary per-column filter builders remain outside the current UI contract. Rename, pin, set-default, and delete are available from the settings list with the collection ownership policy enforced server-side.
 - Outbound replies intentionally use the tenant's configured mail client (`mailto:`) so the customer shell never presents a send action without a configured transport; inbound messages are rendered in the record Email tab.
-- The inbox and in-product record-email composer remain a Phase 2 transport integration; the current Email settings and record views expose the safe, configured mail-client boundary instead of a misleading send control.
+- Inbox is currently a manager read-only message list; assigned/unread thread filters and an in-product composer remain Phase 2 transport work. Email settings and record views expose the safe, configured mail-client boundary instead of a misleading send control.
 
 ## Deeper reference learnings applied
 

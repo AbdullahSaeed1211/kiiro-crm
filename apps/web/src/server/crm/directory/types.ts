@@ -24,6 +24,11 @@ export interface EmailThreadMessage {
   readonly occurredAt: number
 }
 
+export interface InboxEmailMessage extends EmailThreadMessage {
+  readonly recordType: string | null
+  readonly recordId: string | null
+}
+
 export interface OrganizationListItem {
   readonly record: OrganizationRecord
   readonly owner: PersonSummary | null
