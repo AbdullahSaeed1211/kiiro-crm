@@ -103,8 +103,8 @@ function ftsQuery(value: string): string {
 function rowCandidate(value: unknown): IndexedCandidate | null {
   if (typeof value !== 'object' || value === null) return null
   const row = value as Record<string, unknown>
-  const recordType = typeof row.record_type === 'string' ? row.record_type : ''
-  const id = typeof row.record_id === 'string' ? row.record_id : ''
+  const recordType = typeof row['record_type'] === 'string' ? row['record_type'] : ''
+  const id = typeof row['record_id'] === 'string' ? row['record_id'] : ''
   return recordType && id ? { recordType, id } : null
 }
 
