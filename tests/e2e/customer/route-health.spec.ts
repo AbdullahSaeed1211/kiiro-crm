@@ -31,7 +31,7 @@ const ROUTES = [
   ['/my-tasks', 'My tasks'],
   ['/calendar', CALENDAR_VIEW_LABEL],
   ['/inbox', 'Inbox'],
-  ['/timeline', 'Timeline'],
+  ['/timeline', GANTT_VIEW_LABEL],
   ['/reports', 'Figures'],
   ['/settings/general', 'General'],
   ['/settings/profile', 'Profile'],
