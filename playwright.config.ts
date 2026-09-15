@@ -14,7 +14,7 @@ function devSecret(): string {
 // Without E2E_BASE_URL the suite resets, seeds and starts the local app itself.
 const localServer = {
   webServer: {
-    command: 'pnpm db:reset:local && pnpm seed:dev && pnpm dev',
+    command: 'node_modules/.bin/tsx scripts/e2e-server.ts',
     url: `${LOCAL_URL}/api/v1/health`,
     reuseExistingServer: !process.env['CI'],
     timeout: 300_000,
