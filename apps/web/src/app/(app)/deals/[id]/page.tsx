@@ -9,6 +9,7 @@ import { DealControls } from '../DealControls'
 import { getDealDetailData, type ActivityItem, type DealDetailData } from '../../../../server/crm/deals/queries'
 import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { RecordActionLinks } from '../../record-action-links'
+import { RecordEmailThread } from '../../record-email-thread'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -126,6 +127,7 @@ function DealRecordView({ data }: Readonly<{ data: DealDetailData }>) {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="grid gap-5">
           <ActivityCard activity={data.activity} />
+          <RecordEmailThread messages={data.emailMessages} />
           <DetailsCard data={data} />
         </main>
         <aside>

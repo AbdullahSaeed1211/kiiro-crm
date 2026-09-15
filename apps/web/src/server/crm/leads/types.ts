@@ -1,5 +1,6 @@
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
+import type { EmailThreadMessage } from '../directory/types'
 
 export interface LeadPerson {
   readonly id: string
@@ -30,6 +31,7 @@ export interface LeadPageData {
   readonly lostReasons: readonly LookupRecord[]
   readonly people: readonly LeadPerson[]
   readonly activities: readonly LeadActivityItem[]
+  readonly emailMessages: readonly EmailThreadMessage[]
 }
 
 export function initials(name: string): string {

@@ -4,6 +4,8 @@ import type { ContactRecord, CrmDeps, DealRecord, OrganizationRecord } from '@op
 import { can, type Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '../../work/deps'
 import { loadActivity, type ActivityItem } from './activity'
+import { listEmailMessages } from '../directory/helpers'
+import type { EmailThreadMessage } from '../directory/types'
 import { displayName, organizationName, stageForDeal, type DealListItem } from './view-model'
 
 export interface DealListData {
@@ -24,6 +26,7 @@ export interface DealDetailData {
   readonly allContacts: readonly ContactRecord[]
   readonly lostReasons: readonly { readonly id: string; readonly name: string }[]
   readonly activity: readonly ActivityItem[]
+  readonly emailMessages: readonly EmailThreadMessage[]
 }
 
 export type { ActivityItem } from './activity'
@@ -80,13 +83,14 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
   const deps = dealDeps(context)
   const deal = await deps.repo.get('deal', asId(id))
   if (deal === undefined) return null
-  const [workflow, organization, organizations, allContacts, lostReasons, activity] = await Promise.all([
+  const [workflow, organization, organizations, allContacts, lostReasons, activity, emailMessages] = await Promise.all([
     deps.repo.loadWorkflow(deal.workflowId),
     deal.organizationId === null ? Promise.resolve(undefined) : deps.repo.get('organization', deal.organizationId),
     deps.repo.list('organization'),
     deps.repo.list('contact'),
     deps.repo.listLookups('lostReason'),
     loadActivity(context, id, true),
+    listEmailMessages(context, { recordType: 'deal', recordId: id, parentAuthorized: true }),
   ])
   if (workflow === undefined) return null
   return {
@@ -99,5 +103,6 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
     allContacts,
     lostReasons,
     activity,
+    emailMessages,
   }
 }

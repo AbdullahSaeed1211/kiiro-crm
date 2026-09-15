@@ -27,6 +27,11 @@ const ROUTES = [
   ['/settings/notifications', 'Notifications'],
   ['/settings/email', 'Email'],
   ['/settings/intake', 'Intake'],
+  ['/settings/groups', 'Groups'],
+  ['/settings/workflows', 'Workflows'],
+  ['/settings/fields', 'Fields'],
+  ['/settings/modules', 'Modules'],
+  ['/settings/import', 'Import'],
   ['/onboarding', 'Workspace'],
   ['/leads/new', 'New lead'],
   ['/contacts/new', 'New contact'],
@@ -176,6 +181,20 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
   await expect(page.getByRole('group', { name: 'Navigate' }).getByText('Tasks', { exact: true })).toBeVisible()
   await page.screenshot({ path: test.info().outputPath('command-palette.png'), fullPage: true })
   await page.keyboard.press('Escape')
+})
+
+test('configuration surfaces expose real controls and import starters', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/modules')
+  await expect(page.getByRole('heading', { name: 'Modules', exact: true })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'CRM module' })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Mail module' })).toBeVisible()
+  await page.goto('/settings/import')
+  await expect(page.getByRole('heading', { name: 'Import', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Lead template' })).toHaveAttribute(
+    'href',
+    '/api/v1/import/template/lead',
+  )
 })
 
 // eslint-disable-next-line max-statements -- this guard covers the full saved-view lifecycle in one browser flow.

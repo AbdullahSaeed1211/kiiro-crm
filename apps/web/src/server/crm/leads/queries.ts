@@ -1,6 +1,7 @@
 import { createCrmRepository } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import { getRequestContext } from '../../work/deps'
+import { listEmailMessages } from '../directory/helpers'
 import { asId } from '@ops/kernel'
 import type { Activity, User } from '../../../payload-types'
 import {
@@ -161,12 +162,13 @@ function activityItem(row: Activity, people: ReadonlyMap<string, LeadPerson>): L
 }
 
 /** Reads one authorized lead and its supporting details/activity. */
+// eslint-disable-next-line max-lines-per-function -- lead detail loads the complete authorized record context in one boundary.
 export async function getLeadPage(id: string): Promise<LeadPageData | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
   const lead = await repo.get('lead', asId(id))
   if (lead === undefined) return null
-  const [workflow, sources, lostReasons, activityPage] = await Promise.all([
+  const [workflow, sources, lostReasons, activityPage, emailMessages] = await Promise.all([
     repo.loadWorkflow(lead.workflowId),
     repo.listLookups('source'),
     repo.listLookups('lostReason'),
@@ -179,6 +181,7 @@ export async function getLeadPage(id: string): Promise<LeadPageData | null> {
       overrideAccess: true,
       req: context.req,
     }),
+    listEmailMessages(context, { recordType: 'lead', recordId: id, parentAuthorized: true }),
   ])
   const stages = workflow === undefined ? [] : toStages(workflow)
   const users = await context.payload.find({
@@ -198,6 +201,7 @@ export async function getLeadPage(id: string): Promise<LeadPageData | null> {
     lostReasons,
     people: [...people.values()],
     activities: activityPage.docs.map((row) => activityItem(row, people)),
+    emailMessages,
   }
 }
 

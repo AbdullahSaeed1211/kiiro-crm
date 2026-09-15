@@ -95,8 +95,9 @@ export async function saveBranding(input: unknown): Promise<ActionResult> {
 
 export async function saveModules(input: unknown): Promise<ActionResult> {
   const data = recordOf(input)
+  const enabled = (value: unknown): boolean => value === true || value === 'true'
   return updateSettings({
-    modules: Object.fromEntries(Object.entries(data).map(([key, value]) => [key, value === 'true'])),
+    modules: Object.fromEntries(Object.entries(data).map(([key, value]) => [key, enabled(value)])),
   })
 }
 

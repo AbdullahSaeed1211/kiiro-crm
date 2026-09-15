@@ -1,5 +1,4 @@
 'use client'
-
 import { ActivityFeed, RecordPageLayout, StageSelect, type ActivityEntry } from '@ops/ui'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
@@ -8,9 +7,12 @@ import { useMemo, useState } from 'react'
 import { moveLead, updateLead } from '../../../server/crm/leads/actions'
 import type { LeadPageData } from '../../../server/crm/leads/types'
 import { ConvertDialog, LostDialog } from './LeadDialogs'
+import { RecordActionLinks } from '../record-action-links'
+import { recordTabs } from '../record-view-primitives'
 
 function formatDate(value: number): string {
-  return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(value)
+  const iso = new Date(value).toISOString()
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`
 }
 
 function AsideField({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -58,7 +60,7 @@ function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
   ] as const
   return (
     <div className="flex flex-col gap-4">
-      <section className="rounded-lg border p-4">
+      <section className="ops-detail-card rounded-lg border p-4">
         <h2 className="text-sm font-medium">Details</h2>
         <dl className="mt-3 grid gap-3 text-sm">
           {details.map(([label, value]) => (
@@ -66,7 +68,7 @@ function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
           ))}
         </dl>
       </section>
-      <section className="rounded-lg border p-4">
+      <section className="ops-detail-card rounded-lg border p-4">
         <h2 className="text-sm font-medium">Meta</h2>
         <dl className="mt-3 grid gap-3 text-sm">
           {meta.map(([label, value]) => (
@@ -97,34 +99,15 @@ function LeadActions({
   )
 }
 
-function leadTabs(activity: readonly ActivityEntry[]) {
-  return [
-    {
-      id: 'activity',
-      label: 'Activity',
-      content: (
-        <ActivityFeed
-          entries={activity}
-          labels={{ heading: 'Activity', empty: 'No activity yet', loadMore: 'Load more', systemActor: 'System' }}
-          locale="en"
-        />
-      ),
-    },
-    {
-      id: 'tasks',
-      label: 'Tasks',
-      content: (
-        <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          Related tasks will appear here.
-        </p>
-      ),
-    },
-    {
-      id: 'files',
-      label: 'Files',
-      content: <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No files attached.</p>,
-    },
-  ]
+function leadTabs(activity: readonly ActivityEntry[], emailMessages: LeadPageData['emailMessages']) {
+  return recordTabs(
+    <ActivityFeed
+      entries={activity}
+      labels={{ heading: 'Activity', empty: 'No activity yet', loadMore: 'Load more', systemActor: 'System' }}
+      locale="en"
+    />,
+    emailMessages,
+  )
 }
 
 function leadOwner(owner: LeadPageData['item']['owner']) {
@@ -187,9 +170,18 @@ function LeadRecordLayout({
         }
         owner={leadOwner(data.item.owner)}
         actions={
-          <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
+          <div className="flex flex-wrap gap-2">
+            <RecordActionLinks
+              recordType="lead"
+              recordId={lead.id}
+              recordLabel={lead.title}
+              email={lead.email}
+              phone={lead.phone}
+            />
+            <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
+          </div>
         }
-        tabs={leadTabs(activity)}
+        tabs={leadTabs(activity, data.emailMessages)}
         aside={<LeadAside data={data} />}
       />
     </>
