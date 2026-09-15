@@ -25,6 +25,12 @@ export const tenantSchema = z
       inboundDomain: hostname,
       inboundLocalPrefix: text.optional(),
     }),
+    brandAssets: z
+      .union([
+        z.object({ logoUrl: z.url(), faviconUrl: z.url() }),
+        z.object({ logoPath: text, faviconPath: text }),
+      ])
+      .optional(),
     d1: z.object({ name: cloudflareName, id: z.uuid().optional() }),
     r2: z.object({ bucket: cloudflareName }),
     rateLimitNamespaces: z.object({ intake: namespaceId, auth: namespaceId }),

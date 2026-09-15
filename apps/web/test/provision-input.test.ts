@@ -26,6 +26,27 @@ describe('provisioning input', () => {
       provisionBody({ ...input, intake: { allowedOrigins: ['file:///tmp'], turnstileHostnames: [] } }),
     ).toBeUndefined()
   })
+
+  it('accepts either HTTPS defaults or bounded packaged brand assets', () => {
+    expect(
+      provisionBody({
+        ...input,
+        brandAssets: { logoUrl: 'https://cdn.example.test/logo.png', faviconUrl: 'https://cdn.example.test/favicon.ico' },
+      })?.brandAssets,
+    ).toEqual({ logoUrl: 'https://cdn.example.test/logo.png', faviconUrl: 'https://cdn.example.test/favicon.ico' })
+    expect(
+      provisionBody({
+        ...input,
+        brandAssets: {
+          logoBase64: 'aGVsbG8=',
+          faviconBase64: 'aGVsbG8=',
+          logoContentType: 'image/png',
+          faviconContentType: 'image/x-icon',
+        },
+      })?.brandAssets,
+    ).toMatchObject({ logoContentType: 'image/png', faviconContentType: 'image/x-icon' })
+    expect(provisionBody({ ...input, brandAssets: { logoUrl: 'http://cdn.example.test/logo.png' } })).toBeUndefined()
+  })
 })
 
 describe('provisioning template state', () => {

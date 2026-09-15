@@ -6,6 +6,14 @@ export interface ProvisionBody {
   readonly currency: string
   readonly owner: { readonly email: string; readonly name: string }
   readonly intake: { readonly allowedOrigins: readonly string[]; readonly turnstileHostnames: readonly string[] }
+  readonly brandAssets?: {
+    readonly logoUrl?: string
+    readonly faviconUrl?: string
+    readonly logoBase64?: string
+    readonly faviconBase64?: string
+    readonly logoContentType?: string
+    readonly faviconContentType?: string
+  }
 }
 
 function objectOf(value: unknown): Record<string, unknown> | undefined {
@@ -58,6 +66,29 @@ function validEmail(value: string): boolean {
   return at > 0 && at < value.length - 3 && value.indexOf('.', at + 2) > at + 1
 }
 
+// eslint-disable-next-line complexity -- accepts either a validated remote source pair or packaged bytes.
+function brandAssetsOf(value: unknown): ProvisionBody['brandAssets'] {
+  const record = objectOf(value)
+  const logoUrl = textOf(record?.logoUrl, 1000)
+  const faviconUrl = textOf(record?.faviconUrl, 1000)
+  if (logoUrl !== undefined || faviconUrl !== undefined) {
+    if (logoUrl === undefined || faviconUrl === undefined) return undefined
+    try {
+      if (new URL(logoUrl).protocol !== 'https:' || new URL(faviconUrl).protocol !== 'https:') return undefined
+    } catch {
+      return undefined
+    }
+    return { logoUrl, faviconUrl }
+  }
+  const logoBase64 = textOf(record?.logoBase64, 140_000)
+  const faviconBase64 = textOf(record?.faviconBase64, 20_000)
+  const logoContentType = textOf(record?.logoContentType, 100)
+  const faviconContentType = textOf(record?.faviconContentType, 100)
+  if (logoBase64 === undefined || faviconBase64 === undefined || logoContentType === undefined || faviconContentType === undefined)
+    return undefined
+  return { logoBase64, faviconBase64, logoContentType, faviconContentType }
+}
+
 /** Validates and normalizes the tenant payload sent by the provisioning CLI. */
 // eslint-disable-next-line complexity -- provisioning validation must reject the complete payload atomically.
 export function provisionBody(value: unknown): ProvisionBody | undefined {
@@ -72,6 +103,7 @@ export function provisionBody(value: unknown): ProvisionBody | undefined {
   const name = textOf(owner?.name, 120)
   const allowedOrigins = originsOf(intake?.allowedOrigins)
   const turnstileHostnames = hostnamesOf(intake?.turnstileHostnames)
+  const brandAssets = body?.brandAssets === undefined ? undefined : brandAssetsOf(body.brandAssets)
   if (
     displayName === undefined ||
     template === undefined ||
@@ -85,6 +117,7 @@ export function provisionBody(value: unknown): ProvisionBody | undefined {
     name === undefined ||
     allowedOrigins === undefined ||
     turnstileHostnames === undefined
+    || (body.brandAssets !== undefined && brandAssets === undefined)
   )
     return undefined
   return {
@@ -95,6 +128,7 @@ export function provisionBody(value: unknown): ProvisionBody | undefined {
     currency,
     owner: { email, name },
     intake: { allowedOrigins, turnstileHostnames },
+    ...(brandAssets === undefined ? {} : { brandAssets }),
   }
 }
 

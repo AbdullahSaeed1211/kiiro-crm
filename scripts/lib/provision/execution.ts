@@ -1,5 +1,5 @@
-import { existsSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { assertCommand, hasExactResourceName, WRANGLER } from './commands'
 import type { ProvisionDependencies, ProvisionState } from './types'
 import type { Tenant } from '../tenant-schema'
@@ -74,7 +74,32 @@ function seedBody(tenant: Tenant): Record<string, unknown> {
     locale: tenant.locale,
     currency: tenant.currency,
     intake: tenant.intake,
+    ...(tenant.brandAssets === undefined ? {} : { brandAssets: seedBrandAssets(tenant.brandAssets) }),
   }
+}
+
+function seedBrandAssets(
+  assets: NonNullable<Tenant['brandAssets']>,
+): Record<string, string> {
+  if ('logoUrl' in assets) return assets
+  return {
+    logoBase64: readAsset(assets.logoPath),
+    logoContentType: contentTypeFor(assets.logoPath),
+    faviconBase64: readAsset(assets.faviconPath),
+    faviconContentType: contentTypeFor(assets.faviconPath),
+  }
+}
+
+function readAsset(path: string): string {
+  return readFileSync(resolve(process.cwd(), path)).toString('base64')
+}
+
+function contentTypeFor(path: string): string {
+  const extension = path.toLowerCase().split('.').pop()
+  if (extension === 'png') return 'image/png'
+  if (extension === 'webp') return 'image/webp'
+  if (extension === 'ico') return 'image/x-icon'
+  throw new Error(`unsupported packaged brand asset extension: ${extension ?? 'unknown'}`)
 }
 
 function internalEndpoint(tenant: Tenant, path: string): string {

@@ -6,6 +6,8 @@ Use this procedure to create one isolated tenant instance. The command validates
 
 Confirm that the tenant file exists at `tenants/<slug>.jsonc` and contains a unique slug, D1 name, R2 bucket, rate-limit namespaces, owner, sender, inbound domain, and intake origins. The tenant schema rejects malformed hosts, email addresses, UUIDs, URLs, and namespace ids.
 
+Tenant branding is declared with `brandAssets`. Use HTTPS `logoUrl`/`faviconUrl` sources for operator-managed defaults, or `logoPath`/`faviconPath` for packaged tenant assets checked into `tenants/assets/<slug>/`. Packaged assets are encoded into the authenticated seed request, validated for supported image type and size, then stored in that tenant's R2 bucket. The first seed fills missing logo/favicon keys only; reruns preserve operator uploads and never delete configured objects. Record the source and intended dimensions in release evidence when changing a tenant's artwork.
+
 For local validation, use the dry run. It contacts no Cloudflare service and never creates a secret file.
 
 ```sh

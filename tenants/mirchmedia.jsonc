@@ -15,6 +15,10 @@
     "inboundDomain": "in.mirchmedia.com",
     "inboundLocalPrefix": "mirchmedia--",
   },
+  "brandAssets": {
+    "logoPath": "tenants/assets/mirchmedia/logo.png",
+    "faviconPath": "tenants/assets/mirchmedia/favicon.ico",
+  },
   "d1": { "name": "ops-mirchmedia" },
   "r2": { "bucket": "ops-mirchmedia" },
   "rateLimitNamespaces": { "intake": "1001", "auth": "1002" },
