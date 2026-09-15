@@ -269,10 +269,10 @@ export default async function TasksPage({
   )
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: copy.table }]} />
+      <AppHeader breadcrumbs={[{ label: copy.allTasks }]} />
       <PageContent>
         <PageHeader
-          title={copy.table}
+          title={copy.allTasks}
           count={result.total}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
