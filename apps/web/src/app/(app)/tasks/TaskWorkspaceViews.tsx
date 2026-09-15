@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 
-export type TaskWorkspaceView = 'table' | 'board' | 'gantt'
+export type TaskWorkspaceView = 'table' | 'board' | 'calendar' | 'gantt'
 
 const VIEWS: readonly { id: TaskWorkspaceView; label: string; href: string }[] = [
   { id: 'table', label: 'Table', href: '/tasks' },
   { id: 'board', label: 'Kanban', href: '/tasks/board' },
+  { id: 'calendar', label: 'Calendar', href: '/calendar' },
   { id: 'gantt', label: 'Gantt', href: '/timeline' },
 ]
 

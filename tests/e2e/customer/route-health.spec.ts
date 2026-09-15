@@ -10,6 +10,13 @@ const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
 const SIGN_IN_LOCK = join(tmpdir(), 'ops-route-health-sign-in.lock')
 const ROUTE_BUDGET_MS = 12_000
 const UUID_TEXT = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i
+const TASK_VIEWS_LABEL = 'Task views'
+const TABLE_VIEW_LABEL = 'Table'
+const KANBAN_VIEW_LABEL = 'Kanban'
+const CALENDAR_VIEW_LABEL = 'Calendar'
+const GANTT_VIEW_LABEL = 'Gantt'
+const CURRENT_PAGE = 'page'
+const ARIA_CURRENT = 'aria-current'
 const ROUTES = [
   ['/', 'Dashboard'],
   ['/leads', 'Leads'],
@@ -22,7 +29,7 @@ const ROUTES = [
   ['/tasks', 'Tasks'],
   ['/tasks/board', 'Tasks'],
   ['/my-tasks', 'My tasks'],
-  ['/calendar', 'Calendar'],
+  ['/calendar', CALENDAR_VIEW_LABEL],
   ['/inbox', 'Inbox'],
   ['/timeline', 'Timeline'],
   ['/settings/general', 'General'],
@@ -132,19 +139,40 @@ test('customer routes load without browser failures and stay within the response
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
   detailRoutes.splice(1, 0, taskDetail)
   await page.goto('/tasks', { waitUntil: 'domcontentloaded' })
-  const taskViews = page.getByRole('navigation', { name: 'Task views' })
-  await expect(taskViews.getByRole('link', { name: 'Table', exact: true })).toHaveAttribute('aria-current', 'page')
-  await expect(taskViews.getByRole('link', { name: 'Kanban', exact: true })).toHaveAttribute('href', '/tasks/board')
-  await expect(taskViews.getByRole('link', { name: 'Gantt', exact: true })).toHaveAttribute('href', '/timeline')
+  const taskViews = page.getByRole('navigation', { name: TASK_VIEWS_LABEL })
+  await expect(taskViews.getByRole('link', { name: TABLE_VIEW_LABEL, exact: true })).toHaveAttribute(
+    ARIA_CURRENT,
+    CURRENT_PAGE,
+  )
+  await expect(taskViews.getByRole('link', { name: KANBAN_VIEW_LABEL, exact: true })).toHaveAttribute(
+    'href',
+    '/tasks/board',
+  )
+  await expect(taskViews.getByRole('link', { name: CALENDAR_VIEW_LABEL, exact: true })).toHaveAttribute(
+    'href',
+    '/calendar',
+  )
+  await expect(taskViews.getByRole('link', { name: GANTT_VIEW_LABEL, exact: true })).toHaveAttribute(
+    'href',
+    '/timeline',
+  )
   await page.goto('/tasks/board', { waitUntil: 'domcontentloaded' })
   await expect(
-    page.getByRole('navigation', { name: 'Task views' }).getByRole('link', { name: 'Kanban', exact: true }),
-  ).toHaveAttribute('aria-current', 'page')
+    page
+      .getByRole('navigation', { name: TASK_VIEWS_LABEL })
+      .getByRole('link', { name: KANBAN_VIEW_LABEL, exact: true }),
+  ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
   await expect(page.locator('a[href^="/tasks/"]').first()).toBeVisible()
   await page.goto('/timeline', { waitUntil: 'domcontentloaded' })
   await expect(
-    page.getByRole('navigation', { name: 'Task views' }).getByRole('link', { name: 'Gantt', exact: true }),
-  ).toHaveAttribute('aria-current', 'page')
+    page.getByRole('navigation', { name: TASK_VIEWS_LABEL }).getByRole('link', { name: GANTT_VIEW_LABEL, exact: true }),
+  ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
+  await page.goto('/calendar', { waitUntil: 'domcontentloaded' })
+  await expect(
+    page
+      .getByRole('navigation', { name: TASK_VIEWS_LABEL })
+      .getByRole('link', { name: CALENDAR_VIEW_LABEL, exact: true }),
+  ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
   for (const route of detailRoutes) {
     const start = Date.now()
     await page.goto(route, { waitUntil: 'domcontentloaded' })
