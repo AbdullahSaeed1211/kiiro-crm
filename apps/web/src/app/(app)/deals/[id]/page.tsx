@@ -1,5 +1,5 @@
 import { Badge } from '@ops/ui/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import type { Metadata } from 'next'
@@ -10,6 +10,7 @@ import { getDealDetailData, type ActivityItem, type DealDetailData } from '../..
 import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { RecordActionLinks } from '../../record-action-links'
 import { RecordEmailThread } from '../../record-email-thread'
+import { RecordFilesTab, RelatedTasksTab } from '../../record-related-tabs'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -20,7 +21,6 @@ function ActivityCard({ activity }: Readonly<{ activity: readonly ActivityItem[]
     <Card>
       <CardHeader>
         <CardTitle>Activity</CardTitle>
-        <CardDescription>Recent changes and stage history for this deal.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         {activity.length === 0 ? (
@@ -101,8 +101,7 @@ function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Controls & relationships</CardTitle>
-        <CardDescription>Update value, stage, and contacts.</CardDescription>
+        <CardTitle>Controls</CardTitle>
       </CardHeader>
       <CardContent>
         <DealControls
@@ -128,6 +127,8 @@ function DealRecordView({ data }: Readonly<{ data: DealDetailData }>) {
         <main className="grid gap-5">
           <ActivityCard activity={data.activity} />
           <RecordEmailThread messages={data.emailMessages} />
+          <RelatedTasksTab tasks={data.relatedTasks} recordType="deal" recordId={data.deal.id} />
+          <RecordFilesTab attachments={data.attachments} recordType="deal" recordId={data.deal.id} />
           <DetailsCard data={data} />
         </main>
         <aside>

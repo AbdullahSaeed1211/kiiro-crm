@@ -4,8 +4,8 @@ import type { ContactRecord, CrmDeps, DealRecord, OrganizationRecord } from '@op
 import { can, type Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '../../work/deps'
 import { loadActivity, type ActivityItem } from './activity'
-import { listEmailMessages } from '../directory/helpers'
-import type { EmailThreadMessage } from '../directory/types'
+import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
+import type { EmailThreadMessage, RecordAttachment, RelatedTask } from '../directory/types'
 import { displayName, organizationName, stageForDeal, type DealListItem } from './view-model'
 
 export interface DealListData {
@@ -27,6 +27,8 @@ export interface DealDetailData {
   readonly lostReasons: readonly { readonly id: string; readonly name: string }[]
   readonly activity: readonly ActivityItem[]
   readonly emailMessages: readonly EmailThreadMessage[]
+  readonly relatedTasks: readonly RelatedTask[]
+  readonly attachments: readonly RecordAttachment[]
 }
 
 export type { ActivityItem } from './activity'
@@ -83,7 +85,7 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
   const deps = dealDeps(context)
   const deal = await deps.repo.get('deal', asId(id))
   if (deal === undefined) return null
-  const [workflow, organization, organizations, allContacts, lostReasons, activity, emailMessages] = await Promise.all([
+  const [workflow, organization, organizations, allContacts, lostReasons, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
     deps.repo.loadWorkflow(deal.workflowId),
     deal.organizationId === null ? Promise.resolve(undefined) : deps.repo.get('organization', deal.organizationId),
     deps.repo.list('organization'),
@@ -91,6 +93,8 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
     deps.repo.listLookups('lostReason'),
     loadActivity(context, id, true),
     listEmailMessages(context, { recordType: 'deal', recordId: id, parentAuthorized: true }),
+    listRelatedTasks(context, 'deal', id),
+    listRecordAttachments(context, 'deal', id),
   ])
   if (workflow === undefined) return null
   return {
@@ -104,5 +108,7 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
     lostReasons,
     activity,
     emailMessages,
+    relatedTasks,
+    attachments,
   }
 }

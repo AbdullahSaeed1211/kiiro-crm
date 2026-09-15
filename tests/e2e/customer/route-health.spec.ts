@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- route-health intentionally keeps the customer release guard in one deterministic file. */
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -117,7 +118,7 @@ test('customer routes load without browser failures and stay within the response
   }
 
   const detailRoutes: string[] = []
-  for (const prefix of ['/projects', '/leads', '/contacts', '/organizations']) {
+  for (const prefix of ['/projects', '/leads', '/deals', '/contacts', '/organizations']) {
     await page.goto(prefix, { waitUntil: 'domcontentloaded' })
     detailRoutes.push(await firstDetailHref(page, prefix))
   }
