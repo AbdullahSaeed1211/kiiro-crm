@@ -77,6 +77,22 @@ describe('notification counts', () => {
 })
 
 describe('scoped search', () => {
+  it('uses the FTS index when available and rehydrates hits through Payload access', async () => {
+    const execute = vi.fn().mockResolvedValue({ rows: [{ record_type: 'lead', record_id: 'lead-1' }] })
+    const findByID = vi.fn().mockResolvedValue({ id: 'lead-1', title: 'José García' })
+    const results = await scopedSearch({ db: { execute }, findByID } as unknown as Payload, {
+      user: { id: 'staff-1' },
+      query: 'Jose',
+      definitions: [{ recordType: 'lead', collection: 'leads', searchFields: ['title'], titleField: 'title' }],
+    })
+
+    expect(results).toEqual([{ recordType: 'lead', id: 'lead-1', title: 'José García', subtitle: '' }])
+    expect(execute).toHaveBeenCalled()
+    expect(findByID).toHaveBeenCalledWith(
+      expect.objectContaining({ collection: 'leads', id: 'lead-1', overrideAccess: false, user: { id: 'staff-1' } }),
+    )
+  })
+
   it('passes the authenticated user and Payload scope options for each type', async () => {
     const find = vi.fn().mockResolvedValue({ docs: [{ id: 'lead-1', title: 'Visible lead' }] })
     const results = await scopedSearch({ find } as unknown as Payload, {

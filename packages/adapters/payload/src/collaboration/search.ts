@@ -16,7 +16,12 @@ export interface SearchResult {
 }
 
 export const SEARCH_DEFINITIONS: readonly SearchDefinition[] = [
-  { recordType: 'organization', collection: 'organizations', searchFields: ['name', 'email'], titleField: 'name' },
+  {
+    recordType: 'organization',
+    collection: 'organizations',
+    searchFields: ['name', 'website', 'phone', 'email'],
+    titleField: 'name',
+  },
   {
     recordType: 'contact',
     collection: 'contacts',
@@ -27,13 +32,13 @@ export const SEARCH_DEFINITIONS: readonly SearchDefinition[] = [
   {
     recordType: 'lead',
     collection: 'leads',
-    searchFields: ['title', 'email', 'phone', 'companyName'],
+    searchFields: ['title', 'firstName', 'lastName', 'email', 'phone', 'companyName', 'lostNote'],
     titleField: 'title',
     subtitleFields: ['email', 'companyName'],
   },
-  { recordType: 'deal', collection: 'deals', searchFields: ['title'], titleField: 'title' },
-  { recordType: 'project', collection: 'projects', searchFields: ['name'], titleField: 'name' },
-  { recordType: 'task', collection: 'tasks', searchFields: ['title'], titleField: 'title' },
+  { recordType: 'deal', collection: 'deals', searchFields: ['title', 'lostNote'], titleField: 'title' },
+  { recordType: 'project', collection: 'projects', searchFields: ['name', 'description'], titleField: 'name' },
+  { recordType: 'task', collection: 'tasks', searchFields: ['title', 'description'], titleField: 'title' },
 ]
 
 function text(value: unknown): string {
@@ -60,11 +65,105 @@ export interface SearchInput {
   readonly definitions?: readonly SearchDefinition[]
 }
 
-/** Searches each registered collection through Payload access, limiting each type to five and the response to twenty. */
-export async function scopedSearch(payload: Payload, input: SearchInput): Promise<readonly SearchResult[]> {
+const MAX_INDEX_CANDIDATES = 100
+
+interface RawSearchDatabase {
+  readonly execute?: (args: { raw: string }) => Promise<unknown>
+}
+
+interface RawSearchResult {
+  readonly rows?: readonly unknown[]
+  readonly results?: readonly unknown[]
+}
+
+function hasExecute(value: object): value is RawSearchDatabase {
+  return 'execute' in value && typeof value.execute === 'function'
+}
+
+interface IndexedCandidate {
+  readonly recordType: string
+  readonly id: string
+}
+
+function sqlString(value: string): string {
+  return value.replaceAll("'", "''")
+}
+
+/** Turns user text into safe FTS5 prefix terms, keeping accents for the unicode61 tokenizer to normalize. */
+function ftsQuery(value: string): string {
+  const terms = value
+    .normalize('NFC')
+    .split(/\s+/u)
+    .map((term) => term.replace(/[^\p{L}\p{N}_-]/gu, ''))
+    .filter(Boolean)
+    .map((term) => `"${term.replaceAll('"', '""')}"*`)
+  return terms.join(' AND ')
+}
+
+function rowCandidate(value: unknown): IndexedCandidate | null {
+  if (typeof value !== 'object' || value === null) return null
+  const row = value as Record<string, unknown>
+  const recordType = typeof row.record_type === 'string' ? row.record_type : ''
+  const id = typeof row.record_id === 'string' ? row.record_id : ''
+  return recordType && id ? { recordType, id } : null
+}
+
+function databaseOf(payload: Payload): RawSearchDatabase | null {
+  const database = (payload as unknown as { db?: unknown }).db
+  return typeof database === 'object' && database !== null && hasExecute(database) ? database : null
+}
+
+/** Queries the SQLite FTS5 index, then rehydrates every hit through Payload to preserve collection access rules. */
+async function indexedSearch(
+  payload: Payload,
+  input: SearchInput,
+  definitions: readonly SearchDefinition[],
+): Promise<readonly SearchResult[] | null> {
+  const database = databaseOf(payload)
+  const query = ftsQuery(input.query)
+  const execute = database?.execute
+  if (execute === undefined || query.length === 0) return null
+
+  try {
+    const statement = `SELECT record_type, record_id FROM workspace_search WHERE workspace_search MATCH '${sqlString(query)}' ORDER BY bm25(workspace_search), rowid DESC LIMIT ${String(MAX_INDEX_CANDIDATES)}`
+    const raw = await execute.call(database, { raw: statement })
+    const result = (raw ?? {}) as RawSearchResult
+    const candidates = (result.rows ?? result.results ?? [])
+      .map(rowCandidate)
+      .filter((candidate): candidate is IndexedCandidate => candidate !== null)
+    const byType = new Map(definitions.map((definition) => [definition.recordType, definition]))
+    const hydrated = await Promise.all(
+      candidates.map(async (candidate) => {
+        const definition = byType.get(candidate.recordType)
+        if (definition === undefined) return null
+        try {
+          const doc = await payload.findByID({
+            collection: definition.collection,
+            id: candidate.id,
+            depth: 0,
+            overrideAccess: false,
+            user: input.user,
+          })
+          return resultOf(definition, doc)
+        } catch {
+          // A stale index row or an inaccessible record is not a search result.
+          return null
+        }
+      }),
+    )
+    return hydrated.filter((result): result is SearchResult => result !== null).slice(0, 20)
+  } catch {
+    // Older tenant databases may not have the migration yet; retain a safe, scoped fallback during rollout.
+    return null
+  }
+}
+
+async function likeSearch(
+  payload: Payload,
+  input: SearchInput,
+  definitions: readonly SearchDefinition[],
+): Promise<readonly SearchResult[]> {
   const q = input.query.trim()
-  if (q.length < 2 || q.length > 80) throw new Error('Search must contain between 2 and 80 characters.')
-  const definitions = input.definitions ?? SEARCH_DEFINITIONS
   const responses = await Promise.all(
     definitions.map((definition) =>
       payload.find({
@@ -81,4 +180,12 @@ export async function scopedSearch(payload: Payload, input: SearchInput): Promis
   return definitions
     .flatMap((definition, index) => (responses[index]?.docs ?? []).map((doc) => resultOf(definition, doc)))
     .slice(0, 20)
+}
+
+/** Searches the FTS5 index through Payload access, with a scoped LIKE fallback for pre-index databases. */
+export async function scopedSearch(payload: Payload, input: SearchInput): Promise<readonly SearchResult[]> {
+  const q = input.query.trim()
+  if (q.length < 2 || q.length > 80) throw new Error('Search must contain between 2 and 80 characters.')
+  const definitions = input.definitions ?? SEARCH_DEFINITIONS
+  return (await indexedSearch(payload, input, definitions)) ?? likeSearch(payload, input, definitions)
 }

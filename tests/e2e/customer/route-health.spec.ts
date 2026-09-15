@@ -123,6 +123,11 @@ test('customer routes load without browser failures and stay within the response
     detailRoutes.push(await firstDetailHref(page, prefix))
   }
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('a[href="/my-tasks"]').filter({ hasText: 'My open tasks' })).toHaveCount(1)
+  await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
+  await expect(page.locator('a[href="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
+  await expect(page.locator('a[href="/leads/new"]').filter({ hasText: 'New lead' })).toHaveCount(1)
+  await expect(page.locator('a[href="/tasks"]').filter({ hasText: 'New task' })).toHaveCount(1)
   const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
   detailRoutes.splice(1, 0, taskDetail)

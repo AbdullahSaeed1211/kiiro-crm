@@ -1,5 +1,6 @@
 import { getRequestContext } from '../../work/deps'
 import type { StageCategory } from '@ops/platform'
+import { normalizeLocale, type Locale } from '../../../i18n/config'
 
 export interface WorkListTask {
   readonly id: string
@@ -33,6 +34,7 @@ export interface WorkReadModel {
   readonly actorId: string
   readonly timeZone: string
   readonly weekStartsOn: 0 | 1
+  readonly locale: Locale
   readonly stages: readonly {
     readonly id: string
     readonly name: string
@@ -165,6 +167,7 @@ export async function loadWorkReadModel(): Promise<WorkReadModel> {
     req: context.req,
   })
   const configuredWeekStart = value(settings, 'weekStartsOn')
+  const locale = normalizeLocale(value(settings, 'locale'))
   return {
     tasks,
     projects,
@@ -172,6 +175,7 @@ export async function loadWorkReadModel(): Promise<WorkReadModel> {
     actorId: String(context.actor.id),
     timeZone: text(settings, 'timezone') || 'UTC',
     weekStartsOn: configuredWeekStart === 0 ? 0 : 1,
+    locale,
     stages: workflowStages(workflowPage.docs),
   }
 }

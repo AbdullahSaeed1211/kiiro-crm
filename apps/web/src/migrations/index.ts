@@ -1,5 +1,7 @@
 import * as migration_20260913_131654_initial from './20260913_131654_initial';
 import * as migration_20260913_192616_m2_crm from './20260913_192616_m2_crm';
+import * as migration_20260914_101142_m3_completion from './20260914_101142_m3_completion';
+import * as migration_20260915_090000_workspace_search from './20260915_090000_workspace_search';
 
 export const migrations = [
   {
@@ -10,6 +12,16 @@ export const migrations = [
   {
     up: migration_20260913_192616_m2_crm.up,
     down: migration_20260913_192616_m2_crm.down,
-    name: '20260913_192616_m2_crm'
+    name: '20260913_192616_m2_crm',
+  },
+  {
+    up: migration_20260914_101142_m3_completion.up,
+    down: migration_20260914_101142_m3_completion.down,
+    name: '20260914_101142_m3_completion'
+  },
+  {
+    up: migration_20260915_090000_workspace_search.up,
+    down: migration_20260915_090000_workspace_search.down,
+    name: '20260915_090000_workspace_search'
   },
 ];
