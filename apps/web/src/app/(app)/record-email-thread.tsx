@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- thread header, message cards, and composer stay in one accessible region. */
 import type { EmailThreadMessage } from '../../server/crm/directory/data'
 import { RecordEmailComposer } from './record-email-composer'
 import { formatDate } from '../../i18n/format'

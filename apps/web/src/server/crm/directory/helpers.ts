@@ -25,13 +25,15 @@ function refId(value: unknown): string | null {
 function textList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
+// eslint-disable-next-line complexity -- attachment records are normalized fail-closed in one boundary.
 function attachmentList(value: unknown): { readonly id: string; readonly fileName: string }[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((entry) => {
     if (typeof entry === 'string') return [{ id: entry, fileName: entry }]
     if (typeof entry !== 'object' || entry === null || !('id' in entry)) return []
-    const id = typeof entry.id === 'string' ? entry.id : null
-    const fileName = 'fileName' in entry && typeof entry.fileName === 'string' ? entry.fileName : id
+    const record = entry as Record<string, unknown>
+    const id = typeof record.id === 'string' ? record.id : null
+    const fileName = typeof record.fileName === 'string' ? record.fileName : id
     return id === null || fileName === null ? [] : [{ id, fileName }]
   })
 }
