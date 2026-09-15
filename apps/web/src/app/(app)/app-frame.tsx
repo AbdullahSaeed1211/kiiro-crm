@@ -132,7 +132,7 @@ function SidebarAccount({
 export function AppFrame({
   defaultOpen,
   appName,
-  logoFileKey,
+  logoUrl,
   modules,
   terminology,
   userName,
@@ -143,7 +143,7 @@ export function AppFrame({
 }: Readonly<{
   defaultOpen: boolean
   appName: string
-  logoFileKey?: string | null
+  logoUrl: string
   modules: Readonly<Record<string, boolean>>
   terminology: Readonly<Record<string, unknown>>
   userName: string
@@ -178,15 +178,7 @@ export function AppFrame({
         <AppSidebar
           appName={appName}
           logo={
-            logoFileKey === undefined || logoFileKey === null ? undefined : (
-              <img
-                className="max-h-8 max-w-28 object-contain"
-                src={`/api/v1/brand/logo?v=${encodeURIComponent(logoFileKey)}`}
-                alt={`${appName} logo`}
-                width={112}
-                height={32}
-              />
-            )
+            <img className="max-h-8 max-w-28 object-contain" src={logoUrl} alt={`${appName} logo`} width={112} height={32} />
           }
           groups={navGroups({ pathname, modules, terminology, role, locale })}
           footer={<SidebarAccount name={userName} email={userEmail} role={role} locale={locale} />}

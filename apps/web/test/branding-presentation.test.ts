@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { brandPresentation } from '../src/server/branding/presentation'
 
 describe('tenant branding presentation', () => {
+  it('uses the Mirch Media branded fallback when settings are empty', () => {
+    expect(brandPresentation({})).toMatchObject({
+      appName: 'Mirch Media',
+      primaryHex: '#E45735',
+      radius: 'md',
+      logoUrl: null,
+      faviconUrl: '/api/v1/brand/favicon',
+    })
+  })
+
   it('renders distinct tenant settings without hard-coded identity', () => {
     const northstar = brandPresentation({
       appName: 'Northstar',

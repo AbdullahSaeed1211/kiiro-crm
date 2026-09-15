@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 import { getProductContext } from '../../server/auth/context'
 import { AppFrame } from './app-frame'
 import { normalizeLocale } from '../../i18n/config'
+import { brandPresentation } from '../../server/branding/presentation'
 
 // The vendored sidebar persists its open state in this cookie.
 const SIDEBAR_COOKIE = 'sidebar_state'
@@ -21,7 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
     depth: 0,
     req: context.req,
   })) as unknown as Record<string, unknown>
-  const appName = textSetting(settings.appName, 'Workspace')
+  const brand = brandPresentation(settings)
+  const appName = brand.appName
   return { title: { default: appName, template: `%s · ${appName}` } }
 }
 
@@ -56,7 +58,8 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     overrideAccess: false,
     req: context.req,
   })) as unknown as Record<string, unknown>
-  const appName = textSetting(settings.appName, 'Workspace')
+  const brand = brandPresentation(settings)
+  const appName = brand.appName
   const modulesValue = settingsRecord(settings.modules)
   const terminologyValue = settingsRecord(settings.terminology)
   const locale = normalizeLocale(settings.locale)
@@ -70,11 +73,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           <AppFrame
             defaultOpen={sidebarOpen}
             appName={appName}
-            logoFileKey={
-              typeof settings.logoFileKey === 'string' && settings.logoFileKey.startsWith('brand/')
-                ? settings.logoFileKey
-                : null
-            }
+            logoUrl={brand.logoUrl ?? '/api/v1/brand/logo'}
             modules={{
               crm: modulesValue.crm !== false,
               work: modulesValue.work !== false,

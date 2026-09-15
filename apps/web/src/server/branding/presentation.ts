@@ -19,9 +19,9 @@ export function brandPresentation(settings: BrandSettingsInput): BrandPresentati
   const brand =
     typeof settings.brand === 'object' && settings.brand !== null ? (settings.brand as Record<string, unknown>) : {}
   const appName =
-    typeof settings.appName === 'string' && settings.appName.trim() !== '' ? settings.appName : 'Workspace'
+    typeof settings.appName === 'string' && settings.appName.trim() !== '' ? settings.appName : 'Mirch Media'
   const primaryHex =
-    typeof brand.primaryHex === 'string' && /^#[\da-f]{6}$/i.test(brand.primaryHex) ? brand.primaryHex : '#64748b'
+    typeof brand.primaryHex === 'string' && /^#[\da-f]{6}$/i.test(brand.primaryHex) ? brand.primaryHex : '#E45735'
   const radius = brand.radius === 'sm' || brand.radius === 'lg' ? brand.radius : 'md'
   const key = (value: unknown) => (typeof value === 'string' && value.startsWith('brand/') ? value : null)
   const logoKey = key(settings.logoFileKey)

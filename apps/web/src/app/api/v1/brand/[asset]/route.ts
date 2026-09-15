@@ -39,12 +39,12 @@ function isBrandAsset(asset: string): asset is 'logo' | 'favicon' {
 
 function fallbackFor(settings: Record<string, unknown>): Response {
   const value = settings.appName
-  const appName = typeof value === 'string' && value !== '' ? value : 'Workspace'
+  const appName = typeof value === 'string' && value !== '' ? value : 'Mirch Media'
   const brand =
     typeof settings.brand === 'object' && settings.brand !== null ? (settings.brand as Record<string, unknown>) : {}
   const color =
-    typeof brand.primaryHex === 'string' && /^#[\da-f]{6}$/i.test(brand.primaryHex) ? brand.primaryHex : '#64748b'
-  return fallback(appName.trim().charAt(0).toUpperCase() || 'W', color)
+    typeof brand.primaryHex === 'string' && /^#[\da-f]{6}$/i.test(brand.primaryHex) ? brand.primaryHex : '#E45735'
+  return fallback(appName.trim().charAt(0).toUpperCase() || 'M', color)
 }
 
 async function streamBrandAsset(key: string): Promise<Response> {
