@@ -1,20 +1,22 @@
 'use client'
 
 import Link from 'next/link'
+import { TASK_COPY, type Locale } from '../../../i18n/config'
 
 export type TaskWorkspaceView = 'table' | 'board' | 'calendar' | 'gantt'
 
-const VIEWS: readonly { id: TaskWorkspaceView; label: string; href: string }[] = [
-  { id: 'table', label: 'Table', href: '/tasks' },
-  { id: 'board', label: 'Kanban', href: '/tasks/board' },
-  { id: 'calendar', label: 'Calendar', href: '/calendar' },
-  { id: 'gantt', label: 'Gantt', href: '/timeline' },
+const VIEWS: readonly { id: TaskWorkspaceView; labelKey: 'table' | 'board' | 'calendar' | 'gantt'; href: string }[] = [
+  { id: 'table', labelKey: 'table', href: '/tasks' },
+  { id: 'board', labelKey: 'board', href: '/tasks/board' },
+  { id: 'calendar', labelKey: 'calendar', href: '/calendar' },
+  { id: 'gantt', labelKey: 'gantt', href: '/timeline' },
 ]
 
 /** Compact navigation between the task workspace's supported representations. */
-export function TaskWorkspaceViews({ active }: Readonly<{ active: TaskWorkspaceView }>) {
+export function TaskWorkspaceViews({ active, locale = 'en' }: Readonly<{ active: TaskWorkspaceView; locale?: Locale }>) {
+  const copy = TASK_COPY[locale]
   return (
-    <nav aria-label="Task views" className="inline-flex max-w-full items-center rounded-lg border border-border p-0.5">
+    <nav aria-label={copy.views} className="inline-flex max-w-full items-center rounded-lg border border-border p-0.5">
       {VIEWS.map((view) => {
         const selected = view.id === active
         return (
@@ -26,7 +28,7 @@ export function TaskWorkspaceViews({ active }: Readonly<{ active: TaskWorkspaceV
               selected ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
             }`}
           >
-            {view.label}
+            {copy[view.labelKey]}
           </Link>
         )
       })}

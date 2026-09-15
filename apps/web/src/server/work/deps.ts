@@ -7,8 +7,7 @@ import { redirect } from 'next/navigation'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import type { WorkDeps } from './task-repository'
 
-// Product login pages arrive in M5; until then sessions come from the admin login.
-const LOGIN_PATH = '/admin/login'
+const LOGIN_PATH = '/login'
 
 /** The signed-in request: Payload, a local request carrying the user, and the actor. */
 export interface RequestContext {
@@ -29,7 +28,7 @@ export async function getRequestContext(): Promise<RequestContext> {
 }
 
 /** Per-request work dependencies for the signed-in user. */
-export async function getWorkDeps(): Promise<WorkDeps> {
-  const { req, actor } = await getRequestContext()
+export async function getWorkDeps(requestContext?: RequestContext): Promise<WorkDeps> {
+  const { req, actor } = requestContext ?? (await getRequestContext())
   return { actor, can, tasks: createTaskRepository(req), uow: createUnitOfWork(req), clock: systemClock }
 }

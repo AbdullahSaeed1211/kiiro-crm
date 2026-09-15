@@ -23,6 +23,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     tasks: 'Tasks',
     calendar: 'Calendar',
     timeline: 'Timeline',
+    reports: 'Figures',
     crm: 'CRM',
     work: 'Work',
     settings: 'Settings',
@@ -39,6 +40,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     tasks: 'Tareas',
     calendar: 'Calendario',
     timeline: 'Cronología',
+    reports: 'Indicadores',
     crm: 'CRM',
     work: 'Trabajo',
     settings: 'Configuración',
@@ -173,6 +175,8 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
     noTasksDueDescription: 'There is no open work due in the next seven days.',
     noActiveProjects: 'No active projects',
     noActiveProjectsDescription: 'Create a project when work is ready to organize.',
+    figures: 'Team figures',
+    figuresDescription: 'Owner and manager reporting',
   },
   es: {
     title: 'Inicio',
@@ -197,5 +201,9 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
     noTasksDueDescription: 'No hay trabajo abierto para los próximos siete días.',
     noActiveProjects: 'No hay proyectos activos',
     noActiveProjectsDescription: 'Crea un proyecto cuando el trabajo esté listo para organizarse.',
+    figures: 'Indicadores del equipo',
+    figuresDescription: 'Informes para propietarios y gerentes',
   },
 }
+
+export { TASK_COPY, REPORT_COPY } from './work-copy'

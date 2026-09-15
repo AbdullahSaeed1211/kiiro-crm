@@ -33,6 +33,7 @@ export type GanttViewProps = Readonly<{
   zoom: GanttZoom
   onDatesChange: GanttDatesChange
   labels: GanttViewLabels
+  locale?: string
 }>
 
 interface CommitContext {
@@ -72,7 +73,7 @@ function guardEdits(api: IApi): void {
 }
 
 /** Timeline of task bars (SVAR Gantt, MIT edition); a drag or resize calls `onDatesChange` and rolls back on failure. */
-export function GanttView({ bars, zoom, onDatesChange, labels }: GanttViewProps) {
+export function GanttView({ bars, zoom, onDatesChange, labels, locale }: GanttViewProps) {
   // The library measures the DOM and uses the browser time zone, so it renders on the client only.
   const clientReady = useSyncExternalStore(
     subscribeNever,
@@ -93,8 +94,8 @@ export function GanttView({ bars, zoom, onDatesChange, labels }: GanttViewProps)
   useEffect(() => {
     confirmed.current = spanMap(bars)
   }, [signature])
-  const setup = useMemo(() => scaleSetup(zoom), [zoom])
-  const columns = useMemo(() => ganttColumns(labels), [labels])
+  const setup = useMemo(() => scaleSetup(zoom, locale), [locale, zoom])
+  const columns = useMemo(() => ganttColumns(labels, locale), [labels, locale])
   const init = useCallback((api: IApi) => {
     const context = { api, onDatesChange: onDatesChangeRef, confirmed, labels: labelsRef, setError }
     guardEdits(api)

@@ -18,8 +18,11 @@ import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 import { taskHref } from '../task-navigation'
 import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
+import { TASK_COPY, type Locale } from '../../../i18n/config'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import { listSavedViews, type SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
+import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
+import { getRequestContext } from '../../../server/work/deps'
 import type {
   TaskListItem,
   TaskListResult,
@@ -35,14 +38,17 @@ const AVATAR_LIMIT = 3
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: PAGE_TITLE }
 
-const LABELS: DataTableLabels = {
-  selectAll: 'Select all',
-  selectRow: 'Select row',
-  columns: 'Columns',
-  previous: 'Previous',
-  next: 'Next',
-  range: '{from}–{to} of {total}',
-  selected: '{count} selected',
+function labelsFor(locale: Locale): DataTableLabels {
+  const copy = TASK_COPY[locale]
+  return {
+    selectAll: copy.selectAll,
+    selectRow: copy.selectRow,
+    columns: copy.columns,
+    previous: copy.previous,
+    next: copy.next,
+    range: copy.range,
+    selected: copy.selected,
+  }
 }
 
 const STAGE_PILL: Record<TaskStageColor, string> = {
@@ -67,12 +73,12 @@ const STAGE_DOT: Record<TaskStageColor, string> = {
   pink: 'bg-stage-pink',
 }
 
-const PRIORITY: Record<TaskPriority, Readonly<{ icon: LucideIcon; label: string }>> = {
-  none: { icon: Minus, label: 'No priority' },
-  low: { icon: SignalLow, label: 'Low' },
-  medium: { icon: SignalMedium, label: 'Medium' },
-  high: { icon: SignalHigh, label: 'High' },
-  urgent: { icon: CircleAlert, label: 'Urgent' },
+const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
+  none: Minus,
+  low: SignalLow,
+  medium: SignalMedium,
+  high: SignalHigh,
+  urgent: CircleAlert,
 }
 
 // Tenant timezone formatting arrives with settings (decision D-39); the spike shows UTC dates.
@@ -93,8 +99,9 @@ function StageCell({ stage }: Readonly<{ stage: TaskListItem['stage'] }>) {
   )
 }
 
-function PriorityCell({ priority }: Readonly<{ priority: TaskPriority }>) {
-  const { icon: Icon, label } = PRIORITY[priority]
+function PriorityCell({ priority, locale }: Readonly<{ priority: TaskPriority; locale: Locale }>) {
+  const Icon = PRIORITY_ICON[priority]
+  const label = TASK_COPY[locale][priority === 'none' ? 'noPriority' : priority]
   return (
     <span className="inline-flex items-center gap-1.5">
       <Icon
@@ -139,7 +146,7 @@ function DueCell({ dueAt }: Readonly<{ dueAt: number | null }>) {
   )
 }
 
-function toRow(task: TaskListItem, returnTo: string): DataTableRow {
+function toRow({ task, returnTo, locale }: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale }>): DataTableRow {
   return {
     id: task.id,
     cells: {
@@ -149,7 +156,7 @@ function toRow(task: TaskListItem, returnTo: string): DataTableRow {
         </a>
       ),
       stage: <StageCell stage={task.stage} />,
-      priority: <PriorityCell priority={task.priority} />,
+      priority: <PriorityCell priority={task.priority} locale={locale} />,
       assignees: <AssigneesCell assignees={task.assignees} />,
       dueAt: <DueCell dueAt={task.dueAt} />,
       context: task.context === null ? <EmptyValue /> : task.context.label,
@@ -157,17 +164,18 @@ function toRow(task: TaskListItem, returnTo: string): DataTableRow {
   }
 }
 
-function taskColumns(sort: TaskSort, view: string): DataTableColumn[] {
+function taskColumns({ sort, view, locale }: Readonly<{ sort: TaskSort; view: string; locale: Locale }>): DataTableColumn[] {
+  const copy = TASK_COPY[locale]
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
     `?${new URLSearchParams({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view }).toString()}`
   return [
-    { id: 'title', header: 'Title', sortHref: sortHref('title'), hideable: false },
-    { id: 'stage', header: 'Stage', sortHref: sortHref('stage') },
-    { id: 'priority', header: 'Priority', sortHref: sortHref('priority') },
-    { id: 'assignees', header: 'Assignees' },
-    { id: 'dueAt', header: 'Due', sortHref: sortHref('dueAt') },
-    { id: 'context', header: 'Project' },
+    { id: 'title', header: copy.title, sortHref: sortHref('title'), hideable: false },
+    { id: 'stage', header: copy.stage, sortHref: sortHref('stage') },
+    { id: 'priority', header: copy.priority, sortHref: sortHref('priority') },
+    { id: 'assignees', header: copy.assignees },
+    { id: 'dueAt', header: copy.due, sortHref: sortHref('dueAt') },
+    { id: 'context', header: copy.project },
   ]
 }
 
@@ -218,6 +226,7 @@ function taskModeOf(view: string, savedView: SavedViewSummary | undefined): 'all
 }
 
 /** Tasks list (spec §17.5). */
+// eslint-disable-next-line max-lines-per-function -- the route owns table URL state and the task-workspace header.
 export default async function TasksPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
@@ -229,8 +238,13 @@ export default async function TasksPage({
     relatedId,
     title: titleParam,
   } = await searchParams
+  const context = await getRequestContext()
+  const [savedViews, locale] = await Promise.all([
+    listSavedViews('task', context),
+    loadWorkspaceLocale(context),
+  ])
+  const copy = TASK_COPY[locale]
   const sort = parseTaskSort(firstValue(sortParam))
-  const savedViews = await listSavedViews('task')
   const view = parseTaskView(firstValue(viewParam), savedViews)
   const selectedSavedView = savedViews.find((savedView) => savedView.id === view)
   const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
@@ -241,23 +255,27 @@ export default async function TasksPage({
     view,
   })
   const returnTo = `/tasks?${returnToParams.toString()}`
-  const result = await listTasks({
-    page: parseTaskPage(firstValue(pageParam)),
-    sort: effectiveSort,
-    view: taskMode,
-  })
+  const result = await listTasks(
+    {
+      page: parseTaskPage(firstValue(pageParam)),
+      sort: effectiveSort,
+      view: taskMode,
+    },
+    context,
+  )
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: PAGE_TITLE }]} />
+      <AppHeader breadcrumbs={[{ label: copy.table }]} />
       <PageContent>
         <PageHeader
-          title={PAGE_TITLE}
+          title={copy.table}
           count={result.total}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <TaskWorkspaceViews active="table" />
+              <TaskWorkspaceViews active="table" locale={locale} />
               <TaskViewMenu
                 selectedId={view}
+                locale={locale}
                 customViews={savedViews.map((savedView) => ({
                   id: savedView.id,
                   label: savedView.name,
@@ -275,16 +293,16 @@ export default async function TasksPage({
         <DataTable
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
           key={`${formatTaskSort(sort)}:${String(result.page)}`}
-          columns={taskColumns(effectiveSort, view)}
-          rows={result.items.map((task) => toRow(task, returnTo))}
+          columns={taskColumns({ sort: effectiveSort, view, locale })}
+          rows={result.items.map((task) => toRow({ task, returnTo, locale }))}
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
           pagination={paginationOf({ result, sort: effectiveSort, view })}
-          labels={LABELS}
+          labels={labelsFor(locale)}
           emptyState={
             <EmptyState
               icon={ListTodo}
-              title="No tasks yet"
-              description="Tasks you create or are assigned to show up here."
+              title={copy.noTasks}
+              description={copy.noTasksDescription}
             />
           }
         />

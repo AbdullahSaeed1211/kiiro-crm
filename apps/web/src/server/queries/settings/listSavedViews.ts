@@ -1,4 +1,4 @@
-import { getRequestContext } from '../../work/deps'
+import { getRequestContext, type RequestContext } from '../../work/deps'
 
 export interface SavedViewSummary {
   readonly id: string
@@ -24,8 +24,8 @@ function kindOf(value: unknown): SavedViewSummary['kind'] {
 }
 
 /** Lists only the shared/personal saved views the signed-in actor may read. */
-export async function listSavedViews(recordType: string): Promise<readonly SavedViewSummary[]> {
-  const context = await getRequestContext()
+export async function listSavedViews(recordType: string, requestContext?: RequestContext): Promise<readonly SavedViewSummary[]> {
+  const context = requestContext ?? (await getRequestContext())
   const result = await context.payload.find({
     collection: 'savedViews',
     where: { recordType: { equals: recordType } },

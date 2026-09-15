@@ -32,6 +32,7 @@ const ROUTES = [
   ['/calendar', CALENDAR_VIEW_LABEL],
   ['/inbox', 'Inbox'],
   ['/timeline', 'Timeline'],
+  ['/reports', 'Figures'],
   ['/settings/general', 'General'],
   ['/settings/profile', 'Profile'],
   ['/settings/branding', 'Branding'],
@@ -173,6 +174,10 @@ test('customer routes load without browser failures and stay within the response
       .getByRole('navigation', { name: TASK_VIEWS_LABEL })
       .getByRole('link', { name: CALENDAR_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
+  await page.goto('/reports', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('heading', { name: 'Figures', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Date range')).toHaveValue('30d')
+  await expect(page.getByRole('button', { name: 'Apply range', exact: true })).toBeVisible()
   for (const route of detailRoutes) {
     const start = Date.now()
     await page.goto(route, { waitUntil: 'domcontentloaded' })

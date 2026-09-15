@@ -54,14 +54,24 @@ async function loadPeople({ payload, req }: RequestContext, ids: readonly string
 }
 
 /** Reads one page of the tasks the signed-in user may see, with the id as tie-breaker so pages never overlap. */
-export async function listTasks(query: TaskListQuery): Promise<TaskListResult> {
-  const context = await getRequestContext()
+export async function listTasks(query: TaskListQuery, requestContext?: RequestContext): Promise<TaskListResult> {
+  const context = requestContext ?? (await getRequestContext())
   const tasks = createTaskRepository(context.req)
   const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])
   const people = await loadPeople(context, [...new Set(records.flatMap((task) => task.assigneeIds))])
   const direction = query.sort.desc ? -1 : 1
   const compare = COMPARE[query.sort.key]
-  const sorted = records
+  const stageCategories = new Map(workflow.stages.map((stage) => [stage.id, stage.category]))
+  const visibleRecords = records.filter((task) => {
+    if (query.view === 'mine') return task.assigneeIds.some((id) => String(id) === String(context.actor.id))
+    if (query.view === 'open') {
+      const category = stageCategories.get(task.stageId)
+      const terminal = new Set(['done_success', 'done_failure', 'cancelled'])
+      return category === undefined || !terminal.has(category)
+    }
+    return true
+  })
+  const sorted = visibleRecords
     .map((task) => toTaskListItem(task, workflow, people))
     .sort((a, b) => direction * compare(a, b) || a.id.localeCompare(b.id))
   const start = (query.page - 1) * PAGE_SIZE

@@ -5,22 +5,27 @@ import { GanttView, type GanttBar, type GanttViewLabels, type GanttZoom } from '
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { TASK_COPY, type Locale } from '../../../i18n/config'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 import { createDatesSaver, type TimelineTask } from './save-dates'
 
-const LABELS: GanttViewLabels = { title: 'Title', start: 'Start', due: 'Due', saveFailed: 'Could not save the dates' }
-const ZOOMS: readonly { value: GanttZoom; label: string }[] = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-]
+function labelsFor(locale: Locale): GanttViewLabels {
+  const copy = TASK_COPY[locale]
+  return { title: copy.title, start: copy.start, due: copy.due, saveFailed: copy.saveFailed }
+}
 
 function isZoom(value: unknown): value is GanttZoom {
   return value === 'week' || value === 'month'
 }
 
 /** Timeline chart with a zoom toggle; persists bar changes through `setTaskDates`. */
-export function TimelineChart({ title, tasks }: Readonly<{ title: string; tasks: readonly TimelineTask[] }>) {
+export function TimelineChart({ title, tasks, locale }: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale }>) {
   const router = useRouter()
+  const copy = TASK_COPY[locale]
+  const zooms: readonly { value: GanttZoom; label: string }[] = [
+    { value: 'week', label: copy.week },
+    { value: 'month', label: copy.month },
+  ]
   const [zoom, setZoom] = useState<GanttZoom>('week')
   const latestTasks = useRef(tasks)
   const savedVersions = useRef(new Map<string, number>())
@@ -59,7 +64,7 @@ export function TimelineChart({ title, tasks }: Readonly<{ title: string; tasks:
         if (isZoom(values[0])) setZoom(values[0])
       }}
     >
-      {ZOOMS.map((option) => (
+      {zooms.map((option) => (
         <ToggleGroupItem key={option.value} value={option.value}>
           {option.label}
         </ToggleGroupItem>
@@ -78,7 +83,7 @@ export function TimelineChart({ title, tasks }: Readonly<{ title: string; tasks:
           </div>
         }
       />
-      <GanttView bars={bars} zoom={zoom} onDatesChange={onDatesChange} labels={LABELS} />
+      <GanttView bars={bars} zoom={zoom} onDatesChange={onDatesChange} labels={labelsFor(locale)} locale={locale} />
     </div>
   )
 }

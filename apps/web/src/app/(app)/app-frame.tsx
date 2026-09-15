@@ -6,6 +6,7 @@ import {
   Building2,
   CalendarDays,
   ChartGantt,
+  ChartNoAxesCombined,
   CircleCheckBig,
   Contact,
   FolderKanban,
@@ -85,7 +86,10 @@ function navGroups({
     groups.push({
       id: 'work',
       label: label('workGroup', copy.work),
-      items: WORK.map(item),
+      items: [
+        ...WORK.map(item),
+        ...(role === 'owner' || role === 'manager' ? [item(['reports', '/reports', ChartNoAxesCombined])] : []),
+      ],
     })
   return groups
 }

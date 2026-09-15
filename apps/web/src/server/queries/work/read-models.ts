@@ -180,6 +180,18 @@ export async function loadWorkReadModel(context?: RequestContext): Promise<WorkR
   }
 }
 
+/** Reads only the workspace locale when a full work read model would be unnecessary. */
+export async function loadWorkspaceLocale(context?: RequestContext): Promise<Locale> {
+  const requestContext = context ?? (await getRequestContext())
+  const settings = await requestContext.payload.findGlobal({
+    slug: 'settings',
+    depth: 0,
+    overrideAccess: false,
+    req: requestContext.req,
+  })
+  return normalizeLocale(value(settings, 'locale'))
+}
+
 /** Loads one scoped task for the task page. */
 export async function loadTask(idValue: string): Promise<WorkListTask | undefined> {
   return (await loadWorkReadModel()).tasks.find((task) => task.id === idValue)
