@@ -45,11 +45,17 @@ export type AppSidebarProps = Readonly<{
   footer?: ReactNode
 }>
 
-function BrandMark({ appName, logo, compactLogo }: Readonly<{ appName: string; logo: ReactNode; compactLogo?: ReactNode }>) {
+function BrandMark({
+  appName,
+  logo,
+  compactLogo,
+}: Readonly<{ appName: string; logo: ReactNode; compactLogo?: ReactNode }>) {
   if (logo !== undefined && logo !== null) {
     return (
       <>
-        <span className="flex size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:hidden">{logo}</span>
+        <span className="flex size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:hidden">
+          {logo}
+        </span>
         <span className="hidden size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:flex">
           {compactLogo ?? logo}
         </span>

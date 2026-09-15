@@ -21,10 +21,21 @@ async function installBrandAssets(
   assets: ProvisionBody['brandAssets'],
 ): Promise<void> {
   if (assets === undefined) return
-  const settings = (await payload.findGlobal({ slug: SETTINGS_GLOBAL, depth: 0, overrideAccess: true })) as unknown as Record<string, unknown>
+  const settings = (await payload.findGlobal({
+    slug: SETTINGS_GLOBAL,
+    depth: 0,
+    overrideAccess: true,
+  })) as unknown as Record<string, unknown>
   const entries = [
     ['logo', assets.logoUrl, assets.logoBase64, assets.logoContentType, settings.logoFileKey, 'logoFileKey'],
-    ['favicon', assets.faviconUrl, assets.faviconBase64, assets.faviconContentType, settings.faviconFileKey, 'faviconFileKey'],
+    [
+      'favicon',
+      assets.faviconUrl,
+      assets.faviconBase64,
+      assets.faviconContentType,
+      settings.faviconFileKey,
+      'faviconFileKey',
+    ],
   ] as const
   const { env } = await getCloudflareContext({ async: true })
   for (const [asset, source, base64, providedType, existingKey, field] of entries) {
@@ -32,7 +43,8 @@ async function installBrandAssets(
     const { bytes, contentType } = await readBrandAsset({ source, base64, providedType, asset })
     const extension = contentType.split('/')[1] === 'x-icon' ? 'ico' : contentType.split('/')[1]
     const key = `brand/${asset}.${extension}`
-    if (bytes.byteLength === 0 || bytes.byteLength > BRAND_ASSET_LIMIT) throw new Error(`${asset} brand asset is too large`)
+    if (bytes.byteLength === 0 || bytes.byteLength > BRAND_ASSET_LIMIT)
+      throw new Error(`${asset} brand asset is too large`)
     await env.R2.put(key, bytes, { httpMetadata: { contentType } })
     await payload.updateGlobal({ slug: SETTINGS_GLOBAL, overrideAccess: true, data: { [field]: key } })
   }

@@ -179,12 +179,8 @@ export function AppFrame({
       sidebar={
         <AppSidebar
           appName={appName}
-          logo={
-            <img className="max-h-8 max-w-36 object-contain" src={logoUrl} alt={appName} width={144} height={29} />
-          }
-          compactLogo={
-            <img className="size-6 object-contain" src={compactLogoUrl} alt="" width={24} height={24} />
-          }
+          logo={<img className="max-h-8 max-w-36 object-contain" src={logoUrl} alt={appName} width={144} height={29} />}
+          compactLogo={<img className="size-6 object-contain" src={compactLogoUrl} alt="" width={24} height={24} />}
           groups={navGroups({ pathname, modules, terminology, role, locale })}
           footer={<SidebarAccount name={userName} email={userEmail} role={role} locale={locale} />}
         />

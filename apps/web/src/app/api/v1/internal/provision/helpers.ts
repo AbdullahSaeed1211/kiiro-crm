@@ -84,7 +84,12 @@ function brandAssetsOf(value: unknown): ProvisionBody['brandAssets'] {
   const faviconBase64 = textOf(record?.faviconBase64, 20_000)
   const logoContentType = textOf(record?.logoContentType, 100)
   const faviconContentType = textOf(record?.faviconContentType, 100)
-  if (logoBase64 === undefined || faviconBase64 === undefined || logoContentType === undefined || faviconContentType === undefined)
+  if (
+    logoBase64 === undefined ||
+    faviconBase64 === undefined ||
+    logoContentType === undefined ||
+    faviconContentType === undefined
+  )
     return undefined
   return { logoBase64, faviconBase64, logoContentType, faviconContentType }
 }
@@ -116,8 +121,8 @@ export function provisionBody(value: unknown): ProvisionBody | undefined {
     !validEmail(email) ||
     name === undefined ||
     allowedOrigins === undefined ||
-    turnstileHostnames === undefined
-    || (body.brandAssets !== undefined && brandAssets === undefined)
+    turnstileHostnames === undefined ||
+    (body.brandAssets !== undefined && brandAssets === undefined)
   )
     return undefined
   return {

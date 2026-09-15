@@ -60,7 +60,9 @@ function emailMessage(value: Record<string, unknown>, viewerId?: string): EmailT
     return null
   const normalizedStatus = status as EmailThreadMessage['status']
   const subject = text(value.subject) ?? '(no subject)'
-  const readBy = Array.isArray(value.readBy) ? value.readBy.filter((item): item is string => typeof item === 'string') : []
+  const readBy = Array.isArray(value.readBy)
+    ? value.readBy.filter((item): item is string => typeof item === 'string')
+    : []
   return {
     id: text(value.id) ?? '',
     direction,
@@ -70,7 +72,7 @@ function emailMessage(value: Record<string, unknown>, viewerId?: string): EmailT
     textBody: text(value.textBody) ?? '',
     status: normalizedStatus,
     occurredAt,
-    threadKey: text(value.inReplyTo) ?? (text(value.messageId) ?? text(value.id) ?? subject.trim().toLowerCase()),
+    threadKey: text(value.inReplyTo) ?? text(value.messageId) ?? text(value.id) ?? subject.trim().toLowerCase(),
     isRead: direction === 'outbound' || (viewerId !== undefined && readBy.includes(viewerId)),
     attachments: attachmentList(value.attachments),
   }

@@ -6,7 +6,10 @@ import { payloadNotFoundOrDenied, unauthorized } from '../../../../../../server/
 
 export const dynamic = 'force-dynamic'
 
-function requestForUser(payload: Awaited<ReturnType<typeof getPayload>>, user: Record<string, unknown>): PayloadRequest {
+function requestForUser(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  user: Record<string, unknown>,
+): PayloadRequest {
   return { payload, user } as unknown as PayloadRequest
 }
 
@@ -34,7 +37,9 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
     const recordId = typeof message.recordId === 'string' ? message.recordId : ''
     if (!(await canReadParent(payload, context, { recordType, recordId })))
       return Response.json({ error: 'Not found.' }, { status: 404 })
-    const readBy = Array.isArray(message.readBy) ? message.readBy.filter((item): item is string => typeof item === 'string') : []
+    const readBy = Array.isArray(message.readBy)
+      ? message.readBy.filter((item): item is string => typeof item === 'string')
+      : []
     const nextReadBy = [...new Set([...readBy, context.id])]
     const updated = await payload.update({
       collection: 'emailMessages',

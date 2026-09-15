@@ -78,9 +78,7 @@ function seedBody(tenant: Tenant): Record<string, unknown> {
   }
 }
 
-function seedBrandAssets(
-  assets: NonNullable<Tenant['brandAssets']>,
-): Record<string, string> {
+function seedBrandAssets(assets: NonNullable<Tenant['brandAssets']>): Record<string, string> {
   if ('logoUrl' in assets) return assets
   return {
     logoBase64: readAsset(assets.logoPath),

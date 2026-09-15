@@ -31,7 +31,10 @@ describe('provisioning input', () => {
     expect(
       provisionBody({
         ...input,
-        brandAssets: { logoUrl: 'https://cdn.example.test/logo.png', faviconUrl: 'https://cdn.example.test/favicon.ico' },
+        brandAssets: {
+          logoUrl: 'https://cdn.example.test/logo.png',
+          faviconUrl: 'https://cdn.example.test/favicon.ico',
+        },
       })?.brandAssets,
     ).toEqual({ logoUrl: 'https://cdn.example.test/logo.png', faviconUrl: 'https://cdn.example.test/favicon.ico' })
     expect(
