@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { getPayload } from 'payload'
 import { brandPresentation } from '../../server/branding/presentation'
+import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
 
 const sans = Geist({ subsets: ['latin'], variable: '--font-sans' })
 const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
@@ -12,7 +13,7 @@ const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
 export default async function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
   const payload = await getPayload({ config })
   const settings = (await payload.findGlobal({ slug: 'settings', depth: 0 })) as unknown as Record<string, unknown>
-  const brand = brandPresentation(settings)
+  const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
   return (
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>

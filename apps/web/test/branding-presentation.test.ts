@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { brandPresentation } from '../src/server/branding/presentation'
 
 describe('tenant branding presentation', () => {
-  it('uses the Mirch Media branded fallback when settings are empty', () => {
-    expect(brandPresentation({})).toMatchObject({
-      appName: 'Mirch Media',
-      primaryHex: '#E45735',
+  it('uses tenant-derived fallback values when settings are empty', () => {
+    expect(brandPresentation({ fallbackAppName: 'Alpha Studio', fallbackPrimaryHex: '#123456' })).toMatchObject({
+      appName: 'Alpha Studio',
+      primaryHex: '#123456',
       radius: 'md',
       logoUrl: null,
       faviconUrl: '/api/v1/brand/favicon',

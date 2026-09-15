@@ -9,6 +9,7 @@ import { getProductContext } from '../../server/auth/context'
 import { AppFrame } from './app-frame'
 import { normalizeLocale } from '../../i18n/config'
 import { brandPresentation } from '../../server/branding/presentation'
+import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
 
 // The vendored sidebar persists its open state in this cookie.
 const SIDEBAR_COOKIE = 'sidebar_state'
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
     depth: 0,
     req: context.req,
   })) as unknown as Record<string, unknown>
-  const brand = brandPresentation(settings)
+  const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
   return { title: { default: appName, template: `%s · ${appName}` } }
 }
@@ -58,7 +59,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     overrideAccess: false,
     req: context.req,
   })) as unknown as Record<string, unknown>
-  const brand = brandPresentation(settings)
+  const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
   const modulesValue = settingsRecord(settings.modules)
   const terminologyValue = settingsRecord(settings.terminology)

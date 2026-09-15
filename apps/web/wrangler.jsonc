@@ -113,6 +113,7 @@
       ],
       "vars": {
         "TENANT_SLUG": "mirchmedia",
+        "TENANT_DISPLAY_NAME": "Mirch Media",
         "APP_ORIGIN": "https://crm.mirchmedia.com",
         "INBOUND_DOMAIN": "in.mirchmedia.com",
         "TURNSTILE_HOSTNAMES": "www.mirchmedia.com,web.mirchmedia.com",

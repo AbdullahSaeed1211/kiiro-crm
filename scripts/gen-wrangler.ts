@@ -63,6 +63,7 @@ function vars(tenant: Tenant): Record<string, string> {
   const origin = tenant.host === undefined ? {} : { APP_ORIGIN: `https://${tenant.host}` }
   return {
     TENANT_SLUG: tenant.slug,
+    TENANT_DISPLAY_NAME: tenant.displayName,
     ...origin,
     INBOUND_DOMAIN: tenant.email.inboundDomain,
     TURNSTILE_HOSTNAMES: tenant.intake.turnstileHostnames.join(','),

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { authenticate } from '../../../../../server/collaboration/auth'
 import { badRequest, forbidden, unauthorized } from '../../../../../server/collaboration/responses'
 import { isBrandContentType, isBrandKey } from '../../../../../server/collaboration/brand'
+import { tenantBrandDefaults } from '../../../../../server/branding/tenant-defaults'
 
 export const dynamic = 'force-dynamic'
 const MAX_BRAND_BYTES = 1024 * 1024
@@ -39,11 +40,13 @@ function isBrandAsset(asset: string): asset is 'logo' | 'favicon' {
 
 function fallbackFor(settings: Record<string, unknown>): Response {
   const value = settings.appName
-  const appName = typeof value === 'string' && value !== '' ? value : 'Mirch Media'
+  const appName = typeof value === 'string' && value !== '' ? value : tenantBrandDefaults().fallbackAppName
   const brand =
     typeof settings.brand === 'object' && settings.brand !== null ? (settings.brand as Record<string, unknown>) : {}
   const color =
-    typeof brand.primaryHex === 'string' && /^#[\da-f]{6}$/i.test(brand.primaryHex) ? brand.primaryHex : '#E45735'
+    typeof brand.primaryHex === 'string' && /^#[\da-f]{6}$/i.test(brand.primaryHex)
+      ? brand.primaryHex
+      : tenantBrandDefaults().fallbackPrimaryHex
   return fallback(appName.trim().charAt(0).toUpperCase() || 'M', color)
 }
 

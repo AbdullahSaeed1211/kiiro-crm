@@ -14,6 +14,8 @@ const EXCLUDED_FILES: ReadonlySet<string> = new Set([
   'apps/mail-router/wrangler.jsonc',
   'apps/web/cloudflare-env.d.ts',
   'apps/web/wrangler.jsonc',
+  // Local stack fixture intentionally uses the seeded owner identity to exercise reset/auth flows.
+  'packages/adapters/payload/test/spike/local-stack.ts',
 ])
 const DISPLAY_NAME = /"displayName"\s*:\s*"([^"]+)"/g
 
