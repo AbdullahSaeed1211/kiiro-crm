@@ -2,15 +2,14 @@ import { Badge } from '@ops/ui/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
+import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { DealControls } from '../DealControls'
 import { getDealDetailData, type ActivityItem, type DealDetailData } from '../../../../server/crm/deals/queries'
 import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { RecordActionLinks } from '../../record-action-links'
-import { RecordEmailThread } from '../../record-email-thread'
-import { RecordFilesTab, RelatedTasksTab } from '../../record-related-tabs'
+import { recordTabs } from '../../record-view-primitives'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -73,30 +72,6 @@ function DetailsCard({ data }: Readonly<{ data: DealDetailData }>) {
   )
 }
 
-function DealHero({ data }: Readonly<{ data: DealDetailData }>) {
-  const { deal, stage } = data
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <Link href="/deals" className="text-xs text-muted-foreground hover:underline">
-          ← All deals
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{deal.title}</h1>
-        <div className="mt-2 flex items-center gap-2">
-          <Badge variant="outline">{stage.name}</Badge>
-          <span className="text-lg font-semibold tabular-nums">{formatMoney(deal.value)}</span>
-        </div>
-      </div>
-      <div className="text-right text-sm text-muted-foreground">
-        Expected close
-        <br />
-        <span className="font-medium text-foreground">{formatDate(deal.expectedCloseAt)}</span>
-      </div>
-      <RecordActionLinks recordType="deal" recordId={deal.id} recordLabel={deal.title} />
-    </div>
-  )
-}
-
 function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
   return (
     <Card>
@@ -121,21 +96,24 @@ function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
 
 function DealRecordView({ data }: Readonly<{ data: DealDetailData }>) {
   return (
-    <>
-      <DealHero data={data} />
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <main className="grid gap-5">
-          <ActivityCard activity={data.activity} />
-          <RecordEmailThread messages={data.emailMessages} />
-          <RelatedTasksTab tasks={data.relatedTasks} recordType="deal" recordId={data.deal.id} />
-          <RecordFilesTab attachments={data.attachments} recordType="deal" recordId={data.deal.id} />
-          <DetailsCard data={data} />
-        </main>
-        <aside>
+    <RecordPageLayout
+      labels={{ breadcrumb: 'Deal', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
+      title={data.deal.title}
+      stage={<Badge variant="outline">{data.stage.name}</Badge>}
+      actions={<RecordActionLinks recordType="deal" recordId={data.deal.id} recordLabel={data.deal.title} />}
+      tabs={recordTabs(<ActivityCard activity={data.activity} />, data.emailMessages, {
+        recordType: 'deal',
+        recordId: data.deal.id,
+        tasks: data.relatedTasks,
+        attachments: data.attachments,
+      })}
+      aside={
+        <div className="grid gap-4">
           <ControlsCard data={data} />
-        </aside>
-      </div>
-    </>
+          <DetailsCard data={data} />
+        </div>
+      }
+    />
   )
 }
 
