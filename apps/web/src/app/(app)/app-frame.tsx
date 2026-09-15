@@ -155,7 +155,14 @@ export function AppFrame({
   return (
     <AppShell
       defaultOpen={defaultOpen}
-      utilities={<WorkspaceTools locale={locale} />}
+      utilities={
+        <div className="flex w-[calc(100vw-2rem)] items-center gap-2 md:w-auto">
+          <span translate="no" className="mr-auto min-w-0 max-w-[9rem] truncate text-sm font-semibold md:hidden">
+            {appName}
+          </span>
+          <WorkspaceTools locale={locale} />
+        </div>
+      }
       sidebar={
         <AppSidebar
           appName={appName}
