@@ -37,15 +37,24 @@ export type AppSidebarProps = Readonly<{
   appName: string
   /** Logo element sized 24 px; without one, a letter tile from `appName` is shown. */
   logo?: ReactNode
+  /** Compact mark shown when the sidebar collapses to icon width. */
+  compactLogo?: ReactNode
   homeHref?: string
   groups: readonly NavGroup[]
   /** Footer content such as settings and the user menu. */
   footer?: ReactNode
 }>
 
-function BrandMark({ appName, logo }: Readonly<{ appName: string; logo: ReactNode }>) {
+function BrandMark({ appName, logo, compactLogo }: Readonly<{ appName: string; logo: ReactNode; compactLogo?: ReactNode }>) {
   if (logo !== undefined && logo !== null) {
-    return <span className="flex size-8 shrink-0 items-center justify-center">{logo}</span>
+    return (
+      <>
+        <span className="flex size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:hidden">{logo}</span>
+        <span className="hidden size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:flex">
+          {compactLogo ?? logo}
+        </span>
+      </>
+    )
   }
   return (
     <span className="ops-brand-mark flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
@@ -88,14 +97,14 @@ function NavSection({ group }: Readonly<{ group: NavGroup }>) {
 }
 
 /** Inset sidebar that collapses to icons (spec §16.1–§16.2): brand header, navigation groups and an optional footer. */
-export function AppSidebar({ appName, logo, homeHref = '/', groups, footer }: AppSidebarProps) {
+export function AppSidebar({ appName, logo, compactLogo, homeHref = '/', groups, footer }: AppSidebarProps) {
   return (
     <Sidebar variant="inset" collapsible="icon" className="ops-app-sidebar">
       <SidebarHeader className="ops-sidebar-brand">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" tooltip={appName} render={<a href={homeHref} />}>
-              <BrandMark appName={appName} logo={logo} />
+              <BrandMark appName={appName} logo={logo} compactLogo={compactLogo} />
               <span className="font-semibold">{appName}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
