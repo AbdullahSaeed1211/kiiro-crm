@@ -157,16 +157,31 @@ async function executeStep(
     return executeRouterSecrets({ tenant, deps, existingSecretsFile: context.secretsFile, secrets: context.secrets })
   const command = commandForStep(step, context)
   const environment =
-    step.key === 'migration' ? { CLOUDFLARE_ENV: tenant.slug, PAYLOAD_REMOTE_BINDINGS: '1' } : undefined
+    step.key === 'migration'
+      ? {
+          CLOUDFLARE_ENV: tenant.slug,
+          PAYLOAD_REMOTE_BINDINGS: '1',
+          PAYLOAD_SECRET: context.secrets?.['PAYLOAD_SECRET'],
+        }
+      : undefined
   const result = await deps.run(command.value, environment)
   assertCommand(result, command.value)
-  if (step.key === 'd1') writeProvisionedD1Id(tenant, deps, result.output)
+  await recordCommandResult(step, context, result.output)
+  const secrets = command.secrets ?? context.secrets
+  return { secretsFile: command.file, ...(secrets === undefined ? {} : { secrets }) }
+}
+
+async function recordCommandResult(step: ProvisionStep, context: StepContext, output: string): Promise<void> {
+  const { tenant, deps, state } = context
+  if (step.key === 'd1') {
+    writeProvisionedD1Id(tenant, deps, output)
+    state.wrangler = false
+  }
   if (step.key === 'senderStatus') {
-    if (!senderStatusReady(result.output, senderDomain(tenant)))
+    if (!senderStatusReady(output, senderDomain(tenant)))
       throw new Error(`Email Sending has no verified sender for ${senderDomain(tenant)}`)
     await persistProvisionStatus({ tenant, deps, secrets: context.secrets, status: { senderStatus: true } })
   }
-  return { secretsFile: command.file, ...(command.secrets === undefined ? {} : { secrets: command.secrets }) }
 }
 
 function commandForStep(

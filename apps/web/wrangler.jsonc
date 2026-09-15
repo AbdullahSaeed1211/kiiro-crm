@@ -72,6 +72,7 @@
         {
           "binding": "D1",
           "database_name": "ops-mirchmedia",
+          "database_id": "db84bf6e-9838-445a-9b45-10a2f1cca63e",
           "remote": true
         }
       ],

@@ -19,7 +19,7 @@
     "logoPath": "tenants/assets/mirchmedia/logo.png",
     "faviconPath": "tenants/assets/mirchmedia/favicon.ico",
   },
-  "d1": { "name": "ops-mirchmedia" },
+  "d1": { "name": "ops-mirchmedia", "id": "db84bf6e-9838-445a-9b45-10a2f1cca63e" },
   "r2": { "bucket": "ops-mirchmedia" },
   "rateLimitNamespaces": { "intake": "1001", "auth": "1002" },
   "intake": {
