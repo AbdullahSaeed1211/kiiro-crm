@@ -198,6 +198,10 @@ test('configuration surfaces expose real controls and import starters', async ({
     'href',
     '/api/v1/import/template/lead',
   )
+  await page.goto('/settings/notifications')
+  await expect(page.getByRole('heading', { name: 'Notifications', exact: true })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Assigned to you in-app' })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Assigned to you email' })).toBeVisible()
 })
 
 test('workspace settings reopen with tenant values intact', async ({ page }) => {
