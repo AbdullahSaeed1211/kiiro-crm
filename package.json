@@ -21,6 +21,7 @@
     "check:brand": "tsx scripts/check-brand.ts",
     "check:vocab": "tsx scripts/check-vocab.ts",
     "check:i18n": "tsx scripts/check-i18n.ts",
+    "check:formatters": "tsx scripts/check-formatters.ts",
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "check:scope": "tsx scripts/check-scope.ts",

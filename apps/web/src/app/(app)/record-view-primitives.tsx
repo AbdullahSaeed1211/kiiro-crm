@@ -9,8 +9,7 @@ import { hasRelationItems } from '../../server/crm/directory/utils'
 import { RecordActivityComposer } from './record-activity-composer'
 import { RecordEmailThread } from './record-email-thread'
 import { RecordFilesTab, RelatedTasksTab } from './record-related-tabs'
-
-const DATE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+import { formatDate } from '../../i18n/format'
 
 export function EmptyValue() {
   return <span className="text-muted-foreground">—</span>
@@ -19,7 +18,7 @@ export function EmptyValue() {
 export function DateCell({ value }: Readonly<{ value: number }>) {
   return (
     <time dateTime={new Date(value).toISOString()} className="tabular-nums text-muted-foreground">
-      {DATE_FORMAT.format(value)}
+      {formatDate(value, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
     </time>
   )
 }

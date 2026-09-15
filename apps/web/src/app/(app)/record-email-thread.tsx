@@ -1,14 +1,6 @@
 import type { EmailThreadMessage } from '../../server/crm/directory/data'
 import { RecordEmailComposer } from './record-email-composer'
-
-const DATE_FORMAT = new Intl.DateTimeFormat('en', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'UTC',
-})
+import { formatDate } from '../../i18n/format'
 
 function statusLabel(message: EmailThreadMessage): string {
   if (message.status === 'failed') return 'Failed'
@@ -64,7 +56,15 @@ export function RecordEmailThread({
                     className="shrink-0 text-xs tabular-nums text-muted-foreground"
                     dateTime={new Date(message.occurredAt).toISOString()}
                   >
-                    {DATE_FORMAT.format(message.occurredAt)} · {statusLabel(message)}
+                    {formatDate(message.occurredAt, undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      timeZone: 'UTC',
+                    })}{' '}
+                    · {statusLabel(message)}
                   </time>
                 </div>
                 <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">

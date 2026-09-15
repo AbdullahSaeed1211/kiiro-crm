@@ -1,5 +1,6 @@
 import type { DealRecord, OrganizationRecord, ContactRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
+import { formatCurrency, formatDate as formatLocaleDate } from '../../../i18n/format'
 
 export interface DealListItem {
   readonly deal: DealRecord
@@ -49,14 +50,12 @@ export function aggregateStageTotals(deals: readonly DealRecord[], workflow: Wor
 
 export function formatMoney(value: { readonly amountMinor: number; readonly currency: string } | null): string {
   if (value === null) return '—'
-  return new Intl.NumberFormat('en', { style: 'currency', currency: value.currency, maximumFractionDigits: 2 }).format(
-    value.amountMinor / 100,
-  )
+  return formatCurrency(value.amountMinor, value.currency, undefined)
 }
 
 export function formatDate(value: number | null): string {
   if (value === null) return '—'
-  return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(value)
+  return formatLocaleDate(value, undefined, { dateStyle: 'medium', timeZone: 'UTC' })
 }
 
 export function filterDeals(

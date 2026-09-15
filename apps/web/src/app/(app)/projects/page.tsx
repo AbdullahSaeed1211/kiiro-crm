@@ -7,6 +7,7 @@ import { AvatarStack } from '@ops/ui/composites/Collaboration/Primitives'
 import { FolderKanban } from 'lucide-react'
 import type { Metadata } from 'next'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+import { formatDate } from '../../../i18n/format'
 
 export const metadata: Metadata = { title: 'Projects' }
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ type Project = Awaited<ReturnType<typeof loadWorkReadModel>>['projects'][number]
 type Task = Awaited<ReturnType<typeof loadWorkReadModel>>['tasks'][number]
 
 function formatProjectDate(value: number | null, timeZone: string): string {
-  return value === null ? 'No target' : new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone }).format(value)
+  return value === null ? 'No target' : formatDate(value, undefined, { dateStyle: 'medium', timeZone })
 }
 
 function Progress({ done, total }: Readonly<{ done: number; total: number }>) {

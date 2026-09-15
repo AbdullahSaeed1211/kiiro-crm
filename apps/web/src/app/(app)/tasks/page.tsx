@@ -19,6 +19,7 @@ import { taskHref } from '../task-navigation'
 import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY, type Locale } from '../../../i18n/config'
+import { formatDate } from '../../../i18n/format'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import { listSavedViews, type SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
@@ -82,7 +83,6 @@ const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
 }
 
 // Tenant timezone formatting arrives with settings (decision D-39); the spike shows UTC dates.
-const DUE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 function EmptyValue() {
   return <span className="text-muted-foreground">—</span>
@@ -137,11 +137,11 @@ function AssigneesCell({ assignees }: Readonly<{ assignees: TaskListItem['assign
   )
 }
 
-function DueCell({ dueAt }: Readonly<{ dueAt: number | null }>) {
+function DueCell({ dueAt, locale }: Readonly<{ dueAt: number | null; locale: Locale }>) {
   if (dueAt === null) return <EmptyValue />
   return (
     <time dateTime={new Date(dueAt).toISOString()} className="tabular-nums">
-      {DUE_FORMAT.format(dueAt)}
+      {formatDate(dueAt, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
     </time>
   )
 }
@@ -162,7 +162,7 @@ function toRow({
       stage: <StageCell stage={task.stage} />,
       priority: <PriorityCell priority={task.priority} locale={locale} />,
       assignees: <AssigneesCell assignees={task.assignees} />,
-      dueAt: <DueCell dueAt={task.dueAt} />,
+      dueAt: <DueCell dueAt={task.dueAt} locale={locale} />,
       context: task.context === null ? <EmptyValue /> : task.context.label,
     },
   }

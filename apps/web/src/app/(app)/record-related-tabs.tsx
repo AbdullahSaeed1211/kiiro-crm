@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, useState, type ChangeEvent } from 'react'
 import type { RecordAttachment, RelatedTask } from '../../server/crm/directory/types'
-
-const DATE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+import { formatDate } from '../../i18n/format'
 
 function bytes(value: number): string {
   if (value < 1024) return `${String(value)} B`
@@ -49,7 +48,9 @@ export function RelatedTasksTab({
               </Link>
               <span className="shrink-0 text-xs text-muted-foreground">
                 {task.completedAt === null ? task.priority : 'Complete'}
-                {task.dueAt === null ? '' : ` · due ${DATE_FORMAT.format(task.dueAt)}`}
+                {task.dueAt === null
+                  ? ''
+                  : ` · due ${formatDate(task.dueAt, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`}
               </span>
             </li>
           ))}

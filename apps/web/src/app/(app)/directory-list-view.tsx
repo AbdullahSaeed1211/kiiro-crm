@@ -18,6 +18,7 @@ import type {
 } from '../../server/crm/directory/data'
 import { displayName, formatDirectorySort } from '../../server/crm/directory/data'
 import { safeExternalHref } from '../../server/crm/directory/utils'
+import { formatDate } from '../../i18n/format'
 
 const TABLE_LABELS: DataTableLabels = {
   selectAll: 'Select all',
@@ -28,7 +29,6 @@ const TABLE_LABELS: DataTableLabels = {
   range: '{from}–{to} of {total}',
   selected: '{count} selected',
 }
-const DATE_FORMAT = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 function EmptyValue() {
   return <span className="text-muted-foreground">—</span>
 }
@@ -54,7 +54,7 @@ function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
 function DateCell({ value }: Readonly<{ value: number }>) {
   return (
     <time dateTime={new Date(value).toISOString()} className="tabular-nums text-muted-foreground">
-      {DATE_FORMAT.format(value)}
+      {formatDate(value, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
     </time>
   )
 }

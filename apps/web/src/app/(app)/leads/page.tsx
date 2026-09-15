@@ -6,6 +6,7 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { UserPlus } from 'lucide-react'
 import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
+import { formatDate } from '../../../i18n/format'
 import { LeadListControls } from './LeadListControls'
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -34,7 +35,7 @@ const TABLE_COLUMNS: DataTableColumn[] = [
 ]
 
 function date(value: number): string {
-  return new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(value)
+  return formatDate(value, undefined, { dateStyle: 'medium' })
 }
 function empty(value: string | null | undefined) {
   return value ? <span>{value}</span> : <span className="text-muted-foreground">—</span>

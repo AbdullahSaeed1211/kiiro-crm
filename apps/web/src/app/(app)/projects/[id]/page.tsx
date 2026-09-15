@@ -10,6 +10,7 @@ import { loadProject, type WorkListTask } from '../../../../server/queries/work/
 import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
 import ProjectBoard from './ProjectBoard'
 import ProjectActions from './ProjectActions'
+import { formatDate } from '../../../../i18n/format'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Project' }
@@ -112,9 +113,10 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
                   <dd>
                     {project.targetEndAt === null
                       ? 'No target'
-                      : new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: model.timeZone }).format(
-                          project.targetEndAt,
-                        )}
+                      : formatDate(project.targetEndAt, model.locale, {
+                          dateStyle: 'medium',
+                          timeZone: model.timeZone,
+                        })}
                   </dd>
                 </div>
               </dl>

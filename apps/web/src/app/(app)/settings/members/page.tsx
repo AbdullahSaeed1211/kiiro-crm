@@ -6,6 +6,7 @@ import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'
 import { can } from '@ops/platform'
 import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
+import { formatDate } from '../../../../i18n/format'
 
 export const metadata: Metadata = { title: 'Members' }
 export const dynamic = 'force-dynamic'
@@ -139,12 +140,15 @@ export default async function MembersSettingsPage() {
       status: invitation.status,
       lastInvitation:
         typeof invitation.createdAt === 'string'
-          ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: workModel.timeZone }).format(
-              new Date(invitation.createdAt),
-            )
+          ? formatDate(new Date(invitation.createdAt), workModel.locale, {
+              dateStyle: 'medium',
+              timeZone: workModel.timeZone,
+            })
           : 'Not sent',
       actions:
-        invitation.status === 'accepted' || invitation.status === 'accepting' ? undefined : (
+        invitation.status === 'accepted' || invitation.status === 'accepting' ? (
+          <span className="text-xs text-muted-foreground">No actions</span>
+        ) : (
           <InvitationActions
             id={invitation.id}
             resendAction={resendInvitation}
