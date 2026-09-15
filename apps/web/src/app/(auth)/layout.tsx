@@ -23,7 +23,13 @@ export default async function AuthLayout({ children }: Readonly<{ children: Reac
             <section className="ops-auth-brand" aria-label={appName}>
               <div className="flex items-center gap-2">
                 {/* Public brand route provides the configured favicon or a letter-tile fallback. */}
-                <img className="size-7 rounded-sm" src={brand.faviconUrl} alt="" />
+                <img
+                  className="max-h-8 max-w-28 object-contain"
+                  src={brand.logoUrl ?? brand.faviconUrl}
+                  alt={`${appName} logo`}
+                  width={112}
+                  height={32}
+                />
                 <span className="text-sm font-semibold">{appName}</span>
               </div>
               <div className="ops-auth-brand-copy max-w-[12rem]">
