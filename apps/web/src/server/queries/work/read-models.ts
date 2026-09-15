@@ -1,4 +1,4 @@
-import { getRequestContext } from '../../work/deps'
+import { getRequestContext, type RequestContext } from '../../work/deps'
 import type { StageCategory } from '@ops/platform'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 
@@ -147,9 +147,9 @@ async function pages(context: Awaited<ReturnType<typeof getRequestContext>>) {
 }
 
 /** Reads scoped work records and labels for Phase 1 pages. */
-export async function loadWorkReadModel(): Promise<WorkReadModel> {
-  const context = await getRequestContext()
-  const [projectPage, taskPage, workflowPage, userPage] = await pages(context)
+export async function loadWorkReadModel(context?: RequestContext): Promise<WorkReadModel> {
+  const requestContext = context ?? (await getRequestContext())
+  const [projectPage, taskPage, workflowPage, userPage] = await pages(requestContext)
   const stages = new Map<string, StageLabel>()
   for (const workflow of workflowPage.docs as readonly object[]) addStages(stages, workflow)
   const tasks = (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages))
@@ -160,11 +160,11 @@ export async function loadWorkReadModel(): Promise<WorkReadModel> {
       return userId === null ? [] : [[userId, text(doc, 'name')] as const]
     }),
   )
-  const settings = await context.payload.findGlobal({
+  const settings = await requestContext.payload.findGlobal({
     slug: 'settings',
     depth: 0,
     overrideAccess: false,
-    req: context.req,
+    req: requestContext.req,
   })
   const configuredWeekStart = value(settings, 'weekStartsOn')
   const locale = normalizeLocale(value(settings, 'locale'))
@@ -172,7 +172,7 @@ export async function loadWorkReadModel(): Promise<WorkReadModel> {
     tasks,
     projects,
     people,
-    actorId: String(context.actor.id),
+    actorId: String(requestContext.actor.id),
     timeZone: text(settings, 'timezone') || 'UTC',
     weekStartsOn: configuredWeekStart === 0 ? 0 : 1,
     locale,

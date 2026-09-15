@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 import { DASHBOARD_COPY } from '../../i18n/config'
 import { loadDashboardStats } from '../../server/queries/dashboard'
 import { loadWorkReadModel } from '../../server/queries/work/read-models'
+import { getRequestContext } from '../../server/work/deps'
 import { taskHref } from './task-navigation'
 
 export const metadata: Metadata = { title: 'Dashboard' }
@@ -66,7 +67,8 @@ function StatCard({
 /** Work dashboard with concise, scoped cards for overdue and upcoming work. */
 // eslint-disable-next-line max-lines-per-function -- the dashboard keeps its stat strip and three action queues together.
 export default async function DashboardPage() {
-  const [model, stats] = await Promise.all([loadWorkReadModel(), loadDashboardStats()])
+  const context = await getRequestContext()
+  const [model, stats] = await Promise.all([loadWorkReadModel(context), loadDashboardStats(context)])
   const copy = DASHBOARD_COPY[model.locale]
   const open = model.tasks.filter((task) => !['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory))
   const mine = open.filter((task) => task.assigneeIds.includes(model.actorId))

@@ -1,7 +1,7 @@
 import { createCrmRepository } from '@ops/adapter-payload'
 import type { CrmRepository, DealRecord, LeadRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
-import { getRequestContext } from '../work/deps'
+import { getRequestContext, type RequestContext } from '../work/deps'
 
 const TERMINAL_CATEGORIES = new Set<Workflow['stages'][number]['category']>([
   'done_success',
@@ -35,9 +35,9 @@ function openRecord(record: LeadRecord | DealRecord, workflow: Workflow | undefi
 }
 
 /** Loads small, permission-scoped CRM totals used by the dashboard stat strip. */
-export async function loadDashboardStats(): Promise<DashboardStats> {
-  const context = await getRequestContext()
-  const repository = createCrmRepository(context.req)
+export async function loadDashboardStats(context?: RequestContext): Promise<DashboardStats> {
+  const requestContext = context ?? (await getRequestContext())
+  const repository = createCrmRepository(requestContext.req)
   const [organizations, contacts, leads, deals, leadWorkflow, dealWorkflow] = await Promise.all([
     repository.list('organization'),
     repository.list('contact'),
