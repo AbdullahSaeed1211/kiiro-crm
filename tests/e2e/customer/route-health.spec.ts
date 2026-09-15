@@ -27,7 +27,7 @@ const ROUTES = [
   ['/organizations', 'Organizations'],
   ['/projects', 'Projects'],
   ['/tasks', 'Tasks'],
-  ['/tasks/board', 'Tasks'],
+  ['/tasks/board', KANBAN_VIEW_LABEL],
   ['/my-tasks', 'My tasks'],
   ['/calendar', CALENDAR_VIEW_LABEL],
   ['/inbox', 'Inbox'],
