@@ -77,17 +77,18 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer }: Auth
       onSubmit={(event) => {
         void submit(event)
       }}
-      className="w-full max-w-sm space-y-5 rounded-xl border bg-background p-6 shadow-sm"
+      className="ops-auth-form w-full max-w-sm space-y-5 rounded-xl border bg-background p-6 shadow-sm"
     >
       <div>
-        <p className="text-sm font-medium text-muted-foreground">Workspace</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{submitLabel}</h1>
+        <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Welcome back</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{submitLabel}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Use your team account to continue.</p>
       </div>
       {fields.map((field) => (
         <label className="block space-y-1.5 text-sm" key={field}>
           <span className="font-medium">{fieldLabel(field)}</span>
           <input
-            className="h-10 w-full rounded-md border bg-background px-3"
+            className="h-10 w-full rounded-md border bg-background px-3 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             name={field}
             type={fieldType(field)}
             required
@@ -104,15 +105,15 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer }: Auth
         </p>
       )}
       <button
-        className="h-10 w-full rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className="h-10 w-full rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-[background-color,box-shadow,scale] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         disabled={pending}
         type="submit"
       >
-        {pending ? 'Working...' : submitLabel}
+        {pending ? 'Working…' : submitLabel}
       </button>
       {footer ?? (
         <Link
-          className="block text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+          className="block text-center text-sm text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="/login"
         >
           Back to login
