@@ -2,7 +2,7 @@ import type { GlobalConfig } from 'payload'
 import { SETTINGS_ACCESS } from '../access/spike-access'
 import { SETTINGS_GLOBAL } from '../contracts/names'
 import { ADMIN_GROUPS, currencyField, epochMs, selectOf, textField } from './fields'
-import { LOCALE_VALUES, RADIUS_VALUES, SENDER_STATUS_VALUES } from './values'
+import { LOCALE_VALUES, RADIUS_VALUES, SENDER_STATUS_VALUES, TIMEZONE_VALUES } from './values'
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
 
@@ -34,9 +34,8 @@ export const settingsGlobal: GlobalConfig = {
     textField('logoFileKey', { maxLength: 500 }),
     textField('faviconFileKey', { maxLength: 500 }),
     {
-      ...textField('timezone', { required: true }),
-      defaultValue: 'UTC',
-      validate: (value: unknown) => isTimeZone(value) || 'Enter an IANA time zone such as Europe/London.',
+      ...selectOf('timezone', TIMEZONE_VALUES, { required: true, defaultValue: 'UTC' }),
+      validate: (value: unknown) => isTimeZone(value) || 'Choose a valid IANA time zone.',
     },
     selectOf('locale', LOCALE_VALUES, { required: true, defaultValue: 'en' }),
     { ...currencyField('currency', { required: true }), defaultValue: 'USD' },

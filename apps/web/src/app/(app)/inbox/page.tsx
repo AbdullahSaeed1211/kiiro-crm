@@ -61,7 +61,7 @@ export default async function InboxPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<{ direction?: string; status?: string }> }>) {
   const context = await requireRole('owner', 'manager')
-  const locale = await loadWorkspaceLocale(context)
+  const locale = await loadWorkspaceLocale()
   const copy = INBOX_COPY[locale]
   const params = await searchParams
   const direction = params.direction === 'inbound' || params.direction === 'outbound' ? params.direction : undefined

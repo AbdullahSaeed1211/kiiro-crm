@@ -246,7 +246,7 @@ export default async function TasksPage({
     title: titleParam,
   } = await searchParams
   const context = await getRequestContext()
-  const [savedViews, locale] = await Promise.all([listSavedViews('task', context), loadWorkspaceLocale(context)])
+  const [savedViews, locale] = await Promise.all([listSavedViews('task', context), loadWorkspaceLocale()])
   const copy = TASK_COPY[locale]
   const sort = parseTaskSort(firstValue(sortParam))
   const view = parseTaskView(firstValue(viewParam), savedViews)

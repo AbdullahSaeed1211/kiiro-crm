@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { saveBranding } from '../../../../server/actions/settings'
-import { requireRole } from '../../../../server/auth/context'
+import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { BrandingSettingsForm } from './branding-settings-form'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
@@ -9,12 +9,8 @@ export const metadata: Metadata = { title: 'Branding' }
 export const dynamic = 'force-dynamic'
 
 export default async function BrandingSettingsPage() {
-  const context = await requireRole('owner')
-  const settings = (await context.payload.findGlobal({
-    slug: 'settings',
-    depth: 0,
-    req: context.req,
-  })) as unknown as Record<string, unknown>
+  await requireRole('owner')
+  const settings = await getWorkspaceSettings()
   const brand =
     typeof settings.brand === 'object' && settings.brand !== null ? (settings.brand as Record<string, unknown>) : {}
   return (

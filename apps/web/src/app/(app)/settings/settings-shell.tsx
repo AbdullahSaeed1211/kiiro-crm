@@ -2,7 +2,7 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import type { ReactNode } from 'react'
 import type { Role } from '@ops/platform'
-import { requireRole } from '../../../server/auth/context'
+import { getWorkspaceSettings, requireRole } from '../../../server/auth/context'
 import { SettingsNav } from './settings-nav'
 import { normalizeLocale } from '../../../i18n/config'
 
@@ -13,11 +13,7 @@ export async function SettingsPage({
   children,
 }: Readonly<{ title: string; description: string; roles: readonly Role[]; children?: ReactNode }>) {
   const context = await requireRole(...roles)
-  const settings = (await context.payload.findGlobal({
-    slug: 'settings',
-    depth: 0,
-    req: context.req,
-  })) as unknown as Record<string, unknown>
+  const settings = await getWorkspaceSettings()
   const locale = normalizeLocale(settings.locale)
   return (
     <>

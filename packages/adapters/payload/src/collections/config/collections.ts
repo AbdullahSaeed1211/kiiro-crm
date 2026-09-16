@@ -2,6 +2,7 @@ import type { CollectionConfig, Field, GlobalConfig } from 'payload'
 import { ADMIN_GROUPS } from '../fields'
 import { configAccess, sharedViewAccess } from './access'
 import { configEpoch, configJson, configRelation, configText } from './fields'
+import { TIMEZONE_VALUES } from '../values'
 
 const RECORD_TYPES = ['organization', 'contact', 'lead', 'deal', 'project', 'task'] as const
 const VIEW_KINDS = ['table', 'board', 'calendar', 'timeline'] as const
@@ -121,8 +122,8 @@ export const settingsGlobalConfig: GlobalConfig = {
   fields: [
     configText('appName', { maxLength: 60 }),
     withValidation(
-      withDefault(configText('timezone', { required: true }), 'UTC'),
-      (value) => isIanaTimeZone(value) || 'Enter an IANA time zone.',
+      withDefault({ name: 'timezone', type: 'select', options: [...TIMEZONE_VALUES], required: true }, 'UTC'),
+      (value) => isIanaTimeZone(value) || 'Choose a valid IANA time zone.',
     ),
     { name: 'locale', type: 'select', options: ['en', 'es'], required: true, defaultValue: 'en' },
     withDefault(configText('currency', { required: true, maxLength: 3 }), 'USD'),

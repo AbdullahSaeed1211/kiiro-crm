@@ -84,7 +84,7 @@ function toCard(task: TaskRecord, locale: Locale): KanbanCard {
 export default async function TaskBoardPage() {
   const context = await getRequestContext()
   const { tasks } = await getWorkDeps(context)
-  const locale = await loadWorkspaceLocale(context)
+  const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])
   return (

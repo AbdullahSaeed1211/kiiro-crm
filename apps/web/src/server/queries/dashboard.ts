@@ -1,6 +1,7 @@
 import { createCrmRepository } from '@ops/adapter-payload'
-import type { CrmRepository, DealRecord, LeadRecord } from '@ops/module-crm'
+import type { CrmRepository } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
+import type { PayloadRequest, Where } from 'payload'
 import { getRequestContext, type RequestContext } from '../work/deps'
 
 const TERMINAL_CATEGORIES = new Set<Workflow['stages'][number]['category']>([
@@ -28,28 +29,58 @@ async function workflowOrUndefined(
   }
 }
 
-function openRecord(record: LeadRecord | DealRecord, workflow: Workflow | undefined): boolean {
-  if (workflow === undefined) return 'closedAt' in record ? record.closedAt === null : record.convertedAt === null
-  const stage = workflow.stages.find((item) => item.id === record.stageId)
-  return stage === undefined || !TERMINAL_CATEGORIES.has(stage.category)
+function openWhere(recordType: 'lead' | 'deal', workflow: Workflow | undefined): Where {
+  if (workflow === undefined) {
+    const field = recordType === 'lead' ? 'convertedAt' : 'closedAt'
+    return { or: [{ [field]: { equals: null } }, { [field]: { exists: false } }] }
+  }
+  const terminal = workflow.stages.filter((stage) => TERMINAL_CATEGORIES.has(stage.category)).map((stage) => stage.id)
+  return terminal.length === 0 ? {} : { or: [{ stageId: { not_in: terminal } }, { stageId: { exists: false } }] }
+}
+
+async function countVisible({
+  payload,
+  req,
+  collection,
+  where = {},
+}: Readonly<{
+  payload: PayloadRequest['payload']
+  req: PayloadRequest
+  collection: 'organizations' | 'contacts' | 'leads' | 'deals'
+  where?: Where
+}>): Promise<number> {
+  const result = await payload.count({ collection, where, overrideAccess: false, user: req.user, req })
+  return result.totalDocs
 }
 
 /** Loads small, permission-scoped CRM totals used by the dashboard stat strip. */
 export async function loadDashboardStats(context?: RequestContext): Promise<DashboardStats> {
   const requestContext = context ?? (await getRequestContext())
   const repository = createCrmRepository(requestContext.req)
-  const [organizations, contacts, leads, deals, leadWorkflow, dealWorkflow] = await Promise.all([
-    repository.list('organization'),
-    repository.list('contact'),
-    repository.list('lead'),
-    repository.list('deal'),
+  const [organizations, contacts, leadWorkflow, dealWorkflow] = await Promise.all([
+    countVisible({ payload: requestContext.payload, req: requestContext.req, collection: 'organizations' }),
+    countVisible({ payload: requestContext.payload, req: requestContext.req, collection: 'contacts' }),
     workflowOrUndefined(repository, 'lead'),
     workflowOrUndefined(repository, 'deal'),
   ])
+  const [openLeads, openDeals] = await Promise.all([
+    countVisible({
+      payload: requestContext.payload,
+      req: requestContext.req,
+      collection: 'leads',
+      where: openWhere('lead', leadWorkflow),
+    }),
+    countVisible({
+      payload: requestContext.payload,
+      req: requestContext.req,
+      collection: 'deals',
+      where: openWhere('deal', dealWorkflow),
+    }),
+  ])
   return {
-    organizations: organizations.length,
-    contacts: contacts.length,
-    openLeads: leads.filter((lead) => openRecord(lead, leadWorkflow)).length,
-    openDeals: deals.filter((deal) => openRecord(deal, dealWorkflow)).length,
+    organizations,
+    contacts,
+    openLeads,
+    openDeals,
   }
 }

@@ -1,7 +1,9 @@
+import { TIMEZONE_VALUES } from '@ops/adapter-payload'
+
 export interface ProvisionBody {
   readonly displayName: string
   readonly template: string
-  readonly timezone: string
+  readonly timezone: (typeof TIMEZONE_VALUES)[number]
   readonly locale: 'en' | 'es'
   readonly currency: string
   readonly owner: { readonly email: string; readonly name: string }
@@ -28,13 +30,8 @@ function textOf(value: unknown, maxLength: number): string | undefined {
   return text === '' || text.length > maxLength ? undefined : text
 }
 
-function isTimeZone(value: string): boolean {
-  try {
-    new Intl.DateTimeFormat('en', { timeZone: value })
-    return true
-  } catch {
-    return false
-  }
+function isTimeZone(value: string): value is ProvisionBody['timezone'] {
+  return TIMEZONE_VALUES.includes(value)
 }
 
 function originsOf(value: unknown): readonly string[] | undefined {

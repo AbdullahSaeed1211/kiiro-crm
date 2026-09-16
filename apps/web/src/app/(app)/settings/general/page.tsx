@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { requireRole } from '../../../../server/auth/context'
+import { TIMEZONE_VALUES } from '@ops/adapter-payload'
+import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { updateSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
@@ -10,10 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function GeneralSettingsPage() {
   const context = await requireRole('owner', 'manager')
-  const settings = (await context.payload.findGlobal({ slug: 'settings', depth: 0 })) as unknown as Record<
-    string,
-    unknown
-  >
+  const settings = await getWorkspaceSettings()
   const editable = context.actor.role === 'owner'
   const values = Object.fromEntries(
     ['appName', 'timezone', 'locale', 'currency', 'weekStartsOn', 'stalledDays'].map((key) => [
@@ -33,7 +31,12 @@ export default async function GeneralSettingsPage() {
             action={updateSettings}
             fields={[
               { name: 'appName', label: 'Workspace name' },
-              { name: 'timezone', label: 'Time zone' },
+              {
+                name: 'timezone',
+                label: 'Time zone',
+                type: 'select',
+                options: TIMEZONE_VALUES.map((value) => ({ value, label: value })),
+              },
               {
                 name: 'locale',
                 label: 'Locale',

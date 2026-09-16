@@ -13,7 +13,7 @@ import type {
   WorkTaskRecord,
 } from '@ops/module-work'
 import type { StageStore, StageTransition, Workflow } from '@ops/platform'
-import type { CollectionSlug, PayloadRequest, Where } from 'payload'
+import type { CollectionSlug, PayloadRequest, Sort, Where } from 'payload'
 import { COLLECTIONS, FIELDS, RECORD_TYPES } from '../contracts/names'
 import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
 import { fieldOf, idOf, type Doc } from './documents'
@@ -27,6 +27,19 @@ const STAGE_COLLECTIONS: ReadonlyMap<string, CollectionSlug> = new Map([
 ])
 const byId = (id: string): Where => ({ id: { equals: id } })
 const has = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key)
+
+export interface TaskPageQuery {
+  readonly where: Where
+  readonly sort: Sort
+  readonly page: number
+  readonly limit: number
+  readonly dueAtNullsLast?: boolean
+}
+
+export interface TaskPageResult {
+  readonly records: readonly TaskRecord[]
+  readonly total: number
+}
 
 async function findWorkflow(req: PayloadRequest, where: Where): Promise<Workflow | undefined> {
   const [doc] = await findAsUser(req, { collection: COLLECTIONS.workflows, where, sort: 'createdAt', limit: 1 })
@@ -153,6 +166,66 @@ async function updateTaskAndMap(
     data: taskPatchData(patch),
   })
   return doc === undefined ? undefined : mapTask(req, doc)
+}
+
+function andWhere(...clauses: readonly Where[]): Where {
+  return clauses.length === 1 ? (clauses[0] ?? {}) : { and: [...clauses] }
+}
+
+async function taskPage(
+  req: PayloadRequest,
+  where: Where,
+  sort: Sort,
+  page: number,
+  limit: number,
+): Promise<TaskPageResult> {
+  const result = await req.payload.find({
+    collection: COLLECTIONS.tasks,
+    where,
+    sort,
+    page,
+    limit,
+    depth: 0,
+    overrideAccess: false,
+    user: req.user,
+    req,
+  })
+  return { records: result.docs.flatMap((doc) => toTaskRecord(doc) ?? []), total: result.totalDocs }
+}
+
+/** Reads one permission-scoped task page without materializing the entire task collection. */
+export async function listTaskPage(req: PayloadRequest, query: TaskPageQuery): Promise<TaskPageResult> {
+  if (query.dueAtNullsLast !== true) return taskPage(req, query.where, query.sort, query.page, query.limit)
+
+  const withDue = andWhere(query.where, { dueAt: { not_equals: null } })
+  const withoutDue = andWhere(query.where, { dueAt: { equals: null } })
+  const [withDueCount, withoutDueCount] = await Promise.all([
+    req.payload.count({ collection: COLLECTIONS.tasks, where: withDue, overrideAccess: false, user: req.user, req }),
+    req.payload.count({
+      collection: COLLECTIONS.tasks,
+      where: withoutDue,
+      overrideAccess: false,
+      user: req.user,
+      req,
+    }),
+  ])
+  const total = withDueCount.totalDocs + withoutDueCount.totalDocs
+  const offset = (query.page - 1) * query.limit
+  if (offset >= total) return { records: [], total }
+
+  const records: TaskRecord[] = []
+  if (offset < withDueCount.totalDocs) {
+    const firstPage = await taskPage(req, withDue, query.sort, Math.floor(offset / query.limit) + 1, query.limit)
+    records.push(...firstPage.records.slice(offset % query.limit, (offset % query.limit) + query.limit))
+  }
+
+  if (records.length < query.limit && offset + records.length >= withDueCount.totalDocs) {
+    const noDueOffset = Math.max(0, offset - withDueCount.totalDocs)
+    const remaining = query.limit - records.length
+    const noDuePage = await taskPage(req, withoutDue, 'id', Math.floor(noDueOffset / query.limit) + 1, query.limit)
+    records.push(...noDuePage.records.slice(noDueOffset % query.limit, (noDueOffset % query.limit) + remaining))
+  }
+  return { records, total }
 }
 
 /** Payload Local API repository used by both the legacy board and the work vertical commands. */

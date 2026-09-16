@@ -1,5 +1,5 @@
-import type { CrmDrafts, CrmRepository, CrmRecordType, LookupKind, LookupRecord } from '@ops/module-crm'
-import type { PayloadRequest } from 'payload'
+import type { CrmDrafts, CrmRecords, CrmRepository, CrmRecordType, LookupKind, LookupRecord } from '@ops/module-crm'
+import type { PayloadRequest, Sort, Where } from 'payload'
 import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
 import { findAsUser, updateIfUnchanged } from '../local-api'
@@ -10,6 +10,19 @@ import { createCrmStageStore, firstWorkflow, whereId } from './stage-store'
 type RecordAccess = Pick<CrmRepository, 'get' | 'list' | 'create' | 'update'>
 
 type Directory = Pick<CrmRepository, 'findContactByEmail' | 'loadDefaultWorkflow' | 'listLookups'>
+
+export interface CrmPageQuery<T extends CrmRecordType = CrmRecordType> {
+  readonly type: T
+  readonly where: Where
+  readonly page: number
+  readonly limit: number
+  readonly sort?: Sort
+}
+
+export interface CrmPageResult<T extends CrmRecordType = CrmRecordType> {
+  readonly records: readonly CrmRecords[T][]
+  readonly total: number
+}
 
 interface UpdateArgs<T extends CrmRecordType = CrmRecordType> {
   readonly type: T
@@ -82,4 +95,29 @@ function directory(req: PayloadRequest): Directory {
 /** `CrmRepository` on the Payload Local API: reads, creates and compare-and-set updates apply the request user's access. */
 export function createCrmRepository(req: PayloadRequest): CrmRepository {
   return { ...createCrmStageStore(req), ...recordAccess(req), ...directory(req) }
+}
+
+/** Reads one permission-scoped CRM page without materializing the entire collection. */
+export async function listCrmPage<T extends CrmRecordType>(
+  req: PayloadRequest,
+  query: CrmPageQuery<T>,
+): Promise<CrmPageResult<T>> {
+  const result = await req.payload.find({
+    collection: CRM_COLLECTIONS[query.type],
+    where: query.where,
+    sort: query.sort ?? ['-createdAt', 'id'],
+    page: query.page,
+    limit: query.limit,
+    depth: 0,
+    overrideAccess: false,
+    user: req.user,
+    req,
+  })
+  return {
+    records: result.docs.flatMap((doc) => {
+      const record = toCrmRecord(query.type, doc)
+      return record === undefined ? [] : [record]
+    }),
+    total: result.totalDocs,
+  }
 }

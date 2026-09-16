@@ -14,7 +14,7 @@ import { Handshake, LayoutGrid, Search } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DealCreateDialog } from './DealCreateDialog'
-import { filterDeals, formatDate, formatMoney } from '../../../server/crm/deals/view-model'
+import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -116,20 +116,17 @@ export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const params = await searchParams
-  const data = await getDealListData()
   const rawQuery = first(params.q)?.trim() ?? ''
-  const query = rawQuery.toLowerCase()
   const stageId = first(params.stage)
-  const filtered = filterDeals(data.items, query, stageId)
   const page = Math.max(1, Number(first(params.page) ?? 1) || 1)
-  const visible = filtered.slice((page - 1) * 50, page * 50)
+  const data = await getDealListData({ query: rawQuery, stageId, page })
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Deals' }]} />
       <PageContent>
         <PageHeader
           title="Deals"
-          count={filtered.length}
+          count={data.total}
           actions={
             <div className="flex items-center gap-2">
               <Button variant="outline" nativeButton={false} render={<Link href="/deals/board" />}>
@@ -170,10 +167,10 @@ export default async function DealsPage({
           </select>
         </form>
         <DataTable
-          key={`${query}:${String(page)}`}
+          key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}
           columns={columns()}
-          rows={visible.map(rowOf)}
-          pagination={pagination({ page, total: filtered.length, query: rawQuery, stageId })}
+          rows={data.items.map(rowOf)}
+          pagination={pagination({ page, total: data.total, query: rawQuery, stageId })}
           labels={LABELS}
           emptyState={
             <EmptyState

@@ -6,7 +6,7 @@ import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { CircleCheckBig } from 'lucide-react'
 import type { Metadata } from 'next'
-import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+import { loadMyTaskModel } from '../../../server/queries/work/read-models'
 import { taskHref } from '../task-navigation'
 
 export const metadata: Metadata = { title: 'My tasks' }
@@ -22,7 +22,7 @@ const SECTIONS = [
 
 /** Scoped task buckets for the signed-in staff member. */
 export default async function MyTasksPage() {
-  const model = await loadWorkReadModel()
+  const model = await loadMyTaskModel()
   const buckets = myTasksBuckets({
     tasks: model.tasks.map((task) => ({
       ...task,

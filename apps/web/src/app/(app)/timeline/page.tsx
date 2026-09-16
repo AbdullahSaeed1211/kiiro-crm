@@ -29,7 +29,7 @@ function toTimelineTask({ id, title, startAt, dueAt, updatedAt }: TaskRecord): T
 export default async function TimelinePage() {
   const context = await getRequestContext()
   const { tasks: repository } = await getWorkDeps(context)
-  const [records, locale] = await Promise.all([repository.listTasks(), loadWorkspaceLocale(context)])
+  const [records, locale] = await Promise.all([repository.listTasks(), loadWorkspaceLocale()])
   const tasks = records.filter((task) => task.startAt !== null || task.dueAt !== null).map(toTimelineTask)
   const copy = TASK_COPY[locale]
   return (

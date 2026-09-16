@@ -1,3 +1,4 @@
+import { getWorkspaceSettings } from '../../auth/context'
 import { getRequestContext, type RequestContext } from '../../work/deps'
 import type { StageCategory } from '@ops/platform'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
@@ -160,12 +161,7 @@ export async function loadWorkReadModel(context?: RequestContext): Promise<WorkR
       return userId === null ? [] : [[userId, text(doc, 'name')] as const]
     }),
   )
-  const settings = await requestContext.payload.findGlobal({
-    slug: 'settings',
-    depth: 0,
-    overrideAccess: false,
-    req: requestContext.req,
-  })
+  const settings = await getWorkspaceSettings()
   const configuredWeekStart = value(settings, 'weekStartsOn')
   const locale = normalizeLocale(value(settings, 'locale'))
   return {
@@ -181,15 +177,42 @@ export async function loadWorkReadModel(context?: RequestContext): Promise<WorkR
 }
 
 /** Reads only the workspace locale when a full work read model would be unnecessary. */
-export async function loadWorkspaceLocale(context?: RequestContext): Promise<Locale> {
-  const requestContext = context ?? (await getRequestContext())
-  const settings = await requestContext.payload.findGlobal({
-    slug: 'settings',
-    depth: 0,
-    overrideAccess: false,
-    req: requestContext.req,
-  })
+export async function loadWorkspaceLocale(): Promise<Locale> {
+  const settings = await getWorkspaceSettings()
   return normalizeLocale(value(settings, 'locale'))
+}
+
+/** Reads only the signed-in user's tasks for the dedicated My tasks page. */
+export async function loadMyTaskModel(
+  context?: RequestContext,
+): Promise<Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone'>> {
+  const requestContext = context ?? (await getRequestContext())
+  const request = { depth: 0, overrideAccess: false as const, req: requestContext.req }
+  const [taskPage, workflowPage, settings] = await Promise.all([
+    requestContext.payload.find({
+      collection: 'tasks',
+      ...request,
+      where: { assignees: { in: [String(requestContext.actor.id)] } },
+      sort: ['dueAt', 'id'],
+      limit: 0,
+      pagination: false,
+    }),
+    requestContext.payload.find({
+      collection: 'workflows',
+      ...request,
+      where: { recordType: { equals: 'task' } },
+      limit: 1,
+      pagination: false,
+    }),
+    getWorkspaceSettings(),
+  ])
+  const stages = new Map<string, StageLabel>()
+  for (const workflow of workflowPage.docs as readonly object[]) addStages(stages, workflow)
+  return {
+    tasks: (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages)),
+    actorId: String(requestContext.actor.id),
+    timeZone: text(settings, 'timezone') || 'UTC',
+  }
 }
 
 /** Loads one scoped task for the task page. */

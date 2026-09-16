@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { requireRole } from '../../../../server/auth/context'
+import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { saveEmailSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
@@ -9,12 +9,14 @@ export const metadata: Metadata = { title: 'Email' }
 export const dynamic = 'force-dynamic'
 
 const value = (input: unknown): string => (typeof input === 'string' ? input : '')
+const record = (input: unknown): Record<string, unknown> =>
+  typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
 
 export default async function EmailSettingsPage() {
-  const context = await requireRole('owner')
+  await requireRole('owner')
   const { env } = await getCloudflareContext({ async: true })
-  const settings = await context.payload.findGlobal({ slug: 'settings', depth: 0 })
-  const email = settings.email
+  const settings = await getWorkspaceSettings()
+  const email = record(settings.email)
   return (
     <SettingsPage
       title="Email"

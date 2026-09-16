@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import { Geist, Geist_Mono } from 'next/font/google'
 import type { CSSProperties, ReactNode } from 'react'
 import type { Metadata } from 'next'
-import { getProductContext } from '../../server/auth/context'
+import { getProductContext, getWorkspaceSettings } from '../../server/auth/context'
 import { AppFrame } from './app-frame'
 import { normalizeLocale } from '../../i18n/config'
 import { brandPresentation } from '../../server/branding/presentation'
@@ -17,12 +17,7 @@ const sans = Geist({ subsets: ['latin'], variable: '--font-sans' })
 const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export async function generateMetadata(): Promise<Metadata> {
-  const context = await getProductContext()
-  const settings = (await context.payload.findGlobal({
-    slug: 'settings',
-    depth: 0,
-    req: context.req,
-  })) as unknown as Record<string, unknown>
+  const settings = await getWorkspaceSettings()
   const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
   return { title: { default: appName, template: `%s · ${appName}` } }
@@ -52,13 +47,7 @@ function themeStyle(settings: Record<string, unknown>): CSSProperties {
 
 /** Root layout of the product UI with the application frame (spec §16). */
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [cookieStore, context] = await Promise.all([cookies(), getProductContext()])
-  const settings = (await context.payload.findGlobal({
-    slug: 'settings',
-    depth: 0,
-    overrideAccess: false,
-    req: context.req,
-  })) as unknown as Record<string, unknown>
+  const [cookieStore, context, settings] = await Promise.all([cookies(), getProductContext(), getWorkspaceSettings()])
   const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
   const modulesValue = settingsRecord(settings.modules)

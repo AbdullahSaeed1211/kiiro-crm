@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import { saveTerminology } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
-import { requireRole } from '../../../../server/auth/context'
+import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 
 export const metadata: Metadata = { title: 'Terminology' }
 export const dynamic = 'force-dynamic'
 
 export default async function TerminologySettingsPage() {
-  const context = await requireRole('owner', 'manager')
-  const settings = await context.payload.findGlobal({ slug: 'settings', depth: 0, req: context.req })
+  await requireRole('owner', 'manager')
+  const settings = await getWorkspaceSettings()
   const terminology =
     typeof settings.terminology === 'object' && settings.terminology !== null
       ? (settings.terminology as Record<string, unknown>)

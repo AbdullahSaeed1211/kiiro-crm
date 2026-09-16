@@ -1,5 +1,6 @@
-import { createCrmRepository } from '@ops/adapter-payload'
+import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
+import type { Workflow } from '@ops/platform'
 import { getRequestContext } from '../../work/deps'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
@@ -13,6 +14,7 @@ import {
   type LeadPerson,
 } from './types'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
+import type { Where } from 'payload'
 
 const PAGE_SIZE = 50
 type SearchParam = string | string[] | undefined
@@ -72,25 +74,28 @@ export type LeadListResult = Readonly<{
   readonly people: readonly LeadPerson[]
 }>
 
-function filterLeads(
-  records: readonly LeadRecord[],
-  params: Readonly<{ q?: string; stages?: readonly string[] }>,
-  stageCategories: ReadonlyMap<string, KanbanStage['category']>,
-): LeadRecord[] {
-  const q = params.q?.trim().toLowerCase() ?? ''
-  const stageIds = new Set(params.stages ?? [])
-  return records.filter((lead) => {
-    if (stageIds.size > 0 && !stageIds.has(lead.stageId)) return false
-    if (
-      stageIds.size === 0 &&
-      ['done_success', 'done_failure', 'cancelled'].includes(stageCategories.get(lead.stageId) ?? '')
-    )
-      return false
-    if (q === '') return true
-    return [lead.title, lead.firstName, lead.lastName, lead.email, lead.companyName, lead.phone]
-      .filter((value): value is string => typeof value === 'string')
-      .some((value) => value.toLowerCase().includes(q))
-  })
+function leadWhere(params: Readonly<{ q?: string; stages?: readonly string[] }>, workflow: Workflow): Where {
+  const filters: Where[] = []
+  const stages = params.stages ?? []
+  if (stages.length > 0) filters.push({ stageId: { in: stages } })
+  else {
+    filters.push({
+      stageId: {
+        not_in: workflow.stages
+          .filter((stage) => ['done_success', 'done_failure', 'cancelled'].includes(stage.category))
+          .map((stage) => stage.id),
+      },
+    })
+  }
+  const query = params.q?.trim() ?? ''
+  if (query !== '') {
+    filters.push({
+      or: ['title', 'firstName', 'lastName', 'email', 'companyName', 'phone'].map((field) => ({
+        [field]: { contains: query },
+      })),
+    })
+  }
+  return filters.length === 1 ? (filters[0] ?? {}) : { and: filters }
 }
 
 async function loadLeadPeople(
@@ -118,23 +123,29 @@ export async function listLeads(
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
-  const [records, workflow, sources, lostReasons] = await Promise.all([
-    repo.list('lead'),
-    repo.loadDefaultWorkflow('lead'),
-    repo.listLookups('source'),
-    repo.listLookups('lostReason'),
+  const workflowPromise = repo.loadDefaultWorkflow('lead')
+  const sourcesPromise = repo.listLookups('source')
+  const lostReasonsPromise = repo.listLookups('lostReason')
+  const workflow = await workflowPromise
+  const [pageResult, sources, lostReasons] = await Promise.all([
+    listCrmPage(context.req, {
+      type: 'lead',
+      where: leadWhere(params, workflow),
+      page: Math.max(1, params.page ?? 1),
+      limit: PAGE_SIZE,
+    }),
+    sourcesPromise,
+    lostReasonsPromise,
   ])
+  const pageNumber = Math.max(1, params.page ?? 1)
   const stages = toStages(workflow)
-  const stageCategories = new Map(stages.map((stage) => [stage.id, stage.category]))
-  const filtered = filterLeads(records, params, stageCategories)
   const sourceMap = lookupMap(sources)
-  const people = await loadLeadPeople(context, filtered)
-  const items = filtered.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people }))
-  const page = Math.max(1, params.page ?? 1)
+  const people = await loadLeadPeople(context, pageResult.records)
+  const items = pageResult.records.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people }))
   return {
-    items: items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    total: items.length,
-    page,
+    items,
+    total: pageResult.total,
+    page: pageNumber,
     pageSize: PAGE_SIZE,
     stages,
     sources,

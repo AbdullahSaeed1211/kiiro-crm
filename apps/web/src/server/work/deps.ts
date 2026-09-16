@@ -1,13 +1,10 @@
-import config from '@payload-config'
-import { createTaskRepository, createUnitOfWork, resolveActor } from '@ops/adapter-payload'
+import { createTaskRepository, createUnitOfWork } from '@ops/adapter-payload'
 import { systemClock } from '@ops/kernel'
 import { can, type Actor } from '@ops/platform'
-import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import { type Payload, type PayloadRequest } from 'payload'
+import { cache } from 'react'
+import { getProductContext } from '../auth/context'
 import type { WorkDeps } from './task-repository'
-
-const LOGIN_PATH = '/login'
 
 /** The signed-in request: Payload, a local request carrying the user, and the actor. */
 export interface RequestContext {
@@ -17,15 +14,10 @@ export interface RequestContext {
 }
 
 /** Resolves the signed-in user; redirects to login without an active session. */
-export async function getRequestContext(): Promise<RequestContext> {
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: await headers() })
-  if (user === null) redirect(LOGIN_PATH)
-  const req = await createLocalReq({ user }, payload)
-  const actor = await resolveActor(req)
-  if (actor?.active !== true) redirect(LOGIN_PATH)
+export const getRequestContext = cache(async (): Promise<RequestContext> => {
+  const { payload, req, actor } = await getProductContext()
   return { payload, req, actor }
-}
+})
 
 /** Per-request work dependencies for the signed-in user. */
 export async function getWorkDeps(requestContext?: RequestContext): Promise<WorkDeps> {

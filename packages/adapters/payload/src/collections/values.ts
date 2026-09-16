@@ -97,6 +97,34 @@ export const JOB_RUN_STATUS_VALUES = ['running', 'completed', 'failed'] as const
 /** Locales the settings global accepts (spec §9.12). */
 export const LOCALE_VALUES = ['en', 'es'] as const
 
+/** IANA time zones offered by admin controls so invalid abbreviations cannot be saved. */
+const FALLBACK_TIMEZONE_VALUES = [
+  'UTC',
+  'America/Los_Angeles',
+  'America/Denver',
+  'America/Chicago',
+  'America/New_York',
+  'America/Sao_Paulo',
+  'Europe/London',
+  'Europe/Berlin',
+  'Europe/Paris',
+  'Africa/Cairo',
+  'Africa/Johannesburg',
+  'Asia/Dubai',
+  'Asia/Kolkata',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Australia/Sydney',
+  'Pacific/Auckland',
+] as const
+
+export const TIMEZONE_VALUES: readonly string[] = Object.freeze(
+  typeof Intl.supportedValuesOf === 'function'
+    ? ['UTC', ...Intl.supportedValuesOf('timeZone').filter((value) => value !== 'UTC')]
+    : [...FALLBACK_TIMEZONE_VALUES],
+)
+
 /** Corner radius presets of the brand settings (spec §9.12). */
 export const RADIUS_VALUES = ['sm', 'md', 'lg'] as const
 

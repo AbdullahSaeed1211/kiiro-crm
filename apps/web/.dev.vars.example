@@ -10,3 +10,4 @@ APP_ORIGIN=http://localhost:3000
 TENANT_SLUG=dev
 TENANT_DISPLAY_NAME=Dev Workspace
 INBOUND_DOMAIN=in.localhost
+OPERATOR_EMAILS=mirchads@gmail.com

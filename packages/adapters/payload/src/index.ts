@@ -11,6 +11,7 @@ export { loadReportIds, resolveActor, toActor } from './access/actor'
 export { allow, anyActive, managerUp, ownedBy, ownerOnly, scoped, SPIKE_SCOPES, systemOnly } from './access/rules'
 export { canUseAdmin, SETTINGS_ACCESS, SPIKE_ACCESS, type CollectionAccess } from './access/spike-access'
 export { ADMIN_GROUPS, settingsGlobal, spikeCollections } from './collections'
+export { TIMEZONE_VALUES } from './collections/values'
 export * from './collections/collaboration'
 export {
   configAccess,
@@ -42,6 +43,9 @@ export { createIntakeStore, findIntakeForm, toIntakeForm } from './repositories/
 export { createJobRunStore, createJobSources } from './repositories/job-store'
 export {
   createCrmRepository,
+  listCrmPage,
+  type CrmPageQuery,
+  type CrmPageResult,
   createDueItemSource,
   createEmailMessageSink,
   createInboundMailSink,
@@ -49,6 +53,9 @@ export {
   createMailStore,
   createNotificationStore,
   createTaskRepository,
+  listTaskPage,
+  type TaskPageQuery,
+  type TaskPageResult,
 } from './repositories'
 export { createUnitOfWork, probeTransactions, type TransactionProbe } from './uow/unit-of-work'
 export { toWhere, withScope } from './where/to-where'

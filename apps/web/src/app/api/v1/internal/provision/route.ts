@@ -10,6 +10,7 @@ import {
   SETTINGS_GLOBAL,
 } from '@ops/adapter-payload'
 import { getPayload } from 'payload'
+import type { Setting } from '../../../../../payload-types'
 import { mergeAppliedTemplates, provisionBody, type ProvisionBody } from './helpers'
 import { isBrandContentType } from '../../../../../server/collaboration/brand'
 
@@ -169,7 +170,8 @@ async function seedSettings(payload: Awaited<ReturnType<typeof getPayload>>, bod
     overrideAccess: true,
     data: {
       appName: body.displayName,
-      timezone: body.timezone,
+      // provisionBody validates this against the same canonical list used by the settings select.
+      timezone: body.timezone as Setting['timezone'],
       locale: body.locale,
       currency: body.currency,
       appliedTemplates: mergeAppliedTemplates(settings.appliedTemplates, body.template),
