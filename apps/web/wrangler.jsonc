@@ -61,6 +61,9 @@
   "env": {
     "mirchmedia": {
       "name": "ops-mirchmedia",
+      "limits": {
+        "cpu_ms": 300000
+      },
       "workers_dev": false,
       "routes": [
         {

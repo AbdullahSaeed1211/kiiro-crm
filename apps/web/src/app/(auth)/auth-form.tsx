@@ -3,6 +3,10 @@
 import Link from 'next/link'
 import type { ReactNode, SyntheticEvent } from 'react'
 import { useState } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
+import { Input } from '@ops/ui/components/ui/input'
+import { Label } from '@ops/ui/components/ui/label'
 
 interface AuthFormProps {
   readonly endpoint: string
@@ -73,52 +77,52 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer }: Auth
     }
   }
   return (
-    <form
-      onSubmit={(event) => {
-        void submit(event)
-      }}
-      className="ops-auth-form w-full max-w-sm space-y-5 rounded-xl border bg-background p-6 shadow-sm"
-    >
-      <div>
-        <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Welcome back</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{submitLabel}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Use your team account to continue.</p>
-      </div>
-      {fields.map((field) => (
-        <label className="block space-y-1.5 text-sm" key={field}>
-          <span className="font-medium">{fieldLabel(field)}</span>
-          <input
-            className="h-10 w-full rounded-md border bg-background px-3 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            name={field}
-            type={fieldType(field)}
-            required
-            autoComplete={field === 'password' || field === 'confirm' ? 'new-password' : field}
-          />
-        </label>
-      ))}
-      {Object.entries(hidden ?? {}).map(([key, value]) => (
-        <input key={key} type="hidden" name={key} value={value} />
-      ))}
-      {error !== undefined && (
-        <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
-      <button
-        className="h-10 w-full rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-[background-color,box-shadow,scale] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-        disabled={pending}
-        type="submit"
+    <Card className="w-full">
+      <form
+        onSubmit={(event) => {
+          void submit(event)
+        }}
+        className="ops-auth-form"
       >
-        {pending ? 'Working…' : submitLabel}
-      </button>
-      {footer ?? (
-        <Link
-          className="block text-center text-sm text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          href="/login"
-        >
-          Back to login
-        </Link>
-      )}
-    </form>
+        <CardHeader>
+          <CardTitle className="text-xl">{submitLabel}</CardTitle>
+          <CardDescription>Use your team account to continue.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {fields.map((field) => (
+            <div className="space-y-2" key={field}>
+              <Label htmlFor={`auth-${field}`}>{fieldLabel(field)}</Label>
+              <Input
+                id={`auth-${field}`}
+                className="h-9"
+                name={field}
+                type={fieldType(field)}
+                required
+                autoComplete={field === 'password' || field === 'confirm' ? 'current-password' : field}
+              />
+            </div>
+          ))}
+          {Object.entries(hidden ?? {}).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+          {error !== undefined && (
+            <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+          <Button className="w-full" disabled={pending} size="lg" type="submit">
+            {pending ? 'Working…' : submitLabel}
+          </Button>
+          {footer ?? (
+            <Link
+              className="block text-center text-sm text-muted-foreground underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              href="/login"
+            >
+              Back to login
+            </Link>
+          )}
+        </CardContent>
+      </form>
+    </Card>
   )
 }

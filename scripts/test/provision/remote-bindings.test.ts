@@ -77,9 +77,7 @@ describe('new database binding', () => {
         commands.push(command)
         return Promise.resolve({
           exitCode: 0,
-          output: command.includes('d1 create')
-            ? "database_id = '12345678-1234-4234-8234-123456789012'"
-            : 'ok',
+          output: command.includes('d1 create') ? "database_id = '12345678-1234-4234-8234-123456789012'" : 'ok',
         })
       },
     })

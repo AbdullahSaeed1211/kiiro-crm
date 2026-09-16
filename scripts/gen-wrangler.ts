@@ -80,6 +80,7 @@ export function tenantEnv(tenant: Tenant): Config {
   const { intake, auth } = tenant.rateLimitNamespaces
   return {
     name: worker,
+    limits: { cpu_ms: 300_000 },
     ...routing(tenant),
     ...bindings({ worker, d1, bucket: tenant.r2.bucket, intakeNamespace: intake, authNamespace: auth, remote: true }),
     vars: vars(tenant),

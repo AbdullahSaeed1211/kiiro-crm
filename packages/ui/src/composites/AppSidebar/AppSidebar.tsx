@@ -12,6 +12,7 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@ops/ui/components/ui/sidebar'
 
 /** One sidebar link (spec §16.2); the label arrives translated. */
@@ -102,7 +103,7 @@ function NavSection({ group }: Readonly<{ group: NavGroup }>) {
   )
 }
 
-/** Inset sidebar that collapses to icons (spec §16.1–§16.2): brand header, navigation groups and an optional footer. */
+/** Inset sidebar that collapses to icons (spec §16.1–§16.2): brand header, navigation groups, rail and optional footer. */
 export function AppSidebar({ appName, logo, compactLogo, homeHref = '/', groups, footer }: AppSidebarProps) {
   return (
     <Sidebar variant="inset" collapsible="icon" className="ops-app-sidebar">
@@ -122,6 +123,7 @@ export function AppSidebar({ appName, logo, compactLogo, homeHref = '/', groups,
         ))}
       </SidebarContent>
       {footer === undefined ? null : <SidebarFooter>{footer}</SidebarFooter>}
+      <SidebarRail />
     </Sidebar>
   )
 }

@@ -2,6 +2,7 @@ import config from '@payload-config'
 import '@ops/ui/globals.css'
 import { ThemeProvider } from '@ops/ui'
 import { Geist, Geist_Mono } from 'next/font/google'
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { getPayload } from 'payload'
 import { brandPresentation } from '../../server/branding/presentation'
@@ -9,6 +10,11 @@ import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
 
 const sans = Geist({ subsets: ['latin'], variable: '--font-sans' })
 const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
+
+export const metadata: Metadata = {
+  title: 'Sign in',
+  icons: { icon: '/api/v1/brand/favicon' },
+}
 
 export default async function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
   const payload = await getPayload({ config })
@@ -20,26 +26,19 @@ export default async function AuthLayout({ children }: Readonly<{ children: Reac
       <body>
         <ThemeProvider>
           <main className="ops-auth-shell">
-            <section className="ops-auth-brand" aria-label={appName}>
-              <div className="flex items-center gap-2">
-                {/* Public brand route provides the configured favicon or a letter-tile fallback. */}
+            <section className="ops-auth-panel">
+              <div className="ops-auth-stack">
                 <img
-                  className="max-h-8 max-w-40 object-contain"
+                  className="ops-auth-logo"
                   src={brand.logoUrl ?? brand.faviconUrl}
                   alt={appName}
-                  width={160}
-                  height={32}
+                  width={192}
+                  height={40}
                 />
+                {children}
+                <p className="text-center text-xs text-muted-foreground">Authorized access only</p>
               </div>
-              <div className="ops-auth-brand-copy max-w-[12rem]">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{appName}</p>
-                <p className="mt-2 text-sm leading-5 text-muted-foreground">
-                  CRM, projects, and team work in one place.
-                </p>
-              </div>
-              <p className="mt-auto text-xs text-muted-foreground">Authorized access only</p>
             </section>
-            <section className="ops-auth-panel">{children}</section>
           </main>
         </ThemeProvider>
       </body>
