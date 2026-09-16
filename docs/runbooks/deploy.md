@@ -40,6 +40,18 @@ pnpm --filter web exec opennextjs-cloudflare deploy --env=<slug>
 pnpm tenant:smoke <slug> --execute
 ```
 
+### Tenant-configured email capability
+
+Outbound email is controlled by `email.enabled` in `tenants/<slug>.jsonc`. When it is `false`, Wrangler generation sets
+`MAIL_TRANSPORT=disabled`; the settings page, record email actions, password-reset action, and send API all present the
+same unavailable state, while inbound inbox history remains readable. The smoke harness records email as
+`disabled by tenant configuration` and does not call the provider. When it is `true`, the email probe remains required and
+any failed probe still fails the deployment and triggers the code-only rollback.
+
+Re-enabling a tenant is the forward path: set `email.enabled` to `true`, onboard and verify the configured sender domain
+with Cloudflare Email Sending, refresh the operator token with the `email_sending` scope, regenerate Wrangler config, and
+rerun the tagged deployment. Never bypass the smoke gate by treating an enabled-but-unavailable sender as disabled.
+
 ## Failure handling
 
 After a restore bookmark exists, any migration, deploy, or smoke failure runs a code-only rollback:

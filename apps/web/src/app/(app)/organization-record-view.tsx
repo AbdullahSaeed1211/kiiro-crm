@@ -98,6 +98,7 @@ function OrganizationAside({
 
 export function OrganizationRecordView({
   data,
+  outboundEmailEnabled,
 }: Readonly<{
   data: {
     record: OrganizationRecord
@@ -108,6 +109,7 @@ export function OrganizationRecordView({
     relatedTasks: readonly RelatedTask[]
     attachments: readonly RecordAttachment[]
   }
+  outboundEmailEnabled: boolean
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
   return (
@@ -131,6 +133,7 @@ export function OrganizationRecordView({
               editHref={`/organizations/${record.id}/edit`}
               email={record.email}
               phone={record.phone}
+              outboundEmailEnabled={outboundEmailEnabled}
             />
           }
           tabs={recordTabs(
@@ -140,6 +143,7 @@ export function OrganizationRecordView({
               recordType: 'organization',
               recordId: record.id,
               recipient: record.email,
+              outboundEmailEnabled,
               tasks: relatedTasks,
               attachments,
             },

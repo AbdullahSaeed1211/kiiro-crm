@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- the lead record keeps its action dialogs and layout synchronized in one client boundary. */
 'use client'
 import { ActivityFeed, RecordPageLayout, StageSelect, type ActivityEntry } from '@ops/ui'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
@@ -99,7 +100,8 @@ function LeadActions({
   )
 }
 
-function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[]) {
+// eslint-disable-next-line max-params -- tab content needs the record data, activity projection and capability flag.
+function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[], outboundEmailEnabled: boolean) {
   return recordTabs(
     <ActivityFeed
       entries={activity}
@@ -111,6 +113,7 @@ function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[]) {
       recordType: 'lead',
       recordId: data.item.lead.id,
       recipient: data.item.lead.email,
+      outboundEmailEnabled,
       tasks: data.relatedTasks,
       attachments: data.attachments,
     },
@@ -138,6 +141,7 @@ function LeadRecordLayout({
   onLost,
   onSaveTitle,
   onChangeStage,
+  outboundEmailEnabled,
 }: Readonly<{
   data: LeadPageData
   isConverted: boolean
@@ -148,6 +152,7 @@ function LeadRecordLayout({
   onLost: () => void
   onSaveTitle: (title: string) => void
   onChangeStage: (stageId: string) => void
+  outboundEmailEnabled: boolean
 }>) {
   const lead = data.item.lead
   return (
@@ -184,18 +189,22 @@ function LeadRecordLayout({
               recordLabel={lead.title}
               email={lead.email}
               phone={lead.phone}
+              outboundEmailEnabled={outboundEmailEnabled}
             />
             <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
           </div>
         }
-        tabs={leadTabs(data, activity)}
+        tabs={leadTabs(data, activity, outboundEmailEnabled)}
         aside={<LeadAside data={data} />}
       />
     </>
   )
 }
 
-export function LeadRecordClient({ data }: Readonly<{ data: LeadPageData }>) {
+export function LeadRecordClient({
+  data,
+  outboundEmailEnabled,
+}: Readonly<{ data: LeadPageData; outboundEmailEnabled: boolean }>) {
   const router = useRouter()
   const [convertOpen, setConvertOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
@@ -246,6 +255,7 @@ export function LeadRecordClient({ data }: Readonly<{ data: LeadPageData }>) {
         onChangeStage={(stageId) => {
           void changeStage(stageId)
         }}
+        outboundEmailEnabled={outboundEmailEnabled}
         onConvert={() => {
           setConvertOpen(true)
         }}

@@ -1,10 +1,10 @@
 # Provision a tenant
 
-Use this procedure to create one isolated tenant instance. The command validates the tenant definition, creates its D1 database and R2 bucket when absent, generates Wrangler bindings, uploads secrets, applies migrations, deploys the existing build, seeds the tenant, checks sender status, prints the manual checklist, and runs smoke checks.
+Use this procedure to create one isolated tenant instance. The command validates the tenant definition, creates its D1 database and R2 bucket when absent, generates Wrangler bindings, uploads secrets, applies migrations, deploys the existing build, seeds the tenant, checks sender status when outbound email is enabled, prints the manual checklist, and runs smoke checks.
 
 ## Before you start
 
-Confirm that the tenant file exists at `tenants/<slug>.jsonc` and contains a unique slug, D1 name, R2 bucket, rate-limit namespaces, owner, sender, inbound domain, and intake origins. The tenant schema rejects malformed hosts, email addresses, UUIDs, URLs, and namespace ids.
+Confirm that the tenant file exists at `tenants/<slug>.jsonc` and contains a unique slug, D1 name, R2 bucket, rate-limit namespaces, owner, sender, inbound domain, and intake origins. Set `email.enabled` explicitly to `false` when Email Sending is not available; the tenant schema rejects malformed hosts, email addresses, UUIDs, URLs, and namespace ids.
 
 Tenant branding is declared with `brandAssets`. Use HTTPS `logoUrl`/`faviconUrl` sources for operator-managed defaults, or `logoPath`/`faviconPath` for packaged tenant assets checked into `tenants/assets/<slug>/`. Packaged assets are encoded into the authenticated seed request, validated for supported image type and size, then stored in that tenant's R2 bucket. The first seed fills missing logo/favicon keys only; reruns preserve operator uploads and never delete configured objects. Record the source and intended dimensions in release evidence when changing a tenant's artwork.
 
@@ -25,7 +25,7 @@ For an authorized operator run, provide `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCO
 
 ## Rerun behavior
 
-Reruns are safe when the operator re-supplies the tenant `INTERNAL_SECRET_<SLUG>` from secure custody. A tenant file with a D1 id skips D1 creation. The executable path checks exact R2 rows, D1 databases, tenant and mail-router secret names, generated configuration, and authenticated remote status before running steps. An interruption after secret upload without the custodied secret fails before migrations or deployment; rerun after resolving that prerequisite and retain the existing resource ids. Payload migration, tenant seeding, sender status persistence, router-secret synchronization, and smoke probes are idempotent operations.
+Reruns are safe when the operator re-supplies the tenant `INTERNAL_SECRET_<SLUG>` from secure custody. A tenant file with a D1 id skips D1 creation. The executable path checks exact R2 rows, D1 databases, tenant and mail-router secret names, generated configuration, and authenticated remote status before running steps. An interruption after secret upload without the custodied secret fails before migrations or deployment; rerun after resolving that prerequisite and retain the existing resource ids. Payload migration, tenant seeding, sender status persistence, router-secret synchronization, and smoke probes are idempotent operations. A disabled email capability skips sender verification and accepts the explicit disabled smoke state; it does not send a probe.
 
 ## Expected result
 

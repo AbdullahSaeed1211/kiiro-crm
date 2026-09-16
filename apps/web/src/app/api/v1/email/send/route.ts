@@ -1,5 +1,6 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
+import { isOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../../../../../server/capabilities'
 import { getPayload, type Payload, type PayloadRequest } from 'payload'
 import { authenticate } from '../../../../../server/collaboration/auth'
 import { canReadParent } from '../../../../../server/collaboration/parents'
@@ -130,6 +131,9 @@ export async function POST(request: Request): Promise<Response> {
   const payload = await getPayload({ config })
   const context = await authenticate(payload, request)
   if (context === null) return unauthorized()
+  const { env } = await getCloudflareContext({ async: true })
+  if (!isOutboundEmailEnabled(env.MAIL_TRANSPORT))
+    return Response.json({ error: OUTBOUND_EMAIL_DISABLED_MESSAGE, code: 'EMAIL_DISABLED' }, { status: 503 })
   let body: unknown
   try {
     body = await request.json()
@@ -143,7 +147,6 @@ export async function POST(request: Request): Promise<Response> {
   if (attachments === null) return forbidden()
   if (attachments.reduce((total, attachment) => total + attachment.sizeBytes, 0) > MAX_TOTAL_ATTACHMENT_BYTES)
     return badRequest('Attachments exceed the 5 MiB message limit.')
-  const { env } = await getCloudflareContext({ async: true })
   const mailAttachments = []
   for (const attachment of attachments) {
     const object = await env.R2.get(attachment.fileKey)

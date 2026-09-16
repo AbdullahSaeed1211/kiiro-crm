@@ -102,7 +102,7 @@ export function Meta({ createdAt, updatedAt }: Readonly<{ createdAt: number; upd
   )
 }
 
-// eslint-disable-next-line max-params -- the optional related context keeps tab construction explicit at each record boundary.
+// eslint-disable-next-line complexity, max-params -- the optional related context keeps tab construction explicit at each record boundary.
 export function recordTabs(
   activity: ReactNode,
   emailMessages: readonly EmailThreadMessage[] = [],
@@ -110,6 +110,7 @@ export function recordTabs(
     recordType: string
     recordId: string
     recipient?: string | null
+    outboundEmailEnabled?: boolean
     tasks: readonly RelatedTask[]
     attachments: readonly RecordAttachment[]
   }>,
@@ -144,6 +145,7 @@ export function recordTabs(
         recordType={related?.recordType ?? 'record'}
         recordId={related?.recordId ?? ''}
         defaultTo={related?.recipient}
+        outboundEmailEnabled={related?.outboundEmailEnabled}
       />
     ),
   })

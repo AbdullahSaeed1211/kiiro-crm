@@ -94,6 +94,7 @@ function ContactAside({
 
 export function ContactRecordView({
   data,
+  outboundEmailEnabled,
 }: Readonly<{
   data: {
     record: ContactRecord
@@ -104,6 +105,7 @@ export function ContactRecordView({
     relatedTasks: readonly RelatedTask[]
     attachments: readonly RecordAttachment[]
   }
+  outboundEmailEnabled: boolean
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
   const title = displayName(record)
@@ -128,12 +130,14 @@ export function ContactRecordView({
               editHref={`/contacts/${record.id}/edit`}
               email={record.email}
               phone={record.phone}
+              outboundEmailEnabled={outboundEmailEnabled}
             />
           }
           tabs={recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages, {
             recordType: 'contact',
             recordId: record.id,
             recipient: record.email,
+            outboundEmailEnabled,
             tasks: relatedTasks,
             attachments,
           })}

@@ -16,11 +16,13 @@ export function RecordEmailThread({
   recordType,
   recordId,
   defaultTo,
+  outboundEmailEnabled,
 }: Readonly<{
   messages: readonly EmailThreadMessage[]
   recordType: string
   recordId: string
   defaultTo?: string | null
+  outboundEmailEnabled?: boolean
 }>) {
   return (
     <section className="rounded-xl border bg-card p-4" aria-labelledby="record-email-heading">
@@ -33,10 +35,17 @@ export function RecordEmailThread({
         </div>
         <span className="text-xs text-muted-foreground">{messages.length} messages</span>
       </div>
-      <RecordEmailComposer recordType={recordType} recordId={recordId} defaultTo={defaultTo} />
+      <RecordEmailComposer
+        recordType={recordType}
+        recordId={recordId}
+        defaultTo={defaultTo}
+        outboundEmailEnabled={outboundEmailEnabled}
+      />
       {messages.length === 0 ? (
         <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          No email messages yet. Use the Email action above to start a conversation.
+          {outboundEmailEnabled === false
+            ? 'No email messages yet.'
+            : 'No email messages yet. Use the Email action above to start a conversation.'}
         </p>
       ) : (
         <ol className="mt-4 grid gap-3">

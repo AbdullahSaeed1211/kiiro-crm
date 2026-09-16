@@ -67,7 +67,7 @@ function vars(tenant: Tenant): Record<string, string> {
     ...origin,
     INBOUND_DOMAIN: tenant.email.inboundDomain,
     TURNSTILE_HOSTNAMES: tenant.intake.turnstileHostnames.join(','),
-    MAIL_TRANSPORT: 'cloudflare',
+    MAIL_TRANSPORT: tenant.email.enabled ? 'cloudflare' : 'disabled',
     MAIL_FROM_ADDRESS: tenant.email.fromAddress,
     MAIL_FROM_NAME: tenant.email.fromName,
   }

@@ -5,7 +5,12 @@ import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
 import { r2Storage } from '@payloadcms/storage-r2'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import type { CloudflareContext } from '@opennextjs/cloudflare'
-import { CloudflareMailSender, ConsoleMailSender, payloadEmailAdapter } from '@ops/adapter-cloudflare'
+import {
+  CloudflareMailSender,
+  ConsoleMailSender,
+  DisabledMailSender,
+  payloadEmailAdapter,
+} from '@ops/adapter-cloudflare'
 import { COLLECTIONS, settingsGlobal, spikeCollections } from '@ops/adapter-payload'
 import { buildConfig } from 'payload'
 import type { Config } from 'payload'
@@ -70,7 +75,13 @@ const cloudflare =
   isCLI || !isProduction ? await getCloudflareContextFromWrangler() : await getCloudflareContext({ async: true })
 
 const { env } = cloudflare
-const mailSender = env.MAIL_TRANSPORT === 'cloudflare' ? new CloudflareMailSender(env.EMAIL) : new ConsoleMailSender()
+function mailSenderForTransport(transport: string) {
+  if (transport === 'cloudflare') return new CloudflareMailSender(env.EMAIL)
+  if (transport === 'console') return new ConsoleMailSender()
+  return new DisabledMailSender()
+}
+
+const mailSender = mailSenderForTransport(env.MAIL_TRANSPORT)
 
 export default buildConfig({
   admin: {

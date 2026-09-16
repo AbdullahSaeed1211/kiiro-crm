@@ -3,6 +3,7 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Textarea } from '@ops/ui/components/ui/textarea'
+import { MailWarning } from 'lucide-react'
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +11,7 @@ interface Props {
   readonly recordType: string
   readonly recordId: string
   readonly defaultTo?: string | null
+  readonly outboundEmailEnabled?: boolean
 }
 
 interface Attachment {
@@ -18,7 +20,7 @@ interface Attachment {
 }
 
 // eslint-disable-next-line complexity, max-lines-per-function -- composer owns validation, upload, send and retry feedback.
-export function RecordEmailComposer({ recordType, recordId, defaultTo }: Props) {
+export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundEmailEnabled = true }: Props) {
   const [to, setTo] = useState(defaultTo ?? '')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
@@ -100,6 +102,17 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo }: Props) 
       void submit()
     }
   }
+
+  if (!outboundEmailEnabled)
+    return (
+      <div className="mt-4 flex items-start gap-3 rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
+        <MailWarning aria-hidden className="mt-0.5 size-4 shrink-0" />
+        <div>
+          <p className="font-medium text-foreground">Sending is unavailable</p>
+          <p className="mt-1">Email sending will be available after Cloudflare Email Sending is enabled.</p>
+        </div>
+      </div>
+    )
 
   return (
     <form

@@ -95,6 +95,7 @@ export function provisionPlan(tenant: Tenant): ProvisionStep[] {
 
 function isComplete(key: ProvisionStep['key'], state: Partial<ProvisionState>, tenant: Tenant): boolean {
   if (key === 'validate' || key === 'checklist') return false
+  if (key === 'senderStatus' && !tenant.email.enabled) return true
   if (key === 'd1' && tenant.d1.id !== undefined) return true
   return state[key] === true
 }
@@ -142,6 +143,7 @@ async function runProvisionSteps(
 async function shouldSkip(step: ProvisionStep, context: StepContext): Promise<boolean> {
   const { state, tenant, deps } = context
   if (step.key === 'validate' || step.key === 'checklist') return false
+  if (step.key === 'senderStatus' && !tenant.email.enabled) return true
   const discovered = deps.check === undefined ? false : await deps.check(step.key)
   if (discovered) state[step.key] = true
   return discovered || isComplete(step.key, state, tenant)

@@ -3,12 +3,14 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { rejectUnauthorized } from '@ops/adapter-cloudflare'
 import { SETTINGS_GLOBAL } from '@ops/adapter-payload'
 import { getPayload } from 'payload'
+import { isOutboundEmailEnabled } from '../../../../../../server/capabilities'
 
-const status = (senderStatus: unknown, onboardedAt: unknown) => ({
+const status = (senderStatus: unknown, onboardedAt: unknown, emailEnabled: boolean) => ({
   migration: true,
   deployment: true,
   seed: typeof onboardedAt === 'number',
-  senderStatus: senderStatus === 'verified',
+  emailEnabled,
+  senderStatus: emailEnabled && senderStatus === 'verified',
 })
 
 async function authorize(request: Request) {
@@ -18,11 +20,13 @@ async function authorize(request: Request) {
 
 /** Returns only non-secret provisioning completion flags. */
 export async function GET(request: Request): Promise<Response> {
-  const { unauthorized } = await authorize(request)
+  const { env, unauthorized } = await authorize(request)
   if (unauthorized !== undefined) return unauthorized
   const payload = await getPayload({ config })
   const settings = await payload.findGlobal({ slug: SETTINGS_GLOBAL, depth: 0, overrideAccess: true })
-  return Response.json(status(settings.email.senderStatus, settings.onboardedAt))
+  return Response.json(
+    status(settings.email.senderStatus, settings.onboardedAt, isOutboundEmailEnabled(env.MAIL_TRANSPORT)),
+  )
 }
 
 /** Persists the verified Email Service flag after the provisioning CLI validates the sender domain. */

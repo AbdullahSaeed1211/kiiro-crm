@@ -10,6 +10,7 @@
   "currency": "INR",
   "owner": { "email": "mirchads@gmail.com", "name": "Vivek Thapar" },
   "email": {
+    "enabled": false,
     "fromName": "Mirch Media",
     "fromAddress": "no-reply@notify.mirchmedia.com",
     "inboundDomain": "in.mirchmedia.com",

@@ -15,6 +15,7 @@ const tenant: Tenant = {
   currency: 'USD',
   owner: { email: 'owner@example.test', name: 'Owner' },
   email: {
+    enabled: true,
     fromName: 'Alpha',
     fromAddress: 'no-reply@example.test',
     inboundDomain: 'in.example.test',
@@ -73,7 +74,31 @@ describe('router secret synchronization', () => {
   })
 })
 
+// eslint-disable-next-line max-lines-per-function -- smoke cases keep the enabled and disabled capability contracts together.
 describe('smoke runtime contracts', () => {
+  it('accepts a tenant-configured disabled email capability without calling the probe', async () => {
+    let emailProbeCalled = false
+    const result = await smokeTenant(
+      { ...tenant, email: { ...tenant.email, enabled: false } },
+      {
+        mode: 'execute',
+        fetch: runtimeFetch,
+        r2Probe: () => Promise.resolve(true),
+        emailProbe: () => {
+          emailProbeCalled = true
+          return Promise.resolve(false)
+        },
+      },
+    )
+    expect(result.ok).toBe(true)
+    expect(result.checks.find((check) => check.name === 'email')).toMatchObject({
+      ok: true,
+      state: 'pass',
+      detail: 'disabled by tenant configuration',
+    })
+    expect(emailProbeCalled).toBe(false)
+  })
+
   it('fails execute mode when authenticated R2 or email probes are missing', async () => {
     const result = await smokeTenant(tenant, { mode: 'execute', fetch: runtimeFetch })
     expect(result.ok).toBe(false)

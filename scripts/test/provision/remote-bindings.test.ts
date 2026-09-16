@@ -14,6 +14,7 @@ const tenant: Tenant = {
   currency: 'USD',
   owner: { email: 'owner@example.test', name: 'Owner' },
   email: {
+    enabled: true,
     fromName: 'Alpha',
     fromAddress: 'no-reply@example.test',
     inboundDomain: 'in.example.test',

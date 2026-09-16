@@ -10,6 +10,7 @@ import { getDealDetailData, type ActivityItem, type DealDetailData } from '../..
 import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { RecordActionLinks } from '../../record-action-links'
 import { recordTabs } from '../../record-view-primitives'
+import { getOutboundEmailEnabled } from '../../../../server/capabilities'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -94,17 +95,28 @@ function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
   )
 }
 
-function DealRecordView({ data }: Readonly<{ data: DealDetailData }>) {
+function DealRecordView({
+  data,
+  outboundEmailEnabled,
+}: Readonly<{ data: DealDetailData; outboundEmailEnabled: boolean }>) {
   return (
     <RecordPageLayout
       labels={{ breadcrumb: 'Deal', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
       title={data.deal.title}
       stage={<Badge variant="outline">{data.stage.name}</Badge>}
-      actions={<RecordActionLinks recordType="deal" recordId={data.deal.id} recordLabel={data.deal.title} />}
+      actions={
+        <RecordActionLinks
+          recordType="deal"
+          recordId={data.deal.id}
+          recordLabel={data.deal.title}
+          outboundEmailEnabled={outboundEmailEnabled}
+        />
+      }
       tabs={recordTabs(<ActivityCard activity={data.activity} />, data.emailMessages, {
         recordType: 'deal',
         recordId: data.deal.id,
         recipient: data.contacts.find((contact) => contact.id === data.deal.primaryContactId)?.email,
+        outboundEmailEnabled,
         tasks: data.relatedTasks,
         attachments: data.attachments,
       })}
@@ -120,13 +132,13 @@ function DealRecordView({ data }: Readonly<{ data: DealDetailData }>) {
 
 export default async function DealRecordPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
-  const data = await getDealDetailData(id)
+  const [data, outboundEmailEnabled] = await Promise.all([getDealDetailData(id), getOutboundEmailEnabled()])
   if (data === null) notFound()
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Deals', href: '/deals' }, { label: data.deal.title }]} />
       <PageContent>
-        <DealRecordView data={data} />
+        <DealRecordView data={data} outboundEmailEnabled={outboundEmailEnabled} />
       </PageContent>
     </>
   )

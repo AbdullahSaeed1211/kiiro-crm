@@ -24,7 +24,12 @@ function tenant(slug: string, deployOrder: number): Tenant {
     locale: 'en',
     currency: 'USD',
     owner: { email: 'owner@example.test', name: 'Owner' },
-    email: { fromName: 'Tenant', fromAddress: 'no-reply@example.test', inboundDomain: 'in.example.test' },
+    email: {
+      enabled: true,
+      fromName: 'Tenant',
+      fromAddress: 'no-reply@example.test',
+      inboundDomain: 'in.example.test',
+    },
     d1: { name: `ops-${slug}` },
     r2: { bucket: `ops-${slug}` },
     rateLimitNamespaces: { intake: String(1001 + deployOrder * 10), auth: String(1002 + deployOrder * 10) },
@@ -54,6 +59,14 @@ describe('parseTenant', () => {
 })
 
 describe('gen-wrangler', () => {
+  it('derives a disabled outbound transport from tenant capability', () => {
+    const disabled = { ...tenant('alpha', 0), email: { ...tenant('alpha', 0).email, enabled: false } }
+    const config = parseJsonc(renderWranglerConfig([disabled])) as {
+      env: { alpha: { vars: { MAIL_TRANSPORT: string } } }
+    }
+    expect(config.env.alpha.vars.MAIL_TRANSPORT).toBe('disabled')
+  })
+
   it('loads the repository tenants in deploy order', () => {
     expect(loadTenants(ROOT).map((entry) => entry.slug)).toEqual(['mirchmedia'])
   })

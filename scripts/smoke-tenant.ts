@@ -38,6 +38,7 @@ export function tenantUrl(tenant: Tenant): string {
 }
 
 /** Runs health, login, R2 and email probes without exposing probe data in logs. */
+// eslint-disable-next-line complexity -- the explicit disabled capability is part of the smoke contract.
 export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Promise<SmokeResult> {
   const print = deps.print ?? console.log
   const base = tenantUrl(tenant)
@@ -52,14 +53,21 @@ export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Prom
       successDetail: 'put/get/delete passed',
       mode: deps.mode ?? 'dry-run',
     }),
-    probeCheck({
-      name: 'email',
-      forcedFailure: deps.failCheck === 'email',
-      probe: deps.emailProbe,
-      dryRunDetail: `test email to ${tenant.owner.email} (dry run)`,
-      successDetail: 'accepted',
-      mode: deps.mode ?? 'dry-run',
-    }),
+    !tenant.email.enabled
+      ? Promise.resolve({
+          name: 'email',
+          ok: deps.failCheck !== 'email',
+          detail: deps.failCheck === 'email' ? 'injected failure' : 'disabled by tenant configuration',
+          state: deps.failCheck === 'email' ? ('fail' as const) : ('pass' as const),
+        })
+      : probeCheck({
+          name: 'email',
+          forcedFailure: deps.failCheck === 'email',
+          probe: deps.emailProbe,
+          dryRunDetail: `test email to ${tenant.owner.email} (dry run)`,
+          successDetail: 'accepted',
+          mode: deps.mode ?? 'dry-run',
+        }),
   ])
   for (const check of checks) {
     let prefix = 'FAIL'

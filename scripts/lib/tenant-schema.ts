@@ -20,6 +20,7 @@ export const tenantSchema = z
     currency: z.string().regex(/^[A-Z]{3}$/),
     owner: z.object({ email: z.email(), name: text }),
     email: z.object({
+      enabled: z.boolean().default(true),
       fromName: text,
       fromAddress: z.email(),
       inboundDomain: hostname,

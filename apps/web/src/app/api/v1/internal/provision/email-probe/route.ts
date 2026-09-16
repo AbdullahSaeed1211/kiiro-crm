@@ -2,12 +2,15 @@ import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { CloudflareMailSender, rejectUnauthorized } from '@ops/adapter-cloudflare'
 import { getPayload } from 'payload'
+import { isOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../../../../../../server/capabilities'
 
 /** Sends one owner-addressed message through the configured Email Service binding. */
 export async function POST(request: Request): Promise<Response> {
   const { env } = await getCloudflareContext({ async: true })
   const unauthorized = await rejectUnauthorized(request, env.INTERNAL_SECRET)
   if (unauthorized !== undefined) return unauthorized
+  if (!isOutboundEmailEnabled(env.MAIL_TRANSPORT))
+    return Response.json({ ok: true, disabled: true, message: OUTBOUND_EMAIL_DISABLED_MESSAGE })
   const payload = await getPayload({ config })
   const owners = await payload.find({
     collection: 'users',

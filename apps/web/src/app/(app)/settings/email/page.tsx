@@ -4,6 +4,8 @@ import { getWorkspaceSettings, requireRole } from '../../../../server/auth/conte
 import { saveEmailSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
+import { Badge } from '@ops/ui/components/ui/badge'
+import { MailCheck, MailWarning } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Email' }
 export const dynamic = 'force-dynamic'
@@ -12,11 +14,13 @@ const value = (input: unknown): string => (typeof input === 'string' ? input : '
 const record = (input: unknown): Record<string, unknown> =>
   typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
 
+// eslint-disable-next-line complexity -- settings has separate tenant-configured outbound and editable inbound sections.
 export default async function EmailSettingsPage() {
   await requireRole('owner')
   const { env } = await getCloudflareContext({ async: true })
   const settings = await getWorkspaceSettings()
   const email = record(settings.email)
+  const outboundEmailEnabled = env.MAIL_TRANSPORT === 'cloudflare' || env.MAIL_TRANSPORT === 'console'
   return (
     <SettingsPage
       title="Email"
@@ -24,12 +28,27 @@ export default async function EmailSettingsPage() {
       roles={['owner']}
     >
       <SettingsForm>
-        <div>
-          <h2 className="font-medium">Outbound sender</h2>
+        <div className={outboundEmailEnabled ? undefined : 'opacity-60'}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium">Outbound sender</h2>
+            <Badge variant={outboundEmailEnabled ? 'secondary' : 'outline'}>
+              {outboundEmailEnabled ? <MailCheck aria-hidden /> : <MailWarning aria-hidden />}
+              {outboundEmailEnabled ? 'Available' : 'Unavailable'}
+            </Badge>
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            These values come from the deployed Worker configuration and are used by outbound email and delivery probes.
+            These values come from the deployed Worker configuration.
           </p>
         </div>
+        {outboundEmailEnabled ? null : (
+          <div
+            className="flex items-start gap-3 rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground"
+            role="status"
+          >
+            <MailWarning aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <p>Email sending will be available after Cloudflare Email Sending is enabled.</p>
+          </div>
+        )}
         <dl className="grid gap-3 text-sm">
           <div>
             <dt className="font-medium">From name</dt>

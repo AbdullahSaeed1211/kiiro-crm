@@ -14,6 +14,7 @@ interface AuthFormProps {
   readonly fields: readonly ('email' | 'password' | 'name' | 'confirm')[]
   readonly hidden?: Readonly<Record<string, string>>
   readonly footer?: ReactNode
+  readonly disabled?: boolean
 }
 
 type AuthField = AuthFormProps['fields'][number]
@@ -51,11 +52,13 @@ async function send(
   return { ...data, ok: response.ok }
 }
 
-export function AuthForm({ endpoint, submitLabel, fields, hidden, footer }: AuthFormProps) {
+// eslint-disable-next-line complexity, max-lines-per-function -- one compact form owns the shared auth interaction states.
+export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabled = false }: AuthFormProps) {
   const [error, setError] = useState<string | undefined>()
   const [pending, setPending] = useState(false)
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (disabled) return
     setError(undefined)
     setPending(true)
     const form = new FormData(event.currentTarget)
@@ -99,18 +102,24 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer }: Auth
                 type={fieldType(field)}
                 required
                 autoComplete={field === 'password' || field === 'confirm' ? 'current-password' : field}
+                disabled={disabled || pending}
               />
             </div>
           ))}
           {Object.entries(hidden ?? {}).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}
-          {error !== undefined && (
+          {disabled ? (
+            <p className="rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground" role="status">
+              Email sending will be available after Cloudflare Email Sending is enabled.
+            </p>
+          ) : null}
+          {error !== undefined && !disabled && (
             <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
               {error}
             </p>
           )}
-          <Button className="w-full" disabled={pending} size="lg" type="submit">
+          <Button className="w-full" disabled={disabled || pending} size="lg" type="submit">
             {pending ? 'Working…' : submitLabel}
           </Button>
           {footer ?? (
