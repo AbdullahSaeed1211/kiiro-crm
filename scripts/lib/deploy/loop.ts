@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import {
   assertCommand,
   assertSafeToken,
@@ -80,8 +81,16 @@ async function deployOne(tenant: Tenant, tag: string, deps: DeploymentDependenci
 }
 
 async function runMigrationAndDeploy(tenant: Tenant, run: CommandRunner): Promise<void> {
-  const migrate = `CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`
-  assertCommand(await run(migrate, { CLOUDFLARE_ENV: tenant.slug }), migrate)
+  const migrate = `PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`
+  assertCommand(
+    await run(migrate, {
+      CLOUDFLARE_ENV: tenant.slug,
+      PAYLOAD_REMOTE_BINDINGS: '1',
+      // Payload only needs a secret to initialize the migration process; the deployed Worker secret is unchanged.
+      PAYLOAD_SECRET: process.env['PAYLOAD_SECRET'] ?? randomBytes(32).toString('base64url'),
+    }),
+    migrate,
+  )
   const deploy = `${OPENNEXT} deploy --env=${tenant.slug}`
   assertCommand(await run(deploy), deploy)
 }
