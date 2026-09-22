@@ -7,7 +7,7 @@ This contract is the acceptance boundary for the shared tenant workspace surface
 | Application shell   | Twenty              | In-flow sidebar, header utilities, inset main surface, contained overflow, consistent active rows                     | Tenant settings own branding, terminology, and module filtering                                     |
 | Settings navigation | Twenty + Frappe CRM | Grouped, role-filtered navigation with the same row grammar as the primary shell; mobile remains a normal routed list | No full-screen settings modal                                                                       |
 | Command palette     | Plane               | Centered bounded dialog, useful default navigation/create groups, keyboard-selectable records, reset on close         | Remote search remains the product's per-record authorized API                                       |
-| Task detail         | Twenty + Plane      | `panel=1` is contextual and returns through explicit `returnTo`; direct `/tasks/:id` is canonical full page           | No intercepted Next parallel route yet; explicit URL contract is the compatibility layer            |
+| Task detail         | Twenty + Plane      | Task links open an intercepted contextual sheet while direct `/tasks/:id` remains the canonical full page; browser history represents the active task | Scroll containment and non-Calendar source routes still need browser evidence |
 | Activity            | Plane + Huly        | Chronological event stream with comments read through the same parent scope                                           | Email is a dedicated record tab; reply delivery intentionally hands off to the tenant's mail client |
 
 ## State matrix

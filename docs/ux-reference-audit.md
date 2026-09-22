@@ -2,6 +2,8 @@
 
 **Scope:** Mirch CRM local demo (`http://localhost:3001`), with task detail and workspace regional settings as the first fixes. This is an interaction audit, not a claim of full-product acceptance.
 
+The route-oriented, current status inventory is [the next-wave UX reference checklist](ux/next-wave-checklist.md). Use that checklist for browser evidence and delivery order; this file retains the reference and license notes from the first focused audit.
+
 ## Reference and license inventory
 
 | Source                                                                                                                                                                            | Observed pattern                                                                                                                                                                   | License decision                                                                                                                                                                                                                                                                                                                        |
