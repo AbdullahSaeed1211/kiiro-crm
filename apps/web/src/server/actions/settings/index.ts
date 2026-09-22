@@ -19,9 +19,9 @@ import {
   saveGroup as saveGroupAction,
   saveMember as saveMemberAction,
 } from './members'
+import type { ActionResult } from './types'
+export type { ActionResult } from './types'
 
-export type ActionResult =
-  { readonly ok: true; readonly data?: unknown } | { readonly ok: false; readonly error: string }
 const recordOf = (input: unknown): Record<string, unknown> =>
   typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
 const stringValue = (value: unknown): string | undefined =>

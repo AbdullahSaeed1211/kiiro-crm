@@ -13,6 +13,9 @@ const SCANNED_DIRS = ['apps', 'packages']
 const EXCLUDED_FILES: ReadonlySet<string> = new Set([
   'apps/mail-router/wrangler.jsonc',
   'apps/web/cloudflare-env.d.ts',
+  // Local runtime configuration contains tenant identity and operator addresses, not product source.
+  'apps/web/.dev.vars',
+  'apps/web/.dev.vars.example',
   'apps/web/wrangler.jsonc',
   // Local stack fixture intentionally uses the seeded owner identity to exercise reset/auth flows.
   'packages/adapters/payload/test/spike/local-stack.ts',

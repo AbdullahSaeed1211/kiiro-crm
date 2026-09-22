@@ -10,6 +10,7 @@ import { loadDashboardStats } from '../../server/queries/dashboard'
 import { loadWorkReadModel } from '../../server/queries/work/read-models'
 import { getRequestContext } from '../../server/work/deps'
 import { taskHref } from './task-navigation'
+import Link from 'next/link'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 export const dynamic = 'force-dynamic'
@@ -138,12 +139,17 @@ export default async function DashboardPage() {
             }
           >
             {overdue.slice(0, 5).map((task) => (
-              <a className="block border-t py-2 text-sm hover:text-primary" key={task.id} href={taskHref(task.id, '/')}>
+              <Link
+                className="block border-t py-2 text-sm hover:text-primary"
+                key={task.id}
+                href={taskHref(task.id, '/')}
+                data-task-link-id={task.id}
+              >
                 {task.title}
                 <span className="ml-2 text-xs text-muted-foreground">
                   {day(task.dueAt, model.timeZone, model.locale)}
                 </span>
-              </a>
+              </Link>
             ))}
             {overdue.length === 0 ? (
               <EmptyState icon={CircleCheckBig} title={copy.nothingOverdue} description={copy.onTrack} />
@@ -159,12 +165,17 @@ export default async function DashboardPage() {
             }
           >
             {dueWeek.slice(0, 5).map((task) => (
-              <a className="block border-t py-2 text-sm hover:text-primary" key={task.id} href={taskHref(task.id, '/')}>
+              <Link
+                className="block border-t py-2 text-sm hover:text-primary"
+                key={task.id}
+                href={taskHref(task.id, '/')}
+                data-task-link-id={task.id}
+              >
                 {task.title}
                 <span className="ml-2 text-xs text-muted-foreground">
                   {day(task.dueAt, model.timeZone, model.locale)}
                 </span>
-              </a>
+              </Link>
             ))}
             {dueWeek.length === 0 ? (
               <EmptyState title={copy.noTasksDue} description={copy.noTasksDueDescription} />

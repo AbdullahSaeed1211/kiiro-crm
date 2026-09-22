@@ -22,6 +22,11 @@ const FALLBACK_TIMEZONE_VALUES = [
 
 export const TIMEZONE_VALUES: readonly string[] = Object.freeze(
   typeof Intl.supportedValuesOf === 'function'
-    ? ['UTC', ...Intl.supportedValuesOf('timeZone').filter((value) => value !== 'UTC')]
+    ? [
+        'UTC',
+        ...[...new Set([...Intl.supportedValuesOf('timeZone'), 'Asia/Kolkata'])]
+          .filter((value) => value !== 'UTC')
+          .sort((left, right) => left.localeCompare(right)),
+      ]
     : [...FALLBACK_TIMEZONE_VALUES],
 )

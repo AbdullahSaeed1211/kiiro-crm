@@ -43,6 +43,7 @@ export function RelatedTasksTab({
               <Link
                 className="min-w-0 flex-1 truncate text-sm font-medium hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 href={`/tasks/${task.id}`}
+                data-task-link-id={task.id}
               >
                 {task.title}
               </Link>

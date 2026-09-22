@@ -1,0 +1,14 @@
+{
+  "lesson": "L-20260923-M3-L1-e07ae8",
+  "repro": {
+    "cwd": "harness/evals/L-20260923-M3-L1-e07ae8/repro",
+    "command": "pnpm exec depcruise . --config ../../../../tooling/depcruise/.dependency-cruiser.cjs",
+    "expectExitCode": "nonzero",
+    "expectOutput": "no-circular"
+  },
+  "fixed": {
+    "cwd": "harness/evals/L-20260923-M3-L1-e07ae8/fixed",
+    "command": "pnpm exec depcruise . --config ../../../../tooling/depcruise/.dependency-cruiser.cjs",
+    "expectExitCode": "zero"
+  }
+}

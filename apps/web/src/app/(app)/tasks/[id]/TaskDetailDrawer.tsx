@@ -2,6 +2,7 @@
 
 import { TaskSheet, type TaskSheetTask } from '@ops/ui/composites/TaskSheet'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { completeOrReopenTask } from '../../../../server/actions/work/tasks/completeOrReopenTask'
 import { saveTaskDescriptionForSheet } from '../../../../server/actions/work/tasks/saveTaskDescription'
 
@@ -10,8 +11,12 @@ export function TaskDetailDrawer({
   task,
   returnTo = '/tasks',
   panel = true,
-}: Readonly<{ task: TaskSheetTask; returnTo?: string; panel?: boolean }>) {
+  restoreFocus = false,
+}: Readonly<{ task: TaskSheetTask; returnTo?: string; panel?: boolean; restoreFocus?: boolean }>) {
   const router = useRouter()
+  useEffect(() => {
+    if (restoreFocus) window.sessionStorage.setItem('task-panel-focus-return', task.id)
+  }, [restoreFocus, task.id])
   return (
     <TaskSheet
       open={panel}

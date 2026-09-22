@@ -1,5 +1,5 @@
 /** Maps the tenant locale to the browser/Node Intl locale tag. */
-export function localeTag(locale: string | undefined): string {
+function localeTag(locale: string | undefined): string {
   return locale === 'es' ? 'es-ES' : 'en-US'
 }
 
@@ -11,7 +11,7 @@ export function formatDate(
   return new Intl.DateTimeFormat(localeTag(locale), options).format(value)
 }
 
-export function formatNumber(value: number, locale: string | undefined, options?: Intl.NumberFormatOptions): string {
+function formatNumber(value: number, locale: string | undefined, options?: Intl.NumberFormatOptions): string {
   return new Intl.NumberFormat(localeTag(locale), options).format(value)
 }
 

@@ -9,3 +9,4 @@
 | 2026-09-14 | Corrected the first-pass regression test to match the `analyzeRetro` contract; recorded the review correction with truthful scope evidence         | M2-L2-a3                 |
 | 2026-09-14 | Added a customer-auth regression lesson and executable eval for the `/login` boundary, protected redirects, and exclusion of administrative links  | M3-L1-c0ffee             |
 | 2026-09-14 | Added a task-board transition regression lesson and executable eval for flattening domain stage-transition payloads before Payload writes          | M3-L1-b0a1d0             |
+| 2026-09-23 | Added a settings-action eval for type-only imports that cycle through a public action barrel                                                       | M3-L1-e07ae8             |

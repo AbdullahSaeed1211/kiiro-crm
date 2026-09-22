@@ -46,3 +46,17 @@ describe('check:brand', () => {
     expect(runCheck('check-brand.ts', ['--root', fixture, '--path', join(fixture, 'output')]).code).toBe(1)
   })
 })
+
+describe('check:brand local runtime config', () => {
+  it('skips tenant identity and operator addresses', () => {
+    const root = mkdtempSync(join(tmpdir(), 'check-brand-config-'))
+    for (const file of ['apps/web/.dev.vars', 'apps/web/.dev.vars.example']) {
+      const path = join(root, file)
+      mkdirSync(join(path, '..'), { recursive: true })
+      writeFileSync(path, 'TENANT_DISPLAY_NAME=Mirch Media\nOPERATOR_EMAILS=mirchads@example.test\n')
+    }
+    expect(brandFiles(root)).not.toContain('apps/web/.dev.vars')
+    expect(brandFiles(root)).not.toContain('apps/web/.dev.vars.example')
+    expect(checkBrand(root)).toEqual([])
+  })
+})

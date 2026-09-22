@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { can, type Role } from '@ops/platform'
 import { payloadData, type UntypedPayload } from '../../auth/api'
 import { requireRole, type ProductContext } from '../../auth/context'
-import type { ActionResult } from './index'
+import type { ActionResult } from './types'
 
 const MEMBERS_SETTINGS_PATH = '/settings/members'
 const recordOf = (input: unknown): Record<string, unknown> =>

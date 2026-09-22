@@ -17,6 +17,9 @@ const CALENDAR_VIEW_LABEL = 'Calendar'
 const GANTT_VIEW_LABEL = 'Gantt'
 const CURRENT_PAGE = 'page'
 const ARIA_CURRENT = 'aria-current'
+const CALENDAR_PATH = '/calendar'
+const TASK_TITLE = 'Draft homepage wireframes'
+const TASK_PANEL = '[data-slot="sheet-content"]'
 const ROUTES = [
   ['/', 'Dashboard'],
   ['/leads', 'Leads'],
@@ -89,6 +92,84 @@ async function firstDetailHref(page: Page, prefix: string): Promise<string> {
   const detail = hrefs.find((href) => !href.endsWith('/new') && !href.includes('/board'))
   if (detail === undefined) throw new Error(`no detail link found for ${prefix}`)
   return detail
+}
+
+async function recordedLayoutShiftSince(page: Page, startedAt: number): Promise<number> {
+  return page.evaluate((start) => {
+    const shifts = performance.getEntriesByType('layout-shift') as (PerformanceEntry & { value?: number })[]
+    return shifts.filter((entry) => entry.startTime >= start).reduce((sum, entry) => sum + (entry.value ?? 0), 0)
+  }, startedAt)
+}
+
+async function expectCalendarPanelOpen(page: Page) {
+  await expect(page).toHaveURL(new RegExp(`/tasks/[^?]+\\?panel=1`))
+  await expect(page.locator(TASK_PANEL)).toBeVisible()
+  await expect(page.locator('section.ops-surface-card')).toBeVisible()
+}
+
+async function expectCalendarPanelClosed(page: Page) {
+  await expect(page).toHaveURL(new RegExp(`${CALENDAR_PATH}(?:\\?.*)?$`))
+  await expect(page.locator(TASK_PANEL)).toHaveCount(0)
+  await expect(page.locator('section.ops-surface-card')).toBeVisible()
+}
+
+async function verifyTaskPanelHistoryAndEscape(page: Page) {
+  await page.goBack()
+  await expectCalendarPanelClosed(page)
+  await page.goForward()
+  await expect(page.locator(TASK_PANEL)).toBeVisible()
+  const closeStartedAt = await page.evaluate(() => performance.now())
+  await page.keyboard.press('Escape')
+  await expectCalendarPanelClosed(page)
+  expect(
+    await recordedLayoutShiftSince(page, closeStartedAt),
+    'closing a task panel should not shift the calendar',
+  ).toBe(0)
+  await expect(page.getByRole('link', { name: TASK_TITLE })).toBeFocused()
+}
+
+async function verifyCanonicalTaskPage(page: Page) {
+  const taskHref = await page.getByRole('link', { name: TASK_TITLE }).getAttribute('href')
+  if (taskHref === null) throw new Error('task link has no deep-link URL')
+  await page.goto(new URL(taskHref, page.url()).pathname)
+  await expect(page.getByRole('heading', { name: 'Assignees' })).toBeVisible()
+  await expect(page.locator(TASK_PANEL)).toHaveCount(0)
+  await page.screenshot({ path: test.info().outputPath('task-page.png'), fullPage: true })
+}
+
+async function verifyTaskPanelCloseControls(page: Page) {
+  await page.goto(CALENDAR_PATH)
+  await page.getByRole('link', { name: TASK_TITLE }).click()
+  await expectCalendarPanelOpen(page)
+  await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).first().click()
+  await expectCalendarPanelClosed(page)
+  if ((page.viewportSize()?.width ?? 0) > 600) {
+    await page.getByRole('link', { name: TASK_TITLE }).click()
+    await expect(page.locator(TASK_PANEL)).toBeVisible()
+    await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 10, y: 10 } })
+    await expectCalendarPanelClosed(page)
+  }
+}
+
+async function verifyWorkspaceProfileAndBranding(page: Page) {
+  await page.goto('/settings/profile')
+  await expect(page.getByLabel('Name')).toHaveValue('Vivek Thapar')
+  await expect(page.getByRole('heading', { name: 'Change password', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Change password', exact: true })).toBeVisible()
+  await page.goto('/settings/branding')
+  await expect(page.getByLabel('Corner radius')).toHaveValue('md')
+}
+
+async function verifySearchableTimezone(page: Page) {
+  await page.goto('/settings/general')
+  await expect(page.getByLabel('Workspace name')).toHaveValue('Mirch Media')
+  const timeZone = page.getByRole('combobox', { name: 'Time zone' })
+  await timeZone.click()
+  await timeZone.fill('Kolkata')
+  const timeZoneOption = page.getByRole('option', { name: 'Asia/Kolkata' })
+  await expect(timeZoneOption).toBeVisible()
+  await timeZoneOption.click()
+  await expect(timeZone).toHaveValue('Asia/Kolkata')
 }
 
 async function captureNotificationResponse(response: Response, diagnostics: string[]): Promise<void> {
@@ -252,26 +333,24 @@ test('customer routes load without browser failures and stay within the response
   test.info().annotations.push({ type: 'route-timings', description: timings.join(', ') })
 })
 
-// eslint-disable-next-line max-statements -- this guard intentionally covers both contextual and canonical navigation.
 test('task details preserve origin in contextual mode and render canonically when deep-linked', async ({ page }) => {
   await signIn(page)
-  await page.goto('/')
-  const href = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
-  if (href === null) throw new Error('no task detail link found on dashboard')
-  await page.goto(href)
-  await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
+  await page.goto(CALENDAR_PATH)
+  const calendar = page.locator('section.ops-surface-card')
+  const calendarBox = await calendar.boundingBox()
+  if (calendarBox === null) throw new Error('calendar is not visible before opening a task')
+  const openStartedAt = await page.evaluate(() => performance.now())
+  await page.getByRole('link', { name: TASK_TITLE }).click()
+  await expectCalendarPanelOpen(page)
+  expect(
+    await recordedLayoutShiftSince(page, openStartedAt),
+    'opening a task panel should not shift the calendar',
+  ).toBe(0)
+  expect(await calendar.boundingBox()).toEqual(calendarBox)
   await page.screenshot({ path: test.info().outputPath('task-panel.png'), fullPage: true })
-  await page.goBack()
-  await expect(page).toHaveURL(/\/$/)
-  await page.goForward()
-  await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page).toHaveURL(/\/$/)
-  const taskPath = href.split('?')[0]
-  await page.goto(taskPath)
-  await expect(page.getByRole('heading', { name: 'Assignees' })).toBeVisible()
-  await expect(page.locator('[data-slot="sheet-content"]')).toHaveCount(0)
-  await page.screenshot({ path: test.info().outputPath('task-page.png'), fullPage: true })
+  await verifyTaskPanelHistoryAndEscape(page)
+  await verifyCanonicalTaskPage(page)
+  await verifyTaskPanelCloseControls(page)
 })
 
 test('settings IA and command palette expose useful, non-dead defaults', async ({ page }) => {
@@ -316,14 +395,8 @@ test('configuration surfaces expose real controls and import starters', async ({
 
 test('workspace settings reopen with tenant values intact', async ({ page }) => {
   await signIn(page)
-  await page.goto('/settings/profile')
-  await expect(page.getByLabel('Name')).toHaveValue('Vivek Thapar')
-  await expect(page.getByRole('heading', { name: 'Change password', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Change password', exact: true })).toBeVisible()
-  await page.goto('/settings/branding')
-  await expect(page.getByLabel('Corner radius')).toHaveValue('md')
-  await page.goto('/settings/general')
-  await expect(page.getByLabel('Workspace name')).toHaveValue('Mirch Media')
+  await verifyWorkspaceProfileAndBranding(page)
+  await verifySearchableTimezone(page)
 })
 
 // eslint-disable-next-line max-statements -- this guard covers the full saved-view lifecycle in one browser flow.

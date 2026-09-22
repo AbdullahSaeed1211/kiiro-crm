@@ -1,0 +1,66 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 11,
+  "runner": "lead",
+  "startedAt": "2026-09-22T20:38:06.659Z",
+  "finishedAt": "2026-09-22T20:39:41.544Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 46564,
+      "failingLines": [
+        "10:28  error  Arrow function has too many lines (45). Maximum allowed is 40  max-lines-per-function",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3508,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 7905,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 35257,
+      "failingLines": [
+        "10:28  error  Arrow function has too many lines (45). Maximum allowed is 40  max-lines-per-function",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 1225,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 354,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 19,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT",
+    "ENV_OR_CREDENTIALS",
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": true
+}

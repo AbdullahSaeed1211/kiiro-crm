@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 
 export interface CalendarEvent {
   readonly id: string
@@ -29,12 +30,13 @@ function monthHref(input: { readonly year: number; readonly month: number; reado
 }
 function EventCell({ event }: Readonly<{ event: CalendarEvent }>) {
   return (
-    <a
+    <Link
       href={event.href ?? `?event=${event.id}`}
+      data-task-link-id={event.id}
       className={`block truncate rounded px-1.5 py-1 text-left text-xs ${TONES[event.tone ?? 'default']}`}
     >
       {event.title}
-    </a>
+    </Link>
   )
 }
 function DayCell({
@@ -88,21 +90,21 @@ export function CalendarMonth({
   return (
     <section aria-label={monthLabel} className="ops-surface-card overflow-x-auto rounded-lg border bg-card">
       <header className="flex items-center justify-between border-b px-4 py-3">
-        <a
+        <Link
           className="text-sm text-muted-foreground hover:text-foreground"
           href={monthHref({ year, month, delta: -1 })}
           aria-label={labels.previous}
         >
           ←
-        </a>
+        </Link>
         <h2 className="text-sm font-semibold">{monthLabel}</h2>
-        <a
+        <Link
           className="text-sm text-muted-foreground hover:text-foreground"
           href={monthHref({ year, month, delta: 1 })}
           aria-label={labels.next}
         >
           →
-        </a>
+        </Link>
       </header>
       <div className="grid min-w-[44rem] grid-cols-7 border-b bg-muted/30">
         {weekdays.map((day) => (

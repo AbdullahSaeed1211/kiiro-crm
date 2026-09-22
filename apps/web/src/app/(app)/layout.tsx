@@ -46,7 +46,7 @@ function themeStyle(settings: Record<string, unknown>): CSSProperties {
 }
 
 /** Root layout of the product UI with the application frame (spec §16). */
-export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function AppLayout({ children, modal }: Readonly<{ children: ReactNode; modal: ReactNode }>) {
   const [cookieStore, context, settings] = await Promise.all([cookies(), getProductContext(), getWorkspaceSettings()])
   const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
@@ -77,6 +77,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             role={context.actor.role}
           >
             {children}
+            {modal}
           </AppFrame>
           <Toaster />
         </ThemeProvider>

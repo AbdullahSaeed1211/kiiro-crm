@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
 import { TIMEZONE_VALUES } from '../../../i18n/timezones'
+import { SearchableSelect } from '../settings/searchable-select'
 
 const STEPS = [
   ['workspace', 'Workspace'],
@@ -125,18 +126,13 @@ export function OnboardingWizard({
             </label>
             <label className="grid gap-1 text-sm">
               Time zone
-              <select
-                className="h-9 border px-3"
+              <SearchableSelect
+                id="workspace-timezone"
+                label="Time zone"
+                options={TIMEZONE_VALUES.map((value) => ({ value, label: value }))}
                 value={values.timezone}
-                onChange={(event) => update('timezone', event.target.value)}
-                required
-              >
-                {TIMEZONE_VALUES.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => update('timezone', value)}
+              />
             </label>
             <label className="grid gap-1 text-sm">
               Currency

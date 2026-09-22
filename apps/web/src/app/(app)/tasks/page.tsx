@@ -18,6 +18,7 @@ import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 import { taskHref } from '../task-navigation'
 import { CircleAlert, ListTodo, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { TASK_COPY, type Locale } from '../../../i18n/config'
 import { formatDate } from '../../../i18n/format'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
@@ -155,9 +156,13 @@ function toRow({
     id: task.id,
     cells: {
       title: (
-        <a href={taskHref(task.id, returnTo)} className="font-medium hover:text-primary hover:underline">
+        <Link
+          href={taskHref(task.id, returnTo)}
+          className="font-medium hover:text-primary hover:underline"
+          data-task-link-id={task.id}
+        >
           {task.title}
-        </a>
+        </Link>
       ),
       stage: <StageCell stage={task.stage} />,
       priority: <PriorityCell priority={task.priority} locale={locale} />,

@@ -8,6 +8,7 @@ import { CircleCheckBig } from 'lucide-react'
 import type { Metadata } from 'next'
 import { loadMyTaskModel } from '../../../server/queries/work/read-models'
 import { taskHref } from '../task-navigation'
+import Link from 'next/link'
 
 export const metadata: Metadata = { title: 'My tasks' }
 export const dynamic = 'force-dynamic'
@@ -66,9 +67,13 @@ export default async function MyTasksPage() {
                   <ul>
                     {rows.map((task) => (
                       <li className="border-b px-4 py-3 last:border-0" key={task.id}>
-                        <a className="font-medium hover:text-primary" href={taskHref(task.id, '/my-tasks')}>
+                        <Link
+                          className="font-medium hover:text-primary"
+                          href={taskHref(task.id, '/my-tasks')}
+                          data-task-link-id={task.id}
+                        >
                           {task.title}
-                        </a>
+                        </Link>
                         <span className="ml-3 text-xs text-muted-foreground">{task.priority}</span>
                       </li>
                     ))}

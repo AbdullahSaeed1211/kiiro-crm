@@ -170,6 +170,16 @@ export function AppFrame({
       window.clearTimeout(timer)
     }
   }, [appName, locale, pathname])
+  useEffect(() => {
+    const taskId = window.sessionStorage.getItem('task-panel-focus-return')
+    if (taskId === null) return
+    const trigger = [...document.querySelectorAll<HTMLElement>('[data-task-link-id]')].find(
+      (element) => element.dataset.taskLinkId === taskId,
+    )
+    if (trigger === undefined) return
+    trigger.focus()
+    window.sessionStorage.removeItem('task-panel-focus-return')
+  }, [pathname])
   return (
     <AppShell
       defaultOpen={defaultOpen}

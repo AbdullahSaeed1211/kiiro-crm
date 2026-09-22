@@ -3,6 +3,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
+import { SearchableSelect } from './searchable-select'
 
 interface Result {
   readonly ok: boolean
@@ -15,6 +16,7 @@ interface Field {
   name: string
   label: string
   type?: 'text' | 'number' | 'email' | 'select'
+  searchable?: boolean
   options?: readonly { value: string; label: string }[]
 }
 
@@ -23,6 +25,16 @@ function FieldControl({
   value,
   onChange,
 }: Readonly<{ field: Field; value: string; onChange: (value: string) => void }>) {
+  if (field.type === 'select' && field.searchable === true)
+    return (
+      <SearchableSelect
+        id={`setting-${field.name}`}
+        label={field.label}
+        options={field.options ?? []}
+        value={value}
+        onChange={onChange}
+      />
+    )
   if (field.type === 'select')
     return (
       <select

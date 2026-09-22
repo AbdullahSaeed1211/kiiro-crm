@@ -1,4 +1,5 @@
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter'
+import Link from 'next/link'
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/utils/combine'
 import { attachClosestEdge, extractClosestEdge, type Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { EllipsisVertical } from 'lucide-react'
@@ -74,7 +75,7 @@ function MoveMenu({ card, stages, label, onMove }: MoveMenuProps) {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={label}
-        render={<Button variant="ghost" size="icon-sm" className="-my-1 -mr-1.5 md:pointer-fine:hidden" />}
+        render={<Button variant="ghost" size="icon-sm" className="-my-1 -mr-1.5" />}
       >
         <EllipsisVertical aria-hidden />
       </DropdownMenuTrigger>
@@ -125,12 +126,13 @@ export function KanbanCardItem({ card, stages, label, onMove, dragEnabled }: Kan
         {card.href === undefined ? (
           <span className="min-w-0 font-medium break-words">{card.title}</span>
         ) : (
-          <a
+          <Link
             className="min-w-0 font-medium break-words underline-offset-2 hover:text-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             href={card.href}
+            data-task-link-id={card.id}
           >
             {card.title}
-          </a>
+          </Link>
         )}
         <MoveMenu card={card} stages={stages} label={label} onMove={onMove} />
       </div>

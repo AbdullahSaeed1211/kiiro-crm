@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { expect as baseExpect, test, type Page, type Response } from '@playwright/test'
+import { expect as baseExpect, test, type Locator, type Page, type Response } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { parseDevVars, WEB_DIR } from '../../../scripts/seed/local-env'
 
@@ -71,7 +71,8 @@ async function expectContained(page: Page, route: string): Promise<void> {
 test('customer shell uses the custom login, workspace tools, and contained responsive layouts', async ({ page }) => {
   await page.goto('/tasks')
   await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
 
   await signIn(page)
   await expect(page.getByText('Mirch Media', { exact: true })).toHaveCount(1)
@@ -96,19 +97,51 @@ interface CardMove {
   readonly to: string
 }
 
-async function moveCard(page: Page, move: CardMove, isMobile: boolean): Promise<void> {
+async function moveCard(page: Page, move: CardMove): Promise<void> {
   const card = boardCard(page, move.title)
-  if (!isMobile) {
-    await card.dragTo(boardColumn(page, move.to))
-    return
-  }
-  // Phones have no drag; the card menu is their move path.
+  // The explicit menu is available on every viewport; drag-and-drop remains an optional shortcut.
   await card.getByRole('button', { name: 'Move to…' }).click()
   await page.getByRole('menuitem', { name: move.to }).click()
 }
 
+async function moveAndVerifyAfterReload(page: Page, move: CardMove): Promise<void> {
+  const saved = page.waitForResponse(isPostTo('/tasks/board'))
+  await moveCard(page, move)
+  expect((await saved).ok()).toBe(true)
+  await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
+  await page.reload()
+  await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
+}
+
+async function dragAndVerifyAfterReload(
+  page: Page,
+  input: Readonly<{ title: string; dates: Locator; previous: string[] }>,
+): Promise<void> {
+  const saved = page.waitForResponse(isPostTo('/timeline'))
+  await dragBar(page, input.title)
+  expect((await saved).ok()).toBe(true)
+  await expect(input.dates).not.toHaveText(input.previous)
+  const after = await input.dates.allTextContents()
+  await page.reload()
+  await expect(input.dates).toHaveText(after)
+}
+
+async function restoreDatesAndVerify(
+  page: Page,
+  input: Readonly<{ title: string; dates: Locator; before: string[]; originalX: number }>,
+) {
+  const currentBox = await page.locator(BAR, { hasText: input.title }).boundingBox()
+  if (currentBox === null) throw new Error(`no bar for ${input.title}`)
+  const restored = page.waitForResponse(isPostTo('/timeline'))
+  await dragBar(page, input.title, input.originalX - currentBox.x)
+  expect((await restored).ok()).toBe(true)
+  await expect(input.dates).toHaveText(input.before)
+  await page.reload()
+  await expect(input.dates).toHaveText(input.before)
+}
+
 // Drags left when the bar is near the right edge, so repeated runs keep it on screen.
-async function dragBar(page: Page, title: string): Promise<void> {
+async function dragBar(page: Page, title: string, offsetX?: number): Promise<void> {
   const box = await page.locator(BAR, { hasText: title }).boundingBox()
   if (box === null) throw new Error(`no bar for ${title}`)
   const nearRightEdge = box.x + box.width > (page.viewportSize()?.width ?? 0) * 0.8
@@ -116,7 +149,9 @@ async function dragBar(page: Page, title: string): Promise<void> {
   const y = box.y + box.height / 2
   await page.mouse.move(x, y)
   await page.mouse.down()
-  await page.mouse.move(x + (nearRightEdge ? -TWO_DAYS_PX : TWO_DAYS_PX), y, { steps: 10 })
+  let offset = nearRightEdge ? -TWO_DAYS_PX : TWO_DAYS_PX
+  if (offsetX !== undefined) offset = offsetX
+  await page.mouse.move(x + offset, y, { steps: 10 })
   await page.mouse.up()
 }
 
@@ -128,20 +163,17 @@ test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
   await expect(table.locator('tbody tr').first()).toBeVisible()
 })
 
-test('spike: /tasks/board move survives a reload', async ({ page, isMobile }) => {
+test('spike: /tasks/board move menu persists after a reload', async ({ page, isMobile }) => {
   await signIn(page)
   await page.goto('/tasks/board')
   // Desktop and phone projects run in parallel, so each moves its own card.
   const title = isMobile ? 'Schedule kickoff meeting' : 'Plan launch checklist'
   await expect(boardCard(page, title)).toBeVisible()
   const from = await page.locator('section[data-stage-id]', { has: boardCard(page, title) }).getAttribute('aria-label')
-  const move = { title, to: from === 'In progress' ? 'To do' : 'In progress' }
-  const saved = page.waitForResponse(isPostTo('/tasks/board'))
-  await moveCard(page, move, isMobile)
-  expect((await saved).ok()).toBe(true)
-  await expect(boardColumn(page, move.to).locator(CARD, { hasText: title })).toBeVisible()
-  await page.reload()
-  await expect(boardColumn(page, move.to).locator(CARD, { hasText: title })).toBeVisible()
+  if (from === null) throw new Error(`no stage for task ${title}`)
+  const destination = from === 'In progress' ? 'To do' : 'In progress'
+  await moveAndVerifyAfterReload(page, { title, to: destination })
+  await moveAndVerifyAfterReload(page, { title, to: from })
 })
 
 test('spike: /timeline drag persists new dates after a reload', async ({ page, isMobile }) => {
@@ -151,15 +183,13 @@ test('spike: /timeline drag persists new dates after a reload', async ({ page, i
   await page.goto('/timeline')
   const title = 'Design style guide'
   const dates = page.locator('.wx-row', { hasText: title }).locator('[data-col-id=":start"], [data-col-id=":end"]')
-  await expect(page.locator(BAR, { hasText: title })).toBeVisible()
+  const bar = page.locator(BAR, { hasText: title })
+  await expect(bar).toBeVisible()
+  const originalBox = await bar.boundingBox()
+  if (originalBox === null) throw new Error(`no bar for ${title}`)
   const before = await dates.allTextContents()
-  const saved = page.waitForResponse(isPostTo('/timeline'))
-  await dragBar(page, title)
-  expect((await saved).ok()).toBe(true)
-  await expect(dates).not.toHaveText(before)
-  const after = await dates.allTextContents()
-  await page.reload()
-  await expect(dates).toHaveText(after)
+  await dragAndVerifyAfterReload(page, { title, dates, previous: before })
+  await restoreDatesAndVerify(page, { title, dates, before, originalX: originalBox.x })
 })
 
 test('spike: internal cron route runs tasks.dueSoon with the dev secret and refuses a wrong one', async ({

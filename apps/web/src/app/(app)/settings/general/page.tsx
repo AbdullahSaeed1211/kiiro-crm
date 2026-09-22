@@ -35,6 +35,7 @@ export default async function GeneralSettingsPage() {
                 name: 'timezone',
                 label: 'Time zone',
                 type: 'select',
+                searchable: true,
                 options: TIMEZONE_VALUES.map((value) => ({ value, label: value })),
               },
               {
