@@ -71,6 +71,17 @@ function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRec
   )
 }
 
+function RelatedCreateAction({ href, label }: Readonly<{ href: string; label: string }>) {
+  return (
+    <Link
+      href={href}
+      className="-mr-2 inline-flex min-h-8 items-center rounded-sm px-2 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {label}
+    </Link>
+  )
+}
+
 function OrganizationOverview({
   organizationId,
   relations,
@@ -80,7 +91,12 @@ function OrganizationOverview({
       label: 'Projects',
       count: relations.projects.length,
       empty: 'No projects linked yet.',
-      action: null,
+      action: (
+        <RelatedCreateAction
+          href={`/projects/new?organizationId=${encodeURIComponent(organizationId)}`}
+          label="Add project"
+        />
+      ),
       items: relations.projects.map((project) => (
         <RelationRow key={project.id} href={`/projects/${project.id}`} title={project.name} />
       )),
@@ -90,12 +106,10 @@ function OrganizationOverview({
       count: relations.contacts.length,
       empty: 'No contacts linked yet.',
       action: (
-        <Link
+        <RelatedCreateAction
           href={`/contacts/new?organizationId=${encodeURIComponent(organizationId)}`}
-          className="-mr-2 inline-flex min-h-8 items-center rounded-sm px-2 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Add contact
-        </Link>
+          label="Add contact"
+        />
       ),
       items: relations.contacts.map((contact) => (
         <RelationRow
@@ -157,7 +171,7 @@ export function OrganizationRecordView({
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }, { label: record.name }]} />
+      <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }]} />
       <PageContent>
         <RecordPageLayout
           className="ops-organization-record"

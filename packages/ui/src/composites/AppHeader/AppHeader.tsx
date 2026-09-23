@@ -31,9 +31,9 @@ function truncateTitle(label: string): string {
   return label.length > MAX_TITLE_LENGTH ? `${label.slice(0, MAX_TITLE_LENGTH - 1)}…` : label
 }
 
-function Crumb({ entry, current }: Readonly<{ entry: BreadcrumbEntry; current: boolean }>) {
+function Crumb({ entry }: Readonly<{ entry: BreadcrumbEntry }>) {
   const label = truncateTitle(entry.label)
-  if (current || entry.href === undefined) {
+  if (entry.href === undefined) {
     return (
       <BreadcrumbPage className="truncate" title={entry.label}>
         {label}
@@ -60,9 +60,9 @@ export function AppHeader({ breadcrumbs, actions }: AppHeaderProps) {
           {levels.map((entry, index) => (
             <Fragment key={`${entry.label}:${entry.href ?? ''}`}>
               {index > 0 ? <BreadcrumbSeparator className="max-md:hidden" /> : null}
-              {/* Below md only the current page is shown, next to the trigger (spec §16.3 mobile). */}
+              {/* Below md only the last crumb is shown next to the trigger. */}
               <BreadcrumbItem className={index === lastIndex ? 'min-w-0' : 'max-md:hidden'}>
-                <Crumb entry={entry} current={index === lastIndex} />
+                <Crumb entry={entry} />
               </BreadcrumbItem>
             </Fragment>
           ))}

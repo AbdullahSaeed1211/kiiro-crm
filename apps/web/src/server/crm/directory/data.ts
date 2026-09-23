@@ -150,6 +150,13 @@ export async function listOrganizationOptions(): Promise<readonly OrganizationOp
     .map((record) => ({ value: record.id, label: record.name }))
 }
 
+export async function getOrganizationLabel(id: string): Promise<string | null> {
+  const context = await getRequestContext()
+  const repo = createCrmRepository(context.req)
+  const record = await repo.get('organization', id as OrganizationRecord['id'])
+  return record?.name ?? null
+}
+
 export async function listContacts(
   input: {
     readonly query?: string

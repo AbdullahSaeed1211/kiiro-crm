@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ChangeEvent, type SyntheticEvent } from 'react'
+import { useRef, useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
 import { Label } from '@ops/ui/components/ui/label'
 import { Input } from '@ops/ui/components/ui/input'
@@ -40,6 +40,7 @@ type FieldCommonProps = Readonly<{
   id: string
   name: string
   required?: boolean | undefined
+  maxLength?: number | undefined
   disabled: boolean
   placeholder?: string | undefined
   value: string | number
@@ -91,6 +92,7 @@ function RecordField({ field, value, error, pending, setValue }: RecordFieldProp
     id,
     name: field.name,
     required: field.required,
+    maxLength: field.maxLength,
     disabled: field.disabled === true || pending,
     placeholder: field.placeholder,
     value: inputValue(value),
@@ -112,6 +114,7 @@ function RecordField({ field, value, error, pending, setValue }: RecordFieldProp
 
 /** Field-config-driven create/edit form. It owns only local input state and calls the supplied submit handler. */
 export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCancel, className }: RecordFormProps) {
+  const formRef = useRef<HTMLFormElement>(null)
   const [values, setValues] = useState<Record<string, FormValue>>(() => formValues(fields, initialValues))
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({})
   const [pending, setPending] = useState(false)
@@ -126,7 +129,12 @@ export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCan
     event.preventDefault()
     const nextErrors = validateRequired(fields, values, labels.required)
     setErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0) return
+    const firstInvalidField = fields.find((field) => field.name in nextErrors)
+    if (firstInvalidField !== undefined) {
+      const control = formRef.current?.elements.namedItem(firstInvalidField.name)
+      if (control instanceof HTMLElement) control.focus()
+      return
+    }
     setPending(true)
     try {
       await onSubmit(values)
@@ -136,6 +144,7 @@ export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCan
   }
   return (
     <form
+      ref={formRef}
       className={cn('flex max-w-2xl flex-col gap-5', className)}
       onSubmit={(event) => void submit(event)}
       noValidate

@@ -111,6 +111,9 @@ export async function createProject(deps: WorkDeps, input: unknown): Promise<Wor
       memberIds,
       workflowId: workflow.id,
       stageId: workflow.defaultStageId,
+      startAt: typeof value['startAt'] === 'number' ? value['startAt'] : null,
+      targetEndAt: typeof value['targetEndAt'] === 'number' ? value['targetEndAt'] : null,
+      description: typeof value['description'] === 'string' ? value['description'].trim() : null,
     }),
   )
 }

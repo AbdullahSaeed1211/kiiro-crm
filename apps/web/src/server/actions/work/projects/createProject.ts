@@ -9,10 +9,3 @@ export async function createProject(input: unknown) {
   if (result.ok) revalidatePath('/projects')
   return result.ok ? { ok: true as const, data: { id: result.value.id } } : { ok: false as const, error: result.error }
 }
-
-export async function createProjectFromForm(formData: FormData) {
-  const result = await createProject({ name: formData.get('name'), description: formData.get('description') ?? null })
-  if (!result.ok) return
-  const { redirect } = await import('next/navigation')
-  redirect(`/projects/${result.data.id}`)
-}

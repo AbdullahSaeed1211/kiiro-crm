@@ -22,10 +22,13 @@ export interface WorkListTask {
 export interface WorkListProject {
   readonly id: string
   readonly name: string
+  readonly organizationId: string | null
+  readonly description: string | null
   readonly stage: string
   readonly stageCategory: StageCategory
   readonly ownerId: string | null
   readonly memberIds: readonly string[]
+  readonly startAt: number | null
   readonly targetEndAt: number | null
   readonly updatedAt: number
 }
@@ -125,10 +128,13 @@ function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkL
   return {
     id: id(doc, 'id') ?? '',
     name: text(doc, 'name'),
+    organizationId: id(doc, 'organization'),
+    description: typeof value(doc, 'description') === 'string' ? String(value(doc, 'description')) : null,
     stage: stages.get(stageId)?.name ?? 'Unknown stage',
     stageCategory: stages.get(stageId)?.category ?? 'open',
     ownerId: id(doc, 'owner'),
     memberIds: ids(doc, 'members'),
+    startAt: number(doc, 'startAt'),
     targetEndAt: number(doc, 'targetEndAt'),
     updatedAt: date(doc, 'updatedAt'),
   }
@@ -215,12 +221,3 @@ export async function loadMyTaskModel(
 }
 
 /** Loads one scoped project and its task rows. */
-export async function loadProject(
-  idValue: string,
-): Promise<{ readonly project: WorkListProject; readonly tasks: readonly WorkListTask[] } | undefined> {
-  const model = await loadWorkReadModel()
-  const project = model.projects.find((item) => item.id === idValue)
-  return project === undefined
-    ? undefined
-    : { project, tasks: model.tasks.filter((task) => task.projectId === project.id) }
-}

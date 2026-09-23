@@ -10,6 +10,7 @@ export type RecordFieldConfig = Readonly<{
   label: string
   type?: 'text' | 'email' | 'tel' | 'url' | 'number' | 'textarea' | 'select'
   required?: boolean
+  maxLength?: number
   placeholder?: string
   description?: string
   options?: readonly SelectOption[]

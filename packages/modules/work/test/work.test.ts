@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { asId, type Clock } from '@ops/kernel'
 import { createProject, createTask, moveTask, updateTask } from '../src'
-import type { ProjectRecord, WorkDeps, WorkRepository } from '../src'
+import type { ProjectDraft, ProjectRecord, WorkDeps, WorkRepository } from '../src'
 import type { Actor, Workflow } from '@ops/platform'
 import { describe, expect, it } from 'vitest'
 import { hasOpenChildren, myTasksBuckets, orderByRank, rankBetween, rebalanceRanks, subtaskDepth } from '../src'
@@ -146,6 +146,35 @@ function depsFor(input: Partial<WorkDeps> = {}): WorkDeps {
 }
 
 describe('work commands enforce authorization and compare-and-set writes', () => {
+  it('passes accepted project context and details to the repository', async () => {
+    let draft: ProjectDraft | undefined
+    const deps = depsFor({
+      actor: actor('owner', 'owner'),
+      repo: {
+        ...depsFor().repo,
+        createProject: async (input: ProjectDraft) => {
+          draft = input
+          return project()
+        },
+      } as WorkRepository,
+    })
+    const result = await createProject(deps, {
+      name: '  Client launch  ',
+      organizationId: 'client',
+      description: '  Prepare the launch  ',
+      startAt: 10,
+      targetEndAt: 20,
+    })
+    expect(result.ok).toBe(true)
+    expect(draft).toMatchObject({
+      name: 'Client launch',
+      organizationId: asId('client'),
+      description: 'Prepare the launch',
+      startAt: 10,
+      targetEndAt: 20,
+    })
+  })
+
   it('applies the owner/manager/staff assignment matrix on create', async () => {
     const staff = depsFor()
     const staffResult = await createTask(staff, { title: 'outside assignment', assigneeIds: [asId('other')] })
