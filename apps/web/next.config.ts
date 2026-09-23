@@ -7,7 +7,7 @@ interface WebpackConfig {
 
 const nextConfig: NextConfig = {
   // Permit isolated validation builds without replacing the active local dev server output.
-  distDir: process.env['NEXT_DIST_DIR'] ?? '.next',
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   // `next dev` would otherwise write AGENTS.md and CLAUDE.md into the app directory.
   agentRules: false,
   // Workspace packages ship TypeScript source.

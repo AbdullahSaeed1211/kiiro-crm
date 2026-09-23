@@ -13,6 +13,12 @@ const CARD = '[data-card-id]'
 const BAR = '.wx-bar'
 // Week zoom draws one day 44 px wide.
 const TWO_DAYS_PX = 88
+const PLAN_LAUNCH_TITLE = 'Plan launch checklist'
+const IN_PROGRESS_STAGE = 'In progress'
+const TODO_STAGE = 'To do'
+const TASK_BOARD_PATH = '/tasks/board'
+const TASK_STAGE_SELECTOR = 'section[data-stage-id]'
+const ARIA_LABEL_ATTRIBUTE = 'aria-label'
 const SIGN_IN_LOCK = join(tmpdir(), 'ops-spike-sign-in.lock')
 const LOCK_STALE_MS = 60_000
 const LOCK_POLL_MS = 100
@@ -105,7 +111,7 @@ async function moveCard(page: Page, move: CardMove): Promise<void> {
 }
 
 async function moveAndVerifyAfterReload(page: Page, move: CardMove): Promise<void> {
-  const saved = page.waitForResponse(isPostTo('/tasks/board'))
+  const saved = page.waitForResponse(isPostTo(TASK_BOARD_PATH))
   await moveCard(page, move)
   expect((await saved).ok()).toBe(true)
   await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
@@ -165,15 +171,37 @@ test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
 
 test('spike: /tasks/board move menu persists after a reload', async ({ page, isMobile }) => {
   await signIn(page)
-  await page.goto('/tasks/board')
+  await page.goto(TASK_BOARD_PATH)
   // Desktop and phone projects run in parallel, so each moves its own card.
-  const title = isMobile ? 'Schedule kickoff meeting' : 'Plan launch checklist'
+  const title = isMobile ? 'Schedule kickoff meeting' : PLAN_LAUNCH_TITLE
   await expect(boardCard(page, title)).toBeVisible()
-  const from = await page.locator('section[data-stage-id]', { has: boardCard(page, title) }).getAttribute('aria-label')
+  const from = await page
+    .locator(TASK_STAGE_SELECTOR, { has: boardCard(page, title) })
+    .getAttribute(ARIA_LABEL_ATTRIBUTE)
   if (from === null) throw new Error(`no stage for task ${title}`)
-  const destination = from === 'In progress' ? 'To do' : 'In progress'
+  const destination = from === IN_PROGRESS_STAGE ? TODO_STAGE : IN_PROGRESS_STAGE
   await moveAndVerifyAfterReload(page, { title, to: destination })
   await moveAndVerifyAfterReload(page, { title, to: from })
+})
+
+test('spike: /tasks/board rejected move rolls back and explains the failure', async ({ page }) => {
+  await signIn(page)
+  await page.goto(TASK_BOARD_PATH)
+  const title = PLAN_LAUNCH_TITLE
+  const card = boardCard(page, title)
+  await expect(card).toBeVisible()
+  const source = page.locator(TASK_STAGE_SELECTOR, { has: card })
+  const sourceName = await source.getAttribute(ARIA_LABEL_ATTRIBUTE)
+  if (sourceName === null) throw new Error(`no stage for task ${title}`)
+  const destination = sourceName === IN_PROGRESS_STAGE ? TODO_STAGE : IN_PROGRESS_STAGE
+  await page.route(`**${TASK_BOARD_PATH}`, async (route) => {
+    if (route.request().method() === 'POST') await route.fulfill({ status: 500, body: 'rejected by test' })
+    else await route.continue()
+  })
+  await moveCard(page, { title, to: destination })
+  await expect(page.getByText('Could not move the task', { exact: true })).toBeVisible()
+  await expect(source.getByText(title, { exact: true })).toBeVisible()
+  await expect(page.locator(TASK_STAGE_SELECTOR, { hasText: title })).toHaveAttribute(ARIA_LABEL_ATTRIBUTE, sourceName)
 })
 
 test('spike: /timeline drag persists new dates after a reload', async ({ page, isMobile }) => {
