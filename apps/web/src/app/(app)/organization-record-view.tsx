@@ -2,6 +2,7 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import { Globe2, UsersRound } from 'lucide-react'
+import Link from 'next/link'
 import type { OrganizationRecord } from '@ops/module-crm'
 import type {
   ActivityItem,
@@ -18,6 +19,7 @@ import { RecordActionLinks } from './record-action-links'
 
 function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null }>) {
   const website = record.website === null ? null : safeExternalHref(record.website)
+  const phone = record.phone?.trim()
   return (
     <div className="space-y-0">
       <DetailCard title="Details">
@@ -54,7 +56,7 @@ function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRec
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Phone</dt>
-            <dd className="mt-0.5">{record.phone ?? <EmptyValue />}</dd>
+            <dd className="mt-0.5">{phone === undefined || phone === '' ? <EmptyValue /> : phone}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Owner</dt>
@@ -69,12 +71,16 @@ function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRec
   )
 }
 
-function OrganizationOverview({ relations }: Readonly<{ relations: OrganizationRelations }>) {
+function OrganizationOverview({
+  organizationId,
+  relations,
+}: Readonly<{ organizationId: string; relations: OrganizationRelations }>) {
   const sections = [
     {
       label: 'Projects',
       count: relations.projects.length,
       empty: 'No projects linked yet.',
+      action: null,
       items: relations.projects.map((project) => (
         <RelationRow key={project.id} href={`/projects/${project.id}`} title={project.name} />
       )),
@@ -83,6 +89,14 @@ function OrganizationOverview({ relations }: Readonly<{ relations: OrganizationR
       label: 'Contacts',
       count: relations.contacts.length,
       empty: 'No contacts linked yet.',
+      action: (
+        <Link
+          href={`/contacts/new?organizationId=${encodeURIComponent(organizationId)}`}
+          className="-mr-2 inline-flex min-h-8 items-center rounded-sm px-2 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Add contact
+        </Link>
+      ),
       items: relations.contacts.map((contact) => (
         <RelationRow
           key={contact.id}
@@ -96,6 +110,7 @@ function OrganizationOverview({ relations }: Readonly<{ relations: OrganizationR
       label: 'Deals',
       count: relations.deals.length,
       empty: 'No deals linked yet.',
+      action: null,
       items: relations.deals.map((deal) => <RelationRow key={deal.id} href={`/deals/${deal.id}`} title={deal.title} />),
     },
   ] as const
@@ -112,7 +127,10 @@ function OrganizationOverview({ relations }: Readonly<{ relations: OrganizationR
       <div className="grid gap-x-6 md:grid-cols-2">
         {sections.map((section) => (
           <section key={section.label} className="min-w-0 border-b py-4">
-            <h2 className="mb-1 text-sm font-semibold">{section.label}</h2>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold">{section.label}</h2>
+              {section.action}
+            </div>
             <RelationList items={section.items} empty={section.empty} />
           </section>
         ))}
@@ -163,7 +181,11 @@ export function OrganizationRecordView({
             />
           }
           tabs={[
-            { id: 'overview', label: 'Overview', content: <OrganizationOverview relations={relations} /> },
+            {
+              id: 'overview',
+              label: 'Overview',
+              content: <OrganizationOverview organizationId={record.id} relations={relations} />,
+            },
             ...recordTabs(
               <Activity entries={activity} recordType="organization" recordId={record.id} />,
               emailMessages,

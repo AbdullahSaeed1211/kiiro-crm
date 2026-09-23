@@ -44,6 +44,18 @@ function disabledAction(label: string, icon: ReactNode) {
   )
 }
 
+function optionalText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  return trimmed === undefined || trimmed === '' ? null : trimmed
+}
+
+function emailActionFor(emailAddress: string | null, outboundEmailEnabled: boolean): ReactNode {
+  if (emailAddress === null) return null
+  if (outboundEmailEnabled)
+    return actionLink({ href: `mailto:${emailAddress}`, label: 'Email', icon: <Mail aria-hidden /> })
+  return disabledAction('Email', <MailWarning aria-hidden />)
+}
+
 export function RecordActionLinks({
   recordType,
   recordId,
@@ -66,18 +78,14 @@ export function RecordActionLinks({
     relatedId: recordId,
     title: `Follow up with ${recordLabel}`,
   }).toString()}`
-  let emailAction: ReactNode = null
-  if (email !== undefined && email !== null) {
-    if (outboundEmailEnabled)
-      emailAction = actionLink({ href: `mailto:${email}`, label: 'Email', icon: <Mail aria-hidden /> })
-    else emailAction = disabledAction('Email', <MailWarning aria-hidden />)
-  }
+  const emailAddress = optionalText(email)
+  const phoneNumber = optionalText(phone)
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {emailAction}
-      {phone === undefined || phone === null
+      {emailActionFor(emailAddress, outboundEmailEnabled)}
+      {phoneNumber === null
         ? null
-        : actionLink({ href: `tel:${phone}`, label: 'Call', icon: <Phone aria-hidden /> })}
+        : actionLink({ href: `tel:${phoneNumber}`, label: 'Call', icon: <Phone aria-hidden /> })}
       {actionLink({ href: taskHref, label: 'New task', icon: <ClipboardPlus aria-hidden /> })}
       {editHref === undefined ? null : actionLink({ href: editHref, label: 'Edit', icon: <Pencil aria-hidden /> })}
     </div>

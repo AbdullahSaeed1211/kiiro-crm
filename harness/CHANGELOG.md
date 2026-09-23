@@ -11,3 +11,4 @@
 | 2026-09-14 | Added a task-board transition regression lesson and executable eval for flattening domain stage-transition payloads before Payload writes          | M3-L1-b0a1d0               |
 | 2026-09-23 | Added a settings-action eval for type-only imports that cycle through a public action barrel                                                       | M3-L1-e07ae8               |
 | 2026-09-24 | UI briefs require a relevance decision across six product and workflow references before selecting a component pattern                             | UX source-selection review |
+| 2026-09-24 | UI briefs check blank optional fields, preserve parent context for related-record creation, and verify changed journeys in the browser first       | Organization record review |
