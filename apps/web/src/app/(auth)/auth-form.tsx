@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { ReactNode, SyntheticEvent } from 'react'
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@ops/ui/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
 import { Input } from '@ops/ui/components/ui/input'
@@ -33,6 +34,13 @@ function fieldType(field: AuthField): string {
   if (field === 'name') return 'text'
   return 'password'
 }
+function isSecretField(field: AuthField): boolean {
+  return field === 'password' || field === 'confirm'
+}
+function visibleFieldType(field: AuthField, visible: boolean): string {
+  // eslint-disable-next-line sonarjs/no-selector-parameter -- this boolean is the explicit password-visibility control.
+  return isSecretField(field) && visible ? 'text' : fieldType(field)
+}
 function mismatch(form: FormData): boolean {
   const password = form.get('password')
   const confirm = form.get('confirm')
@@ -56,6 +64,7 @@ async function send(
 export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabled = false }: AuthFormProps) {
   const [error, setError] = useState<string | undefined>()
   const [pending, setPending] = useState(false)
+  const [passwordVisible, setPasswordVisible] = useState(false)
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (disabled) return
@@ -95,15 +104,33 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
           {fields.map((field) => (
             <div className="space-y-2" key={field}>
               <Label htmlFor={`auth-${field}`}>{fieldLabel(field)}</Label>
-              <Input
-                id={`auth-${field}`}
-                className="h-9"
-                name={field}
-                type={fieldType(field)}
-                required
-                autoComplete={field === 'password' || field === 'confirm' ? 'current-password' : field}
-                disabled={disabled || pending}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id={`auth-${field}`}
+                  className="h-9"
+                  name={field}
+                  type={visibleFieldType(field, passwordVisible)}
+                  required
+                  autoComplete={isSecretField(field) ? 'current-password' : field}
+                  disabled={disabled || pending}
+                />
+                {isSecretField(field) ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    aria-label={`${passwordVisible ? 'Hide' : 'Show'} ${fieldLabel(field).toLowerCase()}`}
+                    aria-pressed={passwordVisible}
+                    disabled={disabled || pending}
+                    onClick={() => {
+                      setPasswordVisible((visible) => !visible)
+                    }}
+                  >
+                    {passwordVisible ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+                  </Button>
+                ) : null}
+              </div>
             </div>
           ))}
           {Object.entries(hidden ?? {}).map(([key, value]) => (

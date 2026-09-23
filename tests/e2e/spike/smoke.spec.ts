@@ -52,7 +52,7 @@ async function signIn(page: Page): Promise<void> {
   try {
     await page.goto('/login')
     await page.getByLabel('Email').fill(OWNER_EMAIL)
-    await page.getByLabel('Password').fill(DEV_PASSWORD)
+    await page.getByLabel('Password', { exact: true }).fill(DEV_PASSWORD)
     const login = page.waitForResponse(isPostTo('/api/v1/auth/login'))
     await page.getByRole('button', { name: 'Sign in' }).click()
     expect((await login).status()).toBe(200)

@@ -29,7 +29,11 @@ export function SearchableSelect({
     <Combobox
       items={values}
       value={value}
-      filter={(item, query) => item.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())}
+      filter={(item, query) => {
+        const normalizedQuery = query.trim().toLocaleLowerCase()
+        const option = options.find(({ value }) => value === item)
+        return `${item} ${option?.label ?? ''}`.toLocaleLowerCase().includes(normalizedQuery)
+      }}
       onValueChange={(nextValue) => {
         onChange(typeof nextValue === 'string' ? nextValue : '')
       }}

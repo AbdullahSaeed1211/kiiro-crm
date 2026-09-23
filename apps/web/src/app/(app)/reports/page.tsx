@@ -33,7 +33,7 @@ function money({
 
 function Metric({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <section className="ops-dashboard-card p-4">
+    <section className="ops-dashboard-card px-4 pt-4 pb-6">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
     </section>

@@ -184,6 +184,24 @@ describe('work commands enforce authorization and compare-and-set writes', () =>
     expect(writes).toBe(0)
   })
 
+  it('allows a manager to edit task details outside their assignment group without changing assignment', async () => {
+    const current = task('cross-group', { updatedAt: 5, groupId: asId('other-group') })
+    const deps = depsFor({
+      actor: actor('manager', 'manager'),
+      repo: {
+        ...depsFor().repo,
+        getTask: async () => current,
+        updateTask: async (_id: unknown, patch: Partial<WorkTaskRecord>) => ({ ...current, ...patch }),
+      } as WorkRepository,
+    })
+    const result = await updateTask(deps, {
+      taskId: current.id,
+      expectedUpdatedAt: 5,
+      patch: { description: 'Updated by manager' },
+    })
+    expect(result.ok).toBe(true)
+  })
+
   it('uses the atomic move port and rejects stale moves', async () => {
     const current = task('moving', { updatedAt: 5 })
     let atomicWrites = 0

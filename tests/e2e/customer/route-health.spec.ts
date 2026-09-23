@@ -75,7 +75,7 @@ async function signIn(page: Page): Promise<void> {
   try {
     await page.goto('/login')
     await page.getByLabel('Email').fill(OWNER_EMAIL)
-    await page.getByLabel('Password').fill(DEV_PASSWORD)
+    await page.getByLabel('Password', { exact: true }).fill(DEV_PASSWORD)
     await page.getByRole('button', { name: 'Sign in' }).click()
     await expect(page).toHaveURL(/\/$/)
   } finally {

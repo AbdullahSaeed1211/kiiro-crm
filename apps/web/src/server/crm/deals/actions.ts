@@ -3,6 +3,8 @@
 import { createDeal, markLost, moveDeal, updateDeal } from '@ops/module-crm'
 import { revalidatePath } from 'next/cache'
 import { getCrmDeps } from '../deps'
+import { getWorkspaceSettings } from '../../auth/context'
+import { applyWorkspaceCurrency } from '../workspace-currency'
 import { withDefaultOwner } from './view-model'
 
 export type DealActionResult =
@@ -26,8 +28,10 @@ function refresh(id?: string) {
 }
 
 export async function createDealAction(input: unknown): Promise<DealActionResult> {
-  const deps = await getCrmDeps()
-  const result = await createDeal(deps, withDefaultOwner(input, deps.actor.id))
+  const [deps, settings] = await Promise.all([getCrmDeps(), getWorkspaceSettings()])
+  const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
+  const normalized = applyWorkspaceCurrency(input, currency)
+  const result = await createDeal(deps, withDefaultOwner(normalized, deps.actor.id))
   if (result.ok) refresh(result.value.id)
   return resultOf(result)
 }

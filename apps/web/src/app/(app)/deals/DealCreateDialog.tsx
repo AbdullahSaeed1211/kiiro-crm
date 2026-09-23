@@ -46,7 +46,8 @@ function readForm(form: HTMLFormElement): CreateInput | { error: string } {
 function DealFields({
   organizations,
   contacts,
-}: Readonly<{ organizations: readonly Option[]; contacts: readonly Option[] }>) {
+  currency,
+}: Readonly<{ organizations: readonly Option[]; contacts: readonly Option[]; currency: string }>) {
   return (
     <>
       <div className="grid gap-2">
@@ -85,7 +86,7 @@ function DealFields({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="deal-value">Value</Label>
+          <Label htmlFor="deal-value">Value ({currency})</Label>
           <Input id="deal-value" name="value" inputMode="decimal" placeholder="12000" />
         </div>
         <div className="grid gap-2">
@@ -100,7 +101,8 @@ function DealFields({
 export function DealCreateDialog({
   organizations,
   contacts,
-}: Readonly<{ organizations: readonly Option[]; contacts: readonly Option[] }>) {
+  currency,
+}: Readonly<{ organizations: readonly Option[]; contacts: readonly Option[]; currency: string }>) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -116,7 +118,7 @@ export function DealCreateDialog({
         organizationId: input.organizationId,
         contactIds: input.primaryContactId === null ? [] : [input.primaryContactId],
         primaryContactId: input.primaryContactId,
-        value: input.amountMinor === null ? null : { amountMinor: input.amountMinor, currency: 'USD' },
+        value: input.amountMinor === null ? null : { amountMinor: input.amountMinor, currency },
         expectedCloseAt: input.expectedCloseAt,
         ownerId: null,
         assigneeIds: [],
@@ -146,7 +148,7 @@ export function DealCreateDialog({
             submit(event.currentTarget)
           }}
         >
-          <DealFields organizations={organizations} contacts={contacts} />
+          <DealFields organizations={organizations} contacts={contacts} currency={currency} />
           {error === null ? null : (
             <p role="alert" className="text-sm text-destructive">
               {error}

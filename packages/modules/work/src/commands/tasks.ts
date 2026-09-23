@@ -192,7 +192,8 @@ export async function updateTask(deps: WorkDeps, input: unknown): Promise<WorkRe
   if (!canUpdate(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
   const ids = patch.assigneeIds ?? task.assigneeIds,
     groupId = patch.groupId === undefined ? task.groupId : patch.groupId
-  if (!assignmentAllowed(deps, ids, groupId)) return fail('FORBIDDEN', 'cannot assign task outside your scope')
+  if ((patch.assigneeIds !== undefined || patch.groupId !== undefined) && !assignmentAllowed(deps, ids, groupId))
+    return fail('FORBIDDEN', 'cannot assign task outside your scope')
   const type = patch.relatedType === undefined ? task.relatedType : patch.relatedType,
     id = patch.relatedId === undefined ? task.relatedId : patch.relatedId
   if (!(await relatedAllowed(deps, type, id))) return fail('FORBIDDEN', 'related record is outside your scope')

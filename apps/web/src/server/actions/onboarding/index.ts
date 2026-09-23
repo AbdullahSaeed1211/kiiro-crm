@@ -4,11 +4,14 @@
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '../../auth/context'
 import { applyTemplate } from './apply-template'
+import { isSupportedCurrency } from '../../../i18n/currencies'
 
 export async function saveOnboardingStep(step: string, input: unknown) {
   const context = await requireRole('owner')
   if (step === '') return { ok: false, error: 'A step is required.' } as const
   const data = typeof input === 'object' && input !== null ? { ...(input as Record<string, unknown>) } : {}
+  if (step === 'workspace' && !isSupportedCurrency(data.currency))
+    return { ok: false, error: 'Choose a supported ISO 4217 currency.' } as const
   if (typeof data.weekStartsOn === 'string') data.weekStartsOn = Number(data.weekStartsOn)
   if (typeof data.stalledDays === 'string') data.stalledDays = Number(data.stalledDays)
   const current = (await context.payload.findGlobal({

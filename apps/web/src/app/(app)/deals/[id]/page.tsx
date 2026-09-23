@@ -11,6 +11,7 @@ import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model
 import { RecordActionLinks } from '../../record-action-links'
 import { recordTabs } from '../../record-view-primitives'
 import { getOutboundEmailEnabled } from '../../../../server/capabilities'
+import { getWorkspaceSettings } from '../../../../server/auth/context'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -73,7 +74,7 @@ function DetailsCard({ data }: Readonly<{ data: DealDetailData }>) {
   )
 }
 
-function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
+function ControlsCard({ data, currency }: Readonly<{ data: DealDetailData; currency: string }>) {
   return (
     <Card>
       <CardHeader>
@@ -85,6 +86,7 @@ function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
           stages={data.workflow.stages}
           lostReasons={data.lostReasons}
           stageCategory={data.stage.category}
+          currency={currency}
           contacts={data.allContacts.map((contact) => ({
             id: contact.id,
             name: [contact.firstName, contact.lastName].filter(Boolean).join(' '),
@@ -98,7 +100,8 @@ function ControlsCard({ data }: Readonly<{ data: DealDetailData }>) {
 function DealRecordView({
   data,
   outboundEmailEnabled,
-}: Readonly<{ data: DealDetailData; outboundEmailEnabled: boolean }>) {
+  currency,
+}: Readonly<{ data: DealDetailData; outboundEmailEnabled: boolean; currency: string }>) {
   return (
     <RecordPageLayout
       labels={{ breadcrumb: 'Deal', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
@@ -122,7 +125,7 @@ function DealRecordView({
       })}
       aside={
         <div className="grid gap-4">
-          <ControlsCard data={data} />
+          <ControlsCard data={data} currency={currency} />
           <DetailsCard data={data} />
         </div>
       }
@@ -132,13 +135,21 @@ function DealRecordView({
 
 export default async function DealRecordPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
-  const [data, outboundEmailEnabled] = await Promise.all([getDealDetailData(id), getOutboundEmailEnabled()])
+  const [data, outboundEmailEnabled, settings] = await Promise.all([
+    getDealDetailData(id),
+    getOutboundEmailEnabled(),
+    getWorkspaceSettings(),
+  ])
   if (data === null) notFound()
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Deals', href: '/deals' }, { label: data.deal.title }]} />
       <PageContent>
-        <DealRecordView data={data} outboundEmailEnabled={outboundEmailEnabled} />
+        <DealRecordView
+          data={data}
+          outboundEmailEnabled={outboundEmailEnabled}
+          currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
+        />
       </PageContent>
     </>
   )

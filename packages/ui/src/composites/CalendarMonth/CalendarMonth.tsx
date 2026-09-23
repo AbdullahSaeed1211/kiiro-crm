@@ -44,9 +44,9 @@ function DayCell({
   day,
   events,
 }: Readonly<{ date: string | null; day: number; events: readonly CalendarEvent[] }>) {
-  if (date === null) return <div className="min-h-28 border-b border-r bg-muted/10 p-2" />
+  if (date === null) return <div className="min-h-20 border-b border-r bg-muted/10 p-1 sm:min-h-28 sm:p-2" />
   return (
-    <div className="min-h-28 border-b border-r p-2">
+    <div className="min-h-20 min-w-0 border-b border-r p-1 sm:min-h-28 sm:p-2">
       <time dateTime={date} className="text-xs font-medium text-muted-foreground">
         {day}
       </time>
@@ -88,7 +88,7 @@ export function CalendarMonth({
   const sunday = Array.from({ length: 7 }, (_, index) => weekdayFormatter.format(Date.UTC(2024, 0, 7 + index)))
   const weekdays = weekStartsOn === 1 ? [...sunday.slice(1), sunday[0]] : sunday
   return (
-    <section aria-label={monthLabel} className="ops-surface-card overflow-x-auto rounded-lg border bg-card">
+    <section aria-label={monthLabel} className="ops-surface-card min-w-0 overflow-hidden rounded-lg border bg-card">
       <header className="flex items-center justify-between border-b px-4 py-3">
         <Link
           className="text-sm text-muted-foreground hover:text-foreground"
@@ -106,14 +106,17 @@ export function CalendarMonth({
           →
         </Link>
       </header>
-      <div className="grid min-w-[44rem] grid-cols-7 border-b bg-muted/30">
+      <div className="grid min-w-0 grid-cols-7 border-b bg-muted/30">
         {weekdays.map((day) => (
-          <div key={day} className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">
+          <div
+            key={day}
+            className="min-w-0 px-0.5 py-2 text-center text-[10px] font-medium text-muted-foreground sm:px-2 sm:text-xs"
+          >
             {day}
           </div>
         ))}
       </div>
-      <div className="grid min-w-[44rem] grid-cols-7">
+      <div className="grid min-w-0 grid-cols-7">
         {Array.from({ length: cells }, (_, index) => {
           const day = index - leading + 1
           const date = day < 1 || day > days ? null : dateKey({ year, month, day })

@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 import { SearchableSelect } from './searchable-select'
+import type { CurrencyOption } from '../../../i18n/currencies'
 
 interface Result {
   readonly ok: boolean
@@ -17,7 +18,7 @@ interface Field {
   label: string
   type?: 'text' | 'number' | 'email' | 'select'
   searchable?: boolean
-  options?: readonly { value: string; label: string }[]
+  options?: readonly CurrencyOption[]
 }
 
 function FieldControl({

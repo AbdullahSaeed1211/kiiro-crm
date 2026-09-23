@@ -1,9 +1,15 @@
 import { z } from 'zod'
 
 const id = z.string().trim().min(1)
-const optionalId = id.nullable().optional()
+const optionalId = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  id.nullable().optional(),
+)
 const optionalText = z.string().trim().max(10_000).nullable().optional()
-const optionalEmail = z.string().trim().pipe(z.email()).nullable().optional()
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  z.string().trim().pipe(z.email()).nullable().optional(),
+)
 const epoch = z.number().nonnegative()
 const optionalEpoch = epoch.nullable().optional()
 const idList = z.array(id).default([])

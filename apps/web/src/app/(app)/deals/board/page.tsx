@@ -9,6 +9,7 @@ import { DealBoard } from '../DealBoard'
 import { DealCreateDialog } from '../DealCreateDialog'
 import { getDealListData } from '../../../../server/crm/deals/queries'
 import { aggregateStageTotals, formatMoney } from '../../../../server/crm/deals/view-model'
+import { getWorkspaceSettings } from '../../../../server/auth/context'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deal board' }
@@ -28,7 +29,8 @@ function stageAmount(amountMinor: number, currency: string | null): string {
 }
 
 export default async function DealBoardPage() {
-  const data = await getDealListData()
+  const [data, settings] = await Promise.all([getDealListData(), getWorkspaceSettings()])
+  const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   const totals = aggregateStageTotals(
     data.items.map(({ deal }) => deal),
     data.workflow,
@@ -63,6 +65,7 @@ export default async function DealBoardPage() {
                 Table
               </Button>
               <DealCreateDialog
+                currency={currency}
                 organizations={data.organizations.map(({ id, name }) => ({ id, name }))}
                 contacts={data.contacts.map((contact) => ({
                   id: contact.id,

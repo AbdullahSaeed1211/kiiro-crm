@@ -6,6 +6,7 @@ import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
 import { TIMEZONE_VALUES } from '../../../i18n/timezones'
 import { SearchableSelect } from '../settings/searchable-select'
+import { CURRENCY_OPTIONS } from '../../../i18n/currencies'
 
 const STEPS = [
   ['workspace', 'Workspace'],
@@ -134,15 +135,15 @@ export function OnboardingWizard({
                 onChange={(value) => update('timezone', value)}
               />
             </label>
-            <label className="grid gap-1 text-sm">
-              Currency
-              <input
-                className="h-9 border px-3"
+            <div className="grid gap-1 text-sm">
+              <SearchableSelect
+                id="workspace-currency"
+                label="Currency"
+                options={CURRENCY_OPTIONS}
                 value={values.currency}
-                onChange={(event) => update('currency', event.target.value)}
-                required
+                onChange={(value) => update('currency', value)}
               />
-            </label>
+            </div>
             <label className="grid gap-1 text-sm">
               Locale
               <select

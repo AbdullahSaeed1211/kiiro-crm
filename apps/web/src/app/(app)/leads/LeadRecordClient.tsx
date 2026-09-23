@@ -204,7 +204,8 @@ function LeadRecordLayout({
 export function LeadRecordClient({
   data,
   outboundEmailEnabled,
-}: Readonly<{ data: LeadPageData; outboundEmailEnabled: boolean }>) {
+  currency,
+}: Readonly<{ data: LeadPageData; outboundEmailEnabled: boolean; currency: string }>) {
   const router = useRouter()
   const [convertOpen, setConvertOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
@@ -263,7 +264,7 @@ export function LeadRecordClient({
           setLostOpen(true)
         }}
       />
-      <ConvertDialog data={data} open={convertOpen} onOpenChange={setConvertOpen} />
+      <ConvertDialog data={data} currency={currency} open={convertOpen} onOpenChange={setConvertOpen} />
       <LostDialog data={data} open={lostOpen} onOpenChange={setLostOpen} />
     </>
   )

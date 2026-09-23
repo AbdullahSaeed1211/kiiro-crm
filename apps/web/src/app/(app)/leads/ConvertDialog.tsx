@@ -16,13 +16,19 @@ import { useState } from 'react'
 import { convertLead } from '../../../server/crm/leads/actions'
 import type { LeadPageData } from '../../../server/crm/leads/types'
 
-type DialogProps = Readonly<{ data: LeadPageData; open: boolean; onOpenChange: (open: boolean) => void }>
+type DialogProps = Readonly<{
+  data: LeadPageData
+  currency: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}>
 
 function ConvertFields(
   props: Readonly<{
     organization: string
     dealTitle: string
     value: string
+    currency: string
     onOrganization: (value: string) => void
     onDealTitle: (value: string) => void
     onValue: (value: string) => void
@@ -52,7 +58,7 @@ function ConvertFields(
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="convert-value">Deal value</Label>
+        <Label htmlFor="convert-value">Deal value ({props.currency})</Label>
         <Input
           id="convert-value"
           type="number"
@@ -100,7 +106,7 @@ export function ConvertDialog(props: DialogProps) {
       contact: { create: true },
       deal: {
         title: dealTitle.trim() || undefined,
-        value: value.trim() ? { amountMinor: Math.round(Number(value) * 100), currency: 'USD' } : null,
+        value: value.trim() ? { amountMinor: Math.round(Number(value) * 100), currency: props.currency } : null,
       },
     })
     setPending(false)
@@ -123,6 +129,7 @@ export function ConvertDialog(props: DialogProps) {
           organization={organization}
           dealTitle={dealTitle}
           value={value}
+          currency={props.currency}
           onOrganization={setOrganization}
           onDealTitle={setDealTitle}
           onValue={setValue}

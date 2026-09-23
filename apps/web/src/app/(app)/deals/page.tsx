@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { DealCreateDialog } from './DealCreateDialog'
 import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
+import { getWorkspaceSettings } from '../../../server/auth/context'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deals' }
@@ -119,7 +120,11 @@ export default async function DealsPage({
   const rawQuery = first(params.q)?.trim() ?? ''
   const stageId = first(params.stage)
   const page = Math.max(1, Number(first(params.page) ?? 1) || 1)
-  const data = await getDealListData({ query: rawQuery, stageId, page })
+  const [data, settings] = await Promise.all([
+    getDealListData({ query: rawQuery, stageId, page }),
+    getWorkspaceSettings(),
+  ])
+  const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Deals' }]} />
@@ -134,6 +139,7 @@ export default async function DealsPage({
                 Board
               </Button>
               <DealCreateDialog
+                currency={currency}
                 organizations={data.organizations.map(({ id, name }) => ({ id, name }))}
                 contacts={data.contacts.map((contact) => ({
                   id: contact.id,

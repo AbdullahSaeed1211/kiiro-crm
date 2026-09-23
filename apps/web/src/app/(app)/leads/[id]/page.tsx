@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getLeadPage } from '../../../../server/crm/leads/queries'
 import { LeadRecordClient } from '../LeadRecordClient'
 import { getOutboundEmailEnabled } from '../../../../server/capabilities'
+import { getWorkspaceSettings } from '../../../../server/auth/context'
 
 export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ id: string }> }>): Promise<Metadata> {
@@ -11,11 +12,19 @@ export async function generateMetadata({ params }: Readonly<{ params: Promise<{ 
 }
 
 export default async function LeadPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
-  const [data, outboundEmailEnabled] = await Promise.all([getLeadPage((await params).id), getOutboundEmailEnabled()])
+  const [data, outboundEmailEnabled, settings] = await Promise.all([
+    getLeadPage((await params).id),
+    getOutboundEmailEnabled(),
+    getWorkspaceSettings(),
+  ])
   if (data === null) notFound()
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-4 p-4">
-      <LeadRecordClient data={data} outboundEmailEnabled={outboundEmailEnabled} />
+      <LeadRecordClient
+        data={data}
+        outboundEmailEnabled={outboundEmailEnabled}
+        currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
+      />
     </main>
   )
 }

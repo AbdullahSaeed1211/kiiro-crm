@@ -5,6 +5,7 @@ import { updateSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { LOCALE_LABELS } from '../../../../i18n/config'
+import { CURRENCY_OPTIONS } from '../../../../i18n/currencies'
 
 export const metadata: Metadata = { title: 'General' }
 export const dynamic = 'force-dynamic'
@@ -47,7 +48,13 @@ export default async function GeneralSettingsPage() {
                   { value: 'es', label: LOCALE_LABELS.es },
                 ],
               },
-              { name: 'currency', label: 'Currency' },
+              {
+                name: 'currency',
+                label: 'Currency',
+                type: 'select',
+                searchable: true,
+                options: CURRENCY_OPTIONS,
+              },
               { name: 'weekStartsOn', label: 'Week starts on', type: 'number' },
               { name: 'stalledDays', label: 'Stalled after (days)', type: 'number' },
             ]}

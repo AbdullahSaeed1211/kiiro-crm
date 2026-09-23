@@ -2,6 +2,7 @@ import { asId } from '@ops/kernel'
 import { describe, expect, it, vi } from 'vitest'
 import { deferredLostMoveResult } from '../src/app/(app)/deals/deal-board-model'
 import { loadActivity } from '../src/server/crm/deals/activity'
+import { applyWorkspaceCurrency } from '../src/server/crm/workspace-currency'
 import type { RequestContext } from '../src/server/work/deps'
 import { aggregateStageTotals, filterDeals, formatMoney, withDefaultOwner } from '../src/server/crm/deals/view-model'
 
@@ -99,5 +100,20 @@ describe('deal view model', () => {
     }
     await loadActivity(context, 'deal-1', true)
     expect(find).toHaveBeenCalledWith(expect.objectContaining({ overrideAccess: true, user, req: context.req }))
+  })
+})
+
+describe('workspace currency defaults', () => {
+  it('overrides a new deal currency without altering its amount', () => {
+    expect(applyWorkspaceCurrency({ value: { amountMinor: 12500, currency: 'USD' } }, 'INR')).toEqual({
+      value: { amountMinor: 12500, currency: 'INR' },
+    })
+  })
+
+  it('applies to converted deals but leaves records without value untouched', () => {
+    expect(applyWorkspaceCurrency({ deal: { value: { amountMinor: 2500, currency: 'USD' } } }, 'INR', true)).toEqual({
+      deal: { value: { amountMinor: 2500, currency: 'INR' } },
+    })
+    expect(applyWorkspaceCurrency({ value: null }, 'INR')).toEqual({ value: null })
   })
 })

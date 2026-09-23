@@ -20,6 +20,7 @@ import {
   saveMember as saveMemberAction,
 } from './members'
 import type { ActionResult } from './types'
+import { isSupportedCurrency } from '../../../i18n/currencies'
 export type { ActionResult } from './types'
 
 const recordOf = (input: unknown): Record<string, unknown> =>
@@ -63,6 +64,8 @@ function notificationChannels(value: unknown): Record<string, { inApp: boolean; 
 export async function updateSettings(input: unknown): Promise<ActionResult> {
   const context = await getProductContext()
   const data = normalizeSettings(recordOf(input))
+  if (data.currency !== undefined && !isSupportedCurrency(data.currency))
+    return { ok: false, error: 'Choose a supported ISO 4217 currency.' }
   const keys = Object.keys(data)
   const owner = can(context.actor, 'manage_settings', { type: 'settings' })
   const managerUpdate =

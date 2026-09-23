@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { asId } from '@ops/kernel'
 import { runConvertLead, runCreateLead, runMarkLost, runMoveLead, runUpdateLead } from '@ops/module-crm'
 import { getCrmDeps } from '../deps'
+import { getWorkspaceSettings } from '../../auth/context'
+import { applyWorkspaceCurrency } from '../workspace-currency'
 import { leadStageMoveError } from './types'
 
 export type LeadActionResult<T = unknown> =
@@ -74,7 +76,9 @@ export async function moveLead(input: unknown): Promise<LeadActionResult<{ stage
 
 /** Converts a lead into an organization/contact/deal set. */
 export async function convertLead(input: unknown): Promise<LeadActionResult> {
-  const result = await runConvertLead(await getCrmDeps(), input)
+  const [deps, settings] = await Promise.all([getCrmDeps(), getWorkspaceSettings()])
+  const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
+  const result = await runConvertLead(deps, applyWorkspaceCurrency(input, currency, true))
   if (result.ok) {
     revalidatePath('/leads')
     revalidatePath('/leads/board')

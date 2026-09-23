@@ -85,7 +85,7 @@ function StagePicker({ deal, stages, pending, setError, run }: ActionProps & Rea
   )
 }
 
-function ValueEditor({ deal, pending, setError, run }: ActionProps) {
+function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & Readonly<{ currency: string }>) {
   const [value, setValue] = useState(deal.value === null ? '' : String(deal.value.amountMinor / 100))
   function save() {
     const amountMinor = value.trim() === '' ? null : Math.round(Number(value) * 100)
@@ -98,7 +98,7 @@ function ValueEditor({ deal, pending, setError, run }: ActionProps) {
         updateDealAction({
           id: deal.id,
           expectedUpdatedAt: deal.updatedAt,
-          patch: { value: amountMinor === null ? null : { amountMinor, currency: deal.value?.currency ?? 'USD' } },
+          patch: { value: amountMinor === null ? null : { amountMinor, currency: deal.value?.currency ?? currency } },
         }),
       () => {
         setValue(deal.value === null ? '' : String(deal.value.amountMinor / 100))
@@ -107,7 +107,7 @@ function ValueEditor({ deal, pending, setError, run }: ActionProps) {
   }
   return (
     <div className="grid gap-2">
-      <Label htmlFor="deal-value-detail">Value</Label>
+      <Label htmlFor="deal-value-detail">Value ({deal.value?.currency ?? currency})</Label>
       <div className="flex gap-2">
         <Input
           id="deal-value-detail"
@@ -205,18 +205,20 @@ export function DealControls({
   lostReasons,
   contacts,
   stageCategory,
+  currency,
 }: Readonly<{
   deal: Deal
   stages: readonly Stage[]
   lostReasons: readonly Readonly<{ id: string; name: string }>[]
   contacts: readonly Contact[]
   stageCategory: string
+  currency: string
 }>) {
   const { pending, error, setError, run } = useDealAction()
   return (
     <div className="grid gap-5">
       <StagePicker deal={deal} stages={stages} pending={pending} setError={setError} run={run} />
-      <ValueEditor deal={deal} pending={pending} setError={setError} run={run} />
+      <ValueEditor deal={deal} currency={currency} pending={pending} setError={setError} run={run} />
       <ContactPicker deal={deal} contacts={contacts} pending={pending} setError={setError} run={run} />
       <ClosingControls
         deal={deal}

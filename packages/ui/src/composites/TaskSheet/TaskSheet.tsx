@@ -31,12 +31,19 @@ function TaskMeta({ task }: Readonly<{ task: TaskSheetTask }>) {
   )
 }
 
+type TaskSaveResult = Readonly<{ ok: true }> | Readonly<{ ok: false; error: string }>
+
 function Description({
   value,
   onChange,
   onSave,
   disabled = false,
-}: Readonly<{ value: string; onChange: (value: string) => void; onSave?: () => void; disabled?: boolean }>) {
+}: Readonly<{
+  value: string
+  onChange: (value: string) => void
+  onSave?: () => void | Promise<void>
+  disabled?: boolean
+}>) {
   return (
     <section>
       <h3 className="mb-2 text-sm font-medium">Description</h3>
@@ -104,26 +111,33 @@ export function TaskSheet({
   task: TaskSheetTask | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSaveDescription?: (taskId: string, expectedUpdatedAt: number, description: string) => Promise<boolean> | boolean
+  onSaveDescription?: (
+    taskId: string,
+    expectedUpdatedAt: number,
+    description: string,
+  ) => Promise<TaskSaveResult> | TaskSaveResult
   onComplete?: (taskId: string, expectedUpdatedAt: number, reopen: boolean) => Promise<boolean> | boolean
   renderAsPage?: boolean
 }>) {
   const [description, setDescription] = useState(task?.description ?? '')
-  const [busy, setBusy] = useState(false)
+  const [busyAction, setBusyAction] = useState<'description' | 'complete' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   useEffect(() => {
-    setDescription(task?.description ?? '')
     setMessage(null)
-  }, [task?.description, task?.id])
+  }, [task?.id])
+  useEffect(() => {
+    setDescription(task?.description ?? '')
+  }, [task?.description])
   if (task === null) return null
+  const busy = busyAction !== null
   const expectedUpdatedAt = task.updatedAt ?? 0
   const terminal = ['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory ?? '')
   const handleComplete = async () => {
     if (onComplete === undefined) return
-    setBusy(true)
+    setBusyAction('complete')
     setMessage(null)
     const saved = await onComplete(task.id, expectedUpdatedAt, terminal)
-    setBusy(false)
+    setBusyAction(null)
     setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
   }
   const detail = (
@@ -145,31 +159,31 @@ export function TaskSheet({
             ? {}
             : {
                 onSave: async () => {
-                  setBusy(true)
+                  setBusyAction('description')
                   setMessage(null)
-                  const saved = await onSaveDescription(task.id, expectedUpdatedAt, description)
-                  setBusy(false)
-                  setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
+                  const result = await onSaveDescription(task.id, expectedUpdatedAt, description)
+                  setBusyAction(null)
+                  setMessage(result.ok ? 'Saved.' : result.error)
                 },
               })}
         />
         <Subtasks task={task} />
+        {message === null ? null : (
+          <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {message}
+          </p>
+        )}
       </div>
       <SheetFooter className="shrink-0 flex-row border-t">
         {onComplete === undefined ? null : (
           <Button className="flex-1" onClick={() => void handleComplete()} disabled={busy}>
-            {busy ? (terminal ? 'Reopening…' : 'Completing…') : terminal ? 'Reopen' : 'Complete'}
+            {busyAction === 'complete' ? (terminal ? 'Reopening…' : 'Completing…') : terminal ? 'Reopen' : 'Complete'}
           </Button>
         )}
         <Button className="flex-1" variant="outline" onClick={() => onOpenChange(false)}>
           Close
         </Button>
       </SheetFooter>
-      {message === null ? null : (
-        <p className="px-4 pb-3 text-sm text-muted-foreground" role="status" aria-live="polite">
-          {message}
-        </p>
-      )}
     </>
   )
   if (renderAsPage)
