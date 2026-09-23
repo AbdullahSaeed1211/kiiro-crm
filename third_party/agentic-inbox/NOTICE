@@ -1,0 +1,3 @@
+This application contains UI code adapted from cloudflare/agentic-inbox at commit `48039bb`.
+The upstream work is copyright (c) 2026 Cloudflare, Inc. The adapted files carry Apache-2.0 notices. See `LICENSE` for the license terms.
+The adaptation covers folder navigation, split-pane selection, message headers, and the message reader. It excludes the AI agent and its related features.

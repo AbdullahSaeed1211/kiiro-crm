@@ -147,38 +147,7 @@ export const NOTIFICATION_COPY: Readonly<Record<Locale, Readonly<Record<string, 
   },
 }
 
-export const INBOX_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
-  en: {
-    eyebrow: 'Communications',
-    title: 'Inbox',
-    description: 'Inbound and outbound email linked to your workspace records.',
-    filter: 'Filter',
-    all: 'All messages',
-    inbound: 'Received',
-    outbound: 'Sent',
-    failed: 'Failed',
-    apply: 'Apply',
-    empty: 'No email messages match this filter.',
-    unknownRecipient: 'Unknown recipient',
-    unlinked: 'Unlinked record',
-    openRecord: 'Open linked record',
-  },
-  es: {
-    eyebrow: 'Comunicaciones',
-    title: 'Bandeja de entrada',
-    description: 'Correos entrantes y salientes vinculados a tus registros.',
-    filter: 'Filtrar',
-    all: 'Todos los mensajes',
-    inbound: 'Recibidos',
-    outbound: 'Enviados',
-    failed: 'Fallidos',
-    apply: 'Aplicar',
-    empty: 'No hay mensajes que coincidan con este filtro.',
-    unknownRecipient: 'Destinatario desconocido',
-    unlinked: 'Registro sin vínculo',
-    openRecord: 'Abrir registro vinculado',
-  },
-}
+export { INBOX_COPY } from './inbox-copy'
 
 export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {

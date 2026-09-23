@@ -1,0 +1,836 @@
+/*
+ * Copyright (c) 2026 Cloudflare, Inc.
+ * CSS presentation adapted from cloudflare/agentic-inbox at commit 48039bb.
+ * Modified for the CRM application shell and existing UI tokens.
+ * Licensed under Apache-2.0; see third_party/agentic-inbox/LICENSE.
+ */
+.workspace {
+  --inbox-accent: #2563eb;
+  --inbox-border: #e5e7eb;
+  --inbox-muted: #6b7280;
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  height: calc(100svh - 3rem);
+  margin-block-start: 3rem;
+  min-height: 34rem;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.folderRail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+  border-right: 1px solid var(--inbox-border);
+  background: color-mix(in oklch, var(--background) 92%, var(--foreground));
+  padding: 1rem 0.7rem;
+}
+
+.railHeading {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.6rem;
+  padding-inline: 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.mailMark {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border: 1px solid var(--inbox-border);
+  border-radius: 0.55rem;
+  background: var(--background);
+  color: var(--inbox-accent);
+}
+
+.composeButton {
+  display: flex;
+  min-height: 2.65rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: var(--inbox-accent);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.composeButton:hover {
+  background: #1d4ed8;
+}
+
+.composeButton:active {
+  transform: translateY(1px);
+}
+
+.folderList {
+  display: grid;
+  align-content: start;
+  gap: 0.2rem;
+}
+
+.folderButton {
+  display: flex;
+  min-width: 0;
+  min-height: 2.45rem;
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  padding: 0 0.55rem;
+  color: #4b5563;
+  text-align: left;
+  font-size: 0.81rem;
+  cursor: pointer;
+}
+
+.folderButton:hover,
+.folderActive {
+  background: color-mix(in oklch, var(--foreground) 6%, transparent);
+  color: var(--foreground);
+}
+
+.folderActive {
+  font-weight: 600;
+}
+
+.folderCount {
+  margin-left: auto;
+  color: var(--inbox-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.railFootnote {
+  margin-top: auto;
+  padding: 0.7rem 0.45rem 0.25rem;
+  color: var(--inbox-muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.mailArea {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 3.8rem minmax(0, 1fr);
+}
+
+.toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--inbox-border);
+  padding: 0 1.15rem;
+}
+
+.searchBox {
+  display: flex;
+  width: min(100%, 37rem);
+  min-width: 8rem;
+  height: 2.35rem;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--inbox-border);
+  border-radius: 0.5rem;
+  background: color-mix(in oklch, var(--foreground) 2%, var(--background));
+  padding: 0 0.65rem;
+  color: var(--inbox-muted);
+}
+
+.searchBox:focus-within {
+  border-color: color-mix(in oklch, var(--inbox-accent) 55%, var(--inbox-border));
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--inbox-accent) 12%, transparent);
+}
+
+.searchBox input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.searchBox input::placeholder {
+  color: #9ca3af;
+}
+
+.searchBox kbd {
+  flex: none;
+  border: 1px solid var(--inbox-border);
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.3rem;
+  color: #9ca3af;
+  font-size: 0.68rem;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.mobileCompose {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: var(--inbox-accent);
+  padding: 0.45rem 0.55rem;
+  color: #fff;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.settingsLink,
+.closeButton {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  color: #6b7280;
+}
+
+.settingsLink:hover,
+.closeButton:hover {
+  border-color: var(--inbox-border);
+  background: color-mix(in oklch, var(--foreground) 4%, transparent);
+  color: var(--foreground);
+}
+
+.contentGrid {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(17.5rem, 23rem) minmax(0, 1fr);
+}
+
+.threadList {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--inbox-border);
+}
+
+.listHeading {
+  display: flex;
+  min-height: 4.1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--inbox-border);
+  padding: 0.7rem 1rem;
+}
+
+.listHeading h1 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.listHeading p {
+  margin: 0.2rem 0 0;
+  color: var(--inbox-muted);
+  font-size: 0.7rem;
+}
+
+.unreadPill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--inbox-accent) 10%, transparent);
+  padding: 0.2rem 0.5rem;
+  color: var(--inbox-accent);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.threadRows {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.threadRow {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 5.25rem;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in oklch, var(--inbox-border) 70%, transparent);
+  background: var(--background);
+  padding: 0.78rem 0.85rem;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.threadRow:hover {
+  background: color-mix(in oklch, var(--foreground) 3%, var(--background));
+}
+
+.threadSelected {
+  background: color-mix(in oklch, var(--inbox-accent) 6%, var(--background));
+  box-shadow: inset 2px 0 var(--inbox-accent);
+}
+
+.threadSelected:hover {
+  background: color-mix(in oklch, var(--inbox-accent) 8%, var(--background));
+}
+
+.avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--inbox-accent) 10%, var(--background));
+  color: var(--inbox-accent);
+  font-size: 0.68rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.threadContent {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0.25rem;
+}
+
+.threadTopline,
+.threadSubject {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.threadTopline {
+  justify-content: space-between;
+  color: var(--inbox-muted);
+  font-size: 0.69rem;
+}
+
+.threadTopline time {
+  flex: none;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.threadSender,
+.threadSubject,
+.threadPreview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadSender {
+  color: #4b5563;
+}
+
+.threadSubject {
+  color: #374151;
+  font-size: 0.75rem;
+}
+
+.threadPreview {
+  color: #7b8492;
+  font-size: 0.68rem;
+}
+
+.unreadRow .threadSender,
+.unreadRow .threadSubject {
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.threadCount {
+  display: inline-grid;
+  min-width: 1rem;
+  height: 1rem;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: #e5e7eb;
+  padding-inline: 0.2rem;
+  color: #4b5563;
+  font-size: 0.62rem;
+}
+
+.unreadDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: none;
+  align-self: center;
+  border-radius: 50%;
+  background: var(--inbox-accent);
+}
+
+.listEmpty,
+.readerEmpty {
+  display: grid;
+  min-height: 9rem;
+  place-items: center;
+  padding: 1.5rem;
+  color: var(--inbox-muted);
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.reader {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--background);
+}
+
+.readerToolbar {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 0.7rem;
+  border-bottom: 1px solid var(--inbox-border);
+  padding: 0 1rem;
+}
+
+.messageCount {
+  color: var(--inbox-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.readerTools {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.recordLink,
+.unlinkedLabel {
+  overflow: hidden;
+  max-width: 14rem;
+  color: var(--inbox-accent);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unlinkedLabel {
+  color: var(--inbox-muted);
+}
+
+.messageScroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.subjectBlock {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--inbox-border) 80%, transparent);
+  padding: 0.85rem 1.3rem;
+}
+
+.subjectBlock h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.messageStack {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.messageCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--inbox-border) 75%, transparent);
+  padding: 1.2rem 1.3rem 1.45rem;
+}
+
+.messageBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.messageMeta,
+.messageActions,
+.messageIdentity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.messageMeta {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.messageIdentity {
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.messageIdentity strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.messageIdentity > span,
+.messageActions time {
+  overflow: hidden;
+  color: var(--inbox-muted);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messageActions {
+  flex: none;
+  gap: 0.55rem;
+}
+
+.messageRecipients {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+  color: #8a929e;
+  font-size: 0.67rem;
+}
+
+.messageRecipients span {
+  color: var(--inbox-muted);
+}
+
+.messageRecipients .failedStatus {
+  color: #dc2626;
+}
+
+.messageText {
+  margin: 1rem 0 0;
+  color: color-mix(in oklch, var(--foreground) 90%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.attachmentList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachmentList a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--inbox-border);
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  color: var(--inbox-accent);
+  font-size: 0.7rem;
+}
+
+.mobileBack {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: transparent;
+  padding: 0.4rem 0.2rem;
+  color: var(--inbox-accent);
+  font-size: 0.78rem;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(17 24 39 / 32%);
+  padding: 1rem;
+}
+
+.composeDialog {
+  display: grid;
+  width: min(100%, 34rem);
+  gap: 1rem;
+  border: 1px solid var(--inbox-border);
+  border-radius: 0.75rem;
+  background: var(--background);
+  padding: 1.15rem;
+  box-shadow: 0 24px 80px rgb(15 23 42 / 22%);
+}
+
+.composeDialog > header,
+.composeDialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.composeDialog h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.composeNotice {
+  margin: 0;
+  border: 1px solid color-mix(in oklch, #f59e0b 30%, var(--inbox-border));
+  border-radius: 0.5rem;
+  background: color-mix(in oklch, #f59e0b 8%, var(--background));
+  padding: 0.7rem;
+  color: #854d0e;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.composeDialog > label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--inbox-muted);
+  font-size: 0.72rem;
+}
+
+.composeDialog input,
+.composeDialog textarea {
+  width: 100%;
+  border: 1px solid var(--inbox-border);
+  border-radius: 0.4rem;
+  background: color-mix(in oklch, var(--foreground) 2%, var(--background));
+  padding: 0.55rem;
+  color: var(--foreground);
+  font: inherit;
+  resize: vertical;
+}
+
+.composeDialog input:disabled,
+.composeDialog textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.composeDialog > footer {
+  justify-content: flex-end;
+}
+
+.composeDialog > footer button {
+  display: inline-flex;
+  min-height: 2.2rem;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: var(--inbox-accent);
+  padding: 0 0.8rem;
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.composeDialog > footer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.folderButton:focus-visible,
+.composeButton:focus-visible,
+.threadRow:focus-visible,
+.mobileBack:focus-visible,
+.settingsLink:focus-visible,
+.recordLink:focus-visible,
+.attachmentList a:focus-visible,
+.closeButton:focus-visible {
+  outline: 2px solid var(--inbox-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1020px) and (min-width: 761px) {
+  .workspace {
+    grid-template-columns: 10.25rem minmax(0, 1fr);
+  }
+
+  .contentGrid {
+    grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
+  }
+
+  .threadRow {
+    padding-inline: 0.65rem;
+  }
+
+  .messageCard,
+  .subjectBlock {
+    padding-inline: 0.95rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace {
+    height: 100svh;
+    min-height: 28rem;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .folderRail {
+    display: block;
+    border-right: 0;
+    border-bottom: 1px solid var(--inbox-border);
+    padding: 0.35rem 0.5rem;
+  }
+
+  .railHeading,
+  .composeButton,
+  .railFootnote {
+    display: none;
+  }
+
+  .folderList {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .folderList::-webkit-scrollbar {
+    display: none;
+  }
+
+  .folderButton {
+    min-height: 2.2rem;
+    flex: none;
+    gap: 0.4rem;
+    padding-inline: 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .mailArea {
+    grid-template-rows: 3.4rem minmax(0, 1fr);
+  }
+
+  .toolbar {
+    gap: 0.55rem;
+    padding-inline: 0.65rem;
+  }
+
+  .searchBox {
+    height: 2.2rem;
+  }
+
+  .searchBox kbd,
+  .settingsLink {
+    display: none;
+  }
+
+  .mobileCompose {
+    display: inline-flex;
+  }
+
+  .contentGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .threadList {
+    border-right: 0;
+  }
+
+  .mobileReading .threadList {
+    display: none;
+  }
+
+  .reader {
+    display: none;
+  }
+
+  .mobileReading .reader {
+    display: flex;
+  }
+
+  .mobileBack {
+    display: inline-flex;
+  }
+
+  .readerToolbar {
+    min-height: 3.1rem;
+    padding-inline: 0.75rem;
+  }
+
+  .subjectBlock,
+  .messageCard {
+    padding-inline: 0.8rem;
+  }
+
+  .subjectBlock h2 {
+    font-size: 0.95rem;
+  }
+
+  .messageCard {
+    gap: 0.55rem;
+  }
+
+  .messageIdentity > span {
+    max-width: 11rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composeButton,
+  .threadRow {
+    transition: none;
+  }
+}
