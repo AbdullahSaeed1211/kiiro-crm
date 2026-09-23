@@ -16,6 +16,11 @@ type GroupAction = (input: unknown) => Promise<Result>
 type InvitationAction = (input: unknown) => Promise<Result>
 type MemberAction = (input: unknown) => Promise<Result>
 
+function formText(values: FormData, key: string): string {
+  const value = values.get(key)
+  return typeof value === 'string' ? value : ''
+}
+
 export function InvitationActions({
   id,
   resendAction,
@@ -104,10 +109,13 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
   const [pending, setPending] = useState(false)
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
+    const values = new FormData(event.currentTarget)
+    const submittedEmail = formText(values, 'email')
+    const submittedRole = formText(values, 'role')
     setPending(true)
     setInviteUrl('')
     try {
-      const result = await action({ email, role })
+      const result = await action({ email: submittedEmail, role: submittedRole })
       const data =
         typeof result.data === 'object' && result.data !== null ? (result.data as Record<string, unknown>) : {}
       const nextInviteUrl = typeof data.inviteUrl === 'string' ? data.inviteUrl : ''

@@ -71,11 +71,11 @@ const date = (doc: object, key: string): number => {
 const rows = (item: unknown): readonly object[] =>
   Array.isArray(item) ? item.filter((row): row is object => typeof row === 'object' && row !== null) : []
 
-interface StageLabel {
+export interface StageLabel {
   readonly name: string
   readonly category: StageCategory
 }
-function addStages(stages: Map<string, StageLabel>, workflow: object): void {
+export function addStages(stages: Map<string, StageLabel>, workflow: object): void {
   for (const row of rows(value(workflow, 'stages'))) {
     const stageId = id(row, 'id')
     const category = value(row, 'category')
@@ -101,7 +101,7 @@ function workflowStages(workflows: readonly object[]): WorkReadModel['stages'] {
   }
   return [...result.values()]
 }
-function mapTask(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListTask {
+export function mapTask(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListTask {
   const stageId = text(doc, 'stageId')
   const priorities = ['none', 'low', 'medium', 'high', 'urgent'] as const
   return {
@@ -214,10 +214,6 @@ export async function loadMyTaskModel(
   }
 }
 
-/** Loads one scoped task for the task page. */
-export async function loadTask(idValue: string): Promise<WorkListTask | undefined> {
-  return (await loadWorkReadModel()).tasks.find((task) => task.id === idValue)
-}
 /** Loads one scoped project and its task rows. */
 export async function loadProject(
   idValue: string,

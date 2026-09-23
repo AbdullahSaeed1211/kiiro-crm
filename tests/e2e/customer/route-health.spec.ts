@@ -371,8 +371,10 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
 
 async function createStaffInvitation(page: Page): Promise<{ readonly email: string; readonly token: string }> {
   const email = `acceptance-${String(Date.now())}@example.test`
-  await page.getByLabel('Teammate email').fill(email)
+  const emailInput = page.getByLabel('Teammate email')
+  await emailInput.fill(email)
   await page.getByLabel('Member role').selectOption('staff')
+  await expect(emailInput).toHaveValue(email)
   await page.getByRole('button', { name: 'Invite', exact: true }).click()
   const created = page.getByRole('status').filter({ hasText: 'Invitation created.' })
   await expect(created).toContainText('/invite/')

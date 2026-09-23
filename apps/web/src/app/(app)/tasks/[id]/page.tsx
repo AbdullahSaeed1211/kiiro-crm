@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { loadTask } from '../../../../server/queries/work/read-models'
-import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
+import { loadTask, loadTaskPeople } from '../../../../server/queries/work/task-details'
 import { TaskAssigneeForm } from './TaskAssigneeForm'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
 
@@ -28,7 +27,7 @@ export default async function TaskPage({
   const query = searchParams === undefined ? {} : await searchParams
   const panel = first(query.panel) === '1'
   const returnTo = safeReturnTo(first(query.returnTo))
-  const [task, model] = await Promise.all([loadTask(id), loadWorkReadModel()])
+  const [task, people] = await Promise.all([loadTask(id), loadTaskPeople()])
   if (task === undefined) notFound()
   return (
     <main className="min-h-screen bg-background">
@@ -38,7 +37,7 @@ export default async function TaskPage({
           title: task.title,
           stage: task.stage,
           priority: task.priority,
-          assignees: task.assigneeIds.map((id) => model.people.get(id) ?? 'Unavailable member'),
+          assignees: task.assigneeIds.map((id) => people.get(id) ?? 'Unavailable member'),
           description: task.description,
           startAt: task.startAt,
           dueAt: task.dueAt,
@@ -54,7 +53,7 @@ export default async function TaskPage({
             taskId={task.id}
             expectedUpdatedAt={task.updatedAt}
             selected={task.assigneeIds}
-            people={[...model.people.entries()]}
+            people={[...people.entries()]}
           />
         </div>
       )}

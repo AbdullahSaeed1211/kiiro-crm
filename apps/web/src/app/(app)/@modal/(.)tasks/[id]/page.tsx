@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { loadTask, loadWorkReadModel } from '../../../../../server/queries/work/read-models'
+import { loadTask, loadTaskPeople } from '../../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from '../../../tasks/[id]/TaskDetailDrawer'
 
 function first(value: string | string[] | undefined): string | undefined {
@@ -18,8 +18,9 @@ export default async function InterceptedTaskPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }>) {
   const [{ id }, query] = await Promise.all([params, searchParams])
-  const [task, model] = await Promise.all([loadTask(id), loadWorkReadModel()])
+  const task = await loadTask(id)
   if (task === undefined) notFound()
+  const people = await loadTaskPeople(task.assigneeIds)
   return (
     <TaskDetailDrawer
       task={{
@@ -27,7 +28,7 @@ export default async function InterceptedTaskPage({
         title: task.title,
         stage: task.stage,
         priority: task.priority,
-        assignees: task.assigneeIds.map((assigneeId) => model.people.get(assigneeId) ?? 'Unavailable member'),
+        assignees: task.assigneeIds.map((assigneeId) => people.get(assigneeId) ?? 'Unavailable member'),
         description: task.description,
         startAt: task.startAt,
         dueAt: task.dueAt,

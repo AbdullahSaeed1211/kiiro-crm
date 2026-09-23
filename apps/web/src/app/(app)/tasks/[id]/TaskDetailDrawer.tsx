@@ -26,7 +26,8 @@ export function TaskDetailDrawer({
       onComplete={completeOrReopenTask}
       onOpenChange={(open) => {
         if (!open) {
-          router.replace(returnTo)
+          if (restoreFocus) router.back()
+          else router.replace(returnTo)
         }
       }}
     />
