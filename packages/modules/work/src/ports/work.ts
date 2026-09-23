@@ -22,9 +22,6 @@ export interface ProjectRecord {
 
 export interface WorkTaskRecord extends TaskPortRecord {
   readonly description: string | null
-  readonly projectId: Id | null
-  readonly relatedType: string | null
-  readonly relatedId: Id | null
   readonly parentTaskId: Id | null
   readonly rank: string
   readonly groupId: Id | null

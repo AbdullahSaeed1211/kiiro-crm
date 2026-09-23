@@ -193,6 +193,33 @@ async function taskPage(
   return { records: result.docs.flatMap((doc) => toTaskRecord(doc) ?? []), total: result.totalDocs }
 }
 
+async function richTasks(req: PayloadRequest, docs: readonly Doc[]): Promise<readonly WorkTaskRecord[]> {
+  const workflowIds = [...new Set(docs.flatMap((doc) => idOf(fieldOf(doc, 'workflow')) ?? []))]
+  if (workflowIds.length === 0) return []
+  const workflowDocs = await findAsUser(req, {
+    collection: COLLECTIONS.workflows,
+    where: { id: { in: workflowIds } },
+    limit: workflowIds.length,
+  })
+  const workflows = new Map(
+    workflowDocs.flatMap((doc) => {
+      const workflow = toWorkflow(doc)
+      return workflow === undefined ? [] : [[String(workflow.id), workflow] as const]
+    }),
+  )
+  return docs.flatMap((doc) => {
+    const workflowId = idOf(fieldOf(doc, 'workflow'))
+    const stageId = idOf(fieldOf(doc, 'stageId'))
+    const stage =
+      workflowId === undefined || stageId === undefined
+        ? undefined
+        : workflows.get(String(workflowId))?.stages.find((item) => item.id === stageId)
+    if (stage === undefined) return []
+    const task = toWorkTaskRecord(doc, stage.category)
+    return task === undefined ? [] : [task]
+  })
+}
+
 /** Reads one permission-scoped task page without materializing the entire task collection. */
 export async function listTaskPage(req: PayloadRequest, query: TaskPageQuery): Promise<TaskPageResult> {
   if (query.dueAtNullsLast !== true) return taskPage(req, query.where, query.sort, query.page, query.limit)
@@ -231,8 +258,6 @@ export async function listTaskPage(req: PayloadRequest, query: TaskPageQuery): P
 /** Payload Local API repository used by both the legacy board and the work vertical commands. */
 export function createTaskRepository(req: PayloadRequest): TaskRepository & WorkRepository {
   const store = createStageStore(req)
-  const richTasks = async (docs: readonly Doc[]) =>
-    (await Promise.all(docs.map((doc) => mapTask(req, doc)))).flatMap((doc) => (doc === undefined ? [] : [doc]))
   return {
     ...store,
     loadTaskWorkflow: async () => {
@@ -247,10 +272,11 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
     },
     listTasks: async (): Promise<readonly WorkTaskRecord[]> => {
       const docs = await findAsUser(req, { collection: COLLECTIONS.tasks, where: {}, sort: ['rank', 'id'] })
-      return docs.flatMap((doc) => toTaskRecord(doc) ?? []) as unknown as WorkTaskRecord[]
+      return richTasks(req, docs)
     },
     listTasksForProject: async (projectId) =>
       richTasks(
+        req,
         await findAsUser(req, {
           collection: COLLECTIONS.tasks,
           where: { project: { equals: projectId } },
@@ -259,6 +285,7 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
       ),
     listChildren: async (parentTaskId) =>
       richTasks(
+        req,
         await findAsUser(req, {
           collection: COLLECTIONS.tasks,
           where: { parentTask: { equals: parentTaskId } },

@@ -46,7 +46,8 @@ function ProjectOverview({ description, taskCount }: Readonly<{ description: str
 function ProjectBoardContent({
   tasks,
   stages,
-}: Readonly<{ tasks: readonly WorkListTask[]; stages: readonly ProjectStage[] }>) {
+  projectId,
+}: Readonly<{ tasks: readonly WorkListTask[]; stages: readonly ProjectStage[]; projectId: string }>) {
   if (tasks.length === 0) {
     return (
       <EmptyState
@@ -54,8 +55,11 @@ function ProjectBoardContent({
         title="No project tasks"
         description="Create a task from the Tasks workspace, then assign it to this project."
         action={
-          <a className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground" href="/tasks">
-            Open tasks
+          <a
+            className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
+            href={`/tasks/new?projectId=${encodeURIComponent(projectId)}`}
+          >
+            Create task
           </a>
         }
       />
@@ -97,10 +101,12 @@ function projectTabs({
   tasks,
   description,
   stages,
+  projectId,
 }: Readonly<{
   tasks: readonly WorkListTask[]
   description: string | null
   stages: readonly ProjectStage[]
+  projectId: string
 }>) {
   return [
     {
@@ -111,7 +117,7 @@ function projectTabs({
     {
       id: 'board',
       label: 'Board',
-      content: <ProjectBoardContent tasks={tasks} stages={stages} />,
+      content: <ProjectBoardContent tasks={tasks} stages={stages} projectId={projectId} />,
     },
     {
       id: 'list',
@@ -137,14 +143,22 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
           title={project.name}
           labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
           stage={<Badge variant="secondary">{project.stage}</Badge>}
-          tabs={projectTabs({ tasks, description: project.description, stages: model.stages })}
+          tabs={projectTabs({ tasks, description: project.description, stages: model.stages, projectId: project.id })}
           actions={
-            <ProjectActions
-              projectId={project.id}
-              updatedAt={project.updatedAt}
-              memberIds={project.memberIds}
-              people={[...model.people.entries()]}
-            />
+            <div className="grid gap-2">
+              <Link
+                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}
+              >
+                Create task
+              </Link>
+              <ProjectActions
+                projectId={project.id}
+                updatedAt={project.updatedAt}
+                memberIds={project.memberIds}
+                people={[...model.people.entries()]}
+              />
+            </div>
           }
           aside={
             <div className="ops-detail-card rounded-lg border p-4">

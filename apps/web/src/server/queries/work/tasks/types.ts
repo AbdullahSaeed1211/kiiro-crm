@@ -35,7 +35,7 @@ export interface TaskListItem {
   /** UTC epoch milliseconds (decision D-09); null when the task has no due date. */
   readonly dueAt: number | null
   /** Project or related record the task belongs to. */
-  readonly context: { readonly label: string } | null
+  readonly context: { readonly label: string; readonly href: string } | null
 }
 
 /** Page and sort requested by the tasks list. */

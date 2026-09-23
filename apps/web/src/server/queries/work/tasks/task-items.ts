@@ -7,8 +7,15 @@ export type PeopleById = ReadonlyMap<string, { readonly name: string; readonly e
 
 const UNKNOWN_STAGE = { name: 'Unknown stage', color: 'gray', position: Number.MAX_SAFE_INTEGER } as const
 
+interface TaskItemOptions {
+  readonly workflow: Workflow
+  readonly people: PeopleById
+  readonly context?: TaskListItem['context']
+}
+
 /** Maps a task record to a tasks-list row with its workflow stage and the assignees the user can see. */
-export function toTaskListItem(task: TaskRecord, workflow: Workflow, people: PeopleById): TaskListItem {
+export function toTaskListItem(task: TaskRecord, options: TaskItemOptions): TaskListItem {
+  const { workflow, people, context = null } = options
   const stage = workflow.stages.find((candidate) => candidate.id === task.stageId) ?? UNKNOWN_STAGE
   const assignees = task.assigneeIds.flatMap((id) => {
     const person = people.get(id)
@@ -21,6 +28,6 @@ export function toTaskListItem(task: TaskRecord, workflow: Workflow, people: Peo
     priority: task.priority,
     assignees,
     dueAt: task.dueAt,
-    context: null,
+    context,
   }
 }

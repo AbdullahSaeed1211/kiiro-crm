@@ -168,7 +168,14 @@ function toRow({
       priority: <PriorityCell priority={task.priority} locale={locale} />,
       assignees: <AssigneesCell assignees={task.assignees} />,
       dueAt: <DueCell dueAt={task.dueAt} locale={locale} />,
-      context: task.context === null ? <EmptyValue /> : task.context.label,
+      context:
+        task.context === null ? (
+          <EmptyValue />
+        ) : (
+          <Link href={task.context.href} className="font-medium hover:text-primary hover:underline">
+            {task.context.label}
+          </Link>
+        ),
     },
   }
 }
@@ -282,6 +289,12 @@ export default async function TasksPage({
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <TaskWorkspaceViews active="table" locale={locale} />
+              <Link
+                href="/tasks/new"
+                className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                New task
+              </Link>
               <TaskViewMenu
                 selectedId={view}
                 locale={locale}

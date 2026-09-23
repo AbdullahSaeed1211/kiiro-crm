@@ -239,7 +239,7 @@ test('customer routes load without browser failures and stay within the response
   const timings: string[] = []
   for (const [route, heading] of ROUTES) {
     const start = Date.now()
-    await page.goto(route, { waitUntil: 'networkidle' })
+    await page.goto(route, { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { name: heading, exact: false }).first()).toBeVisible()
     const elapsed = Date.now() - start
     timings.push(`${route}=${String(elapsed)}ms`)
@@ -251,10 +251,10 @@ test('customer routes load without browser failures and stay within the response
 
   const detailRoutes: string[] = []
   for (const prefix of ['/projects', '/leads', '/deals', '/contacts', '/organizations']) {
-    await page.goto(prefix, { waitUntil: 'networkidle' })
+    await page.goto(prefix, { waitUntil: 'domcontentloaded' })
     detailRoutes.push(await firstDetailHref(page, prefix))
   }
-  await page.goto('/', { waitUntil: 'networkidle' })
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('a[href="/my-tasks"]').filter({ hasText: 'My open tasks' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
   await expect(page.locator('a[href="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
@@ -262,7 +262,7 @@ test('customer routes load without browser failures and stay within the response
   const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
   detailRoutes.splice(1, 0, taskDetail)
-  await page.goto('/tasks', { waitUntil: 'networkidle' })
+  await page.goto('/tasks', { waitUntil: 'domcontentloaded' })
   const taskViews = page.getByRole('navigation', { name: TASK_VIEWS_LABEL })
   await expect(taskViews.getByRole('link', { name: TABLE_VIEW_LABEL, exact: true })).toHaveAttribute(
     ARIA_CURRENT,
@@ -280,30 +280,30 @@ test('customer routes load without browser failures and stay within the response
     'href',
     '/timeline',
   )
-  await page.goto('/tasks/board', { waitUntil: 'networkidle' })
+  await page.goto('/tasks/board', { waitUntil: 'domcontentloaded' })
   await expect(
     page
       .getByRole('navigation', { name: TASK_VIEWS_LABEL })
       .getByRole('link', { name: KANBAN_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
   await expect(page.locator('a[href^="/tasks/"]').first()).toBeVisible()
-  await page.goto('/timeline', { waitUntil: 'networkidle' })
+  await page.goto('/timeline', { waitUntil: 'domcontentloaded' })
   await expect(
     page.getByRole('navigation', { name: TASK_VIEWS_LABEL }).getByRole('link', { name: GANTT_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
-  await page.goto('/calendar', { waitUntil: 'networkidle' })
+  await page.goto('/calendar', { waitUntil: 'domcontentloaded' })
   await expect(
     page
       .getByRole('navigation', { name: TASK_VIEWS_LABEL })
       .getByRole('link', { name: CALENDAR_VIEW_LABEL, exact: true }),
   ).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
-  await page.goto('/reports', { waitUntil: 'networkidle' })
+  await page.goto('/reports', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Figures', exact: true })).toBeVisible()
   await expect(page.getByLabel('Date range')).toHaveValue('30d')
   await expect(page.getByRole('button', { name: 'Apply range', exact: true })).toBeVisible()
   for (const route of detailRoutes) {
     const start = Date.now()
-    await page.goto(route, { waitUntil: 'networkidle' })
+    await page.goto(route, { waitUntil: 'domcontentloaded' })
     await expect(page.locator('main, [data-slot="sheet-content"], [data-slot="card"]').first()).toBeVisible()
     expect(Date.now() - start, `${route} exceeded ${String(ROUTE_BUDGET_MS)}ms`).toBeLessThan(ROUTE_BUDGET_MS)
     expect(await page.locator('body').innerText(), `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
@@ -317,7 +317,7 @@ test('customer routes load without browser failures and stay within the response
     }
   }
 
-  await page.goto('/leads', { waitUntil: 'networkidle' })
+  await page.goto('/leads', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Search workspace' }).click()
   await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('Website')
   await expect(page.getByText('Website redesign inquiry', { exact: true })).toBeVisible()
@@ -502,9 +502,9 @@ test('customer surfaces default to light mode under a dark operating-system pref
 
 test('record email composer validates, confirms and persists a sent message', async ({ page }) => {
   await signIn(page)
-  await page.goto('/contacts', { waitUntil: 'networkidle' })
+  await page.goto('/contacts', { waitUntil: 'domcontentloaded' })
   const detail = await firstDetailHref(page, '/contacts')
-  await page.goto(detail, { waitUntil: 'networkidle' })
+  await page.goto(detail, { waitUntil: 'domcontentloaded' })
   await page.getByRole('tab', { name: 'Email' }).click()
   await page.locator('#email-to').fill('recipient@example.com')
   await page.locator('#email-subject').fill('Follow-up')

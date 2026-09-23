@@ -28,6 +28,9 @@ const seed: TaskRecord = {
   assigneeIds: [],
   startAt: null,
   dueAt: null,
+  projectId: null,
+  relatedType: null,
+  relatedId: null,
 }
 
 function toRecord(task: TaskRecord): StageTrackedRecord {

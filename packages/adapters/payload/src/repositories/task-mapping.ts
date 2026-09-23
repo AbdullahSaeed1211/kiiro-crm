@@ -1,4 +1,3 @@
-/* eslint-disable */
 import type { Id } from '@ops/kernel'
 import type { ProjectRecord, TaskRecord, WorkTaskRecord } from '@ops/module-work'
 import type { StageCategory, StageTrackedRecord } from '@ops/platform'
@@ -51,6 +50,9 @@ export function toTaskRecord(doc: Doc): TaskRecord | undefined {
     assigneeIds: idsOf(fieldOf(doc, FIELDS.assignees)),
     startAt: numberOf(doc, 'startAt'),
     dueAt: numberOf(doc, 'dueAt'),
+    projectId: idOf(fieldOf(doc, FIELDS.project)) ?? null,
+    relatedType: textOf(doc, 'relatedType') ?? null,
+    relatedId: idOf(fieldOf(doc, 'relatedId')) ?? null,
   }
 }
 
@@ -80,9 +82,6 @@ export function toWorkTaskRecord(doc: Doc, stageCategory: StageCategory): WorkTa
   return {
     ...base,
     description: textOf(doc, 'description') ?? null,
-    projectId: idOf(fieldOf(doc, FIELDS.project)) ?? null,
-    relatedType: textOf(doc, 'relatedType') ?? null,
-    relatedId: idOf(fieldOf(doc, 'relatedId')) ?? null,
     parentTaskId: idOf(fieldOf(doc, 'parentTask')) ?? null,
     rank: textOf(doc, 'rank') ?? '',
     groupId: idOf(fieldOf(doc, FIELDS.group)) ?? null,

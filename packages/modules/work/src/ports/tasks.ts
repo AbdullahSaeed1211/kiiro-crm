@@ -16,6 +16,9 @@ export interface TaskRecord {
   readonly assigneeIds: readonly Id[]
   readonly startAt: number | null
   readonly dueAt: number | null
+  readonly projectId: Id | null
+  readonly relatedType: string | null
+  readonly relatedId: Id | null
 }
 
 /** Input of `saveDates`. */

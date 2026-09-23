@@ -17,7 +17,7 @@ export function RelatedTasksTab({
   recordType,
   recordId,
 }: Readonly<{ tasks: readonly RelatedTask[]; recordType: string; recordId: string }>) {
-  const createHref = `/tasks?${new URLSearchParams({ relatedType: recordType, relatedId: recordId }).toString()}`
+  const createHref = `/tasks/new?${new URLSearchParams({ relatedType: recordType, relatedId: recordId }).toString()}`
   return (
     <section className="rounded-xl border bg-card p-4" aria-labelledby="record-tasks-heading">
       <div className="flex flex-wrap items-start justify-between gap-2">

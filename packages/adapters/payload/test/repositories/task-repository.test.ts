@@ -47,8 +47,13 @@ function setup(handlers: Handlers = {}) {
 
 describe('createTaskRepository listTasks', () => {
   it('reads with the user access and maps ISO timestamps and relationship ids', async () => {
-    const docs = [taskDoc(), taskDoc({ id: 't2', workflow: null })]
-    const { repository, calls, req } = setup({ find: () => ({ docs }) })
+    const docs = [
+      taskDoc({ project: 'p1', relatedType: 'organization', relatedId: 'o1' }),
+      taskDoc({ id: 't2', workflow: null }),
+    ]
+    const { repository, calls, req } = setup({
+      find: (args) => ({ docs: args['collection'] === 'workflows' ? [workflowDoc] : docs }),
+    })
     expect(await repository.listTasks()).toEqual([
       {
         id: 't1',
@@ -61,11 +66,23 @@ describe('createTaskRepository listTasks', () => {
         assigneeIds: ['u1', '7'],
         startAt: 2000,
         dueAt: null,
+        projectId: 'p1',
+        relatedType: 'organization',
+        relatedId: 'o1',
+        description: null,
+        parentTaskId: null,
+        rank: '',
+        groupId: 'g1',
+        completedAt: null,
+        createdAt: Date.parse(CREATED),
+        stageCategory: 'open',
       },
     ])
-    expect(calls).toHaveLength(1)
+    expect(calls).toHaveLength(2)
     expect(calls[0]?.args).toMatchObject({ collection: 'tasks', ...SCOPED_READ })
     expect(calls[0]?.args['req']).toBe(req)
+    expect(calls[1]?.args).toMatchObject({ collection: 'workflows', where: { id: { in: ['w1'] } }, ...SCOPED_READ })
+    expect(calls[1]?.args['req']).toBe(req)
   })
 })
 

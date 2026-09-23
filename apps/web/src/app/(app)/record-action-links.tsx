@@ -73,7 +73,7 @@ export function RecordActionLinks({
   phone?: string | null
   outboundEmailEnabled?: boolean
 }>) {
-  const taskHref = `/tasks?${new URLSearchParams({
+  const taskHref = `/tasks/new?${new URLSearchParams({
     relatedType: recordType,
     relatedId: recordId,
     title: `Follow up with ${recordLabel}`,

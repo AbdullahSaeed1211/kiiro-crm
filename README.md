@@ -6,19 +6,7 @@ The authoritative specification is [`docs/spec.md`](docs/spec.md); [`docs/archit
 
 ## Status
 
-The project is in milestone M1, the spike that tests whether Payload runs well enough on Cloudflare Workers to continue (GO) or switch to the fallback stack (spec §2, D-02). The live status is [`docs/orchestration/m1/plan.md`](docs/orchestration/m1/plan.md).
-
-In the repository today:
-
-- Tooling, quality gates, CI and the execution harness (milestone M0).
-- Payload 3 on D1 with the spike collections (users, groups, organizations, projects, tasks, workflows, activity, attachments, notifications, email messages, job runs, settings), their access rules and an initial migration.
-- Platform permissions (`can`, scope filters) and the `changeStage` command; Payload repositories with compare-and-set writes.
-- Product pages `/tasks` (table), `/tasks/board` (drag and drop) and `/timeline` (Gantt), all reading and writing tasks through Payload with the signed-in user access.
-- A 15-minute cron dispatcher with a due-soon reminder job, an inbound email route, and outbound mail senders.
-- Local seed data, local database reset, `GET /api/v1/health`, and measurement scripts for the spike report.
-- Both spike tenants deployed from one build, with Worker startup times of 48 ms and 33 ms against the 1 s limit; the tenant isolation proof has passed over HTTP.
-
-Next in M1: the lost-update fix (M1-W10) and closing the spike report, which recommends GO ([`docs/reports/m1-spike.md`](docs/reports/m1-spike.md)). The live email round trip waits for email onboarding (E-019) and signed-in page checks on Cloudflare wait for Workers Paid (E-018). Later milestones are listed in spec §21.2.
+The integration tree is in M3 verification. The current acceptance evidence and remaining closeout requirements are in [`docs/reports/m3.md`](docs/reports/m3.md) and [`docs/orchestration/m3/plan.md`](docs/orchestration/m3/plan.md). M2 CRM is accepted; M1 spike results remain historical evidence in [`docs/reports/m1-spike.md`](docs/reports/m1-spike.md).
 
 ## Stack
 
@@ -91,12 +79,12 @@ Both scripts refuse to run when `NODE_ENV=production`, `CLOUDFLARE_ENV` or `PAYL
 
 The seed creates four users, all with the password `mirchads@123`:
 
-| Email                   | Role                      |
-| ----------------------- | ------------------------- |
-| `mirchads@example.test` | owner                     |
-| `manager@example.test`  | manager                   |
-| `staff1@example.test`   | staff (Design group)      |
-| `staff2@example.test`   | staff (Development group) |
+| Email                  | Role                      |
+| ---------------------- | ------------------------- |
+| `mirchads@gmail.com`   | owner                     |
+| `manager@example.test` | manager                   |
+| `staff1@example.test`  | staff (Design group)      |
+| `staff2@example.test`  | staff (Development group) |
 
 Sign in at `/login`; protected product pages redirect there without a session. The administrative Payload panel remains at `/admin` and is not part of customer navigation. Pages:
 

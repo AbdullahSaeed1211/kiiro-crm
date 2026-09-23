@@ -21,6 +21,9 @@ function task(assigneeIds: readonly Id[] = []): TaskRecord {
     ...stage,
     startAt: NOW,
     dueAt: NOW + DAY,
+    projectId: null,
+    relatedType: null,
+    relatedId: null,
   }
 }
 

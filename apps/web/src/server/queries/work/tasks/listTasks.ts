@@ -1,7 +1,9 @@
 import { createTaskRepository, listTaskPage } from '@ops/adapter-payload'
+import type { TaskRecord } from '@ops/module-work'
 import type { Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '../../../work/deps'
 import { toTaskListItem, type PeopleById } from './task-items'
+import { loadTaskContexts } from './task-contexts'
 import type { TaskListItem, TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'
 import type { Where } from 'payload'
 
@@ -90,9 +92,49 @@ async function listDueTasks({
     dueAtNullsLast: true,
   })
   const people = await loadPeople(context, [...new Set(page.records.flatMap((task) => task.assigneeIds))])
+  const contexts = await loadTaskContexts(context, page.records)
   return {
-    items: page.records.map((task) => toTaskListItem(task, workflow, people)),
+    items: page.records.map((task) =>
+      toTaskListItem(task, { workflow, people, context: contexts.get(task.id) ?? null }),
+    ),
     total: page.total,
+    page: query.page,
+    pageSize: PAGE_SIZE,
+  }
+}
+
+async function listSortedTaskPage({
+  context,
+  query,
+  workflow,
+  records,
+}: Readonly<{
+  context: RequestContext
+  query: TaskListQuery
+  workflow: Workflow
+  records: readonly TaskRecord[]
+}>): Promise<TaskListResult> {
+  const stageCategories = new Map(workflow.stages.map((stage) => [stage.id, stage.category]))
+  const people = await loadPeople(context, [...new Set(records.flatMap((task) => task.assigneeIds))])
+  const visibleRecords = records.filter((task) => {
+    if (query.view === 'mine') return task.assigneeIds.some((id) => String(id) === String(context.actor.id))
+    if (query.view !== 'open') return true
+    const category = stageCategories.get(task.stageId)
+    return category === undefined || !TERMINAL_CATEGORIES.has(category)
+  })
+  const direction = query.sort.desc ? -1 : 1
+  const compare = COMPARE[query.sort.key]
+  const sorted = visibleRecords
+    .map((task) => ({ task, item: toTaskListItem(task, { workflow, people }) }))
+    .sort((a, b) => direction * compare(a.item, b.item) || a.item.id.localeCompare(b.item.id))
+  const page = sorted.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE)
+  const contexts = await loadTaskContexts(
+    context,
+    page.map(({ task }) => task),
+  )
+  return {
+    items: page.map(({ task }) => toTaskListItem(task, { workflow, people, context: contexts.get(task.id) ?? null })),
+    total: sorted.length,
     page: query.page,
     pageSize: PAGE_SIZE,
   }
@@ -105,23 +147,6 @@ export async function listTasks(query: TaskListQuery, requestContext?: RequestCo
   const workflow = await tasks.loadTaskWorkflow()
   const where = taskWhere(query, workflow, String(context.actor.id))
   if (query.sort.key === 'dueAt') return listDueTasks({ context, workflow, query, where })
-
-  const stageCategories = new Map(workflow.stages.map((stage) => [stage.id, stage.category]))
   const records = await tasks.listTasks()
-  const people = await loadPeople(context, [...new Set(records.flatMap((task) => task.assigneeIds))])
-  const direction = query.sort.desc ? -1 : 1
-  const compare = COMPARE[query.sort.key]
-  const visibleRecords = records.filter((task) => {
-    if (query.view === 'mine') return task.assigneeIds.some((id) => String(id) === String(context.actor.id))
-    if (query.view === 'open') {
-      const category = stageCategories.get(task.stageId)
-      return category === undefined || !TERMINAL_CATEGORIES.has(category)
-    }
-    return true
-  })
-  const sorted = visibleRecords
-    .map((task) => toTaskListItem(task, workflow, people))
-    .sort((a, b) => direction * compare(a, b) || a.id.localeCompare(b.id))
-  const start = (query.page - 1) * PAGE_SIZE
-  return { items: sorted.slice(start, start + PAGE_SIZE), total: sorted.length, page: query.page, pageSize: PAGE_SIZE }
+  return listSortedTaskPage({ context, query, workflow, records })
 }

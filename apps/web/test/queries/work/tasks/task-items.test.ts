@@ -23,12 +23,15 @@ const task: TaskRecord = {
   assigneeIds: [asId('u1'), asId('hidden')],
   startAt: null,
   dueAt: 5,
+  projectId: null,
+  relatedType: null,
+  relatedId: null,
 }
 
 describe('toTaskListItem', () => {
   it('uses the workflow stage and only the assignees the user can see', () => {
     const people = new Map([['u1', { name: 'Ada Example', email: 'ada@example.test' }]])
-    expect(toTaskListItem(task, workflow, people)).toEqual({
+    expect(toTaskListItem(task, { workflow, people })).toEqual({
       id: 't1',
       title: 'Draft checklist',
       stage: { name: 'To do', color: 'blue', position: 1 },
@@ -40,7 +43,7 @@ describe('toTaskListItem', () => {
   })
 
   it('shows an unknown stage last when the stage is not in the workflow', () => {
-    const item = toTaskListItem({ ...task, stageId: asId('gone') }, workflow, new Map())
+    const item = toTaskListItem({ ...task, stageId: asId('gone') }, { workflow, people: new Map() })
     expect(item.stage).toEqual({ name: 'Unknown stage', color: 'gray', position: Number.MAX_SAFE_INTEGER })
   })
 })

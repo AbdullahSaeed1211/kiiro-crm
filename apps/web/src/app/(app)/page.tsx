@@ -90,7 +90,7 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap items-center justify-end gap-2">
               <a
                 className="inline-flex h-8 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-                href="/tasks"
+                href="/tasks/new"
               >
                 {copy.newTask}
               </a>
