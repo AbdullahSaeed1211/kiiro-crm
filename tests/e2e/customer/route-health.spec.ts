@@ -18,6 +18,7 @@ const GANTT_VIEW_LABEL = 'Gantt'
 const CURRENT_PAGE = 'page'
 const ARIA_CURRENT = 'aria-current'
 const CALENDAR_PATH = '/calendar'
+const MEMBERS_PATH = '/settings/members'
 const TASK_TITLE = 'Draft homepage wireframes'
 const TASK_PANEL = '[data-slot="sheet-content"]'
 const ROUTES = [
@@ -40,7 +41,7 @@ const ROUTES = [
   ['/settings/profile', 'Profile'],
   ['/settings/branding', 'Branding'],
   ['/settings/terminology', 'Terminology'],
-  ['/settings/members', 'Members'],
+  [MEMBERS_PATH, 'Members'],
   ['/settings/notifications', 'Notifications'],
   ['/settings/email', 'Email'],
   ['/settings/intake', 'Intake'],
@@ -368,6 +369,36 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
   await page.keyboard.press('Escape')
 })
 
+async function createStaffInvitation(page: Page): Promise<{ readonly email: string; readonly token: string }> {
+  const email = `acceptance-${String(Date.now())}@example.test`
+  await page.getByLabel('Teammate email').fill(email)
+  await page.getByLabel('Member role').selectOption('staff')
+  await page.getByRole('button', { name: 'Invite', exact: true }).click()
+  const created = page.getByRole('status').filter({ hasText: 'Invitation created.' })
+  await expect(created).toContainText('/invite/')
+  await expect(created.getByRole('button', { name: 'Copy invitation link' })).toBeVisible()
+  const token = /\/invite\/([a-f0-9]{64})/.exec(await created.innerText())?.[1]
+  if (token === undefined) throw new Error('invitation link has no valid token')
+  await page.goto(`/invite/${token}`)
+  await expect(page.getByRole('button', { name: 'Accept invitation', exact: true })).toBeVisible()
+  return { email, token }
+}
+
+test('owner can invite a staff member and revoke the pending link', async ({ page, isMobile }) => {
+  await signIn(page)
+  await page.goto(MEMBERS_PATH)
+  const { email, token } = await createStaffInvitation(page)
+  await page.goto(MEMBERS_PATH)
+  const invitation = isMobile
+    ? page.locator('article').filter({ hasText: email })
+    : page.getByRole('row').filter({ hasText: email })
+  await invitation.getByRole('button', { name: 'Revoke', exact: true }).click()
+  await page.getByRole('button', { name: 'Revoke invitation', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Invitation revoked.' })).toBeVisible()
+  await page.goto(`/invite/${token}`)
+  await expect(page.getByRole('heading', { name: 'Invitation unavailable', exact: true })).toBeVisible()
+})
+
 // eslint-disable-next-line max-statements -- this guard covers the settings surfaces that must stay actionable.
 test('configuration surfaces expose real controls and import starters', async ({ page }) => {
   await signIn(page)
@@ -385,7 +416,7 @@ test('configuration surfaces expose real controls and import starters', async ({
   await expect(page.getByRole('heading', { name: 'Notifications', exact: true })).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Assigned to you in-app' })).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Assigned to you email' })).toBeVisible()
-  await page.goto('/settings/members')
+  await page.goto(MEMBERS_PATH)
   await expect(page.getByRole('heading', { name: 'Members', exact: true })).toBeVisible()
   const editAccess = page.locator('summary:visible', { hasText: 'Edit access' }).first()
   await expect(editAccess).toBeVisible()
@@ -440,6 +471,25 @@ test('route-health harness has a local owner credential', () => {
   expect(OWNER_EMAIL).toBe('mirchads@gmail.com')
   expect(existsSync(join(WEB_DIR, '.dev.vars.example'))).toBe(true)
   expect(readFileSync(join(WEB_DIR, '.dev.vars.example'), 'utf8')).toContain('PAYLOAD_SECRET=')
+})
+
+test('staff My Tasks is assignment-scoped and member administration is denied', async ({ page }) => {
+  const staffEmail = USERS.find((user) => user.key === 'staff1')?.email ?? ''
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(staffEmail)
+  await page.getByLabel('Password', { exact: true }).fill(DEV_PASSWORD)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/$/)
+
+  await page.goto('/my-tasks')
+  const content = page.locator('main')
+  await expect(content).toContainText('Design style guide')
+  await expect(content).toContainText('Prepare app icon concepts')
+  await expect(content).not.toContainText('Plan launch checklist')
+
+  const denied = await page.goto(MEMBERS_PATH)
+  expect(denied?.status()).toBe(404)
+  await expect(page.getByRole('heading', { name: 'Members', exact: true })).toHaveCount(0)
 })
 
 test('customer surfaces default to light mode under a dark operating-system preference', async ({ page }) => {

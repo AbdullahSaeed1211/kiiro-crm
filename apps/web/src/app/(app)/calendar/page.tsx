@@ -4,20 +4,15 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Metadata } from 'next'
 import { TASK_COPY } from '../../../i18n/config'
-import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
 import { taskHref } from '../task-navigation'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Calendar' }
 
-function dateInZone(value: number, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(value)
+function dateInZone(value: number, formatter: Intl.DateTimeFormat): string {
+  const parts = formatter.formatToParts(value)
   const get = (name: string) => parts.find((part) => part.type === name)?.value ?? '00'
   return `${get('year')}-${get('month')}-${get('day')}`
 }
@@ -27,31 +22,22 @@ function eventTone(priority: string): CalendarEvent['tone'] {
   return 'blue'
 }
 
-function monthInZone(value: number, timeZone: string): { readonly year: number; readonly month: number } {
-  const parts = new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: 'numeric' }).formatToParts(value)
-  const get = (name: string) => Number(parts.find((part) => part.type === name)?.value ?? 0)
-  return { year: get('year'), month: get('month') - 1 }
-}
-function queryMonth(input: {
-  readonly value: unknown
-  readonly fallback: number
-  readonly min: number
-  readonly max: number
-}): number {
-  const parsed = typeof input.value === 'string' ? Number(input.value) : Number.NaN
-  return Number.isInteger(parsed) && parsed >= input.min && parsed <= input.max ? parsed : input.fallback
-}
-
 /** Month calendar for scoped tasks, grouped by due date. */
 export default async function CalendarPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<{ readonly month?: string; readonly year?: string }> }>) {
-  const model = await loadWorkReadModel()
-  const selected = monthInZone(Date.now(), model.timeZone)
   const query = await searchParams
-  const year = queryMonth({ value: query.year, fallback: selected.year, min: 1970, max: 2100 })
-  const month = queryMonth({ value: query.month, fallback: selected.month + 1, min: 1, max: 12 }) - 1
+  const model = await loadCalendarReadModel(query.year, query.month)
+  const year = model.calendarYear
+  const month = model.calendarMonth
   const copy = TASK_COPY[model.locale]
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: model.timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const monthPrefix = `${String(year).padStart(4, '0')}-${String(month + 1).padStart(2, '0')}-`
   const events: CalendarEvent[] = model.tasks
     .filter(
       (task): task is typeof task & { readonly dueAt: number } =>
@@ -60,10 +46,11 @@ export default async function CalendarPage({
     .map((task) => ({
       id: task.id,
       title: task.title,
-      date: dateInZone(task.dueAt, model.timeZone),
+      date: dateInZone(task.dueAt, formatter),
       href: taskHref(task.id, '/calendar'),
       tone: eventTone(task.priority),
     }))
+    .filter((event) => event.date.startsWith(monthPrefix))
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.calendar }]} />

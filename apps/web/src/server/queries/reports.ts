@@ -241,12 +241,10 @@ export async function loadReportFigures(
   context?: RequestContext,
 ): Promise<ReportFigures> {
   const requestContext = context ?? (await getRequestContext())
-  const [model, repository] = await Promise.all([
-    loadWorkReadModel(requestContext),
-    Promise.resolve(createCrmRepository(requestContext.req)),
-  ])
+  const repository = createCrmRepository(requestContext.req)
   const range = resolveReportRange(input)
-  const [leads, deals, dealWorkflow] = await Promise.all([
+  const [model, leads, deals, dealWorkflow] = await Promise.all([
+    loadWorkReadModel(requestContext, 'reports'),
     repository.list('lead'),
     repository.list('deal'),
     repository.loadDefaultWorkflow('deal').catch(() => undefined),

@@ -2,6 +2,7 @@ import { getWorkspaceSettings } from '../../auth/context'
 import { getRequestContext, type RequestContext } from '../../work/deps'
 import type { StageCategory } from '@ops/platform'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
+import { loadWorkPages, type ReadPurpose } from './read-pages'
 
 export interface WorkListTask {
   readonly id: string
@@ -133,35 +134,24 @@ function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkL
   }
 }
 
-async function pages(context: Awaited<ReturnType<typeof getRequestContext>>) {
-  const request = { depth: 0, limit: 0, pagination: false, overrideAccess: false as const, req: context.req }
-  return Promise.all([
-    context.payload.find({ collection: 'projects', ...request, sort: 'name' }),
-    context.payload.find({ collection: 'tasks', ...request, sort: 'rank' }),
-    context.payload.find({
-      collection: 'workflows',
-      ...request,
-      where: { or: [{ recordType: { equals: 'project' } }, { recordType: { equals: 'task' } }] },
-    }),
-    context.payload.find({ collection: 'users', ...request }),
-  ])
-}
-
 /** Reads scoped work records and labels for Phase 1 pages. */
-export async function loadWorkReadModel(context?: RequestContext): Promise<WorkReadModel> {
+export async function loadWorkReadModel(
+  context?: RequestContext,
+  purpose: ReadPurpose = 'full',
+): Promise<WorkReadModel> {
   const requestContext = context ?? (await getRequestContext())
-  const [projectPage, taskPage, workflowPage, userPage] = await pages(requestContext)
+  const {
+    projects: projectDocs,
+    tasks: taskDocs,
+    workflows: workflowDocs,
+    users: userDocs,
+    settings,
+  } = await loadWorkPages(requestContext, purpose)
   const stages = new Map<string, StageLabel>()
-  for (const workflow of workflowPage.docs as readonly object[]) addStages(stages, workflow)
-  const tasks = (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages))
-  const projects = (projectPage.docs as readonly object[]).map((doc) => mapProject(doc, stages))
-  const people = new Map(
-    (userPage.docs as readonly object[]).flatMap((doc) => {
-      const userId = id(doc, 'id')
-      return userId === null ? [] : [[userId, text(doc, 'name')] as const]
-    }),
-  )
-  const settings = await getWorkspaceSettings()
+  for (const workflow of workflowDocs as readonly object[]) addStages(stages, workflow)
+  const tasks = (taskDocs as readonly object[]).map((doc) => mapTask(doc, stages))
+  const projects = (projectDocs as readonly object[]).map((doc) => mapProject(doc, stages))
+  const people = mapPeople(userDocs)
   const configuredWeekStart = value(settings, 'weekStartsOn')
   const locale = normalizeLocale(value(settings, 'locale'))
   return {
@@ -172,8 +162,17 @@ export async function loadWorkReadModel(context?: RequestContext): Promise<WorkR
     timeZone: text(settings, 'timezone') || 'UTC',
     weekStartsOn: configuredWeekStart === 0 ? 0 : 1,
     locale,
-    stages: workflowStages(workflowPage.docs),
+    stages: workflowStages(workflowDocs),
   }
+}
+
+function mapPeople(documents: readonly object[]): ReadonlyMap<string, string> {
+  return new Map(
+    documents.flatMap((doc) => {
+      const userId = id(doc, 'id')
+      return userId === null ? [] : [[userId, text(doc, 'name')] as const]
+    }),
+  )
 }
 
 /** Reads only the workspace locale when a full work read model would be unnecessary. */

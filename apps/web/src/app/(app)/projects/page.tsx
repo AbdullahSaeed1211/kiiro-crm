@@ -153,7 +153,7 @@ function ProjectTable({
 
 /** Projects list with open-task counts from the same scoped read model. */
 export default async function ProjectsPage() {
-  const model = await loadWorkReadModel()
+  const model = await loadWorkReadModel(undefined, 'projects')
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Projects' }]} />

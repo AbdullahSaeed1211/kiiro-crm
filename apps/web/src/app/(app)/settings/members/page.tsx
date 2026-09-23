@@ -4,9 +4,10 @@ import { inviteMember, resendInvitation, revokeInvitation, saveMember } from '..
 import { InviteMemberForm, InvitationActions, MemberActions } from '../member-forms'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'
+import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { can } from '@ops/platform'
-import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
 import { formatDate } from '../../../../i18n/format'
+import { normalizeLocale } from '../../../../i18n/config'
 
 export const metadata: Metadata = { title: 'Members' }
 export const dynamic = 'force-dynamic'
@@ -85,7 +86,7 @@ function AccessTable({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
 // eslint-disable-next-line max-lines-per-function -- page assembles users, invitations, and responsive access controls.
 export default async function MembersSettingsPage() {
   const context = await requireRole('owner', 'manager')
-  const [users, invitations, groups] = await Promise.all([
+  const [users, invitations, groups, settings] = await Promise.all([
     context.payload.find({
       collection: 'users',
       depth: 0,
@@ -103,8 +104,10 @@ export default async function MembersSettingsPage() {
       req: context.req,
     }),
     context.payload.find({ collection: 'groups', depth: 0, limit: 100, sort: 'name', req: context.req }),
+    getWorkspaceSettings(),
   ])
-  const workModel = await loadWorkReadModel()
+  const locale = normalizeLocale(settings.locale)
+  const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
   const groupOptions = groups.docs.map((group) => ({ id: group.id, name: group.name }))
   const reportOptions = users.docs.map((user) => ({ id: user.id, name: user.name || user.email }))
   const rows: AccessRow[] = [
@@ -140,9 +143,9 @@ export default async function MembersSettingsPage() {
       status: invitation.status,
       lastInvitation:
         typeof invitation.createdAt === 'string'
-          ? formatDate(new Date(invitation.createdAt), workModel.locale, {
+          ? formatDate(new Date(invitation.createdAt), locale, {
               dateStyle: 'medium',
-              timeZone: workModel.timeZone,
+              timeZone,
             })
           : 'Not sent',
       actions:
