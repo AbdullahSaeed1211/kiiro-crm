@@ -19,7 +19,7 @@ export interface WorkListTask {
   readonly completedAt: number | null
   readonly updatedAt: number
 }
-export interface WorkListProject {
+interface WorkListProject {
   readonly id: string
   readonly name: string
   readonly organizationId: string | null

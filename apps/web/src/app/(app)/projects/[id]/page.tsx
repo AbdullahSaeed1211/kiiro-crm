@@ -43,7 +43,10 @@ function ProjectOverview({ description, taskCount }: Readonly<{ description: str
   )
 }
 
-function ProjectBoardContent({ tasks, stages }: Readonly<{ tasks: readonly WorkListTask[]; stages: readonly ProjectStage[] }>) {
+function ProjectBoardContent({
+  tasks,
+  stages,
+}: Readonly<{ tasks: readonly WorkListTask[]; stages: readonly ProjectStage[] }>) {
   if (tasks.length === 0) {
     return (
       <EmptyState

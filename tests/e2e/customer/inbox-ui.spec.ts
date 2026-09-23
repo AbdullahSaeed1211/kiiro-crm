@@ -11,7 +11,10 @@ async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/$/)
 }
 
-test('inbox exposes the mail-client layout and keeps compose sending disabled', async ({ page, isMobile }, testInfo) => {
+test('inbox exposes the mail-client layout and keeps compose sending disabled', async ({
+  page,
+  isMobile,
+}, testInfo) => {
   await signIn(page)
   await page.goto('/inbox')
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible()

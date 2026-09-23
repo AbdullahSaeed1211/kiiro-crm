@@ -10,7 +10,7 @@ const DIRECTORY_SOURCE_FILES = [
 ]
 
 function anchorButtonOpenings(source: string): string[] {
-  return source.match(/<Button\b[^>]*render=\{\s*<a\b[^>]*>/g) ?? []
+  return source.match(/<Button\b[^>]*render=\{\s*<Link\b[^>]*>/g) ?? []
 }
 
 describe('directory anchor buttons', () => {

@@ -27,7 +27,11 @@ function matchesFolder(thread: Thread, folder: Folder): boolean {
   return true
 }
 
-function filterThreads({ threads, folder, query }: Readonly<{ threads: readonly Thread[]; folder: Folder; query: string }>): Thread[] {
+function filterThreads({
+  threads,
+  folder,
+  query,
+}: Readonly<{ threads: readonly Thread[]; folder: Folder; query: string }>): Thread[] {
   const normalizedQuery = query.trim().toLocaleLowerCase()
   return threads.filter(
     (thread) =>
