@@ -324,6 +324,40 @@ select:focus {
   border-radius: 0;
 }
 
+/* Directory lists use the same continuous view surface as the object workspace. */
+.ops-directory-table {
+  margin-inline: -1.25rem;
+  border-inline: 0;
+  border-radius: 0;
+}
+
+.ops-directory-table .ops-data-table-toolbar {
+  min-height: 3.25rem;
+  padding-inline: 1.25rem;
+}
+
+.ops-directory-table .ops-data-table-viewport {
+  max-height: none;
+  overflow-x: auto;
+}
+
+.ops-directory-table [data-slot='table-head'] {
+  border-top: 1px solid var(--hairline);
+}
+
+.ops-directory-table [data-slot='table-row'] > :first-child {
+  padding-left: 1.25rem;
+}
+
+.ops-directory-table [data-slot='table-row'] > :last-child {
+  padding-right: 1.25rem;
+}
+
+.ops-directory-table > :last-child {
+  min-height: 2.75rem;
+  padding-inline: 1.25rem;
+}
+
 [data-slot='table-head'] {
   height: 2.2rem;
   color: var(--muted-foreground);
@@ -380,6 +414,59 @@ select:focus {
   position: sticky;
   top: 4.5rem;
   align-self: start;
+}
+
+.ops-organization-record .ops-record-aside {
+  border-left: 1px solid var(--hairline);
+  padding-left: 1.25rem;
+}
+
+.ops-organization-record .ops-record-aside [data-slot='card'] {
+  gap: 0.45rem;
+  padding-block: 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  --tw-ring-shadow: 0 0 #0000;
+}
+
+.ops-organization-record .ops-record-aside [data-slot='card']:first-child {
+  padding-top: 0;
+}
+
+.ops-organization-record .ops-record-aside [data-slot='card-header'],
+.ops-organization-record .ops-record-aside [data-slot='card-content'] {
+  padding-inline: 0;
+}
+
+.ops-organization-record .ops-record-aside [data-slot='card-title'] {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.ops-organization-record .ops-record-aside [data-slot='card-content'] > .divide-y {
+  border: 0;
+  border-radius: 0;
+}
+
+.ops-organization-overview-metrics > :not(:last-child) {
+  border-right: 1px solid var(--hairline);
+}
+
+.ops-organization-overview section > .divide-y {
+  border: 0;
+  border-radius: 0;
+}
+
+.ops-organization-overview section > .divide-y > p {
+  padding: 0.65rem 0;
+}
+
+.ops-organization-overview section > .divide-y > a {
+  padding-inline: 0;
 }
 
 .ops-kanban-board {
@@ -574,6 +661,30 @@ select:focus {
 
   .ops-data-table-viewport {
     max-height: calc(100svh - 11rem);
+  }
+
+  .ops-directory-table {
+    margin-inline: -0.75rem;
+  }
+
+  .ops-directory-table .ops-data-table-toolbar,
+  .ops-directory-table > :last-child {
+    padding-inline: 0.75rem;
+  }
+
+  .ops-directory-table [data-slot='table-row'] > :first-child {
+    padding-left: 0.75rem;
+  }
+
+  .ops-directory-table [data-slot='table-row'] > :last-child {
+    padding-right: 0.75rem;
+  }
+
+  .ops-organization-record .ops-record-aside {
+    border-top: 1px solid var(--hairline);
+    border-left: 0;
+    padding-top: 1rem;
+    padding-left: 0;
   }
 
   .ops-kanban-column {

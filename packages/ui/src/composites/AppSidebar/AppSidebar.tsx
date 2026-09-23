@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import {
   Sidebar,
   SidebarContent,
@@ -78,7 +79,7 @@ function NavLink({ item }: Readonly<{ item: NavItem }>) {
       <SidebarMenuButton
         isActive={active}
         tooltip={item.label}
-        render={<a href={item.href} aria-current={active ? 'page' : undefined} />}
+        render={<Link href={item.href} prefetch={false} aria-current={active ? 'page' : undefined} />}
       >
         <Icon />
         <span>{item.label}</span>
@@ -110,7 +111,7 @@ export function AppSidebar({ appName, logo, compactLogo, homeHref = '/', groups,
       <SidebarHeader className="ops-sidebar-brand">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip={appName} render={<a href={homeHref} />}>
+            <SidebarMenuButton size="lg" tooltip={appName} render={<Link href={homeHref} prefetch={false} />}>
               <BrandMark appName={appName} logo={logo} compactLogo={compactLogo} />
               <span className="font-semibold">{appName}</span>
             </SidebarMenuButton>

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { Button } from '@ops/ui/components/ui/button'
 import { formatTemplate, pageRange } from './format'
 import type { DataTableLabels, DataTablePaginationState } from './types'
@@ -13,7 +14,7 @@ function PageLink({ href, children }: Readonly<{ href: string | undefined; child
     )
   }
   return (
-    <Button variant="outline" size="sm" nativeButton={false} render={<a href={href} />}>
+    <Button variant="outline" size="sm" nativeButton={false} render={<Link href={href} prefetch={false} />}>
       {children}
     </Button>
   )

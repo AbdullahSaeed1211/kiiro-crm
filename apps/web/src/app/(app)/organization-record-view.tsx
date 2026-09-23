@@ -16,28 +16,10 @@ import { safeExternalHref } from '../../server/crm/directory/utils'
 import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordActionLinks } from './record-action-links'
 
-function OrganizationAside({
-  record,
-  owner,
-  relations,
-}: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null; relations: OrganizationRelations }>) {
+function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null }>) {
   const website = record.website === null ? null : safeExternalHref(record.website)
-  const contactRows = relations.contacts.map((contact) => (
-    <RelationRow
-      key={contact.id}
-      href={`/contacts/${contact.id}`}
-      title={displayName(contact)}
-      detail={contact.email ?? undefined}
-    />
-  ))
-  const dealRows = relations.deals.map((deal) => (
-    <RelationRow key={deal.id} href={`/deals/${deal.id}`} title={deal.title} />
-  ))
-  const projectRows = relations.projects.map((project) => (
-    <RelationRow key={project.id} href={`/projects/${project.id}`} title={project.name} />
-  ))
   return (
-    <div className="space-y-4">
+    <div className="space-y-0">
       <DetailCard title="Details">
         <dl className="grid gap-3 text-sm">
           <div>
@@ -80,18 +62,61 @@ function OrganizationAside({
           </div>
         </dl>
       </DetailCard>
-      <DetailCard title={`Contacts · ${String(relations.contacts.length)}`}>
-        <RelationList items={contactRows} empty="No contacts linked yet." />
-      </DetailCard>
-      <DetailCard title={`Deals · ${String(relations.deals.length)}`}>
-        <RelationList items={dealRows} empty="No deals linked yet." />
-      </DetailCard>
-      <DetailCard title={`Projects · ${String(relations.projects.length)}`}>
-        <RelationList items={projectRows} empty="No projects linked yet." />
-      </DetailCard>
       <DetailCard title="Meta">
         <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} />
       </DetailCard>
+    </div>
+  )
+}
+
+function OrganizationOverview({ relations }: Readonly<{ relations: OrganizationRelations }>) {
+  const sections = [
+    {
+      label: 'Projects',
+      count: relations.projects.length,
+      empty: 'No projects linked yet.',
+      items: relations.projects.map((project) => (
+        <RelationRow key={project.id} href={`/projects/${project.id}`} title={project.name} />
+      )),
+    },
+    {
+      label: 'Contacts',
+      count: relations.contacts.length,
+      empty: 'No contacts linked yet.',
+      items: relations.contacts.map((contact) => (
+        <RelationRow
+          key={contact.id}
+          href={`/contacts/${contact.id}`}
+          title={displayName(contact)}
+          detail={contact.email ?? undefined}
+        />
+      )),
+    },
+    {
+      label: 'Deals',
+      count: relations.deals.length,
+      empty: 'No deals linked yet.',
+      items: relations.deals.map((deal) => <RelationRow key={deal.id} href={`/deals/${deal.id}`} title={deal.title} />),
+    },
+  ] as const
+  return (
+    <div className="ops-organization-overview">
+      <div className="ops-organization-overview-metrics grid grid-cols-3 border-b">
+        {sections.map((section) => (
+          <div key={section.label} className="flex flex-col gap-1 px-4 py-3 first:pl-0 last:pr-0">
+            <span className="text-xs text-muted-foreground">{section.label}</span>
+            <span className="text-xl font-semibold tabular-nums">{section.count}</span>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-x-6 md:grid-cols-2">
+        {sections.map((section) => (
+          <section key={section.label} className="min-w-0 border-b py-4">
+            <h2 className="mb-1 text-sm font-semibold">{section.label}</h2>
+            <RelationList items={section.items} empty={section.empty} />
+          </section>
+        ))}
+      </div>
     </div>
   )
 }
@@ -117,6 +142,7 @@ export function OrganizationRecordView({
       <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }, { label: record.name }]} />
       <PageContent>
         <RecordPageLayout
+          className="ops-organization-record"
           labels={{ breadcrumb: 'Organization', saveTitle: 'Save name', cancelTitle: 'Cancel' }}
           title={record.name}
           owner={
@@ -136,19 +162,22 @@ export function OrganizationRecordView({
               outboundEmailEnabled={outboundEmailEnabled}
             />
           }
-          tabs={recordTabs(
-            <Activity entries={activity} recordType="organization" recordId={record.id} />,
-            emailMessages,
-            {
-              recordType: 'organization',
-              recordId: record.id,
-              recipient: record.email,
-              outboundEmailEnabled,
-              tasks: relatedTasks,
-              attachments,
-            },
-          )}
-          aside={<OrganizationAside record={record} owner={owner} relations={relations} />}
+          tabs={[
+            { id: 'overview', label: 'Overview', content: <OrganizationOverview relations={relations} /> },
+            ...recordTabs(
+              <Activity entries={activity} recordType="organization" recordId={record.id} />,
+              emailMessages,
+              {
+                recordType: 'organization',
+                recordId: record.id,
+                recipient: record.email,
+                outboundEmailEnabled,
+                tasks: relatedTasks,
+                attachments,
+              },
+            ),
+          ]}
+          aside={<OrganizationAside record={record} owner={owner} />}
         />
       </PageContent>
     </>

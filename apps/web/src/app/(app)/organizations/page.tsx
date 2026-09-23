@@ -18,7 +18,7 @@ export default async function OrganizationsPage({
   const sort = parseDirectorySort(queryValue(params.sort))
   const result = await listOrganizations({ query, sort, page: parseDirectoryPage(queryValue(params.page)) })
   return (
-    <DirectoryListHeader kind="organizations" total={result.total} query={query}>
+    <DirectoryListHeader kind="organizations" total={result.total}>
       <OrganizationsTable result={result} query={query} sort={sort} />
     </DirectoryListHeader>
   )

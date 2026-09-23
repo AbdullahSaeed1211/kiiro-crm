@@ -13,7 +13,7 @@ export default async function ContactsPage({
   const sort = parseDirectorySort(queryValue(params.sort))
   const result = await listContacts({ query, sort, page: parseDirectoryPage(queryValue(params.page)) })
   return (
-    <DirectoryListHeader kind="contacts" total={result.total} query={query}>
+    <DirectoryListHeader kind="contacts" total={result.total}>
       <ContactsTable result={result} query={query} sort={sort} />
     </DirectoryListHeader>
   )

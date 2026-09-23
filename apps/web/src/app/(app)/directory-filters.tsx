@@ -1,19 +1,22 @@
 'use client'
 
 import { FilterBar } from '@ops/ui/composites/FilterBar'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
-export function DirectoryFilters({ query }: Readonly<{ query: string }>) {
+export function DirectoryFilters({ query, kind }: Readonly<{ query: string; kind: 'organizations' | 'contacts' }>) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const update = useCallback(
     (nextQuery: string) => {
-      const params = new URLSearchParams()
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('page')
       if (nextQuery.trim() !== '') params.set('q', nextQuery.trim())
+      else params.delete('q')
       router.replace(`${pathname}?${params.toString()}`)
     },
-    [pathname, router],
+    [pathname, router, searchParams],
   )
   return (
     <FilterBar
@@ -21,7 +24,7 @@ export function DirectoryFilters({ query }: Readonly<{ query: string }>) {
       stages={[]}
       labels={{
         search: 'Search',
-        searchPlaceholder: 'Search people and companies…',
+        searchPlaceholder: kind === 'organizations' ? 'Search organizations…' : 'Search contacts…',
         stage: 'Filters',
         clear: 'Clear',
         noStages: 'No stage filters for this directory',
@@ -29,7 +32,7 @@ export function DirectoryFilters({ query }: Readonly<{ query: string }>) {
       onQueryChange={update}
       onStagesChange={() => undefined}
       showStageFilter={false}
-      className="border-y py-3"
+      className="w-full"
     />
   )
 }

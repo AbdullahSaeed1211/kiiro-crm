@@ -9,6 +9,7 @@ import {
 } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { ArrowUpRight, Building2, Contact } from 'lucide-react'
+import Link from 'next/link'
 import type {
   ContactListItem,
   DirectoryPage,
@@ -19,6 +20,7 @@ import type {
 import { displayName, formatDirectorySort } from '../../server/crm/directory/data'
 import { safeExternalHref } from '../../server/crm/directory/utils'
 import { formatDate } from '../../i18n/format'
+import { DirectoryFilters } from './directory-filters'
 
 const TABLE_LABELS: DataTableLabels = {
   selectAll: 'Select all',
@@ -88,9 +90,7 @@ function pagination<T>(
     ...(result.page < pages ? { nextHref: href(result.page + 1) } : {}),
   }
 }
-function linkClass(): string {
-  return 'font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground'
-}
+const RECORD_LINK_CLASS = 'font-medium text-foreground hover:underline underline-offset-4'
 
 function organizationColumns(query: string, sort: DirectorySort): DataTableColumn[] {
   const nameSort = sort === 'name' ? '-name' : 'name'
@@ -110,9 +110,14 @@ function organizationRows(items: readonly OrganizationListItem[]): DataTableRow[
       id: record.id,
       cells: {
         name: (
-          <a href={`/organizations/${record.id}`} className={linkClass()}>
-            {record.name}
-          </a>
+          <span className="inline-flex min-w-0 items-center gap-2.5">
+            <Avatar size="sm" aria-hidden className="shrink-0 rounded-md">
+              <AvatarFallback className="rounded-md text-[10px] font-semibold">{initials(record.name)}</AvatarFallback>
+            </Avatar>
+            <Link href={`/organizations/${record.id}`} prefetch={false} className={RECORD_LINK_CLASS}>
+              {record.name}
+            </Link>
+          </span>
         ),
         website:
           website === null ? (
@@ -142,8 +147,10 @@ export function OrganizationsTable({
 }: Readonly<{ result: DirectoryPage<OrganizationListItem>; query: string; sort: DirectorySort }>) {
   return (
     <DataTable
+      className="ops-directory-table"
       columns={organizationColumns(query, sort)}
       rows={organizationRows(result.items)}
+      toolbarStart={<DirectoryFilters query={query} kind="organizations" />}
       sort={{ id: sort.endsWith('updatedAt') ? 'updated' : 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/organizations', query, sort })}
       labels={TABLE_LABELS}
@@ -153,7 +160,7 @@ export function OrganizationsTable({
           title="No organizations yet"
           description="Add the companies your team is building relationships with."
           action={
-            <Button nativeButton={false} render={<a href="/organizations/new">New organization</a>}>
+            <Button nativeButton={false} render={<Link href="/organizations/new">New organization</Link>}>
               New organization
             </Button>
           }
@@ -178,17 +185,21 @@ function contactRows(items: readonly ContactListItem[]): DataTableRow[] {
     id: record.id,
     cells: {
       name: (
-        <a href={`/contacts/${record.id}`} className={linkClass()}>
+        <Link href={`/contacts/${record.id}`} prefetch={false} className={RECORD_LINK_CLASS}>
           {displayName(record)}
-        </a>
+        </Link>
       ),
       organization:
         organization === null ? (
           <EmptyValue />
         ) : (
-          <a href={`/organizations/${organization.id}`} className="text-muted-foreground hover:text-foreground">
+          <Link
+            href={`/organizations/${organization.id}`}
+            prefetch={false}
+            className="text-muted-foreground hover:text-foreground"
+          >
             {organization.name}
-          </a>
+          </Link>
         ),
       email:
         record.email === null ? (
@@ -217,8 +228,10 @@ export function ContactsTable({
 }: Readonly<{ result: DirectoryPage<ContactListItem>; query: string; sort: DirectorySort }>) {
   return (
     <DataTable
+      className="ops-directory-table"
       columns={contactColumns(query, sort)}
       rows={contactRows(result.items)}
+      toolbarStart={<DirectoryFilters query={query} kind="contacts" />}
       sort={{ id: 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/contacts', query, sort })}
       labels={TABLE_LABELS}
@@ -228,7 +241,7 @@ export function ContactsTable({
           title="No contacts yet"
           description="Add the people who help your organizations move forward."
           action={
-            <Button nativeButton={false} render={<a href="/contacts/new">New contact</a>}>
+            <Button nativeButton={false} render={<Link href="/contacts/new">New contact</Link>}>
               New contact
             </Button>
           }

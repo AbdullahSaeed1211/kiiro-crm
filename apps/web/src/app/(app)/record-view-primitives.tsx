@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
 import { ActivityFeed } from '@ops/ui/composites/ActivityFeed'
 import type { RecordPageTab } from '@ops/ui/composites/RecordPageLayout'
-import { ArrowUpRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { ActivityItem, EmailThreadMessage } from '../../server/crm/directory/data'
 import type { RecordAttachment, RelatedTask } from '../../server/crm/directory/types'
@@ -59,16 +60,17 @@ export function RelationList({ items, empty }: Readonly<{ items: readonly ReactN
 
 export function RelationRow({ href, title, detail }: Readonly<{ href: string; title: string; detail?: string }>) {
   return (
-    <a
+    <Link
       href={href}
+      prefetch={false}
       className="flex items-center justify-between gap-3 rounded-sm p-3 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="min-w-0">
         <span className="block truncate font-medium">{title}</span>
         {detail === undefined ? null : <span className="block truncate text-xs text-muted-foreground">{detail}</span>}
       </span>
-      <ArrowUpRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-    </a>
+      <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+    </Link>
   )
 }
 

@@ -3,7 +3,7 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { ReactNode } from 'react'
-import { DirectoryFilters } from './directory-filters'
+import Link from 'next/link'
 
 export { ContactsTable, OrganizationsTable } from './directory-list-view'
 export { ContactRecordView, OrganizationRecordView } from './directory-record-view'
@@ -11,14 +11,10 @@ export { ContactRecordView, OrganizationRecordView } from './directory-record-vi
 export function DirectoryListHeader({
   kind,
   total,
-  query,
   children,
-}: Readonly<{ kind: 'organizations' | 'contacts'; total: number; query: string; children: ReactNode }>) {
+}: Readonly<{ kind: 'organizations' | 'contacts'; total: number; children: ReactNode }>) {
   const isOrganizations = kind === 'organizations'
   const title = isOrganizations ? 'Organizations' : 'Contacts'
-  const description = isOrganizations
-    ? 'Companies, clients, and partners in your workspace.'
-    : 'People connected to the organizations your team works with.'
   const action = isOrganizations ? 'New organization' : 'New contact'
   return (
     <>
@@ -27,14 +23,12 @@ export function DirectoryListHeader({
         <PageHeader
           title={title}
           count={total}
-          description={description}
           actions={
-            <Button nativeButton={false} render={<a href={`/${kind}/new`}>{action}</a>}>
+            <Button nativeButton={false} render={<Link href={`/${kind}/new`}>{action}</Link>}>
               {action}
             </Button>
           }
         />
-        <DirectoryFilters query={query} />
         {children}
       </PageContent>
     </>

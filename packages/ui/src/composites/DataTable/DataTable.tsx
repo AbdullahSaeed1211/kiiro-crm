@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
+import Link from 'next/link'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ops/ui/components/ui/table'
 import { cn } from '@ops/ui/lib/utils'
 import { buildColumns, dataTableFeatures, type DataTableFeatures, type DataTableInstance } from './columns'
@@ -29,6 +30,9 @@ export type DataTableProps = Readonly<{
   emptyState?: ReactNode
   /** Enables row selection only when the caller also provides a meaningful bulk action surface. */
   selectable?: boolean
+  /** Optional controls placed before the column picker in the view toolbar. */
+  toolbarStart?: ReactNode
+  className?: string
 }>
 
 const NO_SORTING: SortingState = []
@@ -59,10 +63,10 @@ function HeadCell({ header }: Readonly<{ header: Header<DataTableFeatures, DataT
       {sortHref === undefined ? (
         content
       ) : (
-        <a href={sortHref} className="inline-flex items-center gap-1 hover:text-muted-foreground">
+        <Link href={sortHref} prefetch={false} className="inline-flex items-center gap-1 hover:text-foreground">
           {content}
           <SortIcon sorted={sorted} />
-        </a>
+        </Link>
       )}
     </TableHead>
   )
@@ -106,7 +110,17 @@ function Body({ table, emptyState }: Readonly<{ table: DataTableInstance; emptyS
 }
 
 /** Server-paginated table with sortable headers, row selection and column visibility (decision D-14, spec §17.5). */
-export function DataTable({ columns, rows, pagination, sort, labels, emptyState, selectable = false }: DataTableProps) {
+export function DataTable({
+  columns,
+  rows,
+  pagination,
+  sort,
+  labels,
+  emptyState,
+  selectable = false,
+  toolbarStart,
+  className,
+}: DataTableProps) {
   const columnDefs = useMemo(() => buildColumns({ columns, labels, selectable }), [columns, labels, selectable])
   const sorting = useMemo<SortingState>(
     () => (sort === undefined ? NO_SORTING : [{ id: sort.id, desc: sort.desc }]),
@@ -122,8 +136,9 @@ export function DataTable({ columns, rows, pagination, sort, labels, emptyState,
     state: { sorting },
   })
   return (
-    <div className="ops-data-table flex flex-col gap-2">
-      <div className="ops-data-table-toolbar flex items-center justify-end gap-2">
+    <div className={cn('ops-data-table flex flex-col gap-2', className)}>
+      <div className="ops-data-table-toolbar flex flex-wrap items-center justify-end gap-2">
+        {toolbarStart === undefined ? null : <div className="min-w-0 flex-1">{toolbarStart}</div>}
         <DataTableViewOptions table={table} label={labels.columns} />
       </div>
       {/* The vendored table wrapper scrolls on its own; making this wrapper the scroller lets the header stick. */}

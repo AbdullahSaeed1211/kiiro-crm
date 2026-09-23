@@ -1,6 +1,7 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { ClipboardPlus, Mail, MailWarning, Pencil, Phone } from 'lucide-react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 
 function actionLink({ href, label, icon }: Readonly<{ href: string; label: string; icon: ReactNode }>) {
   return (
@@ -10,10 +11,17 @@ function actionLink({ href, label, icon }: Readonly<{ href: string; label: strin
       size="sm"
       nativeButton={false}
       render={
-        <a href={href}>
-          {icon}
-          {label}
-        </a>
+        href.startsWith('/') ? (
+          <Link href={href} prefetch={false}>
+            {icon}
+            {label}
+          </Link>
+        ) : (
+          <a href={href}>
+            {icon}
+            {label}
+          </a>
+        )
       }
     >
       {label}
