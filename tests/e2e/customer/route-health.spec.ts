@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test, type Page, type Response } from '@playwright/test'
+import { expect, test, type Locator, type Page, type Response } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { WEB_DIR } from '../../../scripts/seed/local-env'
 
@@ -510,4 +510,61 @@ test('record email composer validates, confirms and persists a sent message', as
   page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Message sent.', { timeout: 15_000 })
+})
+
+async function findWonStageId(stage: Locator): Promise<string> {
+  return stage.locator('option').evaluateAll((options) => {
+    const won = options.find((option) => option.textContent.trim() === 'Won')
+    return won instanceof HTMLOptionElement ? won.value : ''
+  })
+}
+
+async function exerciseWonAndReopen(page: Page, wonStageId: string): Promise<void> {
+  const stage = page.locator('#deal-stage')
+  await page.getByRole('button', { name: 'Mark won', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Reopen', exact: true })).toBeVisible()
+  await expect(stage).toHaveValue(wonStageId)
+  await page.reload()
+  await expect(stage).toHaveValue(wonStageId)
+  await page.getByRole('button', { name: 'Reopen', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Mark won', exact: true })).toBeVisible()
+  await expect(stage).not.toHaveValue(wonStageId)
+  await page.reload()
+  await expect(stage).not.toHaveValue(wonStageId)
+}
+
+async function restoreDealStage(
+  page: Page,
+  original: { href: string; stageId: string; wonStageId: string },
+): Promise<void> {
+  const stage = page.locator('#deal-stage')
+  await page.goto(original.href)
+  if ((await stage.inputValue()) === original.wonStageId) {
+    await page.getByRole('button', { name: 'Reopen', exact: true }).click()
+  }
+  if ((await stage.inputValue()) !== original.stageId) await stage.selectOption(original.stageId)
+  await page.reload()
+  await expect(stage).toHaveValue(original.stageId)
+}
+
+test('deal can be won and reopened with the persisted stage reflected in controls', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/deals')
+  const dealHref = await page
+    .getByRole('link', { name: 'Website redesign engagement', exact: true })
+    .getAttribute('href')
+  if (dealHref === null) throw new Error('seeded website deal has no detail link')
+  await page.goto(dealHref)
+
+  const stage = page.locator('#deal-stage')
+  const initialStageId = await stage.inputValue()
+  const wonStageId = await findWonStageId(stage)
+  expect(wonStageId).not.toBe('')
+
+  try {
+    await exerciseWonAndReopen(page, wonStageId)
+  } finally {
+    // Always restore the seeded fixture, including when an assertion catches a stale control state.
+    await restoreDealStage(page, { href: dealHref, stageId: initialStageId, wonStageId })
+  }
 })

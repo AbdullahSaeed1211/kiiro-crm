@@ -217,7 +217,7 @@ export function DealControls({
   const { pending, error, setError, run } = useDealAction()
   return (
     <div className="grid gap-5">
-      <StagePicker deal={deal} stages={stages} pending={pending} setError={setError} run={run} />
+      <StagePicker key={deal.stageId} deal={deal} stages={stages} pending={pending} setError={setError} run={run} />
       <ValueEditor deal={deal} currency={currency} pending={pending} setError={setError} run={run} />
       <ContactPicker deal={deal} contacts={contacts} pending={pending} setError={setError} run={run} />
       <ClosingControls
