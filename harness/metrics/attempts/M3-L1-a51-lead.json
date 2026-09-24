@@ -1,0 +1,69 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 51,
+  "runner": "lead",
+  "startedAt": "2026-09-24T13:33:52.019Z",
+  "finishedAt": "2026-09-24T13:34:57.003Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 4339,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 1,
+      "durationMs": 4583,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 23382,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 31783,
+      "failingLines": [
+        "77:1  error  Async function 'verifyMobileSidebar' has too many statements (16). Maximum allowed is 15  max-statements",
+        "286:1  error  File has too many lines (252). Maximum allowed is 250                                     max-lines",
+        "✖ 2 problems (2 errors, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 589,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 284,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "MISSING_TEST",
+    "GATE_FAILURE",
+    "FLAKY_TEST",
+    "BRAND_OR_VOCAB_LEAK",
+    "CONTRACT_DRIFT"
+  ],
+  "leadTookOver": true
+}

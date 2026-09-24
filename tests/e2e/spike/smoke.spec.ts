@@ -81,6 +81,12 @@ async function verifyMobileSidebar(page: Page): Promise<void> {
   await expect(mobileSidebar).toBeVisible()
   await expect(mobileSidebar.getByRole('link', { name: 'Deals' })).toBeVisible()
   await expect(mobileSidebar.getByRole('link', { name: 'Contacts' })).toBeVisible()
+  const closeButton = mobileSidebar.locator('[data-slot="sheet-close"]')
+  await expect(closeButton).toBeVisible()
+  await closeButton.click()
+  await expect(mobileSidebar).toBeHidden()
+  await toggle.click()
+  await expect(mobileSidebar).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(mobileSidebar).toBeHidden()
 }
