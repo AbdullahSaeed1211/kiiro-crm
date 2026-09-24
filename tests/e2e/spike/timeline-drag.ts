@@ -28,9 +28,11 @@ interface TimelineTask {
 
 async function prepareTimeline(page: Page): Promise<TimelineTask> {
   await page.goto(TIMELINE_PATH)
-  const title = 'Design style guide'
   const mobile = (page.viewportSize()?.width ?? 0) <= 650
   if (mobile) await setTimelineMode(page, 'Grid')
+  const firstTask = page.getByRole('grid').getByRole('row').nth(1).getByRole('gridcell').first()
+  await expect(firstTask).toBeVisible()
+  const title = (await firstTask.innerText()).trim()
   const dates = page.locator('.wx-row', { hasText: title }).locator('[data-col-id=":start"], [data-col-id=":end"]')
   const bar = page.locator(BAR, { hasText: title })
   await expect(dates.first()).toBeVisible()
@@ -46,13 +48,16 @@ async function dragAndVerifyAfterReload(page: Page, task: TimelineTask): Promise
   const saved = page.waitForResponse(isPostTo(TIMELINE_PATH))
   await dragTimelineBar(page, task.title)
   expect((await saved).ok()).toBe(true)
+  if (task.mobile) await setTimelineMode(page, 'Grid')
   await expect(task.dates).not.toHaveText(task.before)
   const after = await task.dates.allTextContents()
   await page.reload()
+  if (task.mobile) await setTimelineMode(page, 'Grid')
   await expect(task.dates).toHaveText(after)
 }
 
 async function restoreDatesAndVerify(page: Page, task: TimelineTask): Promise<void> {
+  if (task.mobile) await setTimelineMode(page, 'Chart')
   const currentBox = await page.locator(BAR, { hasText: task.title }).boundingBox()
   if (currentBox === null) throw new Error(`no bar for ${task.title}`)
   const restored = page.waitForResponse(isPostTo(TIMELINE_PATH))

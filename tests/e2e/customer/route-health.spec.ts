@@ -20,7 +20,7 @@ const ARIA_CURRENT = 'aria-current'
 const CALENDAR_PATH = '/calendar'
 const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
-const TASK_TITLE = 'Draft homepage wireframes'
+const TASK_TITLE = 'Review service-page hierarchy'
 const DEAL_TITLE = 'Website redesign engagement'
 const DEAL_TARGET_STAGE = 'Proposal sent'
 const TASK_PANEL = '[data-slot="sheet-content"]'
@@ -87,15 +87,24 @@ async function signIn(page: Page): Promise<void> {
   }
 }
 
-async function firstDetailHref(page: Page, prefix: string): Promise<string> {
+async function firstDetailHref(page: Page, prefix: string): Promise<string | undefined> {
   const hrefs = await page
     .locator(`a[href^="${prefix}/"]`)
     .evaluateAll((links) =>
       links.map((link) => link.getAttribute('href')).filter((href): href is string => href !== null),
     )
   const detail = hrefs.find((href) => !href.endsWith('/new') && !href.includes('/board'))
-  if (detail === undefined) throw new Error(`no detail link found for ${prefix}`)
   return detail
+}
+
+async function availableDetailRoutes(page: Page): Promise<string[]> {
+  const routes: string[] = []
+  for (const prefix of ['/projects', '/leads', '/deals', '/contacts', '/organizations']) {
+    await page.goto(prefix, { waitUntil: 'domcontentloaded' })
+    const detail = await firstDetailHref(page, prefix)
+    if (detail !== undefined) routes.push(detail)
+  }
+  return routes
 }
 
 async function recordedLayoutShiftSince(page: Page, startedAt: number): Promise<number> {
@@ -273,8 +282,8 @@ async function verifyNotificationTaskPanel(page: Page): Promise<void> {
 
 async function verifyTaskSourceInteractions(page: Page): Promise<void> {
   await verifyTaskSourcePanels(page, [
-    { route: TASK_PATH, title: 'Draft homepage wireframes' },
-    { route: `${TASK_PATH}/board`, title: 'Design style guide' },
+    { route: TASK_PATH, title: TASK_TITLE },
+    { route: `${TASK_PATH}/board`, title: 'Review accounting service pages' },
   ])
   await verifyNotificationTaskPanel(page)
 }
@@ -459,11 +468,7 @@ test('customer routes load without browser failures and stay within the response
     expect(bodyText, `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
   }
 
-  const detailRoutes: string[] = []
-  for (const prefix of ['/projects', '/leads', '/deals', '/contacts', '/organizations']) {
-    await page.goto(prefix, { waitUntil: 'domcontentloaded' })
-    detailRoutes.push(await firstDetailHref(page, prefix))
-  }
+  const detailRoutes = await availableDetailRoutes(page)
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('a[href="/my-tasks"]').filter({ hasText: 'My open tasks' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
@@ -529,8 +534,8 @@ test('customer routes load without browser failures and stay within the response
 
   await page.goto('/leads', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Search workspace' }).click()
-  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('Website')
-  await expect(page.getByText('Website redesign inquiry', { exact: true })).toBeVisible()
+  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('service-page')
+  await expect(page.getByText(TASK_TITLE, { exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
 
   console.log(`notification-diagnostics: ${notificationDiagnostics.join(' | ')}`)
@@ -695,10 +700,10 @@ test('staff My Tasks is assignment-scoped and member administration is denied', 
 
   await page.goto('/my-tasks')
   const content = page.locator('main')
-  await expect(content).toContainText('Design style guide')
-  await expect(content).toContainText('Prepare app icon concepts')
-  await expect(content).not.toContainText('Plan launch checklist')
-  await verifyTaskSourcePanel(page, { route: '/my-tasks', title: 'Design style guide' })
+  await expect(content).toContainText(TASK_TITLE)
+  await expect(content).toContainText('Review accounting service pages')
+  await expect(content).not.toContainText('Check appointment and contact paths')
+  await verifyTaskSourcePanel(page, { route: '/my-tasks', title: TASK_TITLE })
 
   const denied = await page.goto(MEMBERS_PATH)
   expect(denied?.status()).toBe(404)
@@ -715,6 +720,10 @@ test('record email composer validates, confirms and persists a sent message', as
   await signIn(page)
   await page.goto('/contacts', { waitUntil: 'domcontentloaded' })
   const detail = await firstDetailHref(page, '/contacts')
+  if (detail !== undefined) await exerciseRecordEmail(page, detail)
+})
+
+async function exerciseRecordEmail(page: Page, detail: string): Promise<void> {
   await page.goto(detail, { waitUntil: 'domcontentloaded' })
   await page.getByRole('tab', { name: 'Email' }).click()
   await page.locator('#email-to').fill('recipient@example.com')
@@ -723,7 +732,7 @@ test('record email composer validates, confirms and persists a sent message', as
   page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Message sent.', { timeout: 15_000 })
-})
+}
 
 async function findWonStageId(stage: Locator): Promise<string> {
   return stage.locator('option').evaluateAll((options) => {

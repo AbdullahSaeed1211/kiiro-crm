@@ -38,6 +38,21 @@ const CLOUDFLARE_ADAPTER = pathToFileURL(resolve(import.meta.dirname, '../../../
 const HOUR_MS = 3_600_000
 const DUE_SOON_RAN = { ran: ['tasks.dueSoon'] }
 const ENVELOPE = { envelopeFrom: 'sender@example.test', envelopeTo: 'inbox@in.localhost' }
+const FIRST_DUE_TASK = 'Check appointment and contact paths'
+const SECOND_DUE_TASK = 'Review accounting service pages'
+
+async function scheduleExistingTask(payload: Payload, title: string, dueAt: number): Promise<void> {
+  const { docs } = await payload.find({
+    collection: COLLECTIONS.tasks,
+    where: { title: { equals: title } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const [task] = docs
+  if (task === undefined) throw new Error(`no task ${title}`)
+  await payload.update({ collection: COLLECTIONS.tasks, id: task.id, data: { dueAt }, depth: 0, overrideAccess: true })
+}
 
 async function dueSoonCron(stack: LocalStack, hoursAfterSeed: number): Promise<CronHarness> {
   const { payload } = stack
@@ -64,6 +79,7 @@ async function countRows(payload: Payload, collection: CollectionSlug, where: Wh
 
 // The window from 12 to 36 hours after the seed holds one open task, due in a day and assigned to staff 2.
 async function expectRerunCreatesNothing(stack: LocalStack): Promise<void> {
+  await scheduleExistingTask(stack.payload, FIRST_DUE_TASK, stack.now + 24 * HOUR_MS)
   const cron = await dueSoonCron(stack, 12)
   const before = await countRows(stack.payload, COLLECTIONS.notifications)
   expect(await cron.run()).toEqual(DUE_SOON_RAN)
@@ -78,6 +94,7 @@ async function expectRerunCreatesNothing(stack: LocalStack): Promise<void> {
 
 // The window from 36 to 60 hours after the seed holds one open task, due in two days and assigned to staff 1.
 async function expectConcurrentRunsCreateOnce(stack: LocalStack): Promise<void> {
+  await scheduleExistingTask(stack.payload, SECOND_DUE_TASK, stack.now + 48 * HOUR_MS)
   const cron = await dueSoonCron(stack, 36)
   const before = await countRows(stack.payload, COLLECTIONS.notifications)
   expect(await Promise.all([cron.run(), cron.run()])).toEqual([DUE_SOON_RAN, DUE_SOON_RAN])

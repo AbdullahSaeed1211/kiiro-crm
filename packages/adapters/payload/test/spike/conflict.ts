@@ -11,8 +11,8 @@ import { createUnitOfWork } from '../../src/uow/unit-of-work'
 import { requestAs, SEEDED_EMAILS, type LocalStack, type SpikeCase } from './local-stack'
 
 const DAY_MS = 86_400_000
-const TASK_TITLE = 'Plan launch checklist'
-const RACE_TITLE = 'Schedule kickoff meeting'
+const TASK_TITLE = 'Review service-page hierarchy'
+const RACE_TITLE = 'Check appointment and contact paths'
 
 interface OwnerWork {
   readonly deps: ChangeStageDeps

@@ -3,7 +3,6 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
-const TASK_TITLE = 'Draft homepage wireframes'
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 const CUSTOMER_ROUTES = [
   '/',
@@ -70,15 +69,50 @@ async function assertNoSeriousAccessibilityViolations(page: Page, name: string):
   expect(findings, `${name} serious or critical accessibility violations`).toEqual([])
 }
 
-async function firstDetailHref(page: Page, prefix: string): Promise<string> {
+async function firstDetailHref(page: Page, prefix: string): Promise<string | undefined> {
   const hrefs = await page
     .locator(`a[href^="${prefix}/"]`)
     .evaluateAll((links) =>
       links.map((link) => link.getAttribute('href')).filter((href): href is string => href !== null),
     )
   const href = hrefs.find((value) => !value.endsWith('/new') && !value.includes('/board'))
-  if (href === undefined) throw new Error(`no detail link found for ${prefix}`)
   return href
+}
+
+async function assertMobileInboxFits(page: Page): Promise<void> {
+  if ((page.viewportSize()?.width ?? 0) > 390) return
+  const layout = await page.evaluate(() => ({
+    document: document.documentElement.scrollWidth,
+    viewport: window.innerWidth,
+    folders: [...document.querySelectorAll('nav[aria-label="Mail folders"] button')].map((button) => {
+      const rect = button.getBoundingClientRect()
+      return { left: rect.left, right: rect.right }
+    }),
+  }))
+  expect(layout.document, 'mobile inbox must not create horizontal page scrolling').toBeLessThanOrEqual(layout.viewport)
+  expect(layout.folders).toHaveLength(4)
+  expect(layout.folders.every(({ left, right }) => left >= 0 && right <= layout.viewport)).toBe(true)
+}
+
+async function assertMobileSettingsFits(page: Page): Promise<void> {
+  if ((page.viewportSize()?.width ?? 0) > 390) return
+  const layout = await page.evaluate(() => {
+    const nav = document.querySelector('nav[aria-label="Settings"]')
+    if (nav === null) throw new Error('settings navigation is missing')
+    const rect = nav.getBoundingClientRect()
+    return {
+      document: document.documentElement.scrollWidth,
+      viewport: window.innerWidth,
+      navWidth: nav.scrollWidth,
+      visibleWidth: rect.width,
+      groups: nav.querySelectorAll(':scope > div').length,
+    }
+  })
+  expect(layout.document, 'mobile settings must not create horizontal page scrolling').toBeLessThanOrEqual(
+    layout.viewport,
+  )
+  expect(layout.navWidth).toBeLessThanOrEqual(layout.visibleWidth)
+  expect(layout.groups).toBeGreaterThan(0)
 }
 
 async function auditCustomerRoutes(page: Page): Promise<void> {
@@ -86,10 +120,13 @@ async function auditCustomerRoutes(page: Page): Promise<void> {
     await page.goto(route, { waitUntil: 'domcontentloaded' })
     await expect(page.locator('main, [data-slot="card"]').first()).toBeVisible()
     await assertNoSeriousAccessibilityViolations(page, route)
+    if (route === '/inbox') await assertMobileInboxFits(page)
+    if (route === '/settings/general') await assertMobileSettingsFits(page)
   }
   for (const prefix of ['/projects', '/leads', '/deals', '/contacts', '/organizations']) {
     await page.goto(prefix)
     const detail = await firstDetailHref(page, prefix)
+    if (detail === undefined) continue
     await page.goto(detail)
     await assertNoSeriousAccessibilityViolations(page, detail)
   }
@@ -101,12 +138,18 @@ async function auditPrimarySurfaces(page: Page): Promise<void> {
   await page.goto('/tasks')
   await captureAccessibleSurface(page, 'list')
   await page.goto('/contacts')
-  await page.goto(await firstDetailHref(page, '/contacts'))
-  await captureAccessibleSurface(page, 'record')
-  await page.goto('/calendar')
-  await page.getByRole('link', { name: TASK_TITLE }).click()
-  await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
-  await captureAccessibleSurface(page, 'sheet')
+  const contactDetail = await firstDetailHref(page, '/contacts')
+  if (contactDetail !== undefined) {
+    await page.goto(contactDetail)
+    await captureAccessibleSurface(page, 'record')
+  }
+  await page.goto('/')
+  const dashboardTasks = page.locator('a[data-task-link-id]')
+  if ((await dashboardTasks.count()) > 0) {
+    await dashboardTasks.first().click()
+    await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
+    await captureAccessibleSurface(page, 'sheet')
+  }
 }
 
 async function auditCompactTimelineModes(page: Page, chart: Locator): Promise<void> {

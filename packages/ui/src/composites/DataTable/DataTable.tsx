@@ -142,7 +142,10 @@ export function DataTable({
         <DataTableViewOptions table={table} label={labels.columns} />
       </div>
       {/* The vendored table wrapper scrolls on its own; making this wrapper the scroller lets the header stick. */}
-      <div className="ops-data-table-viewport max-h-[calc(100svh-13rem)] overflow-auto rounded-lg border **:data-[slot=table-container]:overflow-visible">
+      <div
+        className="ops-data-table-viewport max-h-[calc(100svh-13rem)] overflow-auto rounded-lg border **:data-[slot=table-container]:overflow-visible"
+        tabIndex={0}
+      >
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((group) => (

@@ -12,7 +12,8 @@ const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
 const STAFF_ONE_NAME = USERS.find((user) => user.key === 'staff1')?.name ?? ''
 const CRON_PATH = '/api/v1/internal/cron'
 const CARD = '[data-card-id]'
-const PLAN_LAUNCH_TITLE = 'Plan launch checklist'
+const DESKTOP_BOARD_TASK = 'Review service-page hierarchy'
+const MOBILE_BOARD_TASK = 'Check appointment and contact paths'
 const IN_PROGRESS_STAGE = 'In progress'
 const TODO_STAGE = 'To do'
 const TASK_BOARD_PATH = '/tasks/board'
@@ -87,8 +88,8 @@ test('customer shell uses the custom login, workspace tools, and contained respo
   await expect(page.locator('a[href^="/admin"]')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Search workspace' }).click()
-  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('Website')
-  await expect(page.getByText('Website redesign inquiry', { exact: true })).toBeVisible()
+  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('service-page')
+  await expect(page.getByText(DESKTOP_BOARD_TASK, { exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
 
   for (const route of ['/', '/leads', '/deals/board', '/settings/general']) await expectContained(page, route)
@@ -174,9 +175,9 @@ test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
 test('spike: /tasks/board move menu persists after a reload', async ({ page, isMobile }) => {
   await signIn(page)
   await page.goto(TASK_BOARD_PATH)
-  await expect(boardCard(page, 'Draft homepage wireframes')).toContainText(STAFF_ONE_NAME)
+  await expect(boardCard(page, DESKTOP_BOARD_TASK)).toContainText(STAFF_ONE_NAME)
   // Desktop and phone projects run in parallel, so each moves its own card.
-  const title = isMobile ? 'Schedule kickoff meeting' : PLAN_LAUNCH_TITLE
+  const title = isMobile ? MOBILE_BOARD_TASK : DESKTOP_BOARD_TASK
   await expect(boardCard(page, title)).toBeVisible()
   await dragCardOutsideTargetsDoesNotOpen(page, title)
   const from = await page
@@ -191,7 +192,7 @@ test('spike: /tasks/board move menu persists after a reload', async ({ page, isM
 test('spike: /tasks/board move menu supports keyboard and persists after a reload', async ({ page, isMobile }) => {
   await signIn(page)
   await page.goto(TASK_BOARD_PATH)
-  const title = isMobile ? 'Schedule kickoff meeting' : PLAN_LAUNCH_TITLE
+  const title = isMobile ? MOBILE_BOARD_TASK : DESKTOP_BOARD_TASK
   await expect(boardCard(page, title)).toBeVisible()
   const from = await page
     .locator(TASK_STAGE_SELECTOR, { has: boardCard(page, title) })
@@ -205,7 +206,7 @@ test('spike: /tasks/board move menu supports keyboard and persists after a reloa
 test('spike: /tasks/board rejected move rolls back and explains the failure', async ({ page }) => {
   await signIn(page)
   await page.goto(TASK_BOARD_PATH)
-  const title = PLAN_LAUNCH_TITLE
+  const title = DESKTOP_BOARD_TASK
   const card = boardCard(page, title)
   await expect(card).toBeVisible()
   const source = page.locator(TASK_STAGE_SELECTOR, { has: card })

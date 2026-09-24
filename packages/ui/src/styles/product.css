@@ -344,6 +344,11 @@ select:focus {
   border-radius: 0;
 }
 
+.ops-data-table-viewport:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
 /* Directory lists use the same continuous view surface as the object workspace. */
 .ops-directory-table {
   margin-inline: -1.25rem;
@@ -558,6 +563,8 @@ select:focus {
   position: sticky;
   top: 4.5rem;
   align-self: start;
+  display: grid;
+  gap: 1.25rem;
   border-right: 1px solid var(--border);
   border-radius: 0;
   padding: 0 0.75rem 0 0;
@@ -713,39 +720,44 @@ select:focus {
 
   .ops-settings-nav {
     position: static;
-    display: flex;
-    gap: 0.15rem;
-    overflow-x: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1rem 0.65rem;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--border);
-    padding: 0 0 0.35rem;
+    padding: 0 0 1rem;
+  }
+
+  .ops-settings-nav > div {
+    min-width: 0;
+  }
+
+  .ops-settings-nav h2 {
+    padding-inline: 0.45rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
   }
 
   .ops-settings-nav a {
-    flex: 0 0 auto;
-    border-left: 0;
-    border-bottom: 2px solid transparent;
+    min-width: 0;
+    gap: 0.4rem;
+    border-left: 2px solid transparent;
+    border-bottom: 0;
+    padding-inline: 0.45rem;
+    white-space: normal;
   }
 
   .ops-settings-nav a[aria-current='page'] {
-    border-bottom-color: var(--primary);
+    border-left-color: var(--primary);
+    border-radius: 0.25rem;
+    background: color-mix(in oklch, var(--primary) 8%, transparent);
   }
 
   .ops-record-aside,
   .ops-settings-nav {
     position: static;
-  }
-
-  .ops-settings-nav {
-    display: flex;
-    gap: 0.2rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .ops-settings-nav a {
-    flex: none;
-    white-space: nowrap;
   }
 
   .ops-record-page > header {

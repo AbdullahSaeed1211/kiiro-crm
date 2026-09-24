@@ -10,13 +10,18 @@ import { createTaskRepository } from '../../src/repositories'
 import { fieldOf, textOf } from '../../src/repositories/documents'
 import { requestAs, SEEDED_EMAILS, userByEmail, type SpikeCase } from './local-stack'
 
+const byName = (a: string, b: string): number => a.localeCompare(b)
 const memberProjects = (user: 'staff1' | 'staff2'): string[] =>
-  PROJECTS.filter((project) => project.members.includes(user)).map((project) => project.name)
+  PROJECTS.filter((project) => project.members.includes(user))
+    .map((project) => project.name)
+    .toSorted(byName)
 const visibleTasks = (user: 'staff1' | 'staff2', projectNames: readonly string[]): string[] => {
   const projects = new Set(projectNames)
   return TASKS.filter(
     (task) => task.assignees.includes(user) || (task.project !== undefined && projects.has(task.project)),
-  ).map((task) => task.title)
+  )
+    .map((task) => task.title)
+    .toSorted(byName)
 }
 const STAFF1_PROJECTS = memberProjects('staff1')
 const STAFF2_PROJECTS = memberProjects('staff2')
@@ -24,7 +29,6 @@ const STAFF1_TASKS = visibleTasks('staff1', STAFF1_PROJECTS)
 const STAFF2_TASKS = visibleTasks('staff2', STAFF2_PROJECTS)
 const REPORT_PROJECT = 'Project owned by an indirect report'
 
-const byName = (a: string, b: string): number => a.localeCompare(b)
 const SEEDED_NAMES = {
   tasks: [...TASKS.map((task) => task.title)].toSorted(byName),
   projects: [...PROJECTS.map((project) => project.name)].toSorted(byName),
