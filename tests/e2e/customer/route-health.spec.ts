@@ -168,13 +168,14 @@ async function verifyTaskSourcePanels(
   for (const source of sources) await verifyTaskSourcePanel(page, source)
 }
 
-async function taskNotificationRecordId(page: Page): Promise<string> {
-  await page.goto(CALENDAR_PATH)
+async function taskNotificationSource(page: Page): Promise<Readonly<{ taskId: string; returnTo: string }>> {
+  await page.goto(`${CALENDAR_PATH}?month=2026-09`)
   const href = await page.getByRole('link', { name: TASK_TITLE, exact: true }).getAttribute('href')
   if (href === null) throw new Error('calendar task has no contextual URL for its notification')
   const id = new URL(href, page.url()).pathname.split('/').at(-1)
   if (id === undefined || id === '') throw new Error('calendar task has no id for its notification')
-  return id
+  const source = new URL(page.url())
+  return { taskId: id, returnTo: `${source.pathname}${source.search}` }
 }
 
 async function serveTaskNotification(
@@ -212,7 +213,7 @@ async function serveTaskNotification(
 }
 
 async function verifyNotificationTaskPanel(page: Page): Promise<void> {
-  const taskId = await taskNotificationRecordId(page)
+  const { taskId, returnTo } = await taskNotificationSource(page)
   const notificationId = '11111111-1111-4111-8111-111111111111'
   let markedRead = false
   await page.route('**/api/v1/notifications**', (route) =>
@@ -224,10 +225,10 @@ async function verifyNotificationTaskPanel(page: Page): Promise<void> {
   await notifications.getByRole('button', { name: /Task due soon/ }).click()
   await expect.poll(() => markedRead).toBe(true)
   await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
-  expect(new URL(page.url()).searchParams.get('returnTo')).toBe(CALENDAR_PATH)
+  expect(new URL(page.url()).searchParams.get('returnTo')).toBe(returnTo)
   await expect(page.getByRole('dialog', { name: TASK_TITLE })).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(page).toHaveURL((url) => url.pathname === CALENDAR_PATH)
+  await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === returnTo)
   await expect(page.getByRole('dialog', { name: TASK_TITLE })).toHaveCount(0)
 }
 

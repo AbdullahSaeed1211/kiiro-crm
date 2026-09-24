@@ -89,7 +89,8 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
     const route = item.recordType === undefined ? undefined : RECORD_ROUTES[item.recordType]
     if (route !== undefined && item.recordId !== undefined) {
       setOpen(false)
-      router.push(item.recordType === 'task' ? taskHref(item.recordId, pathname) : `/${route}/${item.recordId}`)
+      const returnTo = `${pathname}${window.location.search}`
+      router.push(item.recordType === 'task' ? taskHref(item.recordId, returnTo) : `/${route}/${item.recordId}`)
     }
   }
 
