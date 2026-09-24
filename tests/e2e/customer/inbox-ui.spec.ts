@@ -64,6 +64,18 @@ async function verifySidebar(page: Page, isMobile: boolean): Promise<void> {
   return verifyDesktopSidebar(page, sidebarToggle)
 }
 
+async function verifyMobileFolderRail(page: Page): Promise<void> {
+  const navigation = page.getByRole('navigation', { name: 'Mail folders' })
+  const layout = await navigation.evaluate((nav) => {
+    const buttons = Array.from(nav.querySelectorAll('button'))
+    const rows = new Set(buttons.map((button) => Math.round(button.getBoundingClientRect().top)))
+    return { count: buttons.length, rowCount: rows.size, width: nav.clientWidth, scrollWidth: nav.scrollWidth }
+  })
+  expect(layout.count).toBe(4)
+  expect(layout.rowCount).toBe(1)
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.width)
+}
+
 async function verifyInboxSearch(page: Page): Promise<void> {
   await page.getByRole('searchbox', { name: 'Search messages' }).fill('no matching conversation')
   await expect(page.getByText('No conversations match your search.')).toBeVisible()
@@ -88,6 +100,7 @@ test('inbox exposes the mail-client layout and keeps compose sending disabled', 
   await expect(page.getByRole('navigation', { name: 'Mail folders' })).toBeVisible()
   await expect(page.getByRole('searchbox', { name: 'Search messages' })).toBeVisible()
   if (!isMobile) await page.screenshot({ path: testInfo.outputPath('inbox-desktop.png'), fullPage: true })
+  if (isMobile) await verifyMobileFolderRail(page)
   await verifySidebar(page, isMobile)
   await verifyInboxSearch(page)
   await verifyComposeRemainsDisabled(page)
