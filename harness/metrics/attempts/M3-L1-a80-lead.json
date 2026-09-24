@@ -1,0 +1,54 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 80,
+  "runner": "lead",
+  "startedAt": "2026-09-24T18:59:52.892Z",
+  "finishedAt": "2026-09-24T19:02:10.599Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 0,
+      "durationMs": 97650,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3211,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 6675,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 29590,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 251,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 278,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 2,
+  "suggestedClasses": [],
+  "confirmedClasses": [
+    "GATE_FAILURE",
+    "MISSING_TEST"
+  ],
+  "leadTookOver": true
+}
