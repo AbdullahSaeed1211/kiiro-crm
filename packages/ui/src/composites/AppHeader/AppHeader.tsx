@@ -8,7 +8,7 @@ import {
   BreadcrumbSeparator,
 } from '@ops/ui/components/ui/breadcrumb'
 import { Separator } from '@ops/ui/components/ui/separator'
-import { SidebarTrigger } from '@ops/ui/components/ui/sidebar'
+import { ResponsiveSidebarTrigger } from './ResponsiveSidebarTrigger'
 
 /** One breadcrumb level; the last level is the current page. */
 export type BreadcrumbEntry = Readonly<{
@@ -53,7 +53,7 @@ export function AppHeader({ breadcrumbs, actions }: AppHeaderProps) {
   const lastIndex = levels.length - 1
   return (
     <header className="ops-app-header sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-4 md:rounded-t-xl">
-      <SidebarTrigger className="-ml-1" />
+      <ResponsiveSidebarTrigger />
       <Separator orientation="vertical" className="my-auto mr-2 data-vertical:h-4" />
       <Breadcrumb className="min-w-0">
         <BreadcrumbList className="flex-nowrap">

@@ -57,33 +57,30 @@ async function verifyMobileSidebar(page: Page, sidebarToggle: Locator): Promise<
 async function verifyBrandToggle(desktopSidebar: Locator, sidebarToggle: Locator): Promise<void> {
   const brandToggle = desktopSidebar.locator('[data-slot="sidebar-trigger"]')
   await expect(brandToggle).toBeVisible()
+  await expect(sidebarToggle).toBeHidden()
   await expect(brandToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
   await brandToggle.click()
   await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_COLLAPSED)
   await expect(sidebarToggle).toHaveAccessibleName(OPEN_NAVIGATION)
+  await expect(sidebarToggle).toBeVisible()
   await expect(brandToggle).toBeHidden()
   await sidebarToggle.click()
   await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_EXPANDED)
-  await expect(sidebarToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
   await expect(brandToggle).toBeVisible()
+  await expect(sidebarToggle).toBeHidden()
 }
 
 async function verifyDesktopSidebar(page: Page, sidebarToggle: Locator): Promise<void> {
   const desktopSidebar = page.locator('[data-slot="sidebar"]:not([data-mobile="true"])')
   await verifyBrandToggle(desktopSidebar, sidebarToggle)
-  await expect(sidebarToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
-  await sidebarToggle.click()
-  await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_COLLAPSED)
-  await expect(sidebarToggle).toHaveAccessibleName(OPEN_NAVIGATION)
-  await sidebarToggle.click()
-  await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_EXPANDED)
-  await expect(sidebarToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
 }
 
 async function verifySidebar(page: Page, isMobile: boolean): Promise<void> {
   const sidebarToggle = page.locator('.ops-app-header [data-slot="sidebar-trigger"]')
-  await expect(sidebarToggle).toBeVisible()
-  if (isMobile) return verifyMobileSidebar(page, sidebarToggle)
+  if (isMobile) {
+    await expect(sidebarToggle).toBeVisible()
+    return verifyMobileSidebar(page, sidebarToggle)
+  }
   return verifyDesktopSidebar(page, sidebarToggle)
 }
 
