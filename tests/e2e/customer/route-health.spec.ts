@@ -755,7 +755,7 @@ test('customer surfaces default to light mode under a dark operating-system pref
   await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
 })
 
-test('record email composer validates, confirms and persists a sent message', async ({ page }) => {
+test('record email composer confirms and reports success without persisting test mail', async ({ page }) => {
   await signIn(page)
   await page.goto('/contacts', { waitUntil: 'domcontentloaded' })
   const detail = await firstDetailHref(page, '/contacts')
@@ -768,6 +768,20 @@ async function exerciseRecordEmail(page: Page, detail: string): Promise<void> {
   await page.locator('#email-to').fill('recipient@example.com')
   await page.locator('#email-subject').fill('Follow-up')
   await page.locator('#email-body').fill('Thanks for the update.')
+  await page.route('**/api/v1/email/send', async (route: Route) => {
+    expect(route.request().postDataJSON()).toMatchObject({
+      recordType: 'contact',
+      to: ['recipient@example.com'],
+      subject: 'Follow-up',
+      textBody: 'Thanks for the update.',
+      attachmentIds: [],
+    })
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'sent', id: 'local-e2e-only' }),
+    })
+  })
   page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Message sent.', { timeout: 15_000 })
