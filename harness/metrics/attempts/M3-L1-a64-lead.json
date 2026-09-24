@@ -1,0 +1,64 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 64,
+  "runner": "lead",
+  "startedAt": "2026-09-24T16:00:15.469Z",
+  "finishedAt": "2026-09-24T16:02:52.893Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 0,
+      "durationMs": 118527,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3151,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 6916,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 28274,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 251,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 284,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [
+    "packages/ui/src/components/ui/sidebar.tsx",
+    "tests/e2e/customer/inbox-ui.spec.ts",
+    "tests/e2e/customer/route-health.spec.ts",
+    "tests/e2e/helpers/task-fixtures.ts",
+    "tests/e2e/spike/smoke.spec.ts"
+  ],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT",
+    "GATE_FAILURE",
+    "MISSING_TEST",
+    "OTHER"
+  ],
+  "leadTookOver": true
+}

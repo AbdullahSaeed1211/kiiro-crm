@@ -1,0 +1,61 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 66,
+  "runner": "lead",
+  "startedAt": "2026-09-24T16:10:44.262Z",
+  "finishedAt": "2026-09-24T16:11:28.302Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 3422,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 1,
+      "durationMs": 3035,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 7168,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 29538,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 568,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 284,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "GATE_FAILURE",
+    "DOC_GAP"
+  ],
+  "leadTookOver": true
+}
