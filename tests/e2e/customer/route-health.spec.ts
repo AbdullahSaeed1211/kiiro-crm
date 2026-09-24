@@ -554,6 +554,16 @@ test('task details preserve origin in contextual mode and render canonically whe
   await verifyTaskSourceInteractions(page)
 })
 
+test('organization edit form preserves saved business contact fields', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/organizations/f1ab06e3-8c98-40e2-abcb-3799c49c4d0f/edit')
+
+  await expect(page.getByLabel('Organization name')).toHaveValue('AGR Gold')
+  await expect(page.getByLabel('Website')).toHaveValue('https://agrgold.com')
+  await expect(page.getByLabel('Email')).toHaveValue('customerservice@agrgold.com')
+  await expect(page.getByLabel('Phone')).toHaveValue('+1 212-391-1012')
+})
+
 test('settings IA and command palette expose useful, non-dead defaults', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings/general')

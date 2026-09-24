@@ -30,6 +30,22 @@ describe('CRM seed data', () => {
       'Baller Squad',
     ])
   })
+
+  it('keeps Baller Squad limited to its verified public website', () => {
+    expect(ORGANIZATIONS.find((item) => item.key === 'baller-squad')).toMatchObject({
+      website: 'https://www.ballersquad.com',
+      phone: '',
+      email: '',
+    })
+  })
+
+  it('keeps ETCPA contact details aligned with its official contact page', () => {
+    expect(ORGANIZATIONS.find((item) => item.key === 'etcpa')).toMatchObject({
+      website: 'https://www.etcpa.com',
+      phone: '+1 718-261-9600',
+      email: 'file@etcpa.com',
+    })
+  })
 })
 
 describe('CRM seed builders', () => {
