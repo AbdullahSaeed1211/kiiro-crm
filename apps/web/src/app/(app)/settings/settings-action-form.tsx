@@ -3,6 +3,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 import { SearchableSelect } from './searchable-select'
 import type { CurrencyOption } from '../../../i18n/currencies'
 
@@ -86,10 +87,15 @@ export function SettingsActionForm({
     event.preventDefault()
     setPending(true)
     setResult(undefined)
-    const response = await action({ ...fixedValues, ...values })
-    setResult(response)
-    setPending(false)
-    if (response.ok) router.refresh()
+    try {
+      const response = await action({ ...fixedValues, ...values })
+      setResult(response)
+      if (response.ok) router.refresh()
+    } catch {
+      setResult({ ok: false, error: "We couldn't save your changes. Please try again." })
+    } finally {
+      setPending(false)
+    }
   }
   return (
     <form
@@ -118,13 +124,9 @@ export function SettingsActionForm({
           Saved.
         </p>
       )}
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-        disabled={pending}
-        type="submit"
-      >
+      <Button className="h-10 px-4" disabled={pending} type="submit">
         {pending ? 'Saving…' : submitLabel}
-      </button>
+      </Button>
     </form>
   )
 }
