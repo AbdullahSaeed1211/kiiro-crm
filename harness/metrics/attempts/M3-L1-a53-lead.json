@@ -1,0 +1,68 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 53,
+  "runner": "lead",
+  "startedAt": "2026-09-24T14:04:15.699Z",
+  "finishedAt": "2026-09-24T14:06:01.460Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 57097,
+      "failingLines": [
+        "23:57  error  Unsafe argument of type error typed assigned to a parameter of type `string | URL`  @typescript-eslint/no-unsafe-argument",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 4344,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 14050,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 29345,
+      "failingLines": [
+        "23:57  error  Unsafe argument of type error typed assigned to a parameter of type `string | URL`  @typescript-eslint/no-unsafe-argument",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 616,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 287,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "MISSING_TEST",
+    "GATE_FAILURE",
+    "FLAKY_TEST",
+    "BRAND_OR_VOCAB_LEAK",
+    "CONTRACT_DRIFT"
+  ],
+  "leadTookOver": true
+}

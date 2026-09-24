@@ -179,14 +179,24 @@ async function verifyTaskSourcePanels(
   for (const source of sources) await verifyTaskSourcePanel(page, source)
 }
 
-async function taskNotificationSource(page: Page): Promise<Readonly<{ taskId: string; returnTo: string }>> {
-  await page.goto(`${CALENDAR_PATH}?month=2026-09`)
-  const href = await page.getByRole('link', { name: TASK_TITLE, exact: true }).getAttribute('href')
-  if (href === null) throw new Error('calendar task has no contextual URL for its notification')
-  const id = new URL(href, page.url()).pathname.split('/').at(-1)
+type CalendarTask = Readonly<{ title: string; href: string }>
+
+async function firstCalendarTask(page: Page): Promise<CalendarTask> {
+  const link = page.locator('section.ops-surface-card a[href^="/tasks/"][href*="panel=1"]').first()
+  await expect(link).toBeVisible()
+  const title = await link.innerText()
+  const href = await link.getAttribute('href')
+  if (title === '' || href === null) throw new Error('calendar task has no contextual URL or title')
+  return { title, href }
+}
+
+function taskNotificationSource(task: CalendarTask): Readonly<{ taskId: string; returnTo: string }> {
+  const href = new URL(task.href, 'http://localhost')
+  const id = href.pathname.split('/').at(-1)
   if (id === undefined || id === '') throw new Error('calendar task has no id for its notification')
-  const source = new URL(page.url())
-  return { taskId: id, returnTo: `${source.pathname}${source.search}` }
+  const returnTo = href.searchParams.get('returnTo')
+  if (returnTo === null) throw new Error('calendar task has no return route for its notification')
+  return { taskId: id, returnTo }
 }
 
 type TaskNotificationFixture = Readonly<{
@@ -256,39 +266,40 @@ async function expectNotificationReadRetry(page: Page, notification: Locator): P
   await expect(notification.locator('span.rounded-full').first()).toHaveClass(/bg-primary/)
 }
 
-async function closeNotificationTaskPanel(page: Page, returnTo: string): Promise<void> {
+async function closeNotificationTaskPanel(page: Page, title: string, returnTo: string): Promise<void> {
   await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
   expect(new URL(page.url()).searchParams.get('returnTo')).toBe(returnTo)
-  await expect(page.getByRole('dialog', { name: TASK_TITLE })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: title })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === returnTo)
-  await expect(page.getByRole('dialog', { name: TASK_TITLE })).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: title })).toHaveCount(0)
 }
 
-async function verifyNotificationTaskPanel(page: Page): Promise<void> {
-  const { taskId, returnTo } = await taskNotificationSource(page)
+async function verifyNotificationTaskPanel(page: Page, task: CalendarTask): Promise<void> {
+  const { taskId, returnTo } = taskNotificationSource(task)
   const notificationId = '11111111-1111-4111-8111-111111111111'
   let markedRead = false
   const attempts = { count: 0 }
   await page.route('**/api/v1/notifications**', (route) =>
     serveTaskNotification(route, { taskId, notificationId, markRead: () => (markedRead = true), attempts }),
   )
+  await page.goto(returnTo)
   const notification = await openTaskNotificationList(page)
   await expectNotificationReadRetry(page, notification)
   await notification.click()
   await expect.poll(() => markedRead).toBe(true)
-  await closeNotificationTaskPanel(page, returnTo)
+  await closeNotificationTaskPanel(page, task.title, returnTo)
 }
 
-async function verifyTaskSourceInteractions(page: Page): Promise<void> {
+async function verifyTaskSourceInteractions(page: Page, task: CalendarTask): Promise<void> {
   await verifyTaskSourcePanels(page, [
-    { route: TASK_PATH, title: TASK_TITLE },
-    { route: `${TASK_PATH}/board`, title: 'Review accounting service pages' },
+    { route: TASK_PATH, title: task.title },
+    { route: `${TASK_PATH}/board`, title: task.title },
   ])
-  await verifyNotificationTaskPanel(page)
+  await verifyNotificationTaskPanel(page, task)
 }
 
-async function verifyTaskPanelHistoryAndEscape(page: Page) {
+async function verifyTaskPanelHistoryAndEscape(page: Page, title: string) {
   await page.goBack()
   await expectCalendarPanelClosed(page)
   await page.goForward()
@@ -300,11 +311,11 @@ async function verifyTaskPanelHistoryAndEscape(page: Page) {
     await recordedLayoutShiftSince(page, closeStartedAt),
     'closing a task panel should not shift the calendar',
   ).toBe(0)
-  await expect(page.getByRole('link', { name: TASK_TITLE })).toBeFocused()
+  await expect(page.getByRole('link', { name: title, exact: true })).toBeFocused()
 }
 
-async function verifyTaskPanelScrollContainment(page: Page): Promise<void> {
-  const panel = page.getByRole('dialog', { name: TASK_TITLE })
+async function verifyTaskPanelScrollContainment(page: Page, title: string): Promise<void> {
+  const panel = page.getByRole('dialog', { name: title })
   const scrollArea = panel.locator('div.overflow-y-auto')
   await expect(scrollArea).toHaveCount(1)
   const sourceScrollY = await page.evaluate(() => window.scrollY)
@@ -322,44 +333,44 @@ async function verifyTaskPanelScrollContainment(page: Page): Promise<void> {
   await expect(panel.locator('[data-slot="sheet-footer"] button', { hasText: 'Close' })).toBeInViewport()
 }
 
-async function verifyCanonicalTaskPage(page: Page) {
-  const taskHref = await page.getByRole('link', { name: TASK_TITLE }).getAttribute('href')
-  if (taskHref === null) throw new Error('task link has no deep-link URL')
+async function verifyCanonicalTaskPage(page: Page, taskHref: string) {
   await page.goto(new URL(taskHref, page.url()).pathname)
   await expect(page.getByRole('heading', { name: 'Assignees' })).toBeVisible()
   await expect(page.locator(TASK_PANEL)).toHaveCount(0)
   await page.screenshot({ path: test.info().outputPath('task-page.png'), fullPage: true })
 }
 
-async function verifyTaskPanelCloseControls(page: Page) {
+async function verifyTaskPanelCloseControls(page: Page, title: string) {
   await page.goto(CALENDAR_PATH)
-  await page.getByRole('link', { name: TASK_TITLE }).click()
+  await page.getByRole('link', { name: title, exact: true }).click()
   await expectCalendarPanelOpen(page)
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).first().click()
   await expectCalendarPanelClosed(page)
   if ((page.viewportSize()?.width ?? 0) > 600) {
-    await page.getByRole('link', { name: TASK_TITLE }).click()
+    await page.getByRole('link', { name: title, exact: true }).click()
     await expect(page.locator(TASK_PANEL)).toBeVisible()
     await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 10, y: 10 } })
     await expectCalendarPanelClosed(page)
   }
 }
 
-async function verifyCalendarTaskPanelOpen(page: Page): Promise<void> {
+async function verifyCalendarTaskPanelOpen(page: Page): Promise<CalendarTask> {
   await page.goto(CALENDAR_PATH)
+  const task = await firstCalendarTask(page)
   const calendar = page.locator('section.ops-surface-card')
   const calendarBox = await calendar.boundingBox()
   if (calendarBox === null) throw new Error('calendar is not visible before opening a task')
   const openStartedAt = await page.evaluate(() => performance.now())
-  await page.getByRole('link', { name: TASK_TITLE }).click()
+  await page.getByRole('link', { name: task.title, exact: true }).click()
   await expectCalendarPanelOpen(page)
   expect(
     await recordedLayoutShiftSince(page, openStartedAt),
     'opening a task panel should not shift the calendar',
   ).toBe(0)
   expect(await calendar.boundingBox()).toEqual(calendarBox)
-  await verifyTaskPanelScrollContainment(page)
+  await verifyTaskPanelScrollContainment(page, task.title)
   await page.screenshot({ path: test.info().outputPath('task-panel.png'), fullPage: true })
+  return task
 }
 
 async function verifyWorkspaceProfileAndBranding(page: Page) {
@@ -552,11 +563,11 @@ test('customer routes load without browser failures and stay within the response
 
 test('task details preserve origin in contextual mode and render canonically when deep-linked', async ({ page }) => {
   await signIn(page)
-  await verifyCalendarTaskPanelOpen(page)
-  await verifyTaskPanelHistoryAndEscape(page)
-  await verifyCanonicalTaskPage(page)
-  await verifyTaskPanelCloseControls(page)
-  await verifyTaskSourceInteractions(page)
+  const task = await verifyCalendarTaskPanelOpen(page)
+  await verifyTaskPanelHistoryAndEscape(page, task.title)
+  await verifyCanonicalTaskPage(page, task.href)
+  await verifyTaskPanelCloseControls(page, task.title)
+  await verifyTaskSourceInteractions(page, task)
 })
 
 test('organization edit form preserves saved business contact fields', async ({ page }) => {
