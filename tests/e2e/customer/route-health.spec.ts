@@ -254,6 +254,25 @@ async function verifyTaskPanelHistoryAndEscape(page: Page) {
   await expect(page.getByRole('link', { name: TASK_TITLE })).toBeFocused()
 }
 
+async function verifyTaskPanelScrollContainment(page: Page): Promise<void> {
+  const panel = page.getByRole('dialog', { name: TASK_TITLE })
+  const scrollArea = panel.locator('div.overflow-y-auto')
+  await expect(scrollArea).toHaveCount(1)
+  const sourceScrollY = await page.evaluate(() => window.scrollY)
+  await scrollArea.evaluate((element) => {
+    const spacer = document.createElement('div')
+    spacer.setAttribute('aria-hidden', 'true')
+    spacer.style.height = '120vh'
+    element.append(spacer)
+  })
+  await scrollArea.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+  })
+  expect(await scrollArea.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  expect(await page.evaluate(() => window.scrollY)).toBe(sourceScrollY)
+  await expect(panel.locator('[data-slot="sheet-footer"] button', { hasText: 'Close' })).toBeInViewport()
+}
+
 async function verifyCanonicalTaskPage(page: Page) {
   const taskHref = await page.getByRole('link', { name: TASK_TITLE }).getAttribute('href')
   if (taskHref === null) throw new Error('task link has no deep-link URL')
@@ -275,6 +294,23 @@ async function verifyTaskPanelCloseControls(page: Page) {
     await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 10, y: 10 } })
     await expectCalendarPanelClosed(page)
   }
+}
+
+async function verifyCalendarTaskPanelOpen(page: Page): Promise<void> {
+  await page.goto(CALENDAR_PATH)
+  const calendar = page.locator('section.ops-surface-card')
+  const calendarBox = await calendar.boundingBox()
+  if (calendarBox === null) throw new Error('calendar is not visible before opening a task')
+  const openStartedAt = await page.evaluate(() => performance.now())
+  await page.getByRole('link', { name: TASK_TITLE }).click()
+  await expectCalendarPanelOpen(page)
+  expect(
+    await recordedLayoutShiftSince(page, openStartedAt),
+    'opening a task panel should not shift the calendar',
+  ).toBe(0)
+  expect(await calendar.boundingBox()).toEqual(calendarBox)
+  await verifyTaskPanelScrollContainment(page)
+  await page.screenshot({ path: test.info().outputPath('task-panel.png'), fullPage: true })
 }
 
 async function verifyWorkspaceProfileAndBranding(page: Page) {
@@ -471,19 +507,7 @@ test('customer routes load without browser failures and stay within the response
 
 test('task details preserve origin in contextual mode and render canonically when deep-linked', async ({ page }) => {
   await signIn(page)
-  await page.goto(CALENDAR_PATH)
-  const calendar = page.locator('section.ops-surface-card')
-  const calendarBox = await calendar.boundingBox()
-  if (calendarBox === null) throw new Error('calendar is not visible before opening a task')
-  const openStartedAt = await page.evaluate(() => performance.now())
-  await page.getByRole('link', { name: TASK_TITLE }).click()
-  await expectCalendarPanelOpen(page)
-  expect(
-    await recordedLayoutShiftSince(page, openStartedAt),
-    'opening a task panel should not shift the calendar',
-  ).toBe(0)
-  expect(await calendar.boundingBox()).toEqual(calendarBox)
-  await page.screenshot({ path: test.info().outputPath('task-panel.png'), fullPage: true })
+  await verifyCalendarTaskPanelOpen(page)
   await verifyTaskPanelHistoryAndEscape(page)
   await verifyCanonicalTaskPage(page)
   await verifyTaskPanelCloseControls(page)
