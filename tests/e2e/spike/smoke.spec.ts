@@ -117,6 +117,24 @@ async function moveAndVerifyAfterReload(page: Page, move: CardMove): Promise<voi
   await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
 }
 
+async function dragCardOutsideTargetsDoesNotOpen(page: Page, title: string): Promise<void> {
+  if ((page.viewportSize()?.width ?? 0) < 768) return
+  const card = boardCard(page, title)
+  const source = page.locator(TASK_STAGE_SELECTOR, { has: card })
+  const sourceName = await source.getAttribute(ARIA_LABEL_ATTRIBUTE)
+  const box = await card.boundingBox()
+  if (sourceName === null || box === null) throw new Error(`cannot measure task card ${title}`)
+  const start = { x: box.x + box.width / 2, y: box.y + Math.min(18, box.height / 2) }
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(start.x + 36, start.y + 18, { steps: 4 })
+  await page.mouse.move(280, 40, { steps: 5 })
+  await page.mouse.up()
+  await expect(page).toHaveURL(TASK_BOARD_PATH)
+  await expect(card).toBeVisible()
+  await expect(source).toHaveAttribute(ARIA_LABEL_ATTRIBUTE, sourceName)
+}
+
 async function selectStageWithKeyboard(page: Page, stage: string): Promise<void> {
   const items = page.getByRole('menuitem')
   const count = await items.count()
@@ -158,6 +176,7 @@ test('spike: /tasks/board move menu persists after a reload', async ({ page, isM
   // Desktop and phone projects run in parallel, so each moves its own card.
   const title = isMobile ? 'Schedule kickoff meeting' : PLAN_LAUNCH_TITLE
   await expect(boardCard(page, title)).toBeVisible()
+  await dragCardOutsideTargetsDoesNotOpen(page, title)
   const from = await page
     .locator(TASK_STAGE_SELECTOR, { has: boardCard(page, title) })
     .getAttribute(ARIA_LABEL_ATTRIBUTE)
