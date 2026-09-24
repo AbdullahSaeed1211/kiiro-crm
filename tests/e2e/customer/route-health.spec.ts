@@ -18,6 +18,7 @@ const GANTT_VIEW_LABEL = 'Gantt'
 const CURRENT_PAGE = 'page'
 const ARIA_CURRENT = 'aria-current'
 const CALENDAR_PATH = '/calendar'
+const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
 const TASK_TITLE = 'Draft homepage wireframes'
 const TASK_PANEL = '[data-slot="sheet-content"]'
@@ -30,7 +31,7 @@ const ROUTES = [
   ['/contacts', 'Contacts'],
   ['/organizations', 'Organizations'],
   ['/projects', 'Projects'],
-  ['/tasks', 'Tasks'],
+  [TASK_PATH, 'Tasks'],
   ['/tasks/board', KANBAN_VIEW_LABEL],
   ['/my-tasks', 'My tasks'],
   ['/calendar', CALENDAR_VIEW_LABEL],
@@ -112,6 +113,56 @@ async function expectCalendarPanelClosed(page: Page) {
   await expect(page).toHaveURL(new RegExp(`${CALENDAR_PATH}(?:\\?.*)?$`))
   await expect(page.locator(TASK_PANEL)).toHaveCount(0)
   await expect(page.locator('section.ops-surface-card')).toBeVisible()
+}
+
+async function taskSourceLink(page: Page, input: Readonly<{ route: string; title: string }>) {
+  await page.goto(input.route)
+  let taskLink = page.getByRole('link', { name: input.title, exact: true })
+  await expect(taskLink).toBeVisible()
+  const href = await taskLink.getAttribute('href')
+  if (href === null) throw new Error(`task link has no contextual URL for ${input.title}`)
+  const sourceUrl = new URL(href, page.url()).searchParams.get('returnTo')
+  if (sourceUrl === null) throw new Error(`task link has no return route for ${input.title}`)
+  expect(sourceUrl).toContain(input.route)
+  const currentUrl = new URL(page.url())
+  if (`${currentUrl.pathname}${currentUrl.search}` !== sourceUrl) {
+    await page.goto(sourceUrl)
+    taskLink = page.getByRole('link', { name: input.title, exact: true })
+    await expect(taskLink).toBeVisible()
+  }
+  return { taskLink, sourceUrl }
+}
+
+async function openTaskSourcePanel(page: Page, taskLink: Locator, sourceUrl: string): Promise<void> {
+  const openStartedAt = await page.evaluate(() => performance.now())
+  await taskLink.click()
+  await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
+  expect(new URL(page.url()).searchParams.get('returnTo')).toBe(sourceUrl)
+  await expect(page.locator(TASK_PANEL)).toBeVisible()
+  expect(
+    await recordedLayoutShiftSince(page, openStartedAt),
+    `opening a task from ${sourceUrl} should not shift its source`,
+  ).toBe(0)
+}
+
+async function closeTaskSourcePanel(page: Page, title: string, sourceUrl: string): Promise<void> {
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === sourceUrl)
+  await expect(page.locator(TASK_PANEL)).toHaveCount(0)
+  await expect(page.getByRole('link', { name: title, exact: true })).toBeFocused()
+}
+
+async function verifyTaskSourcePanel(page: Page, input: Readonly<{ route: string; title: string }>): Promise<void> {
+  const { taskLink, sourceUrl } = await taskSourceLink(page, input)
+  await openTaskSourcePanel(page, taskLink, sourceUrl)
+  await closeTaskSourcePanel(page, input.title, sourceUrl)
+}
+
+async function verifyTaskSourcePanels(
+  page: Page,
+  sources: readonly Readonly<{ route: string; title: string }>[],
+): Promise<void> {
+  for (const source of sources) await verifyTaskSourcePanel(page, source)
 }
 
 async function verifyTaskPanelHistoryAndEscape(page: Page) {
@@ -271,7 +322,7 @@ test('customer routes load without browser failures and stay within the response
   const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
   detailRoutes.splice(1, 0, taskDetail)
-  await page.goto('/tasks', { waitUntil: 'domcontentloaded' })
+  await page.goto(TASK_PATH, { waitUntil: 'domcontentloaded' })
   const taskViews = page.getByRole('navigation', { name: TASK_VIEWS_LABEL })
   await expect(taskViews.getByRole('link', { name: TABLE_VIEW_LABEL, exact: true })).toHaveAttribute(
     ARIA_CURRENT,
@@ -362,6 +413,10 @@ test('task details preserve origin in contextual mode and render canonically whe
   await verifyTaskPanelHistoryAndEscape(page)
   await verifyCanonicalTaskPage(page)
   await verifyTaskPanelCloseControls(page)
+  await verifyTaskSourcePanels(page, [
+    { route: TASK_PATH, title: 'Draft homepage wireframes' },
+    { route: `${TASK_PATH}/board`, title: 'Design style guide' },
+  ])
 })
 
 test('settings IA and command palette expose useful, non-dead defaults', async ({ page }) => {
@@ -498,6 +553,7 @@ test('staff My Tasks is assignment-scoped and member administration is denied', 
   await expect(content).toContainText('Design style guide')
   await expect(content).toContainText('Prepare app icon concepts')
   await expect(content).not.toContainText('Plan launch checklist')
+  await verifyTaskSourcePanel(page, { route: '/my-tasks', title: 'Design style guide' })
 
   const denied = await page.goto(MEMBERS_PATH)
   expect(denied?.status()).toBe(404)
