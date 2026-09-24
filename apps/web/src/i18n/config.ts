@@ -138,12 +138,14 @@ export const NOTIFICATION_COPY: Readonly<Record<Locale, Readonly<Record<string, 
     description: 'Updates that need your attention.',
     loading: 'Loading updates…',
     caughtUp: 'You’re all caught up.',
+    readFailed: 'Could not mark this notification as read. Try again.',
   },
   es: {
     label: 'Notificaciones',
     description: 'Novedades que requieren tu atención.',
     loading: 'Cargando novedades…',
     caughtUp: 'Estás al día.',
+    readFailed: 'No se pudo marcar la notificación como leída. Inténtalo de nuevo.',
   },
 }
 

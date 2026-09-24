@@ -49,6 +49,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
   const [count, setCount] = useState(0)
   const [items, setItems] = useState<readonly NotificationItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const copy = NOTIFICATION_COPY[locale]
   const shellCopy = SHELL_COPY[locale]
 
@@ -82,10 +83,17 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
 
   const select = async (item: NotificationItem) => {
     if (item.readAt === undefined) {
-      await fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
+      try {
+        const response = await fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
+        if (!response.ok) throw new Error('notification read update failed')
+      } catch {
+        setError(copy.readFailed)
+        return
+      }
       setCount((current) => Math.max(0, current - 1))
       setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, readAt: Date.now() } : entry)))
     }
+    setError(null)
     const route = item.recordType === undefined ? undefined : RECORD_ROUTES[item.recordType]
     if (route !== undefined && item.recordId !== undefined) {
       setOpen(false)
@@ -109,6 +117,11 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
           <SheetTitle>{copy.label}</SheetTitle>
           <SheetDescription>{copy.description}</SheetDescription>
         </SheetHeader>
+        {error === null ? null : (
+          <p className="px-4 text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
         <div className="space-y-2 overflow-y-auto px-4 pb-6">
           {loading ? (
             <p className="py-8 text-center text-sm text-muted-foreground" aria-live="polite">

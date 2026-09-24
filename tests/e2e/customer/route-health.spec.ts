@@ -178,10 +178,40 @@ async function taskNotificationSource(page: Page): Promise<Readonly<{ taskId: st
   return { taskId: id, returnTo: `${source.pathname}${source.search}` }
 }
 
-async function serveTaskNotification(
-  route: Route,
-  item: Readonly<{ taskId: string; notificationId: string; markRead: () => void }>,
-): Promise<void> {
+type TaskNotificationFixture = Readonly<{
+  taskId: string
+  notificationId: string
+  markRead: () => void
+  attempts: { count: number }
+}>
+
+async function serveNotificationList(route: Route, item: TaskNotificationFixture): Promise<void> {
+  await route.fulfill({
+    json: {
+      notifications: [
+        {
+          id: item.notificationId,
+          type: 'task_due_soon',
+          recordType: 'task',
+          recordId: item.taskId,
+          data: { message: 'Task due soon' },
+        },
+      ],
+    },
+  })
+}
+
+async function serveNotificationRead(route: Route, item: TaskNotificationFixture): Promise<void> {
+  item.attempts.count += 1
+  if (item.attempts.count === 1) {
+    await route.fulfill({ status: 503, json: { error: 'notification service unavailable' } })
+    return
+  }
+  item.markRead()
+  await route.fulfill({ status: 204 })
+}
+
+async function serveTaskNotification(route: Route, item: TaskNotificationFixture): Promise<void> {
   const request = route.request()
   const url = new URL(request.url())
   if (request.method() === 'GET' && url.pathname === '/api/v1/notifications/unread-count') {
@@ -189,47 +219,54 @@ async function serveTaskNotification(
     return
   }
   if (request.method() === 'GET' && url.pathname === '/api/v1/notifications') {
-    await route.fulfill({
-      json: {
-        notifications: [
-          {
-            id: item.notificationId,
-            type: 'task_due_soon',
-            recordType: 'task',
-            recordId: item.taskId,
-            data: { message: 'Task due soon' },
-          },
-        ],
-      },
-    })
+    await serveNotificationList(route, item)
     return
   }
   if (request.method() === 'PATCH' && url.pathname === `/api/v1/notifications/${item.notificationId}`) {
-    item.markRead()
-    await route.fulfill({ status: 204 })
+    await serveNotificationRead(route, item)
     return
   }
   await route.continue()
 }
 
-async function verifyNotificationTaskPanel(page: Page): Promise<void> {
-  const { taskId, returnTo } = await taskNotificationSource(page)
-  const notificationId = '11111111-1111-4111-8111-111111111111'
-  let markedRead = false
-  await page.route('**/api/v1/notifications**', (route) =>
-    serveTaskNotification(route, { taskId, notificationId, markRead: () => (markedRead = true) }),
-  )
+async function openTaskNotificationList(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Notifications' }).click()
   const notifications = page.getByRole('dialog')
   await expect(notifications).toContainText('Task due soon')
-  await notifications.getByRole('button', { name: /Task due soon/ }).click()
-  await expect.poll(() => markedRead).toBe(true)
+  return notifications.getByRole('button', { name: /Task due soon/ })
+}
+
+async function expectNotificationReadRetry(page: Page, notification: Locator): Promise<void> {
+  await notification.click()
+  await expect(page.getByRole('dialog').getByRole('alert')).toHaveText(
+    'Could not mark this notification as read. Try again.',
+  )
+  expect(new URL(page.url()).pathname).toBe(CALENDAR_PATH)
+  await expect(notification.locator('span.rounded-full').first()).toHaveClass(/bg-primary/)
+}
+
+async function closeNotificationTaskPanel(page: Page, returnTo: string): Promise<void> {
   await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
   expect(new URL(page.url()).searchParams.get('returnTo')).toBe(returnTo)
   await expect(page.getByRole('dialog', { name: TASK_TITLE })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === returnTo)
   await expect(page.getByRole('dialog', { name: TASK_TITLE })).toHaveCount(0)
+}
+
+async function verifyNotificationTaskPanel(page: Page): Promise<void> {
+  const { taskId, returnTo } = await taskNotificationSource(page)
+  const notificationId = '11111111-1111-4111-8111-111111111111'
+  let markedRead = false
+  const attempts = { count: 0 }
+  await page.route('**/api/v1/notifications**', (route) =>
+    serveTaskNotification(route, { taskId, notificationId, markRead: () => (markedRead = true), attempts }),
+  )
+  const notification = await openTaskNotificationList(page)
+  await expectNotificationReadRetry(page, notification)
+  await notification.click()
+  await expect.poll(() => markedRead).toBe(true)
+  await closeNotificationTaskPanel(page, returnTo)
 }
 
 async function verifyTaskSourceInteractions(page: Page): Promise<void> {
