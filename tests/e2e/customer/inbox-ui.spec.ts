@@ -102,6 +102,11 @@ async function verifyMobileFolderRail(page: Page): Promise<void> {
 async function verifyInboxSearch(page: Page): Promise<void> {
   await page.getByRole('searchbox', { name: 'Search messages' }).fill('no matching conversation')
   await expect(page.getByText('No conversations match your search.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Message content' })).toHaveCount(0)
+  const columnCount = await page
+    .locator('[class*="contentGrid"]')
+    .evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(/\s+/).length)
+  expect(columnCount).toBe(1)
 }
 
 async function verifyComposeRemainsDisabled(page: Page): Promise<void> {
@@ -122,6 +127,8 @@ test('inbox exposes the mail-client layout and keeps compose sending disabled', 
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Mail folders' })).toBeVisible()
   await expect(page.getByRole('searchbox', { name: 'Search messages' })).toBeVisible()
+  await expect(page.getByText('No conversations here yet.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Message content' })).toHaveCount(0)
   if (!isMobile) await page.screenshot({ path: testInfo.outputPath('inbox-desktop.png'), fullPage: true })
   if (isMobile) await verifyMobileFolderRail(page)
   await verifySidebar(page, isMobile)

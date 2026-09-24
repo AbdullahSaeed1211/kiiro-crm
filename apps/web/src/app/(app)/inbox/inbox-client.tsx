@@ -170,7 +170,9 @@ export function InboxClient({
           </div>
         </header>
 
-        <div className={`${styles.contentGrid} ${mobileReader ? styles.mobileReading : ''}`}>
+        <div
+          className={`${styles.contentGrid} ${selectedThread === null ? styles.contentEmpty : ''} ${mobileReader ? styles.mobileReading : ''}`}
+        >
           <section className={styles.threadList} aria-label={folderLabel(folder, copy)}>
             <div className={styles.listHeading}>
               <div>
@@ -206,14 +208,16 @@ export function InboxClient({
             </div>
           </section>
 
-          <InboxReader
-            thread={selectedThread}
-            copy={copy}
-            locale={locale}
-            onBack={() => {
-              setMobileReader(false)
-            }}
-          />
+          {selectedThread === null ? null : (
+            <InboxReader
+              thread={selectedThread}
+              copy={copy}
+              locale={locale}
+              onBack={() => {
+                setMobileReader(false)
+              }}
+            />
+          )}
         </div>
       </div>
 

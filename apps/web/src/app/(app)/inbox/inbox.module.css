@@ -229,6 +229,25 @@
   grid-template-columns: minmax(17.5rem, 23rem) minmax(0, 1fr);
 }
 
+.contentEmpty {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.contentEmpty .threadList {
+  border-right: 0;
+}
+
+.contentEmpty .threadRows {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+.contentEmpty .listEmpty {
+  min-height: 0;
+  margin: 0;
+}
+
 .threadList {
   display: flex;
   min-width: 0;
