@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
@@ -58,16 +58,16 @@ async function captureAccessibleSurface(page: Page, name: string): Promise<void>
 }
 
 async function assertNoSeriousAccessibilityViolations(page: Page, name: string): Promise<void> {
-  const result = await new AxeBuilder({ page })
-    .exclude('[data-base-ui-focus-guard]')
-    // SVAR Gantt 2.7.3 emits aria-rowindex=0 and a tabindex=-1 wrapper without focusable content.
-    .exclude('.ops-gantt')
-    .withTags(AXE_TAGS)
-    .analyze()
+  const result = await new AxeBuilder({ page }).exclude('[data-base-ui-focus-guard]').withTags(AXE_TAGS).analyze()
   const serious = result.violations.filter(
     (violation) => violation.impact === 'serious' || violation.impact === 'critical',
   )
-  expect(serious, `${name} serious or critical accessibility violations`).toEqual([])
+  const findings = serious.map((violation) => ({
+    id: violation.id,
+    impact: violation.impact,
+    elements: violation.nodes.map(({ target, html, failureSummary }) => ({ target, html, failureSummary })),
+  }))
+  expect(findings, `${name} serious or critical accessibility violations`).toEqual([])
 }
 
 async function firstDetailHref(page: Page, prefix: string): Promise<string> {
@@ -95,23 +95,51 @@ async function auditCustomerRoutes(page: Page): Promise<void> {
   }
 }
 
-test('customer shell, list, record and task sheet have no serious accessibility violations', async ({ page }) => {
-  test.setTimeout(120_000)
-  await signIn(page)
+async function auditPrimarySurfaces(page: Page): Promise<void> {
   await page.goto('/')
   await captureAccessibleSurface(page, 'shell')
-
   await page.goto('/tasks')
   await captureAccessibleSurface(page, 'list')
-
   await page.goto('/contacts')
   await page.goto(await firstDetailHref(page, '/contacts'))
   await captureAccessibleSurface(page, 'record')
-
   await page.goto('/calendar')
   await page.getByRole('link', { name: TASK_TITLE }).click()
   await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
   await captureAccessibleSurface(page, 'sheet')
+}
 
+async function auditCompactTimelineModes(page: Page, chart: Locator): Promise<void> {
+  const chartMode = page.getByRole('button', { name: 'Chart', exact: true })
+  const gridMode = page.getByRole('button', { name: 'Grid', exact: true })
+  await expect(chartMode).toHaveAttribute('aria-pressed', 'true')
+  await gridMode.click()
+  await expect(chart).toBeHidden()
+  await assertNoSeriousAccessibilityViolations(page, 'timeline grid mode')
+  await chartMode.click()
+  await expect(chart).toBeVisible()
+  await expect(chartMode).toHaveAttribute('aria-pressed', 'true')
+}
+
+async function auditTimeline(page: Page): Promise<void> {
+  await page.goto('/timeline')
+  const chart = page.getByRole('region', { name: 'Task timeline chart' })
+  await expect(chart).toBeVisible()
+  if ((page.viewportSize()?.width ?? 0) > 650) {
+    await page.screenshot({ path: test.info().outputPath('m3-timeline-desktop.png'), fullPage: true })
+  } else {
+    await auditCompactTimelineModes(page, chart)
+  }
+  await expect(chart).toHaveAttribute('tabindex', '0')
+  await chart.focus()
+  await expect(chart).toBeFocused()
+  await captureAccessibleSurface(page, 'timeline')
+}
+
+test('customer shell, list, record and task sheet have no serious accessibility violations', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signIn(page)
+  await auditPrimarySurfaces(page)
+  await auditTimeline(page)
   await auditCustomerRoutes(page)
 })

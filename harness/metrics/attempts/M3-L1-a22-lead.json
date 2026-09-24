@@ -1,0 +1,88 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 22,
+  "runner": "lead",
+  "startedAt": "2026-09-24T02:23:34.258Z",
+  "finishedAt": "2026-09-24T02:25:02.928Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 50064,
+      "failingLines": [
+        "36:16  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression",
+        "43:8   error  Function 'TimelineChart' has too many lines (96). Maximum allowed is 80                                             max-lines-per-function",
+        "57:1   error  Function 'repairGanttAccessibility' has too many parameters (3). Maximum allowed is 2                                                                               max-params",
+        "57:1   error  Function 'repairGanttAccessibility' has a complexity of 12. Maximum allowed is 8                                                                                    complexity",
+        "57:10  error  Refactor this function to reduce its Cognitive Complexity from 14 to the 10 allowed                                                                                 sonarjs/cognitive-complexity",
+        "62:53  error  Define a constant instead of duplicating this literal 4 times                                                                                                       sonarjs/no-duplicate-string",
+        "67:26  error  Define a constant instead of duplicating this literal 4 times                                                                                                       sonarjs/no-duplicate-string",
+        "100:8   error  Function 'GanttView' has too many lines (85). Maximum allowed is 80                                                                                                 max-lines-per-function",
+        "126:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises",
+        "137:7   error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression",
+        "150:18  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression",
+        "98:111  error  Async arrow function has too many statements (32). Maximum allowed is 15  max-statements",
+        "✖ 12 problems (12 errors, 0 warnings)",
+        "3 errors and 0 warnings potentially fixable with the `--fix` option.",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3010,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 6617,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 27963,
+      "failingLines": [
+        "36:16  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression",
+        "43:8   error  Function 'TimelineChart' has too many lines (96). Maximum allowed is 80                                             max-lines-per-function",
+        "57:1   error  Function 'repairGanttAccessibility' has too many parameters (3). Maximum allowed is 2                                                                               max-params",
+        "57:1   error  Function 'repairGanttAccessibility' has a complexity of 12. Maximum allowed is 8                                                                                    complexity",
+        "57:10  error  Refactor this function to reduce its Cognitive Complexity from 14 to the 10 allowed                                                                                 sonarjs/cognitive-complexity",
+        "62:53  error  Define a constant instead of duplicating this literal 4 times                                                                                                       sonarjs/no-duplicate-string",
+        "67:26  error  Define a constant instead of duplicating this literal 4 times                                                                                                       sonarjs/no-duplicate-string",
+        "100:8   error  Function 'GanttView' has too many lines (85). Maximum allowed is 80                                                                                                 max-lines-per-function",
+        "126:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises",
+        "137:7   error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression",
+        "150:18  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression",
+        "98:111  error  Async arrow function has too many statements (32). Maximum allowed is 15  max-statements",
+        "✖ 12 problems (12 errors, 0 warnings)",
+        "3 errors and 0 warnings potentially fixable with the `--fix` option.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 686,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 297,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": true
+}

@@ -33,7 +33,7 @@
 }
 
 .ops-gantt .wx-scale .ops-gantt-today {
-  color: var(--primary);
+  color: var(--foreground);
   font-weight: 600;
 }
 

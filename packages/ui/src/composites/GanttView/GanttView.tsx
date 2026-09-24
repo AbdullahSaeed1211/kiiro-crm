@@ -23,6 +23,8 @@ import {
 
 /** Visible strings of {@link GanttView}. */
 export interface GanttViewLabels extends GanttColumnLabels {
+  /** Accessible name of the scrollable chart region. */
+  readonly timelineChart: string
   /** Shown when the change callback throws instead of returning a result. */
   readonly saveFailed: string
 }
@@ -31,6 +33,8 @@ export interface GanttViewLabels extends GanttColumnLabels {
 export type GanttViewProps = Readonly<{
   bars: readonly GanttBar[]
   zoom: GanttZoom
+  compact: boolean
+  displayMode: 'grid' | 'chart'
   onDatesChange: GanttDatesChange
   labels: GanttViewLabels
   locale?: string
@@ -49,6 +53,74 @@ const BLOCKED_ACTIONS = ['add-task', 'copy-task', 'delete-task', 'indent-task', 
 
 const subscribeNever = () => () => undefined
 const highlightTime = (date: Date, unit: string) => todayClass(date, unit, new Date())
+const ROW_SELECTOR = '[role="row"][data-id]'
+const GRIP_SELECTOR = '.wx-grip[role="presentation"][aria-label]'
+const CHART_SELECTOR = '.wx-chart'
+const TAB_INDEX = '0'
+const REGION_ROLE = 'region'
+const ARIA_LABEL = 'aria-label'
+const ARIA_ROW_INDEX = 'aria-rowindex'
+
+function repairRowIndexes(container: HTMLElement, taskIds: readonly string[]): void {
+  for (const row of container.querySelectorAll<HTMLElement>(ROW_SELECTOR)) {
+    const id = (row.getAttribute('data-context-id') ?? row.getAttribute('data-id') ?? '').replace(/^:/, '')
+    const index = taskIds.indexOf(id)
+    const rowIndex = index < 0 ? undefined : String(index + 1)
+    if (rowIndex === undefined) row.removeAttribute(ARIA_ROW_INDEX)
+    else if (row.getAttribute(ARIA_ROW_INDEX) !== rowIndex) row.setAttribute(ARIA_ROW_INDEX, rowIndex)
+  }
+}
+
+function removeGripLabels(container: HTMLElement): void {
+  for (const grip of container.querySelectorAll<HTMLElement>(GRIP_SELECTOR)) {
+    grip.removeAttribute('aria-label')
+  }
+}
+
+function makeChartsFocusable(container: HTMLElement, chartLabel: string): void {
+  for (const chart of container.querySelectorAll<HTMLElement>(CHART_SELECTOR)) {
+    if (chart.getAttribute('tabindex') !== TAB_INDEX) chart.setAttribute('tabindex', TAB_INDEX)
+    if (chart.getAttribute('role') !== REGION_ROLE) chart.setAttribute('role', REGION_ROLE)
+    if (chart.getAttribute(ARIA_LABEL) !== chartLabel) chart.setAttribute(ARIA_LABEL, chartLabel)
+  }
+}
+
+function repairGanttAccessibility(
+  container: HTMLElement,
+  options: { taskIds: readonly string[]; chartLabel: string },
+): void {
+  repairRowIndexes(container, options.taskIds)
+  removeGripLabels(container)
+  makeChartsFocusable(container, options.chartLabel)
+}
+
+function useGanttAccessibility(
+  rootRef: RefObject<HTMLDivElement | null>,
+  options: { tasks: readonly { id?: TID }[]; chartLabel: string; clientReady: boolean },
+): void {
+  const { tasks, chartLabel, clientReady } = options
+  useEffect(() => {
+    const root = rootRef.current
+    if (root === null) return
+    const repair = () => {
+      repairGanttAccessibility(root, {
+        taskIds: tasks.map((task) => String(task.id)),
+        chartLabel,
+      })
+    }
+    repair()
+    const observer = new MutationObserver(repair)
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: [ARIA_LABEL, ARIA_ROW_INDEX, 'data-context-id', 'data-id', 'role', 'tabindex'],
+      childList: true,
+      subtree: true,
+    })
+    return () => {
+      observer.disconnect()
+    }
+  }, [chartLabel, clientReady, rootRef, tasks])
+}
 
 async function commitDates(context: CommitContext, id: TID): Promise<void> {
   const dates = committedDates(context.api.getTask(id))
@@ -73,7 +145,7 @@ function guardEdits(api: IApi): void {
 }
 
 /** Timeline of task bars (SVAR Gantt, MIT edition); a drag or resize calls `onDatesChange` and rolls back on failure. */
-export function GanttView({ bars, zoom, onDatesChange, labels, locale }: GanttViewProps) {
+export function GanttView({ bars, zoom, compact, displayMode, onDatesChange, labels, locale }: GanttViewProps) {
   // The library measures the DOM and uses the browser time zone, so it renders on the client only.
   const clientReady = useSyncExternalStore(
     subscribeNever,
@@ -82,6 +154,8 @@ export function GanttView({ bars, zoom, onDatesChange, labels, locale }: GanttVi
   )
   const [error, setError] = useState<string>()
   const signature = barsSignature(bars)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const apiRef = useRef<IApi | null>(null)
   const onDatesChangeRef = useRef(onDatesChange)
   const labelsRef = useRef(labels)
   const confirmed = useRef(spanMap(bars))
@@ -94,9 +168,19 @@ export function GanttView({ bars, zoom, onDatesChange, labels, locale }: GanttVi
   useEffect(() => {
     confirmed.current = spanMap(bars)
   }, [signature])
+  useEffect(() => {
+    const api = apiRef.current
+    if (api === null) return
+    void api.exec('set-display-mode', { mode: compact ? displayMode : 'all' })
+  }, [clientReady, compact, displayMode])
   const setup = useMemo(() => scaleSetup(zoom, locale), [locale, zoom])
-  const columns = useMemo(() => ganttColumns(labels, locale), [labels, locale])
+  const columns = useMemo(() => {
+    const allColumns = ganttColumns(labels, locale)
+    return compact ? allColumns.filter((column) => column.id === 'text') : allColumns
+  }, [compact, labels, locale])
+  useGanttAccessibility(rootRef, { tasks, chartLabel: labels.timelineChart, clientReady })
   const init = useCallback((api: IApi) => {
+    apiRef.current = api
     const context = { api, onDatesChange: onDatesChangeRef, confirmed, labels: labelsRef, setError }
     guardEdits(api)
     api.on('update-task', (event) => {
@@ -104,7 +188,7 @@ export function GanttView({ bars, zoom, onDatesChange, labels, locale }: GanttVi
     })
   }, [])
   return (
-    <div className="ops-gantt flex min-h-0 flex-col gap-2">
+    <div ref={rootRef} className="ops-gantt flex min-h-0 flex-col gap-2">
       {error === undefined ? null : (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -119,6 +203,7 @@ export function GanttView({ bars, zoom, onDatesChange, labels, locale }: GanttVi
               cellWidth={setup.cellWidth}
               lengthUnit="day"
               durationUnit="day"
+              displayMode={compact ? displayMode : 'all'}
               columns={columns}
               highlightTime={highlightTime}
               init={init}
