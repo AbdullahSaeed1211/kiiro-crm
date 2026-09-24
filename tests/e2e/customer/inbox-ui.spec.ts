@@ -118,6 +118,15 @@ async function verifyComposeRemainsDisabled(page: Page): Promise<void> {
   await expect(composer).toHaveCount(0)
 }
 
+async function verifyFolderRailCanCloseAndReopen(page: Page): Promise<void> {
+  const folderNav = page.getByRole('navigation', { name: 'Mail folders' })
+  await expect(folderNav).toBeVisible()
+  await page.getByRole('button', { name: 'Close mail folders' }).filter({ visible: true }).click()
+  await expect(folderNav).toHaveCount(0)
+  await page.getByRole('button', { name: 'Open mail folders' }).click()
+  await expect(folderNav).toBeVisible()
+}
+
 test('inbox exposes the mail-client layout and keeps compose sending disabled', async ({
   page,
   isMobile,
@@ -131,6 +140,7 @@ test('inbox exposes the mail-client layout and keeps compose sending disabled', 
   await expect(page.getByRole('region', { name: 'Message content' })).toHaveCount(0)
   if (!isMobile) await page.screenshot({ path: testInfo.outputPath('inbox-desktop.png'), fullPage: true })
   if (isMobile) await verifyMobileFolderRail(page)
+  await verifyFolderRailCanCloseAndReopen(page)
   await verifySidebar(page, isMobile)
   await verifyInboxSearch(page)
   await verifyComposeRemainsDisabled(page)

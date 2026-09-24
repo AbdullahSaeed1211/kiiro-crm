@@ -11,7 +11,7 @@ import type { InboxEmailMessage } from '../../../server/crm/directory/types'
 import { INBOX_COPY } from '../../../i18n/inbox-copy'
 import type { Locale } from '../../../i18n/locale'
 import { InboxComposeDialog } from './inbox-compose-dialog'
-import { InboxFolderLink } from './inbox-folder-link'
+import { InboxFolderRail, InboxFolderToggle } from './inbox-folder-rail'
 import { InboxReader } from './inbox-reader'
 import { InboxThreadRow } from './inbox-thread-row'
 import { folderLabel, groupThreads, threadIsUnread, type Folder, type Thread } from './inbox-model'
@@ -45,7 +45,7 @@ function filterThreads({
   )
 }
 
-// eslint-disable-next-line max-lines-per-function, complexity -- the client composes the mail workspace panels and owns shared selection state.
+// eslint-disable-next-line max-lines-per-function, complexity, sonarjs/cognitive-complexity -- the client composes the mail workspace panels and owns shared selection state.
 export function InboxClient({
   messages,
   locale,
@@ -64,6 +64,7 @@ export function InboxClient({
   const [selectedKey, setSelectedKey] = useState<string | null>(messages.length > 0 ? messages[0].threadKey : null)
   const [mobileReader, setMobileReader] = useState(false)
   const [composeOpen, setComposeOpen] = useState(false)
+  const [foldersOpen, setFoldersOpen] = useState(true)
 
   useEffect(() => {
     if (!composeOpen) return
@@ -91,49 +92,36 @@ export function InboxClient({
   ]
 
   return (
-    <section className={styles.workspace} aria-label={copy.title}>
-      <aside className={styles.folderRail}>
-        <div className={styles.railHeading}>
-          <span className={styles.mailMark} aria-hidden="true">
-            <Mail size={16} />
-          </span>
-          <span>{copy.mail}</span>
-        </div>
-        <button
-          className={styles.composeButton}
-          type="button"
-          onClick={() => {
+    <section className={`${styles.workspace} ${foldersOpen ? '' : styles.foldersClosed}`} aria-label={copy.title}>
+      {foldersOpen ? (
+        <InboxFolderRail
+          copy={copy}
+          folders={folders}
+          activeFolder={folder}
+          unreadCount={unreadCount}
+          onClose={() => {
+            setFoldersOpen(false)
+          }}
+          onCompose={() => {
             setComposeOpen(true)
           }}
-        >
-          <FileText size={16} aria-hidden="true" />
-          <span>{copy.compose}</span>
-        </button>
-        <nav className={styles.folderList} aria-label={copy.folders}>
-          {folders.map(({ id, icon, count }) => (
-            <InboxFolderLink
-              key={id}
-              active={folder === id}
-              count={count}
-              icon={icon}
-              label={folderLabel(id, copy)}
-              accessibleLabel={
-                id === 'inbox' && unreadCount > 0
-                  ? `${folderLabel(id, copy)}, ${String(unreadCount)} ${copy.unread.toLocaleLowerCase()}`
-                  : folderLabel(id, copy)
-              }
-              onClick={() => {
-                setFolder(id)
-                setMobileReader(false)
-              }}
-            />
-          ))}
-        </nav>
-        <div className={styles.railFootnote}>{copy.description}</div>
-      </aside>
+          onSelect={(selectedFolder) => {
+            setFolder(selectedFolder)
+            setMobileReader(false)
+          }}
+        />
+      ) : null}
 
       <div className={styles.mailArea}>
         <header className={styles.toolbar}>
+          {!foldersOpen ? (
+            <InboxFolderToggle
+              copy={copy}
+              onOpen={() => {
+                setFoldersOpen(true)
+              }}
+            />
+          ) : null}
           <label className={styles.searchBox}>
             <Search size={17} aria-hidden="true" />
             <span className="sr-only">{copy.search}</span>

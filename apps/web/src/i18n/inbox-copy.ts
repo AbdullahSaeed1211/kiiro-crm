@@ -34,6 +34,8 @@ export interface InboxCopy {
   readonly composeUnavailable: string
   readonly composeLinkedOnly: string
   readonly close: string
+  readonly openFolders: string
+  readonly closeFolders: string
   readonly to: string
   readonly subject: string
   readonly messageBody: string
@@ -76,6 +78,8 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     composeUnavailable: 'Outbound sending is not enabled yet. You can still review your inbox and linked records.',
     composeLinkedOnly: 'Inbox-wide sending is not available. Open a linked record to compose a message.',
     close: 'Close',
+    openFolders: 'Open mail folders',
+    closeFolders: 'Close mail folders',
     to: 'To',
     subject: 'Subject',
     messageBody: 'Message',
@@ -117,6 +121,8 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
       'El envío de correo aún no está habilitado. Puedes revisar la bandeja y los registros vinculados.',
     composeLinkedOnly: 'El envío desde la bandeja no está disponible. Abre un registro vinculado para redactar.',
     close: 'Cerrar',
+    openFolders: 'Abrir carpetas de correo',
+    closeFolders: 'Cerrar carpetas de correo',
     to: 'Para',
     subject: 'Asunto',
     messageBody: 'Mensaje',
