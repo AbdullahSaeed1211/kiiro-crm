@@ -21,6 +21,8 @@ const CALENDAR_PATH = '/calendar'
 const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
 const TASK_TITLE = 'Draft homepage wireframes'
+const DEAL_TITLE = 'Website redesign engagement'
+const DEAL_TARGET_STAGE = 'Proposal sent'
 const TASK_PANEL = '[data-slot="sheet-content"]'
 const ROUTES = [
   ['/', 'Dashboard'],
@@ -749,7 +751,7 @@ async function restoreDealStage(
 }
 
 async function verifyDealBoardOwner(page: Page): Promise<void> {
-  const dealCard = page.locator('[data-card-id]').filter({ hasText: 'Website redesign engagement' })
+  const dealCard = page.locator('[data-card-id]').filter({ hasText: DEAL_TITLE })
   const ownerName = USERS.find((user) => user.key === 'manager')?.name ?? ''
   expect(ownerName).not.toBe('')
   await page.goto('/deals/board')
@@ -761,9 +763,7 @@ test('deal can be won and reopened with the persisted stage reflected in control
   await signIn(page)
   await verifyDealBoardOwner(page)
   await page.goto('/deals')
-  const dealHref = await page
-    .getByRole('link', { name: 'Website redesign engagement', exact: true })
-    .getAttribute('href')
+  const dealHref = await page.getByRole('link', { name: DEAL_TITLE, exact: true }).getAttribute('href')
   if (dealHref === null) throw new Error('seeded website deal has no detail link')
   await page.goto(dealHref)
 
@@ -778,4 +778,86 @@ test('deal can be won and reopened with the persisted stage reflected in control
     // Always restore the seeded fixture, including when an assertion catches a stale control state.
     await restoreDealStage(page, { href: dealHref, stageId: initialStageId, wonStageId })
   }
+})
+
+interface DealBoardMoveContext {
+  readonly card: Locator
+  readonly href: string
+  readonly source: Locator
+  readonly sourceStageId: string
+  readonly destination: Locator
+  readonly sourceHeading: string
+  readonly destinationHeading: string
+  readonly sourceCount: number
+  readonly destinationCount: number
+}
+
+function dealCard(page: Page): Locator {
+  return page.locator('[data-card-id]').filter({ hasText: DEAL_TITLE })
+}
+
+async function countInColumn(column: Locator): Promise<number> {
+  return Number(await column.locator('header').locator('span').last().innerText())
+}
+
+async function dealBoardMoveContext(page: Page): Promise<DealBoardMoveContext> {
+  await page.goto('/deals/board')
+  const card = dealCard(page)
+  const href = await card.getByRole('link', { name: DEAL_TITLE, exact: true }).getAttribute('href')
+  if (href === null) throw new Error('seeded website deal has no detail link')
+  const sourceStageId = await page.locator('section[data-stage-id]').filter({ has: card }).getAttribute('data-stage-id')
+  if (sourceStageId === null) throw new Error('seeded website deal has no stage')
+  const source = page.locator(`section[data-stage-id="${sourceStageId}"]`)
+  const destinationHeadingMatcher = new RegExp(`^${DEAL_TARGET_STAGE}`)
+  const targetColumn = page.locator('section[data-stage-id]').filter({
+    has: page.getByRole('heading', { name: destinationHeadingMatcher }),
+  })
+  const destinationStageId = await targetColumn.getAttribute('data-stage-id')
+  if (destinationStageId === null || destinationStageId === sourceStageId) {
+    throw new Error(`seeded website deal cannot move to ${DEAL_TARGET_STAGE} from its current stage`)
+  }
+  const destination = page.locator(`section[data-stage-id="${destinationStageId}"]`)
+  const [sourceHeading, targetHeading, sourceCount, targetCount] = await Promise.all([
+    source.getByRole('heading').innerText(),
+    destination.getByRole('heading').innerText(),
+    countInColumn(source),
+    countInColumn(destination),
+  ])
+  return {
+    card,
+    href,
+    source,
+    sourceStageId,
+    destination,
+    sourceHeading,
+    destinationHeading: targetHeading,
+    sourceCount,
+    destinationCount: targetCount,
+  }
+}
+
+async function moveDealAndExpectTotals(context: DealBoardMoveContext, page: Page): Promise<void> {
+  await context.card.getByRole('button', { name: 'Move to…' }).click()
+  await page.getByRole('menuitem', { name: new RegExp(`^${DEAL_TARGET_STAGE} ·`) }).click()
+  await expect(context.destination).toContainText(DEAL_TITLE)
+  await expect(context.source.getByRole('heading')).not.toHaveText(context.sourceHeading)
+  await expect(context.destination.getByRole('heading')).not.toHaveText(context.destinationHeading)
+  await expect(context.source.locator('header').locator('span').last()).toHaveText(String(context.sourceCount - 1))
+  await expect(context.destination.locator('header').locator('span').last()).toHaveText(
+    String(context.destinationCount + 1),
+  )
+}
+
+async function verifyDealBoardTotals(page: Page): Promise<void> {
+  const context = await dealBoardMoveContext(page)
+  try {
+    await moveDealAndExpectTotals(context, page)
+  } finally {
+    await restoreDealStage(page, { href: context.href, stageId: context.sourceStageId, wonStageId: '' })
+  }
+}
+
+test('deal board refreshes stage totals after a move and restores the seeded stage', async ({ page }) => {
+  await signIn(page)
+  await verifyDealBoardTotals(page)
 })

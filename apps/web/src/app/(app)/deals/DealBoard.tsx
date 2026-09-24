@@ -39,6 +39,7 @@ export function DealBoard({
           const result = await moveDealAction({ dealId: cardId, toStageId, expectedUpdatedAt })
           if (!result.ok) return { ok: false, error: { code: result.code ?? 'INTERNAL', message: result.message } }
           stageByCard.current.set(cardId, toStageId)
+          router.refresh()
           return { ok: true, data: { stageId: toStageId, updatedAt: result.updatedAt } }
         }}
         onConflict={() => {
