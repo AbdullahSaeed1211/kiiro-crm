@@ -40,7 +40,7 @@ export default async function DealBoardPage() {
     const amount = stageAmount(total?.amountMinor ?? 0, total?.currency ?? null)
     return { id, name: `${name} · ${amount}`, category, color }
   })
-  const cards: KanbanCard[] = data.items.map(({ deal, organizationName }) => ({
+  const cards: KanbanCard[] = data.items.map(({ deal, organizationName, ownerName }) => ({
     id: deal.id,
     stageId: deal.stageId,
     title: deal.title,
@@ -49,6 +49,7 @@ export default async function DealBoardPage() {
       <span className="flex flex-wrap gap-2">
         <span className="font-medium tabular-nums">{formatMoney(deal.value)}</span>
         {organizationName === null ? null : <span>{organizationName}</span>}
+        {ownerName === null ? null : <span>Owner: {ownerName}</span>}
       </span>
     ),
   }))

@@ -748,8 +748,17 @@ async function restoreDealStage(
   await expect(stage).toHaveValue(original.stageId)
 }
 
+async function verifyDealBoardOwner(page: Page): Promise<void> {
+  const dealCard = page.locator('[data-card-id]').filter({ hasText: 'Website redesign engagement' })
+  const ownerName = USERS.find((user) => user.key === 'manager')?.name ?? ''
+  expect(ownerName).not.toBe('')
+  await page.goto('/deals/board')
+  await expect(dealCard).toContainText(`Owner: ${ownerName}`)
+}
+
 test('deal can be won and reopened with the persisted stage reflected in controls', async ({ page }) => {
   await signIn(page)
+  await verifyDealBoardOwner(page)
   await page.goto('/deals')
   const dealHref = await page
     .getByRole('link', { name: 'Website redesign engagement', exact: true })
