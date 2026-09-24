@@ -103,3 +103,19 @@ test('group editing and deletion recover after rejected requests', async ({ page
   await checkGroupEditRecovery(page)
   await checkGroupDeleteRecovery(page)
 })
+
+test('settings navigation stays compact on mobile and grouped on desktop', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/general')
+  const picker = page.getByRole('combobox', { name: 'Settings section' })
+  if ((page.viewportSize()?.width ?? 0) <= 767) {
+    await expect(picker).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Groups' })).toBeHidden()
+    await picker.selectOption('/settings/groups')
+    await expect(page).toHaveURL(/\/settings\/groups$/)
+    await expect(page.getByRole('heading', { name: 'Groups', exact: true })).toBeVisible()
+    return
+  }
+  await expect(picker).toBeHidden()
+  await expect(page.getByRole('link', { name: 'Groups' })).toBeVisible()
+})

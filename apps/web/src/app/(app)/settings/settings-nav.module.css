@@ -1,0 +1,33 @@
+.picker {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  :global(.ops-settings-nav).navigation {
+    position: static;
+    display: block;
+    border: 0;
+    padding: 0;
+  }
+
+  .picker {
+    display: grid;
+  }
+
+  .select {
+    width: 100%;
+    min-height: 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--card);
+    padding: 0 0.75rem;
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 550;
+  }
+
+  .navigation.navigation > div {
+    display: none;
+  }
+}
