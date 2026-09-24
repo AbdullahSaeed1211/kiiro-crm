@@ -1,0 +1,60 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 63,
+  "runner": "lead",
+  "startedAt": "2026-09-24T15:41:41.238Z",
+  "finishedAt": "2026-09-24T15:44:08.454Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 0,
+      "durationMs": 103196,
+      "failingLines": []
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3745,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 7561,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationMs": 31777,
+      "failingLines": []
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 627,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 1,
+      "durationMs": 289,
+      "failingLines": [
+        "check:scope: Command failed: git rev-parse --abbrev-ref --symbolic-full-name @{upstream}",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT",
+    "GATE_FAILURE",
+    "MISSING_TEST"
+  ],
+  "leadTookOver": true
+}

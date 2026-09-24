@@ -51,10 +51,13 @@ async function verifyMobileSidebar(page: Page, sidebarToggle: Locator): Promise<
 
 async function verifyDesktopSidebar(page: Page, sidebarToggle: Locator): Promise<void> {
   const desktopSidebar = page.locator('[data-slot="sidebar"]:not([data-mobile="true"])')
+  await expect(sidebarToggle).toHaveAccessibleName('Close navigation')
   await sidebarToggle.click()
   await expect(desktopSidebar).toHaveAttribute('data-state', 'collapsed')
+  await expect(sidebarToggle).toHaveAccessibleName('Open navigation')
   await sidebarToggle.click()
   await expect(desktopSidebar).toHaveAttribute('data-state', 'expanded')
+  await expect(sidebarToggle).toHaveAccessibleName('Close navigation')
 }
 
 async function verifySidebar(page: Page, isMobile: boolean): Promise<void> {

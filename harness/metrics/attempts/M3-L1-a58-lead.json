@@ -1,0 +1,66 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 58,
+  "runner": "lead",
+  "startedAt": "2026-09-24T14:58:45.767Z",
+  "finishedAt": "2026-09-24T15:00:07.512Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 40051,
+      "failingLines": [
+        "130:114  error  Async arrow function has too many statements (16). Maximum allowed is 15  max-statements",
+        "288:1    error  File has too many lines (260). Maximum allowed is 250                     max-lines",
+        "✖ 2 problems (2 errors, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3125,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 6910,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 30701,
+      "failingLines": [
+        "130:114  error  Async arrow function has too many statements (16). Maximum allowed is 15  max-statements",
+        "288:1    error  File has too many lines (260). Maximum allowed is 250                     max-lines",
+        "✖ 2 problems (2 errors, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 651,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 289,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT"
+  ],
+  "leadTookOver": true
+}

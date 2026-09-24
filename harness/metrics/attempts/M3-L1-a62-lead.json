@@ -1,0 +1,65 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 62,
+  "runner": "lead",
+  "startedAt": "2026-09-24T15:22:38.961Z",
+  "finishedAt": "2026-09-24T15:24:40.370Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 56049,
+      "failingLines": [
+        "✖ 2 problems (0 errors, 2 warnings)",
+        "0 errors and 2 warnings potentially fixable with the `--fix` option.",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 5187,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 12804,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 45929,
+      "failingLines": [
+        "✖ 2 problems (0 errors, 2 warnings)",
+        "0 errors and 2 warnings potentially fixable with the `--fix` option.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 958,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 464,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "CONTRACT_DRIFT",
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": true
+}

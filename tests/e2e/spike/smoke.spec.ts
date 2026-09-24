@@ -5,6 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { expect as baseExpect, test, type Page, type Response } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { parseDevVars, WEB_DIR } from '../../../scripts/seed/local-env'
+import { assignedTaskTitle, searchForDashboardTask } from '../helpers/task-fixtures'
 import { verifyTimelineDragPersistence } from './timeline-drag'
 
 // Runs against `pnpm dev` on a database prepared by `pnpm db:reset:local && pnpm seed:dev`.
@@ -12,8 +13,8 @@ const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
 const STAFF_ONE_NAME = USERS.find((user) => user.key === 'staff1')?.name ?? ''
 const CRON_PATH = '/api/v1/internal/cron'
 const CARD = '[data-card-id]'
-const DESKTOP_BOARD_TASK = 'Review service-page hierarchy'
-const MOBILE_BOARD_TASK = 'Check appointment and contact paths'
+const DESKTOP_BOARD_TASK = assignedTaskTitle('staff1')
+const MOBILE_BOARD_TASK = assignedTaskTitle('staff2')
 const IN_PROGRESS_STAGE = 'In progress'
 const TODO_STAGE = 'To do'
 const TASK_BOARD_PATH = '/tasks/board'
@@ -128,10 +129,7 @@ test('customer shell uses the custom login, workspace tools, and contained respo
 
   await verifySidebarCollapse(page)
 
-  await page.getByRole('button', { name: 'Search workspace' }).click()
-  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('service-page')
-  await expect(page.getByText(DESKTOP_BOARD_TASK, { exact: true })).toBeVisible()
-  await page.keyboard.press('Escape')
+  await searchForDashboardTask(page)
 
   for (const route of ['/', '/leads', '/deals/board', '/settings/general']) await expectContained(page, route)
 })
