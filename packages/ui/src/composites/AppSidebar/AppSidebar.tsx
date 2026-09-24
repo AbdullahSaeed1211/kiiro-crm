@@ -14,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
 } from '@ops/ui/components/ui/sidebar'
 
 /** One sidebar link (spec §16.2); the label arrives translated. */
@@ -109,14 +110,17 @@ export function AppSidebar({ appName, logo, compactLogo, homeHref = '/', groups,
   return (
     <Sidebar variant="inset" collapsible="icon" className="ops-app-sidebar">
       <SidebarHeader className="ops-sidebar-brand">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip={appName} render={<Link href={homeHref} prefetch={false} />}>
-              <BrandMark appName={appName} logo={logo} compactLogo={compactLogo} />
-              <span className="font-semibold">{appName}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex min-w-0 items-center gap-1">
+          <SidebarMenu className="min-w-0 flex-1">
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" tooltip={appName} render={<Link href={homeHref} prefetch={false} />}>
+                <BrandMark appName={appName} logo={logo} compactLogo={compactLogo} />
+                <span className="font-semibold">{appName}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <SidebarTrigger className="hidden shrink-0 md:flex group-data-[collapsible=icon]:hidden" />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         {groups.map((group) => (

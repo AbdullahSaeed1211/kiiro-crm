@@ -1,0 +1,62 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 70,
+  "runner": "worker",
+  "startedAt": "2026-09-24T16:27:38.927Z",
+  "finishedAt": "2026-09-24T16:29:01.606Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 42205,
+      "failingLines": [
+        "61:48  error  Define a constant instead of duplicating this literal 4 times  sonarjs/no-duplicate-string",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 3152,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 7846,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 28556,
+      "failingLines": [
+        "61:48  error  Define a constant instead of duplicating this literal 4 times  sonarjs/no-duplicate-string",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 606,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 293,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [],
+  "leadTookOver": false
+}

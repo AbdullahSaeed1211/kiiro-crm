@@ -2,6 +2,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
+const CLOSE_NAVIGATION = 'Close navigation'
+const OPEN_NAVIGATION = 'Open navigation'
+const SIDEBAR_COLLAPSED = 'collapsed'
+const SIDEBAR_EXPANDED = 'expanded'
+const SIDEBAR_STATE_ATTRIBUTE = 'data-state'
 
 async function signIn(page: Page) {
   await page.goto('/login')
@@ -49,19 +54,34 @@ async function verifyMobileSidebar(page: Page, sidebarToggle: Locator): Promise<
   expect(await content.boundingBox()).toEqual(contentBefore)
 }
 
+async function verifyBrandToggle(desktopSidebar: Locator, sidebarToggle: Locator): Promise<void> {
+  const brandToggle = desktopSidebar.locator('[data-slot="sidebar-trigger"]')
+  await expect(brandToggle).toBeVisible()
+  await expect(brandToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
+  await brandToggle.click()
+  await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_COLLAPSED)
+  await expect(sidebarToggle).toHaveAccessibleName(OPEN_NAVIGATION)
+  await expect(brandToggle).toBeHidden()
+  await sidebarToggle.click()
+  await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_EXPANDED)
+  await expect(sidebarToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
+  await expect(brandToggle).toBeVisible()
+}
+
 async function verifyDesktopSidebar(page: Page, sidebarToggle: Locator): Promise<void> {
   const desktopSidebar = page.locator('[data-slot="sidebar"]:not([data-mobile="true"])')
-  await expect(sidebarToggle).toHaveAccessibleName('Close navigation')
+  await verifyBrandToggle(desktopSidebar, sidebarToggle)
+  await expect(sidebarToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
   await sidebarToggle.click()
-  await expect(desktopSidebar).toHaveAttribute('data-state', 'collapsed')
-  await expect(sidebarToggle).toHaveAccessibleName('Open navigation')
+  await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_COLLAPSED)
+  await expect(sidebarToggle).toHaveAccessibleName(OPEN_NAVIGATION)
   await sidebarToggle.click()
-  await expect(desktopSidebar).toHaveAttribute('data-state', 'expanded')
-  await expect(sidebarToggle).toHaveAccessibleName('Close navigation')
+  await expect(desktopSidebar).toHaveAttribute(SIDEBAR_STATE_ATTRIBUTE, SIDEBAR_EXPANDED)
+  await expect(sidebarToggle).toHaveAccessibleName(CLOSE_NAVIGATION)
 }
 
 async function verifySidebar(page: Page, isMobile: boolean): Promise<void> {
-  const sidebarToggle = page.locator('[data-slot="sidebar-trigger"]')
+  const sidebarToggle = page.locator('.ops-app-header [data-slot="sidebar-trigger"]')
   await expect(sidebarToggle).toBeVisible()
   if (isMobile) return verifyMobileSidebar(page, sidebarToggle)
   return verifyDesktopSidebar(page, sidebarToggle)
