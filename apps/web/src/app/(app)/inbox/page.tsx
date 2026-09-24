@@ -4,6 +4,7 @@ import { requireRole } from '../../../server/auth/context'
 import { listInboxMessages } from '../../../server/crm/directory/helpers'
 import type { Locale } from '../../../i18n/config'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
+import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { InboxClient } from './inbox-client'
 
 export const metadata: Metadata = { title: 'Inbox' }
@@ -31,11 +32,14 @@ export default async function InboxPage({
     getOutboundEmailEnabled(),
   ])
   return (
-    <InboxClient
-      messages={messages}
-      locale={locale}
-      initialFolder={initialFolder(direction, status)}
-      outboundEmailEnabled={outboundEmailEnabled}
-    />
+    <>
+      <AppHeader breadcrumbs={[{ label: 'Inbox' }]} />
+      <InboxClient
+        messages={messages}
+        locale={locale}
+        initialFolder={initialFolder(direction, status)}
+        outboundEmailEnabled={outboundEmailEnabled}
+      />
+    </>
   )
 }

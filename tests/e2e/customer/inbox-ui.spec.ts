@@ -11,6 +11,37 @@ async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/$/)
 }
 
+async function verifySidebar(page: Page, isMobile: boolean): Promise<void> {
+  const sidebarToggle = page.locator('[data-slot="sidebar-trigger"]')
+  await expect(sidebarToggle).toBeVisible()
+  await sidebarToggle.click()
+  if (isMobile) {
+    const mobileSidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]')
+    await expect(mobileSidebar).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(mobileSidebar).toBeHidden()
+    return
+  }
+  const desktopSidebar = page.locator('[data-slot="sidebar"]:not([data-mobile="true"])')
+  await expect(desktopSidebar).toHaveAttribute('data-state', 'collapsed')
+  await sidebarToggle.click()
+  await expect(desktopSidebar).toHaveAttribute('data-state', 'expanded')
+}
+
+async function verifyInboxSearch(page: Page): Promise<void> {
+  await page.getByRole('searchbox', { name: 'Search messages' }).fill('no matching conversation')
+  await expect(page.getByText('No conversations match your search.')).toBeVisible()
+}
+
+async function verifyComposeRemainsDisabled(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Compose', exact: true }).filter({ visible: true }).first().click()
+  const composer = page.getByRole('dialog', { name: 'New message' })
+  await expect(composer).toBeVisible()
+  await expect(composer.getByRole('button', { name: 'Send' })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(composer).toHaveCount(0)
+}
+
 test('inbox exposes the mail-client layout and keeps compose sending disabled', async ({
   page,
   isMobile,
@@ -21,14 +52,7 @@ test('inbox exposes the mail-client layout and keeps compose sending disabled', 
   await expect(page.getByRole('navigation', { name: 'Mail folders' })).toBeVisible()
   await expect(page.getByRole('searchbox', { name: 'Search messages' })).toBeVisible()
   if (!isMobile) await page.screenshot({ path: testInfo.outputPath('inbox-desktop.png'), fullPage: true })
-
-  await page.getByRole('searchbox', { name: 'Search messages' }).fill('no matching conversation')
-  await expect(page.getByText('No conversations match your search.')).toBeVisible()
-
-  await page.getByRole('button', { name: 'Compose', exact: true }).filter({ visible: true }).first().click()
-  const composer = page.getByRole('dialog', { name: 'New message' })
-  await expect(composer).toBeVisible()
-  await expect(composer.getByRole('button', { name: 'Send' })).toBeDisabled()
-  await page.keyboard.press('Escape')
-  await expect(composer).toHaveCount(0)
+  await verifySidebar(page, isMobile)
+  await verifyInboxSearch(page)
+  await verifyComposeRemainsDisabled(page)
 })

@@ -95,6 +95,8 @@ async function verifyDesktopSidebarCollapse(page: Page): Promise<void> {
   await page.reload()
   await expect(groupLabels.first()).toBeHidden()
   await expect(groupLabels.last()).toBeHidden()
+  await page.locator('[data-slot="sidebar"] a[href="/deals"]').hover()
+  await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText('Deals')
   await toggle.click()
   await expect(groupLabels.first()).toBeVisible()
   await expect(groupLabels.last()).toBeVisible()
