@@ -74,17 +74,35 @@ async function expectContained(page: Page, route: string): Promise<void> {
   expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewport)
 }
 
-async function verifySidebarCollapse(page: Page): Promise<void> {
-  if ((page.viewportSize()?.width ?? 0) <= 650) return
-  const groupLabels = page.locator('[data-slot="sidebar"] [data-sidebar="group-label"]')
-  await expect(groupLabels).toHaveCount(2)
+async function verifyMobileSidebar(page: Page): Promise<void> {
   const toggle = page.locator('[data-slot="sidebar-trigger"]')
+  const mobileSidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]')
   await toggle.click()
+  await expect(mobileSidebar).toBeVisible()
+  await expect(mobileSidebar.getByRole('link', { name: 'Deals' })).toBeVisible()
+  await expect(mobileSidebar.getByRole('link', { name: 'Contacts' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(mobileSidebar).toBeHidden()
+}
+
+async function verifyDesktopSidebarCollapse(page: Page): Promise<void> {
+  const groupLabels = page.locator('[data-slot="sidebar"] [data-sidebar="group-label"]')
+  const toggle = page.locator('[data-slot="sidebar-trigger"]')
+  await expect(groupLabels).toHaveCount(2)
+  await toggle.click()
+  await expect(groupLabels.first()).toBeHidden()
+  await expect(groupLabels.last()).toBeHidden()
+  await page.reload()
   await expect(groupLabels.first()).toBeHidden()
   await expect(groupLabels.last()).toBeHidden()
   await toggle.click()
   await expect(groupLabels.first()).toBeVisible()
   await expect(groupLabels.last()).toBeVisible()
+}
+
+async function verifySidebarCollapse(page: Page): Promise<void> {
+  if ((page.viewportSize()?.width ?? 0) <= 650) return verifyMobileSidebar(page)
+  return verifyDesktopSidebarCollapse(page)
 }
 
 test('customer shell uses the custom login, workspace tools, and contained responsive layouts', async ({ page }) => {
