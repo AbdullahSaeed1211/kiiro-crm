@@ -74,6 +74,19 @@ async function expectContained(page: Page, route: string): Promise<void> {
   expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewport)
 }
 
+async function verifySidebarCollapse(page: Page): Promise<void> {
+  if ((page.viewportSize()?.width ?? 0) <= 650) return
+  const groupLabels = page.locator('[data-slot="sidebar"] [data-sidebar="group-label"]')
+  await expect(groupLabels).toHaveCount(2)
+  const toggle = page.locator('[data-slot="sidebar-trigger"]')
+  await toggle.click()
+  await expect(groupLabels.first()).toBeHidden()
+  await expect(groupLabels.last()).toBeHidden()
+  await toggle.click()
+  await expect(groupLabels.first()).toBeVisible()
+  await expect(groupLabels.last()).toBeVisible()
+}
+
 test('customer shell uses the custom login, workspace tools, and contained responsive layouts', async ({ page }) => {
   await page.goto('/tasks')
   await expect(page).toHaveURL(/\/login$/)
@@ -86,6 +99,8 @@ test('customer shell uses the custom login, workspace tools, and contained respo
   if (page.viewportSize()?.width !== 390)
     expect(await page.locator('a[href="/settings/general"]').count()).toBeGreaterThan(0)
   await expect(page.locator('a[href^="/admin"]')).toHaveCount(0)
+
+  await verifySidebarCollapse(page)
 
   await page.getByRole('button', { name: 'Search workspace' }).click()
   await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('service-page')
