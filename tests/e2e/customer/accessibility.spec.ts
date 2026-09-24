@@ -125,6 +125,15 @@ async function auditTimeline(page: Page): Promise<void> {
   await page.goto('/timeline')
   const chart = page.getByRole('region', { name: 'Task timeline chart' })
   await expect(chart).toBeVisible()
+  if ((page.viewportSize()?.width ?? 0) <= 390) {
+    const dimensions = await page.evaluate(() => ({
+      content: document.documentElement.scrollWidth,
+      viewport: innerWidth,
+    }))
+    expect(dimensions.content, 'the mobile timeline should not widen the document').toBeLessThanOrEqual(
+      dimensions.viewport,
+    )
+  }
   if ((page.viewportSize()?.width ?? 0) > 650) {
     await page.screenshot({ path: test.info().outputPath('m3-timeline-desktop.png'), fullPage: true })
   } else {

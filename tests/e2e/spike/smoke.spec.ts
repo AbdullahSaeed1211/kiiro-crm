@@ -117,6 +117,33 @@ async function moveAndVerifyAfterReload(page: Page, move: CardMove): Promise<voi
   await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
 }
 
+async function selectStageWithKeyboard(page: Page, stage: string): Promise<void> {
+  const items = page.getByRole('menuitem')
+  const count = await items.count()
+  for (let index = 0; index < count; index += 1) {
+    const focusedText = await page.evaluate(() => document.activeElement.textContent.trim())
+    if (focusedText === stage) {
+      await page.keyboard.press('Enter')
+      return
+    }
+    await page.keyboard.press('ArrowDown')
+  }
+  throw new Error(`keyboard navigation did not focus stage ${stage}`)
+}
+
+async function moveAndVerifyAfterReloadWithKeyboard(page: Page, move: CardMove): Promise<void> {
+  const saved = page.waitForResponse(isPostTo(TASK_BOARD_PATH))
+  const trigger = boardCard(page, move.title).getByRole('button', { name: 'Move to…' })
+  await trigger.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('menuitem', { name: move.to, exact: true })).toBeVisible()
+  await selectStageWithKeyboard(page, move.to)
+  expect((await saved).ok()).toBe(true)
+  await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
+  await page.reload()
+  await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
+}
+
 test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
   await signIn(page)
   await page.goto('/tasks')
@@ -138,6 +165,20 @@ test('spike: /tasks/board move menu persists after a reload', async ({ page, isM
   const destination = from === IN_PROGRESS_STAGE ? TODO_STAGE : IN_PROGRESS_STAGE
   await moveAndVerifyAfterReload(page, { title, to: destination })
   await moveAndVerifyAfterReload(page, { title, to: from })
+})
+
+test('spike: /tasks/board move menu supports keyboard and persists after a reload', async ({ page, isMobile }) => {
+  await signIn(page)
+  await page.goto(TASK_BOARD_PATH)
+  const title = isMobile ? 'Schedule kickoff meeting' : PLAN_LAUNCH_TITLE
+  await expect(boardCard(page, title)).toBeVisible()
+  const from = await page
+    .locator(TASK_STAGE_SELECTOR, { has: boardCard(page, title) })
+    .getAttribute(ARIA_LABEL_ATTRIBUTE)
+  if (from === null) throw new Error(`no stage for task ${title}`)
+  const destination = from === IN_PROGRESS_STAGE ? TODO_STAGE : IN_PROGRESS_STAGE
+  await moveAndVerifyAfterReloadWithKeyboard(page, { title, to: destination })
+  await moveAndVerifyAfterReloadWithKeyboard(page, { title, to: from })
 })
 
 test('spike: /tasks/board rejected move rolls back and explains the failure', async ({ page }) => {
