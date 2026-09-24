@@ -177,7 +177,15 @@ export function InboxClient({
             </div>
             <div className={styles.threadRows}>
               {visibleThreads.length === 0 ? (
-                <p className={styles.listEmpty}>{query.trim() ? copy.noMatches : copy.noMessages}</p>
+                <div className={styles.emptyState} role="status" aria-live="polite">
+                  <span className={styles.emptyStateIcon} aria-hidden="true">
+                    {query.trim() ? <Search size={20} /> : <InboxIcon size={20} />}
+                  </span>
+                  <div className={styles.emptyStateCopy}>
+                    <h2>{query.trim() ? copy.noMatches : copy.noMessages}</h2>
+                    {query.trim() ? null : <p>{copy.emptyInboxHint}</p>}
+                  </div>
+                </div>
               ) : (
                 visibleThreads.map((thread) => (
                   <InboxThreadRow

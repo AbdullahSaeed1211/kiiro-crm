@@ -21,6 +21,7 @@ export interface InboxCopy {
   readonly search: string
   readonly searchPlaceholder: string
   readonly noMessages: string
+  readonly emptyInboxHint: string
   readonly noMatches: string
   readonly selectMessage: string
   readonly noSubject: string
@@ -65,6 +66,7 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     search: 'Search messages',
     searchPlaceholder: 'Search mail',
     noMessages: 'No conversations here yet.',
+    emptyInboxHint: 'New messages connected to your CRM records will appear here.',
     noMatches: 'No conversations match your search.',
     selectMessage: 'Select a conversation to read it.',
     noSubject: '(no subject)',
@@ -107,6 +109,7 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     search: 'Buscar mensajes',
     searchPlaceholder: 'Buscar correo',
     noMessages: 'Todavía no hay conversaciones aquí.',
+    emptyInboxHint: 'Los mensajes nuevos vinculados a tus registros de CRM aparecerán aquí.',
     noMatches: 'No hay conversaciones que coincidan con la búsqueda.',
     selectMessage: 'Selecciona una conversación para leerla.',
     noSubject: '(sin asunto)',

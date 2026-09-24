@@ -267,7 +267,7 @@
   place-items: center;
 }
 
-.contentEmpty .listEmpty {
+.contentEmpty .emptyState {
   min-height: 0;
   margin: 0;
 }
@@ -442,7 +442,6 @@
   background: var(--inbox-accent);
 }
 
-.listEmpty,
 .readerEmpty {
   display: grid;
   min-height: 9rem;
@@ -451,6 +450,48 @@
   color: var(--inbox-muted);
   text-align: center;
   font-size: 0.82rem;
+}
+
+.emptyState {
+  display: flex;
+  min-height: 9rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 2rem;
+  text-align: left;
+}
+
+.emptyStateIcon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--inbox-accent) 18%, var(--inbox-border));
+  border-radius: 0.8rem;
+  background: color-mix(in oklch, var(--inbox-accent) 8%, var(--card));
+  color: var(--inbox-accent);
+}
+
+.emptyStateCopy {
+  display: grid;
+  gap: 0.3rem;
+  max-width: 22rem;
+}
+
+.emptyStateCopy h2 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.emptyStateCopy p {
+  margin: 0;
+  color: var(--inbox-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 
 .reader {

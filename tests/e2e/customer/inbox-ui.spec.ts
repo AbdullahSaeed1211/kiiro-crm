@@ -98,7 +98,9 @@ async function verifyMobileFolderRail(page: Page): Promise<void> {
 
 async function verifyInboxSearch(page: Page): Promise<void> {
   await page.getByRole('searchbox', { name: 'Search messages' }).fill('no matching conversation')
-  await expect(page.getByText('No conversations match your search.')).toBeVisible()
+  const emptyState = page.getByRole('status')
+  await expect(emptyState.getByRole('heading', { name: 'No conversations match your search.' })).toBeVisible()
+  await expect(emptyState.getByText('New messages connected to your CRM records will appear here.')).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Message content' })).toHaveCount(0)
   const columnCount = await page
     .locator('[class*="contentGrid"]')
@@ -133,7 +135,9 @@ test('inbox exposes the mail-client layout and keeps compose sending disabled', 
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Mail folders' })).toBeVisible()
   await expect(page.getByRole('searchbox', { name: 'Search messages' })).toBeVisible()
-  await expect(page.getByText('No conversations here yet.')).toBeVisible()
+  const emptyState = page.getByRole('status')
+  await expect(emptyState.getByRole('heading', { name: 'No conversations here yet.' })).toBeVisible()
+  await expect(emptyState.getByText('New messages connected to your CRM records will appear here.')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Message content' })).toHaveCount(0)
   if (!isMobile) await page.screenshot({ path: testInfo.outputPath('inbox-desktop.png'), fullPage: true })
   if (isMobile) await verifyMobileFolderRail(page)
