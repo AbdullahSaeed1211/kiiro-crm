@@ -9,6 +9,7 @@ import { verifyTimelineDragPersistence } from './timeline-drag'
 
 // Runs against `pnpm dev` on a database prepared by `pnpm db:reset:local && pnpm seed:dev`.
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
+const STAFF_ONE_NAME = USERS.find((user) => user.key === 'staff1')?.name ?? ''
 const CRON_PATH = '/api/v1/internal/cron'
 const CARD = '[data-card-id]'
 const PLAN_LAUNCH_TITLE = 'Plan launch checklist'
@@ -173,6 +174,7 @@ test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
 test('spike: /tasks/board move menu persists after a reload', async ({ page, isMobile }) => {
   await signIn(page)
   await page.goto(TASK_BOARD_PATH)
+  await expect(boardCard(page, 'Draft homepage wireframes')).toContainText(STAFF_ONE_NAME)
   // Desktop and phone projects run in parallel, so each moves its own card.
   const title = isMobile ? 'Schedule kickoff meeting' : PLAN_LAUNCH_TITLE
   await expect(boardCard(page, title)).toBeVisible()

@@ -9,6 +9,7 @@ import { TASK_COPY, type Locale } from '../../../../i18n/config'
 import { getWorkDeps } from '../../../../server/work/deps'
 import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 import { getRequestContext } from '../../../../server/work/deps'
+import { loadTaskPeople } from '../../../../server/queries/work/task-details'
 import type { TaskPriority, TaskRecord } from '../../../../server/work/task-repository'
 import { taskHref } from '../../task-navigation'
 import { TaskCreateForm } from '../TaskCreateForm'
@@ -40,10 +41,18 @@ const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
   urgent: CircleAlert,
 }
 
-function TaskMeta({ task, locale }: Readonly<{ task: TaskRecord; locale: Locale }>) {
+function TaskMeta({
+  task,
+  locale,
+  people,
+}: Readonly<{ task: TaskRecord; locale: Locale; people: ReadonlyMap<string, string> }>) {
   const Icon = PRIORITY_ICON[task.priority]
   const copy = TASK_COPY[locale]
   const priorityLabel = copy[task.priority === 'none' ? 'noPriority' : task.priority]
+  const assignees = task.assigneeIds.flatMap((id) => {
+    const name = people.get(String(id))
+    return name === undefined ? [] : [name]
+  })
   return (
     <>
       <span className="inline-flex items-center gap-1">
@@ -58,6 +67,11 @@ function TaskMeta({ task, locale }: Readonly<{ task: TaskRecord; locale: Locale 
           </time>
         </span>
       )}
+      {assignees.length === 0 ? null : (
+        <span>
+          {copy.assignees}: {assignees.join(', ')}
+        </span>
+      )}
     </>
   )
 }
@@ -68,7 +82,10 @@ function toStages(workflow: Workflow): KanbanStage[] {
     .map(({ id, name, category, color }) => ({ id, name, category, color }))
 }
 
-function toCard(task: TaskRecord, locale: Locale): KanbanCard {
+function toCard(
+  task: TaskRecord,
+  context: Readonly<{ locale: Locale; people: ReadonlyMap<string, string> }>,
+): KanbanCard {
   const { id, stageId, title, updatedAt } = task
   return {
     id,
@@ -76,7 +93,7 @@ function toCard(task: TaskRecord, locale: Locale): KanbanCard {
     title,
     updatedAt,
     href: taskHref(id, '/tasks/board'),
-    meta: <TaskMeta task={task} locale={locale} />,
+    meta: <TaskMeta task={task} locale={context.locale} people={context.people} />,
   }
 }
 
@@ -87,6 +104,8 @@ export default async function TaskBoardPage() {
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])
+  const assigneeIds = [...new Set(records.flatMap((task) => task.assigneeIds.map(String)))]
+  const people = await loadTaskPeople(assigneeIds)
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.table, href: '/tasks' }, { label: copy.board }]} />
@@ -103,7 +122,7 @@ export default async function TaskBoardPage() {
         />
         <TaskBoard
           stages={toStages(workflow)}
-          cards={records.map((task) => toCard(task, locale))}
+          cards={records.map((task) => toCard(task, { locale, people }))}
           labels={labelsFor(locale)}
         />
       </PageContent>
