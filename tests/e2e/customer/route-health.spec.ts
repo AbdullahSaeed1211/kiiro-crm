@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Locator, type Page, type Response, type Route } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
+import { TASKS } from '../../../scripts/seed/work-data'
 import { WEB_DIR } from '../../../scripts/seed/local-env'
 
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
@@ -20,7 +21,6 @@ const ARIA_CURRENT = 'aria-current'
 const CALENDAR_PATH = '/calendar'
 const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
-const TASK_TITLE = 'Review service-page hierarchy'
 const DEAL_TITLE = 'Website redesign engagement'
 const DEAL_TARGET_STAGE = 'Proposal sent'
 const TASK_PANEL = '[data-slot="sheet-content"]'
@@ -481,6 +481,9 @@ test('customer routes load without browser failures and stay within the response
 
   const detailRoutes = await availableDetailRoutes(page)
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  const dashboardTask = page.locator('a[data-task-link-id]').first()
+  const dashboardTaskTitle = await dashboardTask.evaluate((link) => link.firstChild?.textContent?.trim() ?? '')
+  if (dashboardTaskTitle === '') throw new Error('dashboard task link has no title')
   await expect(page.locator('a[href="/my-tasks"]').filter({ hasText: 'My open tasks' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
   await expect(page.locator('a[href="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
@@ -545,8 +548,8 @@ test('customer routes load without browser failures and stay within the response
 
   await page.goto('/leads', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Search workspace' }).click()
-  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill('service-page')
-  await expect(page.getByText(TASK_TITLE, { exact: true })).toBeVisible()
+  await page.getByPlaceholder('Search people, deals, projects, tasks…').fill(dashboardTaskTitle)
+  await expect(page.getByText(dashboardTaskTitle, { exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
 
   console.log(`notification-diagnostics: ${notificationDiagnostics.join(' | ')}`)
@@ -701,7 +704,23 @@ test('route-health harness has a local owner credential', () => {
   expect(readFileSync(join(WEB_DIR, '.dev.vars.example'), 'utf8')).toContain('PAYLOAD_SECRET=')
 })
 
+function staffTaskScopeFixtures() {
+  const staffTasks = TASKS.filter((task) => task.assignees.includes('staff1'))
+  const otherStaffTask = TASKS.find((task) => task.assignees.includes('staff2') && !task.assignees.includes('staff1'))
+  const panelTask = staffTasks[0]
+  if (panelTask === undefined || otherStaffTask === undefined) throw new Error('task scope fixtures are incomplete')
+  return { staffTasks, otherStaffTask, panelTask }
+}
+
+async function verifyStaffTaskScope(page: Page, fixture: ReturnType<typeof staffTaskScopeFixtures>): Promise<void> {
+  const content = page.locator('main')
+  for (const task of fixture.staffTasks) await expect(content).toContainText(task.title)
+  await expect(content).not.toContainText(fixture.otherStaffTask.title)
+  await verifyTaskSourcePanel(page, { route: '/my-tasks', title: fixture.panelTask.title })
+}
+
 test('staff My Tasks is assignment-scoped and member administration is denied', async ({ page }) => {
+  const fixture = staffTaskScopeFixtures()
   const staffEmail = USERS.find((user) => user.key === 'staff1')?.email ?? ''
   await page.goto('/login')
   await page.getByLabel('Email').fill(staffEmail)
@@ -710,11 +729,7 @@ test('staff My Tasks is assignment-scoped and member administration is denied', 
   await expect(page).toHaveURL(/\/$/)
 
   await page.goto('/my-tasks')
-  const content = page.locator('main')
-  await expect(content).toContainText(TASK_TITLE)
-  await expect(content).toContainText('Review accounting service pages')
-  await expect(content).not.toContainText('Check appointment and contact paths')
-  await verifyTaskSourcePanel(page, { route: '/my-tasks', title: TASK_TITLE })
+  await verifyStaffTaskScope(page, fixture)
 
   const denied = await page.goto(MEMBERS_PATH)
   expect(denied?.status()).toBe(404)
