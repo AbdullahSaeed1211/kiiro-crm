@@ -754,6 +754,7 @@ async function verifyDealBoardOwner(page: Page): Promise<void> {
   expect(ownerName).not.toBe('')
   await page.goto('/deals/board')
   await expect(dealCard).toContainText(`Owner: ${ownerName}`)
+  await expect(dealCard).toContainText('Expected close:')
 }
 
 test('deal can be won and reopened with the persisted stage reflected in controls', async ({ page }) => {

@@ -8,7 +8,7 @@ import { Button } from '@ops/ui/components/ui/button'
 import { DealBoard } from '../DealBoard'
 import { DealCreateDialog } from '../DealCreateDialog'
 import { getDealListData } from '../../../../server/crm/deals/queries'
-import { aggregateStageTotals, formatMoney } from '../../../../server/crm/deals/view-model'
+import { aggregateStageTotals, formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -50,6 +50,7 @@ export default async function DealBoardPage() {
         <span className="font-medium tabular-nums">{formatMoney(deal.value)}</span>
         {organizationName === null ? null : <span>{organizationName}</span>}
         {ownerName === null ? null : <span>Owner: {ownerName}</span>}
+        {deal.expectedCloseAt === null ? null : <span>Expected close: {formatDate(deal.expectedCloseAt)}</span>}
       </span>
     ),
   }))
