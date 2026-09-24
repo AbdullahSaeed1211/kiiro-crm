@@ -1,0 +1,68 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 19,
+  "runner": "lead",
+  "startedAt": "2026-09-24T01:18:21.518Z",
+  "finishedAt": "2026-09-24T01:19:31.431Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 36256,
+      "failingLines": [
+        "35:1  error  Function 'themeStyle' has a complexity of 9. Maximum allowed is 8  complexity",
+        "✖ 2 problems (1 error, 1 warning)",
+        "0 errors and 1 warning potentially fixable with the `--fix` option.",
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 0,
+      "durationMs": 2926,
+      "failingLines": []
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 3998,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 25844,
+      "failingLines": [
+        "35:1  error  Function 'themeStyle' has a complexity of 9. Maximum allowed is 8  complexity",
+        "✖ 2 problems (1 error, 1 warning)",
+        "0 errors and 1 warning potentially fixable with the `--fix` option.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 601,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 1,
+      "durationMs": 275,
+      "failingLines": [
+        "check:scope: Command failed: git diff --name-only codex/pilot-improvement-20260924...HEAD",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE",
+    "SCOPE_VIOLATION"
+  ],
+  "confirmedClasses": [],
+  "leadTookOver": true
+}

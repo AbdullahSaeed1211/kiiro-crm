@@ -162,6 +162,7 @@ export function AvatarStack({
   return (
     <div
       className="flex items-center -space-x-2"
+      role="group"
       aria-label={`${String(users.length)} ${users.length === 1 ? 'user' : 'users'}`}
     >
       {visible.map((user) => (

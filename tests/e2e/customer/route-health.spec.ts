@@ -200,13 +200,22 @@ test('customer routes load without browser failures and stay within the response
   const pageErrors: string[] = []
   const failedRequests: string[] = []
   const expectedNavigationCancels: string[] = []
+  const expectedWebKitNavigationCancels: string[] = []
   const badResponses: string[] = []
   const notificationDiagnostics: string[] = []
   page.on('console', (message) => {
     if (message.type() === 'warning' || message.type() === 'error')
       consoleIssues.push(`${message.type()}: ${message.text()}`)
   })
-  page.on('pageerror', (error) => pageErrors.push(`${error.message}\n${error.stack ?? ''}`))
+  page.on('pageerror', (error) => {
+    // WebKit reports canceled same-origin RSC prefetches through pageerror instead of only requestfailed.
+    // Navigation and route assertions below still verify that the destination rendered successfully.
+    if (error.message.includes('_rsc=') && error.message.includes('due to access control checks.')) {
+      expectedWebKitNavigationCancels.push(error.message.split('\n', 1)[0] ?? error.message)
+      return
+    }
+    pageErrors.push(`${error.message}\n${error.stack ?? ''}`)
+  })
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText ?? ''
     const url = request.url()
@@ -219,7 +228,7 @@ test('customer routes load without browser failures and stay within the response
     })()
     // Next intentionally cancels speculative RSC prefetches when a navigation supersedes them.
     // Keep all other request failures fatal; this narrow classification avoids hiding app/network errors.
-    if (isRscPrefetch && failure === 'net::ERR_ABORTED') {
+    if (isRscPrefetch && (failure === 'net::ERR_ABORTED' || failure === 'cancelled')) {
       expectedNavigationCancels.push(`${request.method()} ${url}`)
       return
     }
@@ -324,9 +333,10 @@ test('customer routes load without browser failures and stay within the response
   await page.keyboard.press('Escape')
 
   console.log(`notification-diagnostics: ${notificationDiagnostics.join(' | ')}`)
-  test
-    .info()
-    .annotations.push({ type: 'expected-navigation-cancels', description: String(expectedNavigationCancels.length) })
+  test.info().annotations.push({
+    type: 'expected-navigation-cancels',
+    description: String(expectedNavigationCancels.length + expectedWebKitNavigationCancels.length),
+  })
   expect(pageErrors, pageErrors.join('\n')).toEqual([])
   expect(failedRequests, failedRequests.join('\n')).toEqual([])
   expect(badResponses, badResponses.join('\n')).toEqual([])

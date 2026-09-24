@@ -147,7 +147,7 @@ export default async function ReportsPage({
           {figures.owners.length === 0 ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">{copy.noOwners}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div aria-label={copy.ownerBreakdown} className="overflow-x-auto" role="region" tabIndex={0}>
               <table className="min-w-[48rem] w-full text-sm">
                 <thead className="bg-muted/30 text-left text-xs text-muted-foreground">
                   <tr>

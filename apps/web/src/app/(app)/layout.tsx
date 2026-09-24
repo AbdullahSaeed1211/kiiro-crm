@@ -10,6 +10,7 @@ import { AppFrame } from './app-frame'
 import { normalizeLocale } from '../../i18n/config'
 import { brandPresentation } from '../../server/branding/presentation'
 import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
+import { accessibleBrandColors } from '../../server/branding/accessible-colors'
 
 // The vendored sidebar persists its open state in this cookie.
 const SIDEBAR_COOKIE = 'sidebar_state'
@@ -31,16 +32,26 @@ function textSetting(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim() !== '' ? value : fallback
 }
 
+function primaryThemeStyle(value: unknown): Record<string, string> {
+  if (typeof value !== 'string' || !/^#[\da-f]{6}$/i.test(value)) return {}
+  const colors = accessibleBrandColors(value)
+  return {
+    '--primary': value,
+    '--ring': value,
+    '--primary-foreground': colors.foreground,
+    '--primary-text-light': colors.textOnLight,
+    '--primary-text-dark': colors.textOnDark,
+  }
+}
+
 function themeStyle(settings: Record<string, unknown>): CSSProperties {
   const brand = settingsRecord(settings.brand)
-  const primaryValue = brand.primaryHex
-  const primary = typeof primaryValue === 'string' && /^#[\da-f]{6}$/i.test(primaryValue) ? primaryValue : undefined
   const radiusValue = brand.radius
   let radius: string | undefined
   if (radiusValue === 'sm') radius = '0.45rem'
   else if (radiusValue === 'lg') radius = '0.95rem'
   return {
-    ...(primary === undefined ? {} : { '--primary': primary, '--ring': primary }),
+    ...primaryThemeStyle(brand.primaryHex),
     ...(radius === undefined ? {} : { '--radius': radius }),
   } as CSSProperties
 }

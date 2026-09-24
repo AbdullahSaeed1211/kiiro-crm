@@ -38,7 +38,7 @@ function ContactAside({
                 <EmptyValue />
               ) : (
                 <>
-                  <a href={`mailto:${record.email}`} className="truncate text-primary hover:underline">
+                  <a href={`mailto:${record.email}`} className="truncate ops-brand-text hover:underline">
                     {record.email}
                   </a>
                   <CopyButton value={record.email} label="email" />
@@ -53,7 +53,7 @@ function ContactAside({
                 <EmptyValue />
               ) : (
                 <>
-                  <a href={`tel:${record.phone}`} className="truncate text-primary hover:underline">
+                  <a href={`tel:${record.phone}`} className="truncate ops-brand-text hover:underline">
                     {record.phone}
                   </a>
                   <CopyButton value={record.phone} label="phone number" />
@@ -67,7 +67,7 @@ function ContactAside({
               {relations.organization === null ? (
                 <EmptyValue />
               ) : (
-                <a href={`/organizations/${relations.organization.id}`} className="text-primary hover:underline">
+                <a href={`/organizations/${relations.organization.id}`} className="ops-brand-text hover:underline">
                   {relations.organization.name}
                 </a>
               )}

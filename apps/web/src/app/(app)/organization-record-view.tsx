@@ -32,7 +32,7 @@ function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRec
               ) : (
                 <a
                   href={website}
-                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                  className="inline-flex items-center gap-1 ops-brand-text hover:underline"
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -48,7 +48,7 @@ function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRec
               {record.email === null || record.email.trim() === '' ? (
                 <EmptyValue />
               ) : (
-                <a href={`mailto:${record.email}`} className="text-primary hover:underline">
+                <a href={`mailto:${record.email}`} className="ops-brand-text hover:underline">
                   {record.email}
                 </a>
               )}
@@ -75,7 +75,7 @@ function RelatedCreateAction({ href, label }: Readonly<{ href: string; label: st
   return (
     <Link
       href={href}
-      className="-mr-2 inline-flex min-h-8 items-center rounded-sm px-2 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="-mr-2 inline-flex min-h-8 items-center rounded-sm px-2 text-sm font-medium ops-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {label}
     </Link>
