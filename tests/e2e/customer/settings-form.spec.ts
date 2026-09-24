@@ -3,6 +3,7 @@ import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
 const SAVE_ERROR = "We couldn't save your changes. Please try again."
+const GROUPS_SETTINGS_PATH = '/settings/groups'
 
 async function signIn(page: Page): Promise<void> {
   await page.goto('/login')
@@ -47,6 +48,32 @@ async function checkWorkflowCreateRecovery(page: Page): Promise<void> {
   expect(wasIntercepted()).toBe(true)
 }
 
+async function checkGroupEditRecovery(page: Page): Promise<void> {
+  await page.goto(GROUPS_SETTINGS_PATH)
+  const wasIntercepted = await interceptFailedAction(page, GROUPS_SETTINGS_PATH)
+  const group = page.getByRole('list', { name: 'Groups' }).getByRole('listitem').first()
+  await group.getByRole('button', { name: 'Edit' }).click()
+  await group.getByRole('textbox', { name: 'Group name' }).fill('Temporary group name')
+  const button = group.getByRole('button', { name: 'Save' })
+  await button.click()
+  await expect(page.getByText('Could not save this group. Please try again.', { exact: true })).toBeVisible()
+  await expect(button).toBeEnabled()
+  expect(wasIntercepted()).toBe(true)
+  await group.getByRole('button', { name: 'Cancel' }).click()
+}
+
+async function checkGroupDeleteRecovery(page: Page): Promise<void> {
+  await page.goto(GROUPS_SETTINGS_PATH)
+  const wasIntercepted = await interceptFailedAction(page, GROUPS_SETTINGS_PATH)
+  const group = page.getByRole('list', { name: 'Groups' }).getByRole('listitem').last()
+  page.on('dialog', (dialog) => dialog.accept())
+  const button = group.getByRole('button', { name: 'Delete' })
+  await button.click()
+  await expect(page.getByText('Could not delete this group. Please try again.', { exact: true })).toBeVisible()
+  await expect(button).toBeEnabled()
+  expect(wasIntercepted()).toBe(true)
+}
+
 test('settings save stays retryable after a request failure', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings/general')
@@ -69,4 +96,10 @@ test('intake and workflow creation recover after rejected requests', async ({ pa
   await signIn(page)
   await checkIntakeCreateRecovery(page)
   await checkWorkflowCreateRecovery(page)
+})
+
+test('group editing and deletion recover after rejected requests', async ({ page }) => {
+  await signIn(page)
+  await checkGroupEditRecovery(page)
+  await checkGroupDeleteRecovery(page)
 })
