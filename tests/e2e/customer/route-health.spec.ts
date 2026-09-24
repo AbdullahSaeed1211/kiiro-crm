@@ -214,7 +214,7 @@ test('customer routes load without browser failures and stay within the response
       expectedWebKitNavigationCancels.push(error.message.split('\n', 1)[0] ?? error.message)
       return
     }
-    pageErrors.push(`${error.message}\n${error.stack ?? ''}`)
+    pageErrors.push(`${page.url()}\n${error.message}\n${error.stack ?? ''}`)
   })
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText ?? ''

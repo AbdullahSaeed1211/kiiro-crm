@@ -13,7 +13,13 @@ export interface ActivityEntry {
 
 /** Newest activity first, without changing the server-provided array. */
 export function newestFirst(entries: readonly ActivityEntry[]): ActivityEntry[] {
-  return [...entries].sort((a, b) => b.occurredAt - a.occurredAt || a.id.localeCompare(b.id))
+  return [...entries].sort((a, b) => b.occurredAt - a.occurredAt || compareIds(a.id, b.id))
+}
+
+function compareIds(a: string, b: string): number {
+  if (a < b) return -1
+  if (a > b) return 1
+  return 0
 }
 
 /** Returns the first page of entries and whether another page is available. */

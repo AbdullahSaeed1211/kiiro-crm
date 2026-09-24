@@ -23,8 +23,10 @@ export type ActivityFeedProps = Readonly<{
   className?: string | undefined
 }>
 
-function ActivityTime({ timestamp, locale }: Readonly<{ timestamp: number; locale: string | undefined }>) {
-  const value = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(timestamp)
+function ActivityTime({ timestamp }: Readonly<{ timestamp: number }>) {
+  const date = new Date(timestamp)
+  const twoDigits = (value: number) => String(value).padStart(2, '0')
+  const value = `${String(date.getUTCFullYear())}-${twoDigits(date.getUTCMonth() + 1)}-${twoDigits(date.getUTCDate())} ${twoDigits(date.getUTCHours())}:${twoDigits(date.getUTCMinutes())} UTC`
   return (
     <time dateTime={new Date(timestamp).toISOString()} className="text-xs text-muted-foreground">
       {value}
@@ -33,7 +35,7 @@ function ActivityTime({ timestamp, locale }: Readonly<{ timestamp: number; local
 }
 
 /** Compact audit timeline. It renders supplied entries only; loading remains the page's responsibility. */
-export function ActivityFeed({ entries, labels, onLoadMore, hasMore = false, locale, className }: ActivityFeedProps) {
+export function ActivityFeed({ entries, labels, onLoadMore, hasMore = false, className }: ActivityFeedProps) {
   const ordered = useMemo(() => newestFirst(entries), [entries])
   return (
     <section aria-labelledby="activity-feed-heading" className={className}>
@@ -57,7 +59,7 @@ export function ActivityFeed({ entries, labels, onLoadMore, hasMore = false, loc
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-medium">{entry.actorName ?? labels.systemActor}</span>
-                  <ActivityTime timestamp={entry.occurredAt} locale={locale} />
+                  <ActivityTime timestamp={entry.occurredAt} />
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">{entry.summary}</div>
               </div>

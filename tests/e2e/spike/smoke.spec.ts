@@ -2,17 +2,15 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { expect as baseExpect, test, type Locator, type Page, type Response } from '@playwright/test'
+import { expect as baseExpect, test, type Page, type Response } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { parseDevVars, WEB_DIR } from '../../../scripts/seed/local-env'
+import { verifyTimelineDragPersistence } from './timeline-drag'
 
 // Runs against `pnpm dev` on a database prepared by `pnpm db:reset:local && pnpm seed:dev`.
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
 const CRON_PATH = '/api/v1/internal/cron'
 const CARD = '[data-card-id]'
-const BAR = '.wx-bar'
-// Week zoom draws one day 44 px wide.
-const TWO_DAYS_PX = 88
 const PLAN_LAUNCH_TITLE = 'Plan launch checklist'
 const IN_PROGRESS_STAGE = 'In progress'
 const TODO_STAGE = 'To do'
@@ -119,48 +117,6 @@ async function moveAndVerifyAfterReload(page: Page, move: CardMove): Promise<voi
   await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
 }
 
-async function dragAndVerifyAfterReload(
-  page: Page,
-  input: Readonly<{ title: string; dates: Locator; previous: string[] }>,
-): Promise<void> {
-  const saved = page.waitForResponse(isPostTo('/timeline'))
-  await dragBar(page, input.title)
-  expect((await saved).ok()).toBe(true)
-  await expect(input.dates).not.toHaveText(input.previous)
-  const after = await input.dates.allTextContents()
-  await page.reload()
-  await expect(input.dates).toHaveText(after)
-}
-
-async function restoreDatesAndVerify(
-  page: Page,
-  input: Readonly<{ title: string; dates: Locator; before: string[]; originalX: number }>,
-) {
-  const currentBox = await page.locator(BAR, { hasText: input.title }).boundingBox()
-  if (currentBox === null) throw new Error(`no bar for ${input.title}`)
-  const restored = page.waitForResponse(isPostTo('/timeline'))
-  await dragBar(page, input.title, input.originalX - currentBox.x)
-  expect((await restored).ok()).toBe(true)
-  await expect(input.dates).toHaveText(input.before)
-  await page.reload()
-  await expect(input.dates).toHaveText(input.before)
-}
-
-// Drags left when the bar is near the right edge, so repeated runs keep it on screen.
-async function dragBar(page: Page, title: string, offsetX?: number): Promise<void> {
-  const box = await page.locator(BAR, { hasText: title }).boundingBox()
-  if (box === null) throw new Error(`no bar for ${title}`)
-  const nearRightEdge = box.x + box.width > (page.viewportSize()?.width ?? 0) * 0.8
-  const x = box.x + box.width / 2
-  const y = box.y + box.height / 2
-  await page.mouse.move(x, y)
-  await page.mouse.down()
-  let offset = nearRightEdge ? -TWO_DAYS_PX : TWO_DAYS_PX
-  if (offsetX !== undefined) offset = offsetX
-  await page.mouse.move(x + offset, y, { steps: 10 })
-  await page.mouse.up()
-}
-
 test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
   await signIn(page)
   await page.goto('/tasks')
@@ -204,20 +160,9 @@ test('spike: /tasks/board rejected move rolls back and explains the failure', as
   await expect(page.locator(TASK_STAGE_SELECTOR, { hasText: title })).toHaveAttribute(ARIA_LABEL_ATTRIBUTE, sourceName)
 })
 
-test('spike: /timeline drag persists new dates after a reload', async ({ page, isMobile }) => {
-  // Skipped on phones only: timeline bars move with a mouse drag and have no touch path.
-  test.skip(isMobile, 'Timeline bars move with a mouse drag; the phone project has no drag path.')
+test('spike: /timeline drag persists new dates after a reload', async ({ page }) => {
   await signIn(page)
-  await page.goto('/timeline')
-  const title = 'Design style guide'
-  const dates = page.locator('.wx-row', { hasText: title }).locator('[data-col-id=":start"], [data-col-id=":end"]')
-  const bar = page.locator(BAR, { hasText: title })
-  await expect(bar).toBeVisible()
-  const originalBox = await bar.boundingBox()
-  if (originalBox === null) throw new Error(`no bar for ${title}`)
-  const before = await dates.allTextContents()
-  await dragAndVerifyAfterReload(page, { title, dates, previous: before })
-  await restoreDatesAndVerify(page, { title, dates, before, originalX: originalBox.x })
+  await verifyTimelineDragPersistence(page)
 })
 
 test('spike: internal cron route runs tasks.dueSoon with the dev secret and refuses a wrong one', async ({

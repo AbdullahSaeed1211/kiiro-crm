@@ -1,0 +1,64 @@
+{
+  "wp": "M3-L1",
+  "milestone": "M3",
+  "attempt": 24,
+  "runner": "lead",
+  "startedAt": "2026-09-24T03:07:54.208Z",
+  "finishedAt": "2026-09-24T03:08:46.486Z",
+  "gates": [
+    {
+      "name": "pnpm verify",
+      "exitCode": 1,
+      "durationMs": 3349,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1.",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "format:check",
+      "exitCode": 1,
+      "durationMs": 3024,
+      "failingLines": [
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationMs": 16674,
+      "failingLines": []
+    },
+    {
+      "name": "lint",
+      "exitCode": 1,
+      "durationMs": 28318,
+      "failingLines": [
+        "197:82  error  Async arrow function has too many statements (16). Maximum allowed is 15  max-statements",
+        "✖ 1 problem (1 error, 0 warnings)",
+        "ELIFECYCLE  Command failed with exit code 1."
+      ]
+    },
+    {
+      "name": "vitest run --project unit --changed",
+      "exitCode": 0,
+      "durationMs": 617,
+      "failingLines": []
+    },
+    {
+      "name": "check:scope",
+      "exitCode": 0,
+      "durationMs": 274,
+      "failingLines": []
+    }
+  ],
+  "scopeViolations": [],
+  "filesChanged": 0,
+  "suggestedClasses": [
+    "GATE_FAILURE"
+  ],
+  "confirmedClasses": [
+    "GATE_FAILURE"
+  ],
+  "leadTookOver": true
+}

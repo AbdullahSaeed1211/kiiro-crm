@@ -174,10 +174,7 @@ export function GanttView({ bars, zoom, compact, displayMode, onDatesChange, lab
     void api.exec('set-display-mode', { mode: compact ? displayMode : 'all' })
   }, [clientReady, compact, displayMode])
   const setup = useMemo(() => scaleSetup(zoom, locale), [locale, zoom])
-  const columns = useMemo(() => {
-    const allColumns = ganttColumns(labels, locale)
-    return compact ? allColumns.filter((column) => column.id === 'text') : allColumns
-  }, [compact, labels, locale])
+  const columns = useMemo(() => ganttColumns(labels, locale), [labels, locale])
   useGanttAccessibility(rootRef, { tasks, chartLabel: labels.timelineChart, clientReady })
   const init = useCallback((api: IApi) => {
     apiRef.current = api
