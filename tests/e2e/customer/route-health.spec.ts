@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test, type Locator, type Page, type Response } from '@playwright/test'
+import { expect, test, type Locator, type Page, type Response, type Route } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { WEB_DIR } from '../../../scripts/seed/local-env'
 
@@ -133,28 +133,31 @@ async function taskSourceLink(page: Page, input: Readonly<{ route: string; title
   return { taskLink, sourceUrl }
 }
 
-async function openTaskSourcePanel(page: Page, taskLink: Locator, sourceUrl: string): Promise<void> {
+async function openTaskSourcePanel(
+  page: Page,
+  input: Readonly<{ taskLink: Locator; title: string; sourceUrl: string }>,
+): Promise<void> {
   const openStartedAt = await page.evaluate(() => performance.now())
-  await taskLink.click()
+  await input.taskLink.click()
   await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
-  expect(new URL(page.url()).searchParams.get('returnTo')).toBe(sourceUrl)
-  await expect(page.locator(TASK_PANEL)).toBeVisible()
+  expect(new URL(page.url()).searchParams.get('returnTo')).toBe(input.sourceUrl)
+  await expect(page.getByRole('dialog', { name: input.title })).toBeVisible()
   expect(
     await recordedLayoutShiftSince(page, openStartedAt),
-    `opening a task from ${sourceUrl} should not shift its source`,
+    `opening a task from ${input.sourceUrl} should not shift its source`,
   ).toBe(0)
 }
 
 async function closeTaskSourcePanel(page: Page, title: string, sourceUrl: string): Promise<void> {
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === sourceUrl)
-  await expect(page.locator(TASK_PANEL)).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: title })).toHaveCount(0)
   await expect(page.getByRole('link', { name: title, exact: true })).toBeFocused()
 }
 
 async function verifyTaskSourcePanel(page: Page, input: Readonly<{ route: string; title: string }>): Promise<void> {
   const { taskLink, sourceUrl } = await taskSourceLink(page, input)
-  await openTaskSourcePanel(page, taskLink, sourceUrl)
+  await openTaskSourcePanel(page, { taskLink, title: input.title, sourceUrl })
   await closeTaskSourcePanel(page, input.title, sourceUrl)
 }
 
@@ -163,6 +166,77 @@ async function verifyTaskSourcePanels(
   sources: readonly Readonly<{ route: string; title: string }>[],
 ): Promise<void> {
   for (const source of sources) await verifyTaskSourcePanel(page, source)
+}
+
+async function taskNotificationRecordId(page: Page): Promise<string> {
+  await page.goto(CALENDAR_PATH)
+  const href = await page.getByRole('link', { name: TASK_TITLE, exact: true }).getAttribute('href')
+  if (href === null) throw new Error('calendar task has no contextual URL for its notification')
+  const id = new URL(href, page.url()).pathname.split('/').at(-1)
+  if (id === undefined || id === '') throw new Error('calendar task has no id for its notification')
+  return id
+}
+
+async function serveTaskNotification(
+  route: Route,
+  item: Readonly<{ taskId: string; notificationId: string; markRead: () => void }>,
+): Promise<void> {
+  const request = route.request()
+  const url = new URL(request.url())
+  if (request.method() === 'GET' && url.pathname === '/api/v1/notifications/unread-count') {
+    await route.fulfill({ json: { count: 1 } })
+    return
+  }
+  if (request.method() === 'GET' && url.pathname === '/api/v1/notifications') {
+    await route.fulfill({
+      json: {
+        notifications: [
+          {
+            id: item.notificationId,
+            type: 'task_due_soon',
+            recordType: 'task',
+            recordId: item.taskId,
+            data: { message: 'Task due soon' },
+          },
+        ],
+      },
+    })
+    return
+  }
+  if (request.method() === 'PATCH' && url.pathname === `/api/v1/notifications/${item.notificationId}`) {
+    item.markRead()
+    await route.fulfill({ status: 204 })
+    return
+  }
+  await route.continue()
+}
+
+async function verifyNotificationTaskPanel(page: Page): Promise<void> {
+  const taskId = await taskNotificationRecordId(page)
+  const notificationId = '11111111-1111-4111-8111-111111111111'
+  let markedRead = false
+  await page.route('**/api/v1/notifications**', (route) =>
+    serveTaskNotification(route, { taskId, notificationId, markRead: () => (markedRead = true) }),
+  )
+  await page.getByRole('button', { name: 'Notifications' }).click()
+  const notifications = page.getByRole('dialog')
+  await expect(notifications).toContainText('Task due soon')
+  await notifications.getByRole('button', { name: /Task due soon/ }).click()
+  await expect.poll(() => markedRead).toBe(true)
+  await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
+  expect(new URL(page.url()).searchParams.get('returnTo')).toBe(CALENDAR_PATH)
+  await expect(page.getByRole('dialog', { name: TASK_TITLE })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL((url) => url.pathname === CALENDAR_PATH)
+  await expect(page.getByRole('dialog', { name: TASK_TITLE })).toHaveCount(0)
+}
+
+async function verifyTaskSourceInteractions(page: Page): Promise<void> {
+  await verifyTaskSourcePanels(page, [
+    { route: TASK_PATH, title: 'Draft homepage wireframes' },
+    { route: `${TASK_PATH}/board`, title: 'Design style guide' },
+  ])
+  await verifyNotificationTaskPanel(page)
 }
 
 async function verifyTaskPanelHistoryAndEscape(page: Page) {
@@ -413,10 +487,7 @@ test('task details preserve origin in contextual mode and render canonically whe
   await verifyTaskPanelHistoryAndEscape(page)
   await verifyCanonicalTaskPage(page)
   await verifyTaskPanelCloseControls(page)
-  await verifyTaskSourcePanels(page, [
-    { route: TASK_PATH, title: 'Draft homepage wireframes' },
-    { route: `${TASK_PATH}/board`, title: 'Design style guide' },
-  ])
+  await verifyTaskSourceInteractions(page)
 })
 
 test('settings IA and command palette expose useful, non-dead defaults', async ({ page }) => {
