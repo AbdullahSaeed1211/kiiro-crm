@@ -1,4 +1,5 @@
-import { APP_SETTINGS, DEV_PASSWORD, type ProjectSeed, type TaskSeed, type UserSeed, type WorkflowSeed } from './data'
+import { APP_SETTINGS, DEV_PASSWORD, type UserSeed, type WorkflowSeed } from './data'
+import type { ProjectSeed, TaskSeed } from './work-data'
 import type { ContactSeed, DealSeed, LeadSeed, OrganizationSeed } from './crm-types'
 
 type Data = Record<string, unknown>
@@ -70,12 +71,13 @@ const stageData = (context: RecordContext, stage: string): Data => ({
 /** Returns a UTC epoch offset from the seed clock. */
 export const atDay = (now: number, day: number): number => now + day * DAY_MS
 
-/** Project document owned by the manager inside `organization`. */
+/** Project document owned by the account owner inside `organization`. */
 export function projectData(seed: ProjectSeed, context: RecordContext & { readonly organization: string }): Data {
   return {
     name: seed.name,
+    description: seed.description,
     organization: context.organization,
-    owner: idOf(context.users, 'manager'),
+    owner: idOf(context.users, 'owner'),
     members: seed.members.map((key) => idOf(context.users, key)),
     ...stageData(context, seed.stage),
     startAt: atDay(context.now, seed.startDay),
@@ -91,6 +93,7 @@ export function taskData(
 ): Data {
   return {
     title: seed.title,
+    description: seed.description,
     ...stageData(context, seed.stage),
     priority: seed.priority,
     assignees: seed.assignees.map((key) => idOf(context.users, key)),
@@ -109,7 +112,7 @@ export function organizationData(seed: OrganizationSeed, users: IdMap, sources: 
     website: seed.website,
     phone: seed.phone,
     email: seed.email,
-    owner: idOf(users, 'manager'),
+    owner: idOf(users, 'owner'),
     source: seed.source === undefined ? null : idOf(sources, seed.source),
     customData: {},
   }

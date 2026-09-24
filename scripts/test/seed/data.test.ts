@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DAY_MS, idOf, projectData, rankAt, stageIdsOf, taskData, userData, workflowData } from '../../seed/build'
-import { GROUPS, PROJECT_WORKFLOW, PROJECTS, TASK_WORKFLOW, TASKS, USERS, type WorkflowSeed } from '../../seed/data'
+import { GROUPS, PROJECT_WORKFLOW, TASK_WORKFLOW, USERS, type WorkflowSeed } from '../../seed/data'
+import { PROJECTS, TASKS } from '../../seed/work-data'
 
 const NOW = Date.UTC(2026, 8, 13)
 const stageNames = (workflow: WorkflowSeed): string[] => workflow.stages.map((stage) => stage.name)
@@ -16,17 +17,22 @@ function counter(): () => string {
 }
 
 describe('seed data', () => {
-  it('has twelve tasks due from -3 to +10 days, each starting on or before its due day', () => {
-    expect(TASKS).toHaveLength(12)
+  it('has two open, assigned next actions for each supplied client', () => {
+    expect(PROJECTS).toHaveLength(10)
+    expect(TASKS).toHaveLength(20)
     for (const task of TASKS) {
-      expect(task.startDay).toBeGreaterThanOrEqual(-3)
-      expect(task.dueDay).toBeLessThanOrEqual(10)
+      expect(task.startDay).toBe(0)
+      expect(task.dueDay).toBeGreaterThan(0)
       expect(task.startDay).toBeLessThanOrEqual(task.dueDay)
+      expect(task.stage).toBe('To do')
+      expect(task.assignees).toHaveLength(1)
+      expect(task.project).toBeDefined()
     }
   })
 
-  it('uses only existing stages and covers every task stage', () => {
-    expect(new Set(TASKS.map((task) => task.stage))).toEqual(new Set(stageNames(TASK_WORKFLOW)))
+  it('uses only existing stages and starts all walkthrough work in To do', () => {
+    expect(TASKS.every((task) => stageNames(TASK_WORKFLOW).includes(task.stage))).toBe(true)
+    expect(new Set(TASKS.map((task) => task.stage))).toEqual(new Set(['To do']))
     expect(PROJECTS.every((project) => stageNames(PROJECT_WORKFLOW).includes(project.stage))).toBe(true)
   })
 
@@ -86,14 +92,14 @@ describe('seed builders', () => {
   it('builds tasks with stage ids, epoch times and ranks in seed order', () => {
     const full = { ...context, groups: ids(GROUPS), projects: ids(PROJECTS.map((project) => project.name)) }
     const tasks = TASKS.map((task, index) => taskData(task, index, full))
-    expect(tasks[0]).toMatchObject({ stageId: 'stage-5', dueAt: NOW - 2 * DAY_MS, assignees: ['id-staff1'] })
+    expect(tasks[0]).toMatchObject({ stageId: 'stage-2', dueAt: NOW + 4 * DAY_MS, assignees: ['id-staff1'] })
     const ranks = TASKS.map((_, index) => rankAt(index))
     expect(tasks.map((task) => task['rank'])).toEqual(ranks)
     expect([...ranks].sort((a, b) => a.localeCompare(b))).toEqual(ranks)
-    expect(tasks.filter((task) => task['project'] === null)).toHaveLength(3)
+    expect(tasks.filter((task) => task['project'] === null)).toHaveLength(0)
   })
 
-  it('links users to their group and manager, and projects to the manager', () => {
+  it('links role users to groups and manager, with projects owned by the account owner', () => {
     const staff = USERS.find((user) => user.key === 'staff1')
     expect(staff && userData(staff, { users: context.users, groups: ids(GROUPS) })).toMatchObject({
       groups: ['id-Design'],
@@ -103,7 +109,7 @@ describe('seed builders', () => {
     const project = PROJECTS.map((seed) =>
       projectData(seed, { ...context, workflow: projectWorkflow, organization: 'org' }),
     )
-    expect(project[0]).toMatchObject({ owner: 'id-manager', members: ['id-staff1'], stageId: 'stage-2' })
+    expect(project[0]).toMatchObject({ owner: 'id-owner', members: ['id-staff1'], stageId: 'stage-1' })
   })
 
   it('throws on an unknown reference', () => {

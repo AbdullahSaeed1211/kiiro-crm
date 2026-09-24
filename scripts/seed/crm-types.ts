@@ -6,6 +6,7 @@ export type Budget = 'Under $1k' | '$1k–5k' | '$5k–20k' | '$20k+'
 export interface OrganizationSeed {
   readonly key: string
   readonly name: string
+  readonly previousName?: string
   readonly website: string
   readonly phone: string
   readonly email: string

@@ -44,15 +44,30 @@ async function seedLookups(payload: SeedPayload, input: LookupSeedInput): Promis
 async function seedOrganizations(payload: SeedPayload, input: CrmSeedInput, sources: IdMap): Promise<IdMap> {
   const ids = new Map<string, string>()
   for (const seed of ORGANIZATIONS) {
+    const where =
+      seed.previousName === undefined
+        ? { name: equals(seed.name) }
+        : { or: [{ name: equals(seed.name) }, { name: equals(seed.previousName) }] }
+    const data = (): ReturnType<typeof organizationData> => organizationData(seed, input.users, sources)
     const doc = await upsert(
       payload,
       {
         collection: COLLECTIONS.organizations,
-        where: { name: equals(seed.name) },
-        data: () => organizationData(seed, input.users, sources),
+        where,
+        data,
       },
       input.tally,
     )
+    const next = data()
+    const changed = Object.entries(next).some(([key, value]) => JSON.stringify(doc[key]) !== JSON.stringify(value))
+    if (changed) {
+      await payload.update({
+        ...LOCAL,
+        collection: COLLECTIONS.organizations,
+        id: doc.id,
+        data: next,
+      })
+    }
     ids.set(seed.key, doc.id)
   }
   return ids

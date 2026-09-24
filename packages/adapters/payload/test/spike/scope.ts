@@ -2,54 +2,32 @@ import { asId, type Id } from '@ops/kernel'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 import { expect } from 'vitest'
 import { ORGANIZATIONS } from '../../../../../scripts/seed/crm-directory-data'
-import { DEV_PASSWORD, PROJECTS, TASKS } from '../../../../../scripts/seed/data'
+import { DEV_PASSWORD } from '../../../../../scripts/seed/data'
+import { PROJECTS, TASKS } from '../../../../../scripts/seed/work-data'
 import { loadReportIds, resolveActor } from '../../src/access/actor'
 import { COLLECTIONS, RECORD_TYPES } from '../../src/contracts/names'
 import { createTaskRepository } from '../../src/repositories'
 import { fieldOf, textOf } from '../../src/repositories/documents'
 import { requestAs, SEEDED_EMAILS, userByEmail, type SpikeCase } from './local-stack'
 
-// Staff 1 (Design group, member of the website project): assigned or Design tasks, other website tasks, the shared task.
-const STAFF1_TASKS = [
-  'Audit current site pages',
-  'Build contact form',
-  'Design style guide',
-  'Draft homepage wireframes',
-  'Prepare app icon concepts',
-  'Research analytics tools',
-  'Write service page copy',
-]
-// Staff 2 (Development group, no project membership): assigned or Development tasks and the shared task.
-const STAFF2_TASKS = [
-  'Build contact form',
-  'Build sign-in screen',
-  'Research analytics tools',
-  'Review hosting options',
-  'Set up code repository',
-]
-const STAFF1_PROJECTS = ['Website redesign']
+const memberProjects = (user: 'staff1' | 'staff2'): string[] =>
+  PROJECTS.filter((project) => project.members.includes(user)).map((project) => project.name)
+const visibleTasks = (user: 'staff1' | 'staff2', projectNames: readonly string[]): string[] => {
+  const projects = new Set(projectNames)
+  return TASKS.filter(
+    (task) => task.assignees.includes(user) || (task.project !== undefined && projects.has(task.project)),
+  ).map((task) => task.title)
+}
+const STAFF1_PROJECTS = memberProjects('staff1')
+const STAFF2_PROJECTS = memberProjects('staff2')
+const STAFF1_TASKS = visibleTasks('staff1', STAFF1_PROJECTS)
+const STAFF2_TASKS = visibleTasks('staff2', STAFF2_PROJECTS)
 const REPORT_PROJECT = 'Project owned by an indirect report'
 
 const byName = (a: string, b: string): number => a.localeCompare(b)
-const clientLabel = (key: string): string =>
-  key
-    .split('-')
-    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
-    .join(' ')
-
 const SEEDED_NAMES = {
-  tasks: [
-    ...TASKS.map((task) => task.title),
-    ...ORGANIZATIONS.filter((organization) => organization.key !== 'example').map(
-      (organization) => `Kick off ${clientLabel(organization.key)} delivery`,
-    ),
-  ].toSorted(byName),
-  projects: [
-    ...PROJECTS.map((project) => project.name),
-    ...ORGANIZATIONS.filter((organization) => organization.key !== 'example').map(
-      (organization) => `${clientLabel(organization.key)} delivery`,
-    ),
-  ].toSorted(byName),
+  tasks: [...TASKS.map((task) => task.title)].toSorted(byName),
+  projects: [...PROJECTS.map((project) => project.name)].toSorted(byName),
   organizations: ORGANIZATIONS.map((organization) => organization.name).toSorted(byName),
 }
 
@@ -90,7 +68,7 @@ async function expectStaffScope(payload: Payload, email: string, expected: Staff
   expect(await taskTitlesAs(req)).toEqual(expected.tasks)
   expect(await namesAsUser(req, COLLECTIONS.tasks)).toEqual(expected.tasks)
   expect(await namesAsUser(req, COLLECTIONS.projects)).toEqual(expected.projects)
-  // Seeded organizations are owned by the manager, who reports to nobody.
+  // Seeded organizations are owned by the account owner, who reports to nobody.
   expect(await namesAsUser(req, COLLECTIONS.organizations)).toEqual([])
 }
 
@@ -153,7 +131,9 @@ async function expectIndirectReportScope(payload: Payload): Promise<void> {
   const staff1 = await requestAs(payload, SEEDED_EMAILS.staff1)
   expect((await resolveActor(staff1))?.reportIds).toHaveLength(2)
   expect(await namesAsUser(staff1, COLLECTIONS.projects)).toEqual([REPORT_PROJECT, ...STAFF1_PROJECTS].toSorted(byName))
-  expect(await namesAsUser(await requestAs(payload, SEEDED_EMAILS.staff2), COLLECTIONS.projects)).toEqual([])
+  expect(await namesAsUser(await requestAs(payload, SEEDED_EMAILS.staff2), COLLECTIONS.projects)).toEqual(
+    STAFF2_PROJECTS.toSorted(byName),
+  )
 }
 
 /** Staff scope per role (spec §9.10, §11.1) through the Payload access functions and the task repository. */
@@ -171,8 +151,8 @@ export const SCOPE_CASES: readonly SpikeCase[] = [
     (s) => expectStaffScope(s.payload, SEEDED_EMAILS.staff1, { tasks: STAFF1_TASKS, projects: STAFF1_PROJECTS }),
   ],
   [
-    'staff2 reads assigned and group tasks and no projects',
-    (s) => expectStaffScope(s.payload, SEEDED_EMAILS.staff2, { tasks: STAFF2_TASKS, projects: [] }),
+    'staff2 reads assigned and member-project tasks and projects',
+    (s) => expectStaffScope(s.payload, SEEDED_EMAILS.staff2, { tasks: STAFF2_TASKS, projects: STAFF2_PROJECTS }),
   ],
   ['staff2 neither lists nor loads the tasks only staff1 may see', (s) => expectHiddenFromStaff2(s.payload)],
   ['loadReportIds follows seeded reportsTo; manager actors carry no report ids', (s) => expectSeededReports(s.payload)],

@@ -67,7 +67,11 @@ function TaskMeta({
           </time>
         </span>
       )}
-      {assignees.length === 0 ? null : (
+      {assignees.length === 0 ? (
+        <span>
+          {copy.assignees}: {copy.unassigned}
+        </span>
+      ) : (
         <span>
           {copy.assignees}: {assignees.join(', ')}
         </span>

@@ -49,7 +49,7 @@ export default async function DealBoardPage() {
       <span className="flex flex-wrap gap-2">
         <span className="font-medium tabular-nums">{formatMoney(deal.value)}</span>
         {organizationName === null ? null : <span>{organizationName}</span>}
-        {ownerName === null ? null : <span>Owner: {ownerName}</span>}
+        <span>Owner: {ownerName ?? 'Unassigned'}</span>
         {deal.expectedCloseAt === null ? null : <span>Expected close: {formatDate(deal.expectedCloseAt)}</span>}
       </span>
     ),

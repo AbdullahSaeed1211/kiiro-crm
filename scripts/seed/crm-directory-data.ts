@@ -1,94 +1,34 @@
 import type { ContactSeed, OrganizationSeed } from './crm-types'
 
-const HARBOR_PINE = 'harbor-pine'
-
 export const ORGANIZATIONS: readonly OrganizationSeed[] = [
-  {
-    key: 'example',
-    name: 'Example Organization',
-    website: 'https://example.test',
-    phone: '+1 212 555 0100',
-    email: 'hello@example.test',
-  },
-  {
-    key: 'northstar',
-    name: 'Northstar Health Studio',
-    website: 'https://northstar.example.test',
-    phone: '+1 415 555 0110',
-    email: 'hello@northstar.example.test',
-    source: 'Referral',
-  },
-  {
-    key: HARBOR_PINE,
-    name: 'Harbor & Pine Retail',
-    website: 'https://harbor-pine.example.test',
-    phone: '+1 617 555 0120',
-    email: 'hello@harbor-pine.example.test',
-    source: 'Website form',
-  },
   ...(
     [
-      ['austin-optics', 'Austin Optics'],
-      ['etcpa', 'ETCPA'],
-      ['shapiro-law-office', 'Shapiro Law Office'],
-      ['shapiro-the-hero', 'Shapiro The Hero'],
-      ['agr-gold', 'AGR Gold'],
-      ['fast-track', 'Fast Track'],
-      ['pbnj', 'Property Buyer New Jersey'],
-      ['green-vision', 'Green Vision'],
-      ['mirch-media', 'Mirch Media'],
-      ['baller-squad', 'Baller Squad'],
+      ['austin-optics', 'Austin Optics', 'https://austinoptics.com', '+1 718-261-8655', ''],
+      ['etcpa', 'ETCPA', 'https://www.etcpa.com', '+1 718-261-9600', ''],
+      ['shapiro-law-office', 'Shapiro Law Office', 'https://www.shapirolawoffice.com', '+1 718-261-8500', ''],
+      ['shapiro-the-hero', 'Shapiro The Hero', 'https://shapirothehero.com', '+1 970-742-7476', ''],
+      ['agr-gold', 'AGR Gold', 'https://agrgold.com', '+1 212-391-1012', 'customerservice@agrgold.com'],
+      ['fast-track', 'Fast Track', 'https://fasttracktlg.com', '+1 718-366-8000', 'info@fasttracktlg.com'],
+      [
+        'pbnj',
+        'PBNJ (property Buyer New Jersey)',
+        'https://www.propertybuyernj.com',
+        '+1 917-856-1612',
+        '',
+        'Property Buyer New Jersey',
+      ],
+      ['green-vision', 'Green Vision', 'https://greenvision.eco', '', 'contact@greenvision.eco'],
+      ['mirch-media', 'Mirch Media', 'https://www.mirchmedia.com', '+1 516-969-8550', ''],
+      ['baller-squad', 'Baller Squad', '', '', ''],
     ] as const
-  ).map(([key, name]) => ({ key, name, website: '', phone: '', email: '' })),
+  ).map(([key, name, website, phone, email, previousName]) => ({
+    key,
+    name,
+    website,
+    phone,
+    email,
+    ...(previousName === undefined ? {} : { previousName }),
+  })),
 ]
 
-export const CONTACTS: readonly ContactSeed[] = [
-  {
-    key: 'avery',
-    firstName: 'Avery',
-    lastName: 'Chen',
-    email: 'avery.chen@example.test',
-    phone: '+1 212 555 0131',
-    organization: 'example',
-  },
-  {
-    key: 'priya',
-    firstName: 'Priya',
-    lastName: 'Shah',
-    email: 'priya.shah@example.test',
-    phone: '+1 212 555 0132',
-    organization: 'example',
-  },
-  {
-    key: 'marcus',
-    firstName: 'Marcus',
-    lastName: 'Lee',
-    email: 'marcus.lee@example.test',
-    phone: '+1 415 555 0133',
-    organization: 'northstar',
-  },
-  {
-    key: 'elena',
-    firstName: 'Elena',
-    lastName: 'Torres',
-    email: 'elena.torres@example.test',
-    phone: '+1 415 555 0134',
-    organization: 'northstar',
-  },
-  {
-    key: 'jon',
-    firstName: 'Jon',
-    lastName: 'Bell',
-    email: 'jon.bell@example.test',
-    phone: '+1 617 555 0135',
-    organization: HARBOR_PINE,
-  },
-  {
-    key: 'sofia',
-    firstName: 'Sofia',
-    lastName: 'Grant',
-    email: 'sofia.grant@example.test',
-    phone: '+1 617 555 0136',
-    organization: HARBOR_PINE,
-  },
-]
+export const CONTACTS: readonly ContactSeed[] = []

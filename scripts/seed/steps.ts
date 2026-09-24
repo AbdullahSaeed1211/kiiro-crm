@@ -12,16 +12,9 @@ import {
   type WorkflowRef,
 } from './build'
 import { CRM_WORKFLOWS } from './crm-data'
-import {
-  APP_SETTINGS,
-  GROUPS,
-  PROJECT_WORKFLOW,
-  PROJECTS,
-  TASK_WORKFLOW,
-  TASKS,
-  USERS,
-  type WorkflowSeed,
-} from './data'
+import { removeLegacyPlaceholderRecords } from './cleanup'
+import { APP_SETTINGS, GROUPS, PROJECT_WORKFLOW, TASK_WORKFLOW, USERS, type WorkflowSeed } from './data'
+import { PROJECTS, TASKS } from './work-data'
 import { seedCrm } from './crm-steps'
 import { type Data, equals, type Tally, upsert } from './common'
 import { LOCAL, type SeedPayload } from './payload'
@@ -115,17 +108,22 @@ async function seedWorkflow(payload: SeedPayload, seed: WorkflowSeed, tally: Tal
 
 async function seedProjects(
   payload: SeedPayload,
-  context: RecordContext & { readonly organization: string },
+  context: RecordContext & { readonly organizations: IdMap },
   tally: Tally,
 ): Promise<Map<string, string>> {
   const ids = new Map<string, string>()
   for (const seed of PROJECTS) {
-    const data = (): Data => projectData(seed, context)
-    const doc = await upsert(
-      payload,
-      { collection: COLLECTIONS.projects, where: { name: equals(seed.name) }, data },
-      tally,
-    )
+    const data = (): Data =>
+      projectData(seed, { ...context, organization: idOf(context.organizations, seed.organizationKey) })
+    const where =
+      seed.previousName === undefined
+        ? { name: equals(seed.name) }
+        : { or: [{ name: equals(seed.name) }, { name: equals(seed.previousName) }] }
+    const doc = await upsert(payload, { collection: COLLECTIONS.projects, where, data }, tally)
+    const next = data()
+    if (Object.entries(next).some(([key, value]) => JSON.stringify(doc[key]) !== JSON.stringify(value))) {
+      await payload.update({ ...LOCAL, collection: COLLECTIONS.projects, id: doc.id, data: next })
+    }
     ids.set(seed.name, doc.id)
   }
   return ids
@@ -138,7 +136,15 @@ async function seedTasks(
 ): Promise<void> {
   for (const [index, seed] of TASKS.entries()) {
     const data = (): Data => taskData(seed, index, context)
-    await upsert(payload, { collection: COLLECTIONS.tasks, where: { title: equals(seed.title) }, data }, tally)
+    const where =
+      seed.previousTitle === undefined
+        ? { title: equals(seed.title) }
+        : { or: [{ title: equals(seed.title) }, { title: equals(seed.previousTitle) }] }
+    const doc = await upsert(payload, { collection: COLLECTIONS.tasks, where, data }, tally)
+    const next = data()
+    if (Object.entries(next).some(([key, value]) => JSON.stringify(doc[key]) !== JSON.stringify(value))) {
+      await payload.update({ ...LOCAL, collection: COLLECTIONS.tasks, id: doc.id, data: next })
+    }
   }
 }
 
@@ -149,7 +155,6 @@ async function seedWork(
     readonly users: IdMap
     readonly taskWorkflow: WorkflowRef
     readonly projectWorkflow: WorkflowRef
-    readonly organization: string
     readonly organizations: IdMap
     readonly groups: IdMap
     readonly tally: Tally
@@ -157,67 +162,20 @@ async function seedWork(
 ): Promise<void> {
   const projects = await seedProjects(
     payload,
-    { now: input.now, users: input.users, workflow: input.projectWorkflow, organization: input.organization },
+    { now: input.now, users: input.users, workflow: input.projectWorkflow, organizations: input.organizations },
     input.tally,
   )
-  // Keep the local workspace useful for demos: every seeded client has one
-  // deterministic project so directory and work surfaces exercise real links.
-  for (const [key, organization] of input.organizations) {
-    if (key === 'example') continue
-    const label = key
-      .split('-')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ')
-    const project = await upsert(
-      payload,
-      {
-        collection: COLLECTIONS.projects,
-        where: { name: equals(`${label} delivery`) },
-        data: () =>
-          projectData(
-            { name: `${label} delivery`, stage: 'Planned', members: [], startDay: 0, targetEndDay: 45 },
-            { now: input.now, users: input.users, workflow: input.projectWorkflow, organization },
-          ),
-      },
-      input.tally,
-    )
-    projects.set(`${label} delivery`, project.id)
-  }
   await seedTasks(
     payload,
     { now: input.now, users: input.users, workflow: input.taskWorkflow, groups: input.groups, projects },
     input.tally,
   )
-  for (const key of projects.keys()) {
-    if (PROJECTS.some((seed) => seed.name === key)) continue
-    await upsert(
-      payload,
-      {
-        collection: COLLECTIONS.tasks,
-        where: { title: equals(`Kick off ${key}`) },
-        data: () =>
-          taskData(
-            {
-              title: `Kick off ${key}`,
-              stage: 'To do',
-              priority: 'medium',
-              assignees: [],
-              project: key,
-              startDay: 0,
-              dueDay: 7,
-            },
-            projects.size,
-            { now: input.now, users: input.users, workflow: input.taskWorkflow, groups: input.groups, projects },
-          ),
-      },
-      input.tally,
-    )
-  }
 }
 
 /** Upserts the complete local development data set in dependency order. */
 export async function seedAll(payload: SeedPayload, now: number): Promise<Tally> {
   const tally: Tally = new Map()
+  await removeLegacyPlaceholderRecords(payload)
   await seedSettings(payload, tally)
   const groups = await seedGroups(payload, tally)
   const users = await seedUsers(payload, groups, tally)
@@ -233,7 +191,6 @@ export async function seedAll(payload: SeedPayload, now: number): Promise<Tally>
     users,
     taskWorkflow,
     projectWorkflow,
-    organization: idOf(organizations, 'example'),
     organizations,
     groups,
     tally,
