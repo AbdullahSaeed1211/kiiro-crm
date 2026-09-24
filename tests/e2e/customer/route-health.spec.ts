@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Locator, type Page, type Response, type Route } from '@playwright/test'
 import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
-import { DEALS } from '../../../scripts/seed/crm-pipeline-data'
+import { CRM_WORKFLOWS, DEALS } from '../../../scripts/seed/crm-data'
 import { ORGANIZATIONS } from '../../../scripts/seed/crm-directory-data'
 import { TASKS } from '../../../scripts/seed/work-data'
 import { WEB_DIR } from '../../../scripts/seed/local-env'
@@ -24,9 +24,20 @@ const ARIA_CURRENT = 'aria-current'
 const CALENDAR_PATH = '/calendar'
 const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
-const DEAL_TITLE = 'Website redesign engagement'
-const DEAL_TARGET_STAGE = 'Proposal sent'
-const DEAL_E2E_AVAILABLE = DEALS.length > 0
+const DEAL_WORKFLOW = CRM_WORKFLOWS.find((workflow) => workflow.recordType === 'deal')
+const OPEN_DEAL_STAGE_NAMES = new Set(
+  DEAL_WORKFLOW?.stages
+    .filter((stage) => stage.category === 'active' || stage.category === 'waiting')
+    .map((stage) => stage.name) ?? [],
+)
+const DEAL_SEED = DEALS.find((deal) => OPEN_DEAL_STAGE_NAMES.has(deal.stage))
+const DEAL_TITLE = DEAL_SEED?.title ?? ''
+const DEAL_OWNER_NAME = USERS.find((user) => user.key === DEAL_SEED?.owner)?.name ?? ''
+const DEAL_TARGET_STAGE =
+  DEAL_WORKFLOW?.stages.find(
+    (stage) => (stage.category === 'active' || stage.category === 'waiting') && stage.name !== DEAL_SEED?.stage,
+  )?.name ?? ''
+const DEAL_E2E_AVAILABLE = DEAL_SEED !== undefined && DEAL_TARGET_STAGE !== ''
 const TASK_PANEL = '[data-slot="sheet-content"]'
 const ROUTES = [
   ['/', 'Dashboard'],
@@ -824,21 +835,20 @@ async function restoreDealStage(
 
 async function verifyDealBoardOwner(page: Page): Promise<void> {
   const dealCard = page.locator('[data-card-id]').filter({ hasText: DEAL_TITLE })
-  const ownerName = USERS.find((user) => user.key === 'manager')?.name ?? ''
-  expect(ownerName).not.toBe('')
+  expect(DEAL_OWNER_NAME).not.toBe('')
   await page.goto('/deals/board')
-  await expect(dealCard).toContainText(`Owner: ${ownerName}`)
+  await expect(dealCard).toContainText(`Owner: ${DEAL_OWNER_NAME}`)
   await expect(dealCard).toContainText('Expected close:')
 }
 
 test('deal can be won and reopened with the persisted stage reflected in controls', async ({ page }) => {
-  // The canonical seed has no owner-provided deal; keep this test conditional instead of creating demo data.
-  test.skip(!DEAL_E2E_AVAILABLE, 'The canonical seed has no owner-provided deal; do not create demo deal data.')
+  // Use only an existing owner-provided open deal; never create demo deal data for this check.
+  test.skip(!DEAL_E2E_AVAILABLE, 'The canonical seed has no owner-provided open deal; do not create demo deal data.')
   await signIn(page)
   await verifyDealBoardOwner(page)
   await page.goto('/deals')
   const dealHref = await page.getByRole('link', { name: DEAL_TITLE, exact: true }).getAttribute('href')
-  if (dealHref === null) throw new Error('seeded website deal has no detail link')
+  if (dealHref === null) throw new Error('owner-provided deal has no detail link')
   await page.goto(dealHref)
 
   const stage = page.locator('#deal-stage')
@@ -878,9 +888,9 @@ async function dealBoardMoveContext(page: Page): Promise<DealBoardMoveContext> {
   await page.goto('/deals/board')
   const card = dealCard(page)
   const href = await card.getByRole('link', { name: DEAL_TITLE, exact: true }).getAttribute('href')
-  if (href === null) throw new Error('seeded website deal has no detail link')
+  if (href === null) throw new Error('owner-provided deal has no detail link')
   const sourceStageId = await page.locator('section[data-stage-id]').filter({ has: card }).getAttribute('data-stage-id')
-  if (sourceStageId === null) throw new Error('seeded website deal has no stage')
+  if (sourceStageId === null) throw new Error('owner-provided deal has no stage')
   const source = page.locator(`section[data-stage-id="${sourceStageId}"]`)
   const destinationHeadingMatcher = new RegExp(`^${DEAL_TARGET_STAGE}`)
   const targetColumn = page.locator('section[data-stage-id]').filter({
@@ -888,7 +898,7 @@ async function dealBoardMoveContext(page: Page): Promise<DealBoardMoveContext> {
   })
   const destinationStageId = await targetColumn.getAttribute('data-stage-id')
   if (destinationStageId === null || destinationStageId === sourceStageId) {
-    throw new Error(`seeded website deal cannot move to ${DEAL_TARGET_STAGE} from its current stage`)
+    throw new Error(`owner-provided deal cannot move to ${DEAL_TARGET_STAGE} from its current stage`)
   }
   const destination = page.locator(`section[data-stage-id="${destinationStageId}"]`)
   const [sourceHeading, targetHeading, sourceCount, targetCount] = await Promise.all([
@@ -931,9 +941,9 @@ async function verifyDealBoardTotals(page: Page): Promise<void> {
   }
 }
 
-test('deal board refreshes stage totals after a move and restores the seeded stage', async ({ page }) => {
-  // The canonical seed has no owner-provided deal; keep this test conditional instead of creating demo data.
-  test.skip(!DEAL_E2E_AVAILABLE, 'The canonical seed has no owner-provided deal; do not create demo deal data.')
+test('deal board refreshes stage totals after a move and restores the original stage', async ({ page }) => {
+  // Use only an existing owner-provided open deal; never create demo deal data for this check.
+  test.skip(!DEAL_E2E_AVAILABLE, 'The canonical seed has no owner-provided open deal; do not create demo deal data.')
   await signIn(page)
   await verifyDealBoardTotals(page)
 })

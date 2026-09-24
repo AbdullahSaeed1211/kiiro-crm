@@ -180,7 +180,7 @@ async function selectStageWithKeyboard(page: Page, stage: string): Promise<void>
   const items = page.getByRole('menuitem')
   const count = await items.count()
   for (let index = 0; index < count; index += 1) {
-    const focusedText = await page.evaluate(() => document.activeElement.textContent.trim())
+    const focusedText = await page.evaluate(() => document.activeElement?.textContent.trim() ?? '')
     if (focusedText === stage) {
       await page.keyboard.press('Enter')
       return
