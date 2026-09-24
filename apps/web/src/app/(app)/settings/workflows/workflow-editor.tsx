@@ -215,23 +215,31 @@ export function WorkflowEditor({
   const [recordType, setRecordType] = useState('lead')
   const [stageName, setStageName] = useState('')
   const [message, setMessage] = useState<string>()
+  const [pending, setPending] = useState(false)
   const create = async () => {
     if (name.trim() === '' || stageName.trim() === '') {
       setMessage('Workflow name and first stage are required.')
       return
     }
     const stage = { ...newStage(), name: stageName.trim(), position: 0 }
-    const result = await action({
-      collection: 'workflows',
-      recordType,
-      name: name.trim(),
-      stages: [stage],
-      defaultStageId: stage.id,
-    })
-    setMessage(result.ok ? 'Workflow created.' : result.error)
-    if (result.ok) {
-      setAdding(false)
-      router.refresh()
+    setPending(true)
+    try {
+      const result = await action({
+        collection: 'workflows',
+        recordType,
+        name: name.trim(),
+        stages: [stage],
+        defaultStageId: stage.id,
+      })
+      setMessage(result.ok ? 'Workflow created.' : result.error)
+      if (result.ok) {
+        setAdding(false)
+        router.refresh()
+      }
+    } catch {
+      setMessage('Could not create this workflow. Please try again.')
+    } finally {
+      setPending(false)
     }
   }
   return (
@@ -292,12 +300,13 @@ export function WorkflowEditor({
             </label>
             <button
               className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={pending}
               type="button"
               onClick={() => {
                 void create()
               }}
             >
-              Create workflow
+              {pending ? 'Creating...' : 'Create workflow'}
             </button>
             {message ? (
               <p className="text-sm text-muted-foreground" role="status">

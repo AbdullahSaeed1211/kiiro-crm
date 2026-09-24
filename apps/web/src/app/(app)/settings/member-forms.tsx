@@ -382,21 +382,31 @@ export function GroupList({
   const save = async (id: string) => {
     if (draft.trim() === '') return
     setPending(true)
-    const result = await action({ id, name: draft.trim() })
-    setMessage(result.ok ? 'Group saved.' : result.error)
-    if (result.ok) {
-      setEditing(null)
-      router.refresh()
+    try {
+      const result = await action({ id, name: draft.trim() })
+      setMessage(result.ok ? 'Group saved.' : result.error)
+      if (result.ok) {
+        setEditing(null)
+        router.refresh()
+      }
+    } catch {
+      setMessage('Could not save this group. Please try again.')
+    } finally {
+      setPending(false)
     }
-    setPending(false)
   }
   const remove = async (group: { id: string; name: string }) => {
     if (!window.confirm(`Delete the “${group.name}” group?`)) return
     setPending(true)
-    const result = await deleteAction({ id: group.id })
-    setMessage(result.ok ? 'Group deleted.' : result.error)
-    if (result.ok) router.refresh()
-    setPending(false)
+    try {
+      const result = await deleteAction({ id: group.id })
+      setMessage(result.ok ? 'Group deleted.' : result.error)
+      if (result.ok) router.refresh()
+    } catch {
+      setMessage('Could not delete this group. Please try again.')
+    } finally {
+      setPending(false)
+    }
   }
   return (
     <div className="space-y-3 border-t pt-5">

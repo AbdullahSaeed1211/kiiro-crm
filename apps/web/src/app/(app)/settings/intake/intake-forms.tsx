@@ -102,13 +102,18 @@ export function IntakeCreateForm({ action }: Readonly<{ action: Action }>) {
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
-    const response = await action({ name, key })
-    setResult(response)
-    setPending(false)
-    if (response.ok) {
-      setName('')
-      setKey('')
-      router.refresh()
+    try {
+      const response = await action({ name, key })
+      setResult(response)
+      if (response.ok) {
+        setName('')
+        setKey('')
+        router.refresh()
+      }
+    } catch {
+      setResult({ ok: false, error: 'Could not create this form. Please try again.' })
+    } finally {
+      setPending(false)
     }
   }
   return (
@@ -206,18 +211,28 @@ export function IntakeFormEditor({
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
-    const response = await action({ id: form.id, ...values })
-    setResult(response)
-    setPending(false)
-    if (response.ok) router.refresh()
+    try {
+      const response = await action({ id: form.id, ...values })
+      setResult(response)
+      if (response.ok) router.refresh()
+    } catch {
+      setResult({ ok: false, error: 'Could not save this form. Please try again.' })
+    } finally {
+      setPending(false)
+    }
   }
 
   async function generateServerKey() {
     setRotating(true)
-    const response = await rotateServerKey({ id: form.id })
-    setKeyResult(response)
-    setRotating(false)
-    if (response.ok) router.refresh()
+    try {
+      const response = await rotateServerKey({ id: form.id })
+      setKeyResult(response)
+      if (response.ok) router.refresh()
+    } catch {
+      setKeyResult({ ok: false, error: 'Could not generate a server key. Please try again.' })
+    } finally {
+      setRotating(false)
+    }
   }
 
   return (

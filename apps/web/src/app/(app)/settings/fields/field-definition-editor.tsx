@@ -244,11 +244,19 @@ export function FieldDefinitionEditor({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [message, setMessage] = useState<string>()
+  const [pendingDelete, setPendingDelete] = useState(false)
   const remove = async (field: FieldDefinition) => {
     if (!window.confirm(`Delete the “${field.label}” field?`)) return
-    const result = await deleteAction({ collection: 'fieldDefinitions', id: field.id })
-    setMessage(result.ok ? 'Field deleted.' : result.error)
-    if (result.ok) router.refresh()
+    setPendingDelete(true)
+    try {
+      const result = await deleteAction({ collection: 'fieldDefinitions', id: field.id })
+      setMessage(result.ok ? 'Field deleted.' : result.error)
+      if (result.ok) router.refresh()
+    } catch {
+      setMessage('Could not delete this field. Please try again.')
+    } finally {
+      setPendingDelete(false)
+    }
   }
   return (
     <div className="space-y-3">
@@ -292,6 +300,7 @@ export function FieldDefinitionEditor({
                   <button
                     className="text-xs text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     type="button"
+                    disabled={pendingDelete}
                     onClick={() => void remove(field)}
                   >
                     Delete
