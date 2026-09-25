@@ -42,6 +42,7 @@ export function tenantUrl(tenant: Tenant): string {
 export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Promise<SmokeResult> {
   const print = deps.print ?? console.log
   const base = tenantUrl(tenant)
+  const probeMode = { mode: deps.mode ?? 'dry-run', secretName: tenantEnvKey('INTERNAL_SECRET', tenant.slug) } as const
   const checks = await Promise.all([
     httpCheck({ name: 'health', url: `${base}/api/v1/health`, deps, validate: validateHealth }),
     httpCheck({ name: 'login', url: `${base}/login`, deps, validate: validateLogin }),
@@ -51,7 +52,7 @@ export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Prom
       probe: deps.r2Probe,
       dryRunDetail: 'put/get/delete probe (dry run)',
       successDetail: 'put/get/delete passed',
-      mode: deps.mode ?? 'dry-run',
+      ...probeMode,
     }),
     !tenant.email.enabled
       ? Promise.resolve({
@@ -66,7 +67,7 @@ export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Prom
           probe: deps.emailProbe,
           dryRunDetail: `test email to ${tenant.owner.email} (dry run)`,
           successDetail: 'accepted',
-          mode: deps.mode ?? 'dry-run',
+          ...probeMode,
         }),
   ])
   for (const check of checks) {
@@ -117,10 +118,16 @@ async function probeCheck(input: {
   readonly dryRunDetail: string
   readonly successDetail: string
   readonly mode: 'dry-run' | 'execute'
+  readonly secretName: string
 }): Promise<SmokeCheckResult> {
   if (input.forcedFailure) return { name: input.name, ok: false, detail: 'injected failure', state: 'fail' }
   if (input.mode === 'execute' && input.probe === undefined)
-    return { name: input.name, ok: false, detail: 'incomplete authenticated probe', state: 'fail' }
+    return {
+      name: input.name,
+      ok: false,
+      detail: `authenticated probe not run: set ${input.secretName}`,
+      state: 'fail',
+    }
   if (input.probe === undefined) return { name: input.name, ok: true, detail: input.dryRunDetail, state: 'dry-run' }
   return runProbe(input)
 }
