@@ -1,37 +1,18 @@
-/* eslint-disable */
 'use client'
 
 import { Button } from '@ops/ui/components/ui/button'
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@ops/ui/components/ui/sheet'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useEffect, useState } from 'react'
+import {
+  TaskSheetHeader,
+  TaskSheetFooter,
+  MessageDisplay,
+  TaskSheetViewWrapper,
+  isTerminalStage,
+} from './task-sheet-parts'
+import type { CompleteTaskParams, SaveDescriptionParams, TaskSaveResult, TaskSheetTask } from './types'
 
-export interface TaskSheetTask {
-  readonly id: string
-  readonly title: string
-  readonly stage: string
-  readonly stageCategory?: string
-  readonly updatedAt?: number
-  readonly priority: string
-  readonly assignees: readonly string[]
-  readonly startAt?: number | null
-  readonly dueAt?: number | null
-  readonly description?: string | null
-  readonly subtasks?: readonly { readonly id: string; readonly title: string; readonly complete: boolean }[]
-}
-
-function TaskMeta({ task }: Readonly<{ task: TaskSheetTask }>) {
-  const assignees = task.assignees.length === 0 ? 'Unassigned' : task.assignees.join(', ')
-  return (
-    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-      <span>{task.stage}</span>
-      <span>Priority: {task.priority}</span>
-      <span>{assignees}</span>
-    </div>
-  )
-}
-
-type TaskSaveResult = Readonly<{ ok: true }> | Readonly<{ ok: false; error: string }>
+export type { TaskSheetTask } from './types'
 
 function Description({
   value,
@@ -41,7 +22,7 @@ function Description({
 }: Readonly<{
   value: string
   onChange: (value: string) => void
-  onSave?: () => void | Promise<void>
+  onSave: (() => void | Promise<void>) | undefined
   disabled?: boolean
 }>) {
   return (
@@ -100,7 +81,7 @@ function Subtasks({ task }: Readonly<{ task: TaskSheetTask }>) {
 }
 
 /** Task detail editor shared by list, calendar and record pages. Persistence is supplied by the caller. */
-export function TaskSheet({
+function TaskSheetContent({
   task,
   open,
   onOpenChange,
@@ -108,95 +89,87 @@ export function TaskSheet({
   onComplete,
   renderAsPage = false,
 }: Readonly<{
-  task: TaskSheetTask | null
+  task: TaskSheetTask
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSaveDescription?: (
-    taskId: string,
-    expectedUpdatedAt: number,
-    description: string,
-  ) => Promise<TaskSaveResult> | TaskSaveResult
-  onComplete?: (taskId: string, expectedUpdatedAt: number, reopen: boolean) => Promise<boolean> | boolean
+  onSaveDescription?: (params: SaveDescriptionParams) => Promise<TaskSaveResult> | TaskSaveResult
+  onComplete?: (params: CompleteTaskParams) => Promise<boolean> | boolean
   renderAsPage?: boolean
 }>) {
-  const [description, setDescription] = useState(task?.description ?? '')
+  const [description, setDescription] = useState(task.description ?? '')
   const [busyAction, setBusyAction] = useState<'description' | 'complete' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   useEffect(() => {
     setMessage(null)
-  }, [task?.id])
+  }, [task.id])
   useEffect(() => {
-    setDescription(task?.description ?? '')
-  }, [task?.description])
-  if (task === null) return null
+    setDescription(task.description ?? '')
+  }, [task.description])
   const busy = busyAction !== null
   const expectedUpdatedAt = task.updatedAt ?? 0
-  const terminal = ['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory ?? '')
+  const terminal = isTerminalStage(task.stageCategory)
   const handleComplete = async () => {
-    if (onComplete === undefined) return
+    if (!onComplete) return
     setBusyAction('complete')
     setMessage(null)
-    const saved = await onComplete(task.id, expectedUpdatedAt, terminal)
+    const saved = await onComplete({ taskId: task.id, expectedUpdatedAt, reopen: terminal })
     setBusyAction(null)
     setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
   }
+  const handleSaveDescription = !onSaveDescription
+    ? undefined
+    : async () => {
+        setBusyAction('description')
+        setMessage(null)
+        const result = await onSaveDescription({ taskId: task.id, expectedUpdatedAt, description })
+        setBusyAction(null)
+        setMessage(result.ok ? 'Saved.' : result.error)
+      }
   const detail = (
     <>
-      <SheetHeader>
-        {renderAsPage ? (
-          <h1 className="font-heading text-xl font-semibold text-foreground">{task.title}</h1>
-        ) : (
-          <SheetTitle>{task.title}</SheetTitle>
-        )}
-        <TaskMeta task={task} />
-      </SheetHeader>
+      <TaskSheetHeader title={task.title} task={task} renderAsPage={renderAsPage} />
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4">
-        <Description
-          value={description}
-          onChange={setDescription}
-          disabled={busy}
-          {...(onSaveDescription === undefined
-            ? {}
-            : {
-                onSave: async () => {
-                  setBusyAction('description')
-                  setMessage(null)
-                  const result = await onSaveDescription(task.id, expectedUpdatedAt, description)
-                  setBusyAction(null)
-                  setMessage(result.ok ? 'Saved.' : result.error)
-                },
-              })}
-        />
+        <Description value={description} onChange={setDescription} disabled={busy} onSave={handleSaveDescription} />
         <Subtasks task={task} />
-        {message === null ? null : (
-          <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-            {message}
-          </p>
-        )}
+        <MessageDisplay message={message} />
       </div>
-      <SheetFooter className="shrink-0 flex-row border-t">
-        {onComplete === undefined ? null : (
-          <Button className="flex-1" onClick={() => void handleComplete()} disabled={busy}>
-            {busyAction === 'complete' ? (terminal ? 'Reopening…' : 'Completing…') : terminal ? 'Reopen' : 'Complete'}
-          </Button>
-        )}
-        <Button className="flex-1" variant="outline" onClick={() => onOpenChange(false)}>
-          Close
-        </Button>
-      </SheetFooter>
+      <TaskSheetFooter
+        onComplete={onComplete}
+        onOpenChange={onOpenChange}
+        busyAction={busyAction}
+        terminal={terminal}
+        busy={busy}
+        handleComplete={handleComplete}
+      />
     </>
   )
-  if (renderAsPage)
-    return (
-      <section className="mx-auto flex min-h-[min(720px,calc(100vh-2rem))] max-w-3xl flex-col overflow-hidden rounded-xl border bg-card shadow-sm">
-        {detail}
-      </section>
-    )
+  return <TaskSheetViewWrapper renderAsPage={renderAsPage} detail={detail} open={open} onOpenChange={onOpenChange} />
+}
+
+export function TaskSheet({
+  task,
+  open,
+  onOpenChange,
+  onSaveDescription,
+  onComplete,
+  renderAsPage,
+}: Readonly<{
+  task: TaskSheetTask | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSaveDescription?: (params: SaveDescriptionParams) => Promise<TaskSaveResult> | TaskSaveResult
+  onComplete?: (params: CompleteTaskParams) => Promise<boolean> | boolean
+  renderAsPage?: boolean
+}>) {
+  if (!task) return null
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-hidden overscroll-contain sm:max-w-[560px]">
-        {detail}
-      </SheetContent>
-    </Sheet>
+    <TaskSheetContent
+      task={task}
+      open={open}
+      onOpenChange={onOpenChange}
+      {...(onSaveDescription && { onSaveDescription })}
+      {...(onComplete && { onComplete })}
+      {...(renderAsPage && { renderAsPage })}
+    />
   )
 }

@@ -1,36 +1,9 @@
-/* eslint-disable */
-import { asId, type Clock } from '@ops/kernel'
-import { createProject, createTask, moveTask, updateTask } from '../src'
-import type { ProjectDraft, ProjectRecord, WorkDeps, WorkRepository } from '../src'
-import type { Actor, Workflow } from '@ops/platform'
+import { asId } from '@ops/kernel'
 import { describe, expect, it } from 'vitest'
+import { createProject, createTask, moveTask, updateTask } from '../src'
+import type { ProjectDraft, WorkRepository, WorkTaskRecord } from '../src'
 import { hasOpenChildren, myTasksBuckets, orderByRank, rankBetween, rebalanceRanks, subtaskDepth } from '../src'
-import type { WorkTaskRecord } from '../src'
-
-const task = (id: string, extra: Partial<WorkTaskRecord> = {}): WorkTaskRecord => ({
-  id: asId(id),
-  title: id,
-  description: null,
-  projectId: null,
-  relatedType: null,
-  relatedId: null,
-  parentTaskId: null,
-  workflowId: asId('workflow'),
-  stageId: asId('open'),
-  stageEnteredAt: 0,
-  rank: id,
-  priority: 'none',
-  assigneeIds: [asId('staff')],
-  groupId: null,
-  startAt: null,
-  dueAt: null,
-  completedAt: null,
-  stageCategory: 'open',
-  createdAt: 0,
-  updatedAt: 1,
-  ...extra,
-})
-
+import { actor, createMemoryRepo, depsFor, project, task } from './memory-work'
 describe('work calendar and hierarchy invariants', () => {
   it('T-WORK-1 buckets by tenant calendar day across a DST boundary', () => {
     const now = Date.parse('2026-11-01T05:30:00.000Z')
@@ -46,7 +19,6 @@ describe('work calendar and hierarchy invariants', () => {
     expect(result.today.map((value) => value.id)).toEqual(['today'])
     expect(result.next7Days.map((value) => value.id)).toEqual(['next'])
   })
-
   it('T-WORK-2 reports two levels of ancestry and rejects open children for a terminal parent', () => {
     const root = task('root')
     const child = task('child', { parentTaskId: root.id })
@@ -61,7 +33,6 @@ describe('work calendar and hierarchy invariants', () => {
     expect(hasOpenChildren([task('done-child', { completedAt: 1, stageCategory: 'done_success' })])).toBe(false)
   })
 })
-
 describe('work ordering and assignment invariants', () => {
   it('T-WORK-3 keeps rank moves deterministic and supports rebalancing', () => {
     expect(rankBetween('a', 'c')).toBe('b')
@@ -71,7 +42,6 @@ describe('work ordering and assignment invariants', () => {
     ])
     expect([...rebalanceRanks(['a', 'b']).values()]).toEqual(['000000000001', '000000000002'])
   })
-
   it('T-WORK-4 excludes completed tasks and tasks assigned to another staff member', () => {
     const now = Date.parse('2026-09-14T12:00:00.000Z')
     const result = myTasksBuckets({
@@ -87,76 +57,19 @@ describe('work ordering and assignment invariants', () => {
     expect(result.today.map((value) => value.id)).toEqual(['open'])
   })
 })
-
-const actor = (role: Actor['role'], id = 'staff'): Actor => ({
-  id: asId(id),
-  role,
-  active: true,
-  groupIds: [asId('group')],
-  reportIds: [],
-})
-const workflow: Workflow = {
-  id: asId('workflow'),
-  recordType: 'task',
-  name: 'Tasks',
-  defaultStageId: asId('open'),
-  stages: [
-    { id: asId('open'), name: 'Open', category: 'open', color: 'blue', position: 0 },
-    { id: asId('done'), name: 'Done', category: 'done_success', color: 'green', position: 1 },
-  ],
-}
-const project = (id = 'project'): ProjectRecord => ({
-  id: asId(id),
-  name: id,
-  organizationId: null,
-  ownerId: asId('manager'),
-  memberIds: [asId('staff')],
-  workflowId: asId('workflow'),
-  stageId: asId('open'),
-  stageCategory: 'open',
-  stageEnteredAt: 0,
-  startAt: null,
-  targetEndAt: null,
-  description: null,
-  createdAt: 0,
-  updatedAt: 1,
-})
-function depsFor(input: Partial<WorkDeps> = {}): WorkDeps {
-  const repository = {
-    getProject: async () => project(),
-    loadDefaultWorkflow: async () => workflow,
-    loadWorkflow: async () => workflow,
-    getTask: async () => undefined,
-    listTasks: async () => [],
-    listChildren: async () => [],
-    createTask: async () => task('created'),
-    createProject: async () => project(),
-    updateTask: async () => undefined,
-    saveTaskMove: async () => undefined,
-  } as unknown as WorkRepository
-  const clock: Clock = { now: () => 10 }
-  return {
-    actor: actor('staff'),
-    can: () => true,
-    repo: repository,
-    uow: { run: async <T>(work: () => Promise<T>) => work() },
-    clock,
-    ...input,
-  }
-}
-
-describe('work commands enforce authorization and compare-and-set writes', () => {
+describe('createProject enforces authorization and compare-and-set writes', () => {
   it('passes accepted project context and details to the repository', async () => {
     let draft: ProjectDraft | undefined
+    const customRepo: WorkRepository = {
+      ...createMemoryRepo(),
+      createProject: (input: ProjectDraft) => {
+        draft = input
+        return Promise.resolve(project())
+      },
+    }
     const deps = depsFor({
       actor: actor('owner', 'owner'),
-      repo: {
-        ...depsFor().repo,
-        createProject: async (input: ProjectDraft) => {
-          draft = input
-          return project()
-        },
-      } as WorkRepository,
+      repo: customRepo,
     })
     const result = await createProject(deps, {
       name: '  Client launch  ',
@@ -174,7 +87,20 @@ describe('work commands enforce authorization and compare-and-set writes', () =>
       targetEndAt: 20,
     })
   })
-
+})
+describe('createProject validates input before writing', () => {
+  it.each([
+    [{ name: 'Launch', budget: 5 }, 'project contains unsupported fields'],
+    [{ name: 'Launch', ownerId: 7 }, 'ownerId is invalid'],
+    [{ name: 'Launch', memberIds: ['staff', 3] }, 'memberIds is invalid'],
+    [{ name: 'Launch', description: 'x'.repeat(20_001) }, 'project description is invalid'],
+    [{ name: 'Launch', startAt: 20, targetEndAt: 10 }, 'startAt must not be after targetEndAt'],
+  ])('rejects invalid project input %j before writing', async (input, message) => {
+    const result = await createProject(depsFor({ actor: actor('owner', 'owner') }), input)
+    expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION', message } })
+  })
+})
+describe('createTask enforces authorization and assignment matrix', () => {
   it('applies the owner/manager/staff assignment matrix on create', async () => {
     const staff = depsFor()
     const staffResult = await createTask(staff, { title: 'outside assignment', assigneeIds: [asId('other')] })
@@ -190,19 +116,21 @@ describe('work commands enforce authorization and compare-and-set writes', () =>
     })
     expect(projectResult.ok).toBe(true)
   })
-
+})
+describe('updateTask rejects protected patches and stale updates', () => {
   it('rejects protected task patches and stale same-stage updates before writing', async () => {
     const current = task('current', { updatedAt: 5 })
     let writes = 0
+    const customRepo: WorkRepository = {
+      ...createMemoryRepo(),
+      getTask: () => Promise.resolve(current),
+      updateTask: () => {
+        writes += 1
+        return Promise.resolve(current)
+      },
+    }
     const deps = depsFor({
-      repo: {
-        ...depsFor().repo,
-        getTask: async () => current,
-        updateTask: async () => {
-          writes += 1
-          return current
-        },
-      } as WorkRepository,
+      repo: customRepo,
     })
     expect(
       (await updateTask(deps, { taskId: current.id, expectedUpdatedAt: 5, patch: { stageId: asId('done') } })).ok,
@@ -212,16 +140,18 @@ describe('work commands enforce authorization and compare-and-set writes', () =>
     )
     expect(writes).toBe(0)
   })
-
+})
+describe('updateTask allows manager cross-group edits', () => {
   it('allows a manager to edit task details outside their assignment group without changing assignment', async () => {
     const current = task('cross-group', { updatedAt: 5, groupId: asId('other-group') })
+    const customRepo: WorkRepository = {
+      ...createMemoryRepo(),
+      getTask: () => Promise.resolve(current),
+      updateTask: (_id: unknown, patch: Partial<WorkTaskRecord>) => Promise.resolve({ ...current, ...patch }),
+    }
     const deps = depsFor({
       actor: actor('manager', 'manager'),
-      repo: {
-        ...depsFor().repo,
-        getTask: async () => current,
-        updateTask: async (_id: unknown, patch: Partial<WorkTaskRecord>) => ({ ...current, ...patch }),
-      } as WorkRepository,
+      repo: customRepo,
     })
     const result = await updateTask(deps, {
       taskId: current.id,
@@ -230,19 +160,22 @@ describe('work commands enforce authorization and compare-and-set writes', () =>
     })
     expect(result.ok).toBe(true)
   })
+})
 
+describe('moveTask uses atomic operations and rejects stale moves', () => {
   it('uses the atomic move port and rejects stale moves', async () => {
     const current = task('moving', { updatedAt: 5 })
     let atomicWrites = 0
+    const customRepo: WorkRepository = {
+      ...createMemoryRepo(),
+      getTask: () => Promise.resolve(current),
+      saveTaskMove: () => {
+        atomicWrites += 1
+        return Promise.resolve(current)
+      },
+    }
     const deps = depsFor({
-      repo: {
-        ...depsFor().repo,
-        getTask: async () => current,
-        saveTaskMove: async () => {
-          atomicWrites += 1
-          return current
-        },
-      } as WorkRepository,
+      repo: customRepo,
     })
     expect((await moveTask(deps, { taskId: current.id, toStageId: asId('done'), expectedUpdatedAt: 5 })).ok).toBe(true)
     expect(atomicWrites).toBe(1)

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { checkDisables, disableFiles, gatedDisables, loadGatedRules, ruleNames } from '../../check-disables'
+import { ALL_RULES, checkDisables, disableFiles, gatedDisables, loadGatedRules, ruleNames } from '../../check-disables'
 import { FIXTURES } from './run-check'
 
 const fixture = join(FIXTURES, 'disables')
@@ -26,6 +26,7 @@ describe('check:disables parsing', () => {
     const lines = [`// ${KEYWORD}-next-line complexity`, 'x()', `/* ${KEYWORD} */`, `/* ${KEYWORD}`, '  max-depth */']
     expect(gatedDisables(lines.join('\n'), gated)).toEqual([
       { line: 1, rule: 'complexity' },
+      { line: 3, rule: ALL_RULES },
       { line: 4, rule: 'max-depth' },
     ])
   })
@@ -34,6 +35,10 @@ describe('check:disables parsing', () => {
     const gated = new Set(['complexity'])
     expect(gatedDisables('// eslint-disable-next-line complexity -- bounded parser state machine', gated)).toEqual([])
   })
+
+  it('reports a directive that names no rule, even with a reason', () => {
+    expect(gatedDisables(`/* ${KEYWORD} -- legacy file */`, new Set())).toEqual([{ line: 1, rule: ALL_RULES }])
+  })
 })
 
 describe('check:disables scan', () => {
@@ -41,8 +46,9 @@ describe('check:disables scan', () => {
     expect(disableFiles(fixture)).toEqual(['apps/site/src/allowed.ts', GATED_FILE])
   })
 
-  it('reports each gated rule in the planted fixture', async () => {
+  it('reports each gated rule and each blanket directive in the planted fixture', async () => {
     expect(checkDisables(fixture, await loadGatedRules())).toEqual([
+      `apps/site/src/allowed.ts:3 ${ALL_RULES}`,
       `${GATED_FILE}:1 complexity`,
       `${GATED_FILE}:3 max-lines`,
       `${GATED_FILE}:5 @typescript-eslint/no-explicit-any`,

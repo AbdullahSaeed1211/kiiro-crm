@@ -1,29 +1,15 @@
-/* eslint-disable */
-import { asId, domainError, err, ok, type Id } from '@ops/kernel'
-import type { Actor } from '@ops/platform'
+import { asId, ok, type Id } from '@ops/kernel'
+import type { TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
+import { fail, isManagerUp, objectInput } from './input'
+import { parseCreate, parsePatch, type ParsedTaskDraft } from './task-input'
 import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
-import type { TaskDraft, TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
 export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
-
-const fail = <T>(code: Parameters<typeof domainError>[0], message: string): WorkResult<T> =>
-  err(domainError(code, message))
-const objectInput = (input: unknown): Record<string, unknown> | undefined =>
-  typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : undefined
-const isManagerUp = (actor: Actor): boolean => actor.role === 'owner' || actor.role === 'manager'
-const validTitle = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim() !== '' && value.trim().length <= 300
-const validDate = (value: unknown): value is number | null =>
-  value === null || (typeof value === 'number' && Number.isFinite(value))
-const optionalDate = (value: Record<string, unknown>, key: string): number | null | undefined =>
-  value[key] === undefined ? null : validDate(value[key]) ? value[key] : undefined
 const resource = (task: WorkTaskRecord) => ({
   type: 'task',
   assigneeIds: task.assigneeIds,
   ...(task.groupId === null ? {} : { groupId: task.groupId }),
 })
 const canUpdate = (deps: WorkDeps, task: WorkTaskRecord) => deps.can(deps.actor, 'update', resource(task))
-const idValue = (value: unknown): Id | null | undefined =>
-  value === undefined || value === null ? null : typeof value === 'string' ? asId(value) : undefined
 const assignmentAllowed = (deps: WorkDeps, ids: readonly Id[], groupId: Id | null) =>
   (isManagerUp(deps.actor) || ids.every((id) => id === deps.actor.id)) &&
   (groupId === null || deps.actor.groupIds.includes(groupId))
@@ -56,147 +42,117 @@ async function projectAllowed(deps: WorkDeps, id: Id | null): Promise<WorkResult
   })
   return visible ? ok(null) : fail('FORBIDDEN', 'project is outside your scope')
 }
-function parseCreate(input: unknown): TaskDraft | undefined {
-  const value = objectInput(input)
-  if (value === undefined || !validTitle(value['title'])) return undefined
-  const projectId = idValue(value['projectId']),
-    parentTaskId = idValue(value['parentTaskId']),
-    groupId = idValue(value['groupId']),
-    relatedId = idValue(value['relatedId'])
-  const assignees = value['assigneeIds'] === undefined ? [] : value['assigneeIds']
-  const priority = value['priority'] === undefined ? 'none' : value['priority']
-  if (
-    projectId === undefined ||
-    parentTaskId === undefined ||
-    groupId === undefined ||
-    relatedId === undefined ||
-    !Array.isArray(assignees) ||
-    !assignees.every((id) => typeof id === 'string') ||
-    !(typeof priority === 'string' && ['none', 'low', 'medium', 'high', 'urgent'].includes(priority)) ||
-    optionalDate(value, 'startAt') === undefined ||
-    optionalDate(value, 'dueAt') === undefined
-  )
-    return undefined
-  const startAt = optionalDate(value, 'startAt'),
-    dueAt = optionalDate(value, 'dueAt')
-  if (startAt === undefined || dueAt === undefined) return undefined
-  if (typeof startAt === 'number' && typeof dueAt === 'number' && startAt > dueAt) return undefined
-  const fields = new Set([
-    'title',
-    'description',
-    'projectId',
-    'parentTaskId',
-    'assigneeIds',
-    'groupId',
-    'priority',
-    'relatedType',
-    'relatedId',
-    'startAt',
-    'dueAt',
-  ])
-  if (
-    Object.keys(value).some((key) => !fields.has(key)) ||
-    (value['description'] !== undefined &&
-      value['description'] !== null &&
-      (typeof value['description'] !== 'string' || value['description'].length > 20_000))
-  )
-    return undefined
-  return {
-    title: (value['title'] as string).trim(),
-    description: (value['description'] === undefined ? null : value['description']) as string | null,
-    projectId,
-    parentTaskId,
-    assigneeIds: assignees.map(asId),
-    groupId,
-    priority: priority as NonNullable<TaskDraft['priority']>,
-    relatedType: (value['relatedType'] === undefined ? null : value['relatedType']) as string | null,
-    relatedId,
-    startAt,
-    dueAt,
-  }
+async function resolveProject(
+  deps: WorkDeps,
+  draft: ParsedTaskDraft,
+  parent: WorkTaskRecord | null,
+): Promise<WorkResult<Id | null>> {
+  if (parent !== null && draft.projectId !== null && draft.projectId !== parent.projectId)
+    return fail('VALIDATION', 'subtasks inherit their parent project')
+  const projectId = parent?.projectId ?? draft.projectId
+  const visible = await projectAllowed(deps, projectId)
+  return visible.ok ? ok(projectId) : visible
 }
+
+function authorizeAssignment(deps: WorkDeps, draft: ParsedTaskDraft): WorkResult<readonly Id[]> {
+  const assigneeIds = draft.assigneeIds.length ? draft.assigneeIds : [deps.actor.id]
+  return assignmentAllowed(deps, assigneeIds, draft.groupId)
+    ? ok(assigneeIds)
+    : fail('FORBIDDEN', 'cannot assign task outside your scope')
+}
+
 /** Creates a task after checking visibility, hierarchy, assignment, and related-record scope. */
 export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
   const draft = parseCreate(input)
   if (draft === undefined) return fail('VALIDATION', 'task fields are invalid')
   if (!deps.can(deps.actor, 'create', { type: 'task' })) return fail('FORBIDDEN', 'not allowed to create tasks')
-  const workflow = await deps.repo.loadDefaultWorkflow('task'),
-    parent = await parentFor(deps, draft.parentTaskId ?? null)
+
+  const workflow = await deps.repo.loadDefaultWorkflow('task')
+  const parent = await parentFor(deps, draft.parentTaskId)
   if (!parent.ok) return parent
-  if (parent.value !== null && draft.projectId !== null && draft.projectId !== parent.value.projectId)
-    return fail('VALIDATION', 'subtasks inherit their parent project')
-  const projectId = parent.value?.projectId ?? draft.projectId ?? null
-  const visible = await projectAllowed(deps, projectId)
-  if (!visible.ok) return visible
-  const assigneeIds = draft.assigneeIds?.length ? draft.assigneeIds : [deps.actor.id]
-  if (!assignmentAllowed(deps, assigneeIds, draft.groupId ?? null))
-    return fail('FORBIDDEN', 'cannot assign task outside your scope')
-  if (!(await relatedAllowed(deps, draft.relatedType ?? null, draft.relatedId ?? null)))
+
+  const projectId = await resolveProject(deps, draft, parent.value)
+  if (!projectId.ok) return projectId
+
+  const assigneeIds = authorizeAssignment(deps, draft)
+  if (!assigneeIds.ok) return assigneeIds
+
+  if (!(await relatedAllowed(deps, draft.relatedType, draft.relatedId)))
     return fail('FORBIDDEN', 'related record is outside your scope')
+
   return ok(
     await deps.repo.createTask({
       ...draft,
-      projectId,
-      parentTaskId: draft.parentTaskId ?? null,
-      assigneeIds,
-      groupId: draft.groupId ?? null,
+      projectId: projectId.value,
+      assigneeIds: assigneeIds.value,
       workflowId: workflow.id,
       stageId: workflow.defaultStageId,
     }),
   )
 }
-function parsePatch(input: unknown): TaskPatch | undefined {
+async function checkRelated(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<boolean> {
+  const type = patch.relatedType === undefined ? task.relatedType : patch.relatedType
+  const id = patch.relatedId === undefined ? task.relatedId : patch.relatedId
+  return relatedAllowed(deps, type, id)
+}
+
+function checkAssignment(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): boolean {
+  if (patch.assigneeIds === undefined && patch.groupId === undefined) return true
+  const ids = patch.assigneeIds ?? task.assigneeIds
+  const groupId = patch.groupId === undefined ? task.groupId : patch.groupId
+  return assignmentAllowed(deps, ids, groupId)
+}
+
+async function authorizeTaskUpdate(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<WorkResult<null>> {
+  if (!checkAssignment(deps, patch, task)) return fail('FORBIDDEN', 'cannot assign task outside your scope')
+  if (!(await checkRelated(deps, patch, task))) return fail('FORBIDDEN', 'related record is outside your scope')
+  return ok(null)
+}
+
+interface UpdateInput {
+  readonly taskId: Id
+  readonly expectedUpdatedAt: number
+  readonly patch: TaskPatch
+}
+
+function parseUpdate(input: unknown): UpdateInput | undefined {
   const value = objectInput(input)
   if (value === undefined) return undefined
-  const fields = new Set(['title', 'description', 'priority', 'assigneeIds', 'groupId', 'relatedType', 'relatedId'])
-  const ids = value['assigneeIds']
-  if (
-    Object.keys(value).some((key) => !fields.has(key)) ||
-    ('title' in value && !validTitle(value['title'])) ||
-    ('description' in value &&
-      value['description'] !== null &&
-      (typeof value['description'] !== 'string' || value['description'].length > 20_000)) ||
-    ('priority' in value && !['none', 'low', 'medium', 'high', 'urgent'].includes(String(value['priority']))) ||
-    ('assigneeIds' in value && (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string'))) ||
-    ('groupId' in value && idValue(value['groupId']) === undefined) ||
-    ('relatedId' in value && idValue(value['relatedId']) === undefined) ||
-    ('relatedType' in value && value['relatedType'] !== null && typeof value['relatedType'] !== 'string')
-  )
+  const { taskId, expectedUpdatedAt } = value
+  const patch = value['patch'] === undefined ? undefined : parsePatch(value['patch'])
+  if (typeof taskId !== 'string' || typeof expectedUpdatedAt !== 'number' || !Number.isFinite(expectedUpdatedAt))
     return undefined
-  return {
-    ...('title' in value ? { title: (value['title'] as string).trim() } : {}),
-    ...('description' in value ? { description: value['description'] as string | null } : {}),
-    ...('priority' in value ? { priority: value['priority'] as NonNullable<TaskDraft['priority']> } : {}),
-    ...('assigneeIds' in value ? { assigneeIds: (ids as string[]).map(asId) } : {}),
-    ...('groupId' in value ? { groupId: idValue(value['groupId']) as Id | null } : {}),
-    ...('relatedType' in value ? { relatedType: value['relatedType'] as string | null } : {}),
-    ...('relatedId' in value ? { relatedId: idValue(value['relatedId']) as Id | null } : {}),
-  }
+  if (patch === undefined || Object.keys(patch).length === 0) return undefined
+  return { taskId: asId(taskId), expectedUpdatedAt, patch }
 }
+
+async function getAndCheckTask(
+  deps: WorkDeps,
+  taskId: Id,
+  expectedUpdatedAt: number,
+): Promise<WorkResult<WorkTaskRecord>> {
+  const task = await deps.repo.getTask(taskId)
+  if (task === undefined) return fail('NOT_FOUND', 'task not found')
+  if (task.updatedAt !== expectedUpdatedAt) return fail('CONFLICT', 'task was updated by someone else')
+  if (!canUpdate(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
+  return ok(task)
+}
+
+async function persistTaskUpdate(
+  deps: WorkDeps,
+  options: { task: WorkTaskRecord; patch: TaskPatch; expectedUpdatedAt: number },
+): Promise<WorkResult<WorkTaskRecord>> {
+  const saved = await deps.repo.updateTask(options.task.id, options.patch, options.expectedUpdatedAt)
+  return saved === undefined ? fail('CONFLICT', 'task was updated by someone else') : ok(saved)
+}
+
 /** Updates editable task fields only; stage, dates, and completion use dedicated commands. */
 export async function updateTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const value = objectInput(input),
-    patch = value?.['patch'] === undefined ? undefined : parsePatch(value['patch'])
-  if (
-    value === undefined ||
-    typeof value['taskId'] !== 'string' ||
-    typeof value['expectedUpdatedAt'] !== 'number' ||
-    !Number.isFinite(value['expectedUpdatedAt']) ||
-    patch === undefined ||
-    Object.keys(patch).length === 0
-  )
-    return fail('VALIDATION', 'task patch is invalid')
-  const task = await deps.repo.getTask(asId(value['taskId']))
-  if (task === undefined) return fail('NOT_FOUND', 'task not found')
-  if (task.updatedAt !== value['expectedUpdatedAt']) return fail('CONFLICT', 'task was updated by someone else')
-  if (!canUpdate(deps, task)) return fail('FORBIDDEN', 'not allowed to update this task')
-  const ids = patch.assigneeIds ?? task.assigneeIds,
-    groupId = patch.groupId === undefined ? task.groupId : patch.groupId
-  if ((patch.assigneeIds !== undefined || patch.groupId !== undefined) && !assignmentAllowed(deps, ids, groupId))
-    return fail('FORBIDDEN', 'cannot assign task outside your scope')
-  const type = patch.relatedType === undefined ? task.relatedType : patch.relatedType,
-    id = patch.relatedId === undefined ? task.relatedId : patch.relatedId
-  if (!(await relatedAllowed(deps, type, id))) return fail('FORBIDDEN', 'related record is outside your scope')
-  const saved = await deps.repo.updateTask(task.id, patch, value['expectedUpdatedAt'])
-  return saved === undefined ? fail('CONFLICT', 'task was updated by someone else') : ok(saved)
+  const update = parseUpdate(input)
+  if (update === undefined) return fail('VALIDATION', 'task patch is invalid')
+  const task = await getAndCheckTask(deps, update.taskId, update.expectedUpdatedAt)
+  if (!task.ok) return task
+  const authorized = await authorizeTaskUpdate(deps, update.patch, task.value)
+  if (!authorized.ok) return authorized
+  return persistTaskUpdate(deps, { ...update, task: task.value })
 }

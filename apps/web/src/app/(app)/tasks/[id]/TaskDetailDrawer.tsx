@@ -22,8 +22,10 @@ export function TaskDetailDrawer({
       open={panel}
       renderAsPage={!panel}
       task={task}
-      onSaveDescription={saveTaskDescriptionForSheet}
-      onComplete={completeOrReopenTask}
+      onSaveDescription={({ taskId, expectedUpdatedAt, description }) =>
+        saveTaskDescriptionForSheet(taskId, expectedUpdatedAt, description)
+      }
+      onComplete={({ taskId, expectedUpdatedAt, reopen }) => completeOrReopenTask(taskId, expectedUpdatedAt, reopen)}
       onOpenChange={(open) => {
         if (!open) {
           if (restoreFocus) router.back()

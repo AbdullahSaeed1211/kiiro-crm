@@ -1,32 +1,28 @@
-/* eslint-disable */
-import type {
-  ProjectDraft,
-  ProjectPatch,
-  ProjectRecord,
-  TaskDatePatch,
-  TaskDraft,
-  TaskPatch,
-  TaskRepository,
-  TaskRecord,
-  TaskMoveWrite,
-  WorkRepository,
-  WorkTaskRecord,
-} from '@ops/module-work'
-import type { StageStore, StageTransition, Workflow } from '@ops/platform'
+import type { TaskDatePatch, TaskPatch, TaskRepository, WorkRepository } from '@ops/module-work'
+import type { StageStore } from '@ops/platform'
 import type { CollectionSlug, PayloadRequest, Sort, Where } from 'payload'
-import { COLLECTIONS, FIELDS, RECORD_TYPES } from '../contracts/names'
+import { COLLECTIONS, RECORD_TYPES } from '../contracts/names'
 import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
-import { fieldOf, idOf, type Doc } from './documents'
-import { toProjectRecord, toStageRecord, toTaskRecord, toWorkTaskRecord } from './task-mapping'
-import { toWorkflow } from './workflow-mapping'
+import { toStageRecord, toTaskRecord } from './task-mapping'
 import { createUnitOfWork } from '../uow/unit-of-work'
+import { projectData, taskData, transitionData, projectPatchData, taskPatchData } from './task-write-data'
+import {
+  taskPage,
+  taskPageWithNullsLast,
+  richTasks,
+  findWorkflow,
+  mapProject,
+  mapTask,
+  type TaskPageResult,
+} from './task-queries'
 
 const STAGE_COLLECTIONS: ReadonlyMap<string, CollectionSlug> = new Map([
   [RECORD_TYPES.tasks, COLLECTIONS.tasks],
   [RECORD_TYPES.projects, COLLECTIONS.projects],
 ])
 const byId = (id: string): Where => ({ id: { equals: id } })
-const has = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key)
+
+type Repository = TaskRepository & WorkRepository
 
 export interface TaskPageQuery {
   readonly where: Where
@@ -34,30 +30,6 @@ export interface TaskPageQuery {
   readonly page: number
   readonly limit: number
   readonly dueAtNullsLast?: boolean
-}
-
-export interface TaskPageResult {
-  readonly records: readonly TaskRecord[]
-  readonly total: number
-}
-
-async function findWorkflow(req: PayloadRequest, where: Where): Promise<Workflow | undefined> {
-  const [doc] = await findAsUser(req, { collection: COLLECTIONS.workflows, where, sort: 'createdAt', limit: 1 })
-  return doc && toWorkflow(doc)
-}
-async function workflowFor(req: PayloadRequest, doc: Doc): Promise<Workflow | undefined> {
-  const workflowId = idOf(fieldOf(doc, 'workflow'))
-  return workflowId === undefined ? undefined : findWorkflow(req, byId(workflowId))
-}
-async function mapProject(req: PayloadRequest, doc: Doc): Promise<ProjectRecord | undefined> {
-  const workflow = await workflowFor(req, doc)
-  const stage = workflow?.stages.find((item) => item.id === idOf(fieldOf(doc, 'stageId')))
-  return stage === undefined ? undefined : toProjectRecord(doc, stage.category)
-}
-async function mapTask(req: PayloadRequest, doc: Doc): Promise<WorkTaskRecord | undefined> {
-  const workflow = await workflowFor(req, doc)
-  const stage = workflow?.stages.find((item) => item.id === idOf(fieldOf(doc, 'stageId')))
-  return stage === undefined ? undefined : toWorkTaskRecord(doc, stage.category)
 }
 function createStageStore(req: PayloadRequest): StageStore {
   return {
@@ -92,174 +64,34 @@ function createStageStore(req: PayloadRequest): StageStore {
     },
   }
 }
-function projectData(draft: ProjectDraft): Record<string, unknown> {
-  return {
-    name: draft.name,
-    organization: draft.organizationId ?? null,
-    owner: draft.ownerId ?? null,
-    members: [...(draft.memberIds ?? [])],
-    workflow: draft.workflowId,
-    stageId: draft.stageId,
-    ...(draft.startAt === undefined ? {} : { startAt: draft.startAt }),
-    ...(draft.targetEndAt === undefined ? {} : { targetEndAt: draft.targetEndAt }),
-    ...(draft.description === undefined ? {} : { description: draft.description }),
-  }
-}
-function taskData(draft: TaskDraft): Record<string, unknown> {
-  return {
-    title: draft.title,
-    description: draft.description ?? null,
-    project: draft.projectId ?? null,
-    relatedType: draft.relatedType ?? null,
-    relatedId: draft.relatedId ?? null,
-    parentTask: draft.parentTaskId ?? null,
-    workflow: draft.workflowId,
-    stageId: draft.stageId,
-    rank: draft.rank ?? '000000000001',
-    priority: draft.priority ?? 'none',
-    assignees: [...(draft.assigneeIds ?? [])],
-    group: draft.groupId ?? null,
-    startAt: draft.startAt ?? null,
-    dueAt: draft.dueAt ?? null,
-    completedAt: draft.completedAt ?? null,
-  }
-}
-function transitionData({ record, workflowId, ...rest }: StageTransition): Record<string, unknown> {
-  return { recordType: record.type, recordId: record.id, workflow: workflowId, ...rest }
-}
-function projectPatchData(patch: ProjectPatch): Record<string, unknown> {
-  return {
-    ...(has(patch, 'name') ? { name: patch.name } : {}),
-    ...(has(patch, 'organizationId') ? { organization: patch.organizationId ?? null } : {}),
-    ...(has(patch, 'startAt') ? { startAt: patch.startAt } : {}),
-    ...(has(patch, 'targetEndAt') ? { targetEndAt: patch.targetEndAt } : {}),
-    ...(has(patch, 'description') ? { description: patch.description } : {}),
-    ...(has(patch, 'memberIds') ? { members: [...(patch.memberIds ?? [])] } : {}),
-  }
-}
-function taskPatchData(patch: TaskPatch | TaskDatePatch): Record<string, unknown> {
-  if (has(patch, 'startAt') || has(patch, 'dueAt')) {
-    const dates = patch as TaskDatePatch
-    return { startAt: dates.startAt, dueAt: dates.dueAt }
-  }
-  const editable = patch as TaskPatch
-  return {
-    ...(has(editable, 'title') ? { title: editable.title } : {}),
-    ...(has(editable, 'description') ? { description: editable.description } : {}),
-    ...(has(editable, 'priority') ? { priority: editable.priority } : {}),
-    ...(has(editable, 'assigneeIds') ? { assignees: [...(editable.assigneeIds ?? [])] } : {}),
-    ...(has(editable, 'groupId') ? { group: editable.groupId ?? null } : {}),
-    ...(has(editable, 'relatedType') ? { relatedType: editable.relatedType } : {}),
-    ...(has(editable, 'relatedId') ? { relatedId: editable.relatedId } : {}),
-  }
-}
 async function updateTaskAndMap(
   req: PayloadRequest,
-  id: string,
-  patch: TaskPatch | TaskDatePatch,
-  expectedUpdatedAt: number,
+  options: {
+    readonly id: string
+    readonly patch: TaskPatch | TaskDatePatch
+    readonly expectedUpdatedAt: number
+  },
 ) {
   const doc = await updateIfUnchanged(req, {
     collection: COLLECTIONS.tasks,
-    id,
-    expectedUpdatedAt,
-    data: taskPatchData(patch),
+    id: options.id,
+    expectedUpdatedAt: options.expectedUpdatedAt,
+    data: taskPatchData(options.patch),
   })
   return doc === undefined ? undefined : mapTask(req, doc)
 }
 
-function andWhere(...clauses: readonly Where[]): Where {
-  return clauses.length === 1 ? (clauses[0] ?? {}) : { and: [...clauses] }
-}
-
-async function taskPage(
-  req: PayloadRequest,
-  where: Where,
-  sort: Sort,
-  page: number,
-  limit: number,
-): Promise<TaskPageResult> {
-  const result = await req.payload.find({
-    collection: COLLECTIONS.tasks,
-    where,
-    sort,
-    page,
-    limit,
-    depth: 0,
-    overrideAccess: false,
-    user: req.user,
-    req,
-  })
-  return { records: result.docs.flatMap((doc) => toTaskRecord(doc) ?? []), total: result.totalDocs }
-}
-
-async function richTasks(req: PayloadRequest, docs: readonly Doc[]): Promise<readonly WorkTaskRecord[]> {
-  const workflowIds = [...new Set(docs.flatMap((doc) => idOf(fieldOf(doc, 'workflow')) ?? []))]
-  if (workflowIds.length === 0) return []
-  const workflowDocs = await findAsUser(req, {
-    collection: COLLECTIONS.workflows,
-    where: { id: { in: workflowIds } },
-    limit: workflowIds.length,
-  })
-  const workflows = new Map(
-    workflowDocs.flatMap((doc) => {
-      const workflow = toWorkflow(doc)
-      return workflow === undefined ? [] : [[String(workflow.id), workflow] as const]
-    }),
-  )
-  return docs.flatMap((doc) => {
-    const workflowId = idOf(fieldOf(doc, 'workflow'))
-    const stageId = idOf(fieldOf(doc, 'stageId'))
-    const stage =
-      workflowId === undefined || stageId === undefined
-        ? undefined
-        : workflows.get(String(workflowId))?.stages.find((item) => item.id === stageId)
-    if (stage === undefined) return []
-    const task = toWorkTaskRecord(doc, stage.category)
-    return task === undefined ? [] : [task]
-  })
-}
-
 /** Reads one permission-scoped task page without materializing the entire task collection. */
 export async function listTaskPage(req: PayloadRequest, query: TaskPageQuery): Promise<TaskPageResult> {
-  if (query.dueAtNullsLast !== true) return taskPage(req, query.where, query.sort, query.page, query.limit)
-
-  const withDue = andWhere(query.where, { dueAt: { not_equals: null } })
-  const withoutDue = andWhere(query.where, { dueAt: { equals: null } })
-  const [withDueCount, withoutDueCount] = await Promise.all([
-    req.payload.count({ collection: COLLECTIONS.tasks, where: withDue, overrideAccess: false, user: req.user, req }),
-    req.payload.count({
-      collection: COLLECTIONS.tasks,
-      where: withoutDue,
-      overrideAccess: false,
-      user: req.user,
-      req,
-    }),
-  ])
-  const total = withDueCount.totalDocs + withoutDueCount.totalDocs
-  const offset = (query.page - 1) * query.limit
-  if (offset >= total) return { records: [], total }
-
-  const records: TaskRecord[] = []
-  if (offset < withDueCount.totalDocs) {
-    const firstPage = await taskPage(req, withDue, query.sort, Math.floor(offset / query.limit) + 1, query.limit)
-    records.push(...firstPage.records.slice(offset % query.limit, (offset % query.limit) + query.limit))
+  if (query.dueAtNullsLast !== true) {
+    return taskPage(req, { where: query.where, sort: query.sort, page: query.page, limit: query.limit })
   }
 
-  if (records.length < query.limit && offset + records.length >= withDueCount.totalDocs) {
-    const noDueOffset = Math.max(0, offset - withDueCount.totalDocs)
-    const remaining = query.limit - records.length
-    const noDuePage = await taskPage(req, withoutDue, 'id', Math.floor(noDueOffset / query.limit) + 1, query.limit)
-    records.push(...noDuePage.records.slice(noDueOffset % query.limit, (noDueOffset % query.limit) + remaining))
-  }
-  return { records, total }
+  return taskPageWithNullsLast(req, { where: query.where, sort: query.sort, page: query.page, limit: query.limit })
 }
 
-/** Payload Local API repository used by both the legacy board and the work vertical commands. */
-export function createTaskRepository(req: PayloadRequest): TaskRepository & WorkRepository {
-  const store = createStageStore(req)
+function workflowMethods(req: PayloadRequest): Pick<Repository, 'loadTaskWorkflow' | 'loadDefaultWorkflow'> {
   return {
-    ...store,
     loadTaskWorkflow: async () => {
       const workflow = await findWorkflow(req, { recordType: { equals: RECORD_TYPES.tasks } })
       if (workflow === undefined) throw new Error('No task workflow is configured')
@@ -270,38 +102,49 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
       if (workflow === undefined) throw new Error(`No ${type} workflow is configured`)
       return workflow
     },
-    listTasks: async (): Promise<readonly WorkTaskRecord[]> => {
+  }
+}
+
+function listTasksMethods(req: PayloadRequest): Pick<Repository, 'listTasks' | 'listTasksForProject' | 'listChildren'> {
+  return {
+    listTasks: async () => {
       const docs = await findAsUser(req, { collection: COLLECTIONS.tasks, where: {}, sort: ['rank', 'id'] })
       return richTasks(req, docs)
     },
-    listTasksForProject: async (projectId) =>
-      richTasks(
-        req,
-        await findAsUser(req, {
-          collection: COLLECTIONS.tasks,
-          where: { project: { equals: projectId } },
-          sort: ['rank', 'id'],
-        }),
-      ),
-    listChildren: async (parentTaskId) =>
-      richTasks(
-        req,
-        await findAsUser(req, {
-          collection: COLLECTIONS.tasks,
-          where: { parentTask: { equals: parentTaskId } },
-          sort: ['rank', 'id'],
-        }),
-      ),
+    listTasksForProject: async (projectId) => {
+      const docs = await findAsUser(req, {
+        collection: COLLECTIONS.tasks,
+        where: { project: { equals: projectId } },
+        sort: ['rank', 'id'],
+      })
+      return richTasks(req, docs)
+    },
+    listChildren: async (parentTaskId) => {
+      const docs = await findAsUser(req, {
+        collection: COLLECTIONS.tasks,
+        where: { parentTask: { equals: parentTaskId } },
+        sort: ['rank', 'id'],
+      })
+      return richTasks(req, docs)
+    },
+  }
+}
+
+function taskWriteMethods(
+  req: PayloadRequest,
+): Pick<Repository, 'getTask' | 'createTask' | 'updateTask' | 'saveDates' | 'deleteTask'> {
+  return {
     getTask: async (id) => {
       const [doc] = await findAsUser(req, { collection: COLLECTIONS.tasks, where: byId(id), limit: 1 })
       return doc === undefined ? undefined : mapTask(req, doc)
     },
     createTask: async (draft) => {
-      const mapped = await mapTask(req, await createAsSystem(req, COLLECTIONS.tasks, taskData(draft)))
+      const doc = await createAsSystem(req, COLLECTIONS.tasks, taskData(draft))
+      const mapped = await mapTask(req, doc)
       if (mapped === undefined) throw new Error('Created task has an invalid workflow stage')
       return mapped
     },
-    updateTask: (id, patch, expectedUpdatedAt) => updateTaskAndMap(req, id, patch, expectedUpdatedAt),
+    updateTask: (id, patch, expectedUpdatedAt) => updateTaskAndMap(req, { id, patch, expectedUpdatedAt }),
     saveDates: async ({ id, startAt, dueAt, expectedUpdatedAt }) => {
       const doc = await updateIfUnchanged(req, {
         collection: COLLECTIONS.tasks,
@@ -311,6 +154,19 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
       })
       return doc === undefined ? undefined : toTaskRecord(doc)
     },
+    deleteTask: async (id) => {
+      const [doc] = await findAsUser(req, { collection: COLLECTIONS.tasks, where: byId(id), limit: 1 })
+      if (doc === undefined) return false
+      await req.payload.delete({ collection: COLLECTIONS.tasks, id, overrideAccess: true, req })
+      return true
+    },
+  }
+}
+
+function projectMethods(
+  req: PayloadRequest,
+): Pick<Repository, 'getProject' | 'listProjects' | 'createProject' | 'updateProject'> {
+  return {
     getProject: async (id) => {
       const [doc] = await findAsUser(req, { collection: COLLECTIONS.projects, where: byId(id), limit: 1 })
       return doc === undefined ? undefined : mapProject(req, doc)
@@ -322,7 +178,8 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
       )
     },
     createProject: async (draft) => {
-      const mapped = await mapProject(req, await createAsSystem(req, COLLECTIONS.projects, projectData(draft)))
+      const doc = await createAsSystem(req, COLLECTIONS.projects, projectData(draft))
+      const mapped = await mapProject(req, doc)
       if (mapped === undefined) throw new Error('Created project has an invalid workflow stage')
       return mapped
     },
@@ -335,7 +192,12 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
       })
       return doc === undefined ? undefined : mapProject(req, doc)
     },
-    saveTaskMove: async (input: TaskMoveWrite) =>
+  }
+}
+
+function moveMethods(req: PayloadRequest): Pick<Repository, 'saveTaskMove'> {
+  return {
+    saveTaskMove: async (input) =>
       createUnitOfWork(req).run(async () => {
         const doc = await updateIfUnchanged(req, {
           collection: COLLECTIONS.tasks,
@@ -352,11 +214,20 @@ export function createTaskRepository(req: PayloadRequest): TaskRepository & Work
         await createAsSystem(req, COLLECTIONS.stageTransitions, transitionData(input.transition))
         return mapTask(req, doc)
       }),
-    deleteTask: async (id) => {
-      const [doc] = await findAsUser(req, { collection: COLLECTIONS.tasks, where: byId(id), limit: 1 })
-      if (doc === undefined) return false
-      await req.payload.delete({ collection: COLLECTIONS.tasks, id, overrideAccess: true, req })
-      return true
-    },
   }
 }
+
+/** Payload Local API repository used by both the legacy board and the work vertical commands. */
+export function createTaskRepository(req: PayloadRequest): Repository {
+  const store = createStageStore(req)
+  return {
+    ...store,
+    ...workflowMethods(req),
+    ...listTasksMethods(req),
+    ...taskWriteMethods(req),
+    ...projectMethods(req),
+    ...moveMethods(req),
+  }
+}
+
+export type { TaskPageResult } from './task-queries'

@@ -1,26 +1,12 @@
-/* eslint-disable */
-import { asId, domainError, err, ok, type Id } from '@ops/kernel'
-import type { Actor } from '@ops/platform'
+import { asId, ok, type Id } from '@ops/kernel'
 import type { ProjectPatch, ProjectRecord, WorkDeps, WorkResult } from '../ports/work'
+import { fail, isManagerUp, objectInput, validDate } from './input'
+
+type Fields = Record<string, unknown>
+type Check = readonly [valid: (value: Fields) => boolean, message: string]
 
 const CONFLICT = 'project was updated by someone else'
 const NOT_FOUND = 'project not found'
-const fail = <T>(code: Parameters<typeof domainError>[0], message: string): WorkResult<T> =>
-  err(domainError(code, message))
-const objectInput = (input: unknown): Record<string, unknown> | undefined =>
-  typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : undefined
-const projectResource = (project: ProjectRecord) => ({
-  type: 'project',
-  ...(project.ownerId === null ? {} : { ownerId: project.ownerId }),
-  assigneeIds: project.memberIds,
-})
-const isManagerUp = (actor: Actor): boolean => actor.role === 'owner' || actor.role === 'manager'
-const validName = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0 && value.trim().length <= 200
-const validDate = (value: unknown): value is number | null =>
-  value === null || (typeof value === 'number' && Number.isFinite(value))
-const idsOf = (value: unknown): Id[] =>
-  Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string').map(asId) : []
 const CREATE_FIELDS = new Set([
   'name',
   'organizationId',
@@ -29,6 +15,53 @@ const CREATE_FIELDS = new Set([
   'startAt',
   'targetEndAt',
   'description',
+])
+const projectResource = (project: ProjectRecord) => ({
+  type: 'project',
+  ...(project.ownerId === null ? {} : { ownerId: project.ownerId }),
+  assigneeIds: project.memberIds,
+})
+const validName = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0 && value.trim().length <= 200
+const nullableString = (value: unknown): boolean => value === null || typeof value === 'string'
+const validDescription = (value: unknown): boolean =>
+  value === null || (typeof value === 'string' && value.length <= 20_000)
+const stringList = (value: unknown): boolean => Array.isArray(value) && value.every((id) => typeof id === 'string')
+/** Returns whether `key` is absent or passes `valid`. */
+const absentOr =
+  (key: string, valid: (field: unknown) => boolean) =>
+  (value: Fields): boolean =>
+    !(key in value) || valid(value[key])
+const idOrNull = (value: unknown): Id | null => (typeof value === 'string' ? asId(value) : null)
+const numberOrNull = (value: unknown): number | null => (typeof value === 'number' ? value : null)
+const idsOf = (value: unknown): Id[] =>
+  Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string').map(asId) : []
+
+/** Create-input checks, in the order their messages take precedence. */
+const CREATE_CHECKS: readonly Check[] = [
+  [(value) => Object.keys(value).every((key) => CREATE_FIELDS.has(key)), 'project contains unsupported fields'],
+  [absentOr('organizationId', nullableString), 'organizationId is invalid'],
+  [absentOr('ownerId', nullableString), 'ownerId is invalid'],
+  [absentOr('memberIds', stringList), 'memberIds is invalid'],
+  [
+    (value) => absentOr('startAt', validDate)(value) && absentOr('targetEndAt', validDate)(value),
+    'project dates are invalid',
+  ],
+  [absentOr('description', validDescription), 'project description is invalid'],
+  [
+    ({ startAt, targetEndAt }) =>
+      !(typeof startAt === 'number' && typeof targetEndAt === 'number' && startAt > targetEndAt),
+    'startAt must not be after targetEndAt',
+  ],
+]
+
+/** Validators for each editable project field; any other key makes a patch invalid. */
+const PATCH_CHECKS = new Map<string, (field: unknown) => boolean>([
+  ['name', validName],
+  ['organizationId', nullableString],
+  ['startAt', validDate],
+  ['targetEndAt', validDate],
+  ['description', nullableString],
 ])
 
 function allowedMembers(deps: WorkDeps, memberIds: readonly Id[]): boolean {
@@ -47,96 +80,100 @@ async function organizationAllowed(deps: WorkDeps, organizationId: Id | null): P
 function parseProjectPatch(input: unknown): ProjectPatch | undefined {
   const value = objectInput(input)
   if (value === undefined) return undefined
-  const keys = new Set(['name', 'organizationId', 'startAt', 'targetEndAt', 'description'])
-  if (Object.keys(value).some((key) => !keys.has(key))) return undefined
-  if ('name' in value && !validName(value['name'])) return undefined
-  if ('organizationId' in value && value['organizationId'] !== null && typeof value['organizationId'] !== 'string')
-    return undefined
-  if (['startAt', 'targetEndAt'].some((key) => key in value && !validDate(value[key]))) return undefined
-  if ('description' in value && value['description'] !== null && typeof value['description'] !== 'string')
-    return undefined
+  if (!Object.entries(value).every(([key, field]) => PATCH_CHECKS.get(key)?.(field) === true)) return undefined
+  const { name, organizationId, ...dates } = value
   return {
-    ...('name' in value ? { name: (value['name'] as string).trim() } : {}),
-    ...('organizationId' in value
-      ? { organizationId: value['organizationId'] === null ? null : asId(value['organizationId'] as string) }
-      : {}),
-    ...('startAt' in value ? { startAt: value['startAt'] as number | null } : {}),
-    ...('targetEndAt' in value ? { targetEndAt: value['targetEndAt'] as number | null } : {}),
-    ...('description' in value ? { description: value['description'] as string | null } : {}),
+    ...(dates as Pick<ProjectPatch, 'startAt' | 'targetEndAt' | 'description'>),
+    ...('name' in value ? { name: (name as string).trim() } : {}),
+    ...('organizationId' in value ? { organizationId: idOrNull(organizationId) } : {}),
   }
+}
+
+interface ProjectDraft {
+  readonly name: string
+  readonly ownerId: Id
+  readonly organizationId: Id | null
+  readonly memberIds: readonly Id[]
+  readonly startAt: number | null
+  readonly targetEndAt: number | null
+  readonly description: string | null
+}
+
+/** Maps validated create input to a draft; the owner defaults to the actor. */
+function projectDraft(value: Fields, actorId: Id): ProjectDraft {
+  const { name, ownerId, organizationId, memberIds, startAt, targetEndAt, description } = value
+  return {
+    name: (name as string).trim(),
+    ownerId: idOrNull(ownerId) ?? actorId,
+    organizationId: idOrNull(organizationId),
+    memberIds: idsOf(memberIds),
+    startAt: numberOrNull(startAt),
+    targetEndAt: numberOrNull(targetEndAt),
+    description: typeof description === 'string' ? description.trim() : null,
+  }
+}
+
+async function createDenial(deps: WorkDeps, draft: ProjectDraft): Promise<WorkResult<never> | undefined> {
+  if (!isManagerUp(deps.actor) && draft.ownerId !== deps.actor.id)
+    return fail('FORBIDDEN', 'cannot assign project owner')
+  if (!allowedMembers(deps, draft.memberIds)) return fail('FORBIDDEN', 'cannot assign project members')
+  if (!(await organizationAllowed(deps, draft.organizationId)))
+    return fail('FORBIDDEN', 'organization is outside your scope')
+  return undefined
 }
 
 /** Creates a project after checking create, ownership, membership, and organization scope. */
 export async function createProject(deps: WorkDeps, input: unknown): Promise<WorkResult<ProjectRecord>> {
   const value = objectInput(input)
   if (value === undefined || !validName(value['name'])) return fail('VALIDATION', 'a project name is required')
-  if (Object.keys(value).some((key) => !CREATE_FIELDS.has(key)))
-    return fail('VALIDATION', 'project contains unsupported fields')
-  if ('organizationId' in value && value['organizationId'] !== null && typeof value['organizationId'] !== 'string')
-    return fail('VALIDATION', 'organizationId is invalid')
-  if ('ownerId' in value && value['ownerId'] !== null && typeof value['ownerId'] !== 'string')
-    return fail('VALIDATION', 'ownerId is invalid')
-  if (
-    'memberIds' in value &&
-    (!Array.isArray(value['memberIds']) || value['memberIds'].some((id) => typeof id !== 'string'))
-  )
-    return fail('VALIDATION', 'memberIds is invalid')
-  if (['startAt', 'targetEndAt'].some((key) => key in value && !validDate(value[key])))
-    return fail('VALIDATION', 'project dates are invalid')
-  if (
-    'description' in value &&
-    value['description'] !== null &&
-    (typeof value['description'] !== 'string' || value['description'].length > 20_000)
-  )
-    return fail('VALIDATION', 'project description is invalid')
-  if (
-    typeof value['startAt'] === 'number' &&
-    typeof value['targetEndAt'] === 'number' &&
-    value['startAt'] > value['targetEndAt']
-  )
-    return fail('VALIDATION', 'startAt must not be after targetEndAt')
+  const invalid = CREATE_CHECKS.find(([valid]) => !valid(value))
+  if (invalid !== undefined) return fail('VALIDATION', invalid[1])
   if (!deps.can(deps.actor, 'create', { type: 'project' })) return fail('FORBIDDEN', 'not allowed to create projects')
-  const ownerId = typeof value['ownerId'] === 'string' ? asId(value['ownerId']) : deps.actor.id
-  const memberIds = idsOf(value['memberIds'])
-  if (!isManagerUp(deps.actor) && ownerId !== deps.actor.id) return fail('FORBIDDEN', 'cannot assign project owner')
-  if (!allowedMembers(deps, memberIds)) return fail('FORBIDDEN', 'cannot assign project members')
-  const organizationId = typeof value['organizationId'] === 'string' ? asId(value['organizationId']) : null
-  if (!(await organizationAllowed(deps, organizationId))) return fail('FORBIDDEN', 'organization is outside your scope')
+  const draft = projectDraft(value, deps.actor.id)
+  const denied = await createDenial(deps, draft)
+  if (denied !== undefined) return denied
   const workflow = await deps.repo.loadDefaultWorkflow('project')
-  return ok(
-    await deps.repo.createProject({
-      name: value['name'].trim(),
-      ownerId,
-      organizationId,
-      memberIds,
-      workflowId: workflow.id,
-      stageId: workflow.defaultStageId,
-      startAt: typeof value['startAt'] === 'number' ? value['startAt'] : null,
-      targetEndAt: typeof value['targetEndAt'] === 'number' ? value['targetEndAt'] : null,
-      description: typeof value['description'] === 'string' ? value['description'].trim() : null,
-    }),
-  )
+  return ok(await deps.repo.createProject({ ...draft, workflowId: workflow.id, stageId: workflow.defaultStageId }))
 }
 
-/** Updates only editable project fields; stage, owner, and membership use dedicated commands. */
-export async function updateProject(deps: WorkDeps, input: unknown): Promise<WorkResult<ProjectRecord>> {
-  const value = objectInput(input)
-  if (
-    value === undefined ||
-    typeof value['projectId'] !== 'string' ||
-    typeof value['expectedUpdatedAt'] !== 'number' ||
-    !Number.isFinite(value['expectedUpdatedAt'])
-  )
+interface ProjectUpdate {
+  readonly projectId: Id
+  readonly expectedUpdatedAt: number
+  readonly patch: ProjectPatch
+}
+
+function parseProjectUpdate(input: unknown): WorkResult<ProjectUpdate> {
+  const value = objectInput(input) ?? {}
+  const { projectId, expectedUpdatedAt } = value
+  if (typeof projectId !== 'string' || typeof expectedUpdatedAt !== 'number' || !Number.isFinite(expectedUpdatedAt))
     return fail('VALIDATION', 'projectId and expectedUpdatedAt are required')
   const patch = parseProjectPatch(value['patch'])
   if (patch === undefined) return fail('VALIDATION', 'project patch contains unsupported or invalid fields')
-  const project = await deps.repo.getProject(asId(value['projectId']))
-  if (project === undefined) return fail('NOT_FOUND', NOT_FOUND)
+  return ok({ projectId: asId(projectId), expectedUpdatedAt, patch })
+}
+
+async function updateDenial(
+  deps: WorkDeps,
+  project: ProjectRecord,
+  patch: ProjectPatch,
+): Promise<WorkResult<never> | undefined> {
   if (!deps.can(deps.actor, 'update', projectResource(project)))
     return fail('FORBIDDEN', 'not allowed to update project')
   if (!(await organizationAllowed(deps, patch.organizationId ?? project.organizationId)))
     return fail('FORBIDDEN', 'organization is outside your scope')
-  const saved = await deps.repo.updateProject(project.id, patch, value['expectedUpdatedAt'])
+  return undefined
+}
+
+/** Updates only editable project fields; stage, owner, and membership use dedicated commands. */
+export async function updateProject(deps: WorkDeps, input: unknown): Promise<WorkResult<ProjectRecord>> {
+  const update = parseProjectUpdate(input)
+  if (!update.ok) return update
+  const { projectId, expectedUpdatedAt, patch } = update.value
+  const project = await deps.repo.getProject(projectId)
+  if (project === undefined) return fail('NOT_FOUND', NOT_FOUND)
+  const denied = await updateDenial(deps, project, patch)
+  if (denied !== undefined) return denied
+  const saved = await deps.repo.updateProject(project.id, patch, expectedUpdatedAt)
   return saved === undefined ? fail('CONFLICT', CONFLICT) : ok(saved)
 }
 
