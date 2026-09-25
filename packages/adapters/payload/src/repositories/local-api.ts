@@ -1,5 +1,5 @@
 import { combineQueries, executeAccess, type CollectionSlug, type PayloadRequest, type Sort, type Where } from 'payload'
-import { writeIfUnchanged } from './conditional-write'
+import { partitionWrite, writeIfUnchanged } from './conditional-write'
 import type { Doc } from './documents'
 
 /** A read on behalf of the request user; `limit` 0 reads every match. */
@@ -76,7 +76,14 @@ export async function updateIfUnchanged(req: PayloadRequest, update: GuardedUpda
   }
   // At least one millisecond past the expected version, so writes in the same millisecond still get new versions.
   const updatedAt = new Date(Math.max(Date.now(), expected.getTime() + 1)).toISOString()
-  if (!(await writeIfUnchanged(req.payload, { collection, id, expectedUpdatedAt, updatedAt, data }))) return undefined
+  const { columns, related } = partitionWrite(req.payload, collection, data)
+  if (!(await writeIfUnchanged(req.payload, { collection, id, expectedUpdatedAt, updatedAt, data: columns }))) {
+    return undefined
+  }
+  // The guarded write above claimed this version; join-table fields then go through Payload, which owns their rows.
+  if (Object.keys(related).length > 0) {
+    await req.payload.update({ collection, id, data: related, depth: 0, overrideAccess: true, req })
+  }
   const [doc] = await findAsUser(req, { collection, where: byId(id), limit: 1 })
   return doc
 }

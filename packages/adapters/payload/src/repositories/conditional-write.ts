@@ -45,11 +45,43 @@ function columnOf(table: Table, key: string): Column {
   return column
 }
 
+function tableOf(db: DrizzleAdapter, collection: CollectionSlug): Table {
+  const table = db.tables[db.tableNameMap.get(collection) ?? collection]
+  if (table === undefined) throw new Error(`No table for collection ${collection}`)
+  return table
+}
+
+/** A write split by storage: keys with a column on the collection's table, and relationship keys kept in join tables. */
+export interface PartitionedWrite {
+  readonly columns: Readonly<Record<string, unknown>>
+  readonly related: Readonly<Record<string, unknown>>
+}
+
+/**
+ * Splits `data` into column keys and declared fields without a column (has-many relationships, which Payload stores in
+ * a join table). Any other key throws, so a misspelt field cannot become a silent no-op.
+ */
+export function partitionWrite(
+  payload: Payload,
+  collection: CollectionSlug,
+  data: Readonly<Record<string, unknown>>,
+): PartitionedWrite {
+  const table = tableOf(drizzleAdapter(payload), collection)
+  const fields = payload.collections[collection]?.config.flattenedFields ?? []
+  const columns: Record<string, unknown> = {}
+  const related: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (table[key] !== undefined) columns[key] = value
+    else if (fields.some((field) => field.name === key)) related[key] = value
+    else throw new Error(`No column for field ${key}`)
+  }
+  return { columns, related }
+}
+
 /** Writes `data` and `updatedAt` in one `UPDATE … WHERE id = ? AND updated_at = ? RETURNING id`; true when a row changed. */
 export async function writeIfUnchanged(payload: Payload, write: VersionedWrite): Promise<boolean> {
   const db = drizzleAdapter(payload)
-  const table = db.tables[db.tableNameMap.get(write.collection) ?? write.collection]
-  if (table === undefined) throw new Error(`No table for collection ${write.collection}`)
+  const table = tableOf(db, write.collection)
   const values = { ...write.data, updatedAt: write.updatedAt }
   // Drizzle silently drops keys without a column, which would turn a misspelt field into a no-op write.
   for (const key of Object.keys(values)) columnOf(table, key)
