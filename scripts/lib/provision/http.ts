@@ -1,4 +1,5 @@
 import type { ProvisionHttpClient } from './types'
+import { requestWithTimeout } from '../http'
 
 /** Creates an HTTP client that keeps the internal secret in a header, never in argv or logs. */
 export function fetchProvisionClient(request: typeof fetch = fetch, timeoutMs = 15_000): ProvisionHttpClient {
@@ -28,28 +29,6 @@ function getProvision(request: typeof fetch, timeoutMs: number): ProvisionHttpCl
       timeoutMs,
     })
     return readProvisionResponse(response)
-  }
-}
-
-async function requestWithTimeout(input: {
-  readonly request: typeof fetch
-  readonly url: string
-  readonly init: RequestInit
-  readonly timeoutMs: number
-}): Promise<Response> {
-  const { request, url, init, timeoutMs } = input
-  const controller = new AbortController()
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort()
-      reject(new Error(`provision request timed out after ${String(timeoutMs)}ms`))
-    }, timeoutMs)
-  })
-  try {
-    return await Promise.race([request(url, { ...init, signal: controller.signal }), timeout])
-  } finally {
-    if (timer !== undefined) clearTimeout(timer)
   }
 }
 

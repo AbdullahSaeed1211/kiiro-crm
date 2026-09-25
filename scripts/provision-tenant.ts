@@ -1,5 +1,6 @@
 import { parseArgs } from 'node:util'
 import { isMain, runCli } from './lib/report'
+import { tenantEnvKey } from './lib/tenant-schema'
 import { shellRunner } from './lib/provision/commands'
 import {
   discoverProvisionState,
@@ -34,16 +35,15 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
 }
 
 async function executeProvision(slug: string, root: string, tenant: ReturnType<typeof loadTenant>): Promise<void> {
-  const turnstileSecret =
-    process.env[`TURNSTILE_SECRET_${slug.toUpperCase().replaceAll('-', '_')}`] ?? process.env['TURNSTILE_SECRET']
-  const internalSecret = process.env[`INTERNAL_SECRET_${slug.toUpperCase().replaceAll('-', '_')}`]
+  const turnstileSecret = process.env[tenantEnvKey('TURNSTILE_SECRET', slug)] ?? process.env['TURNSTILE_SECRET']
+  const internalSecret = process.env[tenantEnvKey('INTERNAL_SECRET', slug)]
   const runner = shellRunner(root)
   const http = fetchProvisionClient()
   const status = internalSecret === undefined ? undefined : { client: http, secret: internalSecret }
   const state = await discoverProvisionState({ tenant, run: runner, root, ...(status === undefined ? {} : { status }) })
   if (state.secrets === true && internalSecret === undefined) {
     throw new Error(
-      `INTERNAL_SECRET_${slug.toUpperCase().replaceAll('-', '_')} is required to resume an existing tenant; retrieve it from secure operator custody before rerunning`,
+      `${tenantEnvKey('INTERNAL_SECRET', slug)} is required to resume an existing tenant; retrieve it from secure operator custody before rerunning`,
     )
   }
   await provisionTenant(tenant, {

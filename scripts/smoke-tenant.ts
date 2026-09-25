@@ -1,7 +1,8 @@
 import { parseArgs } from 'node:util'
 import { isMain, runCli } from './lib/report'
 import { loadTenant, workerName } from './lib/provision/plan'
-import type { Tenant } from './lib/tenant-schema'
+import { tenantEnvKey, type Tenant } from './lib/tenant-schema'
+import { requestWithTimeout } from './lib/http'
 
 /** One smoke check and its observed status. */
 export interface SmokeCheckResult {
@@ -162,28 +163,6 @@ function validateLogin(response: Response): boolean {
   return response.status === 200 && (response.headers.get('content-type') ?? '').toLowerCase().includes('text/html')
 }
 
-async function requestWithTimeout(input: {
-  readonly request: typeof fetch
-  readonly url: string
-  readonly init?: RequestInit
-  readonly timeoutMs: number
-}): Promise<Response> {
-  const { request, url, init, timeoutMs } = input
-  const controller = new AbortController()
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort()
-      reject(new Error(`request timed out after ${String(timeoutMs)}ms`))
-    }, timeoutMs)
-  })
-  try {
-    return await Promise.race([request(url, { ...init, signal: controller.signal }), timeout])
-  } finally {
-    if (timer !== undefined) clearTimeout(timer)
-  }
-}
-
 /** Runs the safe smoke preview or the explicitly authorized remote probes. */
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   const { values, positionals } = parseArgs({
@@ -211,7 +190,7 @@ async function runSmokeCli(input: {
   readonly failCheck?: string
 }): Promise<number> {
   const probes = input.execute
-    ? authenticatedProbes(input.tenant, process.env[`INTERNAL_SECRET_${input.slug.toUpperCase().replaceAll('-', '_')}`])
+    ? authenticatedProbes(input.tenant, process.env[tenantEnvKey('INTERNAL_SECRET', input.slug)])
     : {}
   const result = await smokeTenant(input.tenant, {
     ...(input.execute ? { fetch } : {}),

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { exactJsonNames, hasExactResourceName, resourceId, WRANGLER, type CommandRunner } from './commands'
 import type { ProvisionHttpClient, ProvisionState } from './types'
-import type { Tenant } from '../tenant-schema'
+import { tenantEnvKey, type Tenant } from '../tenant-schema'
 import { updateTenantD1Id } from './tenant-file'
 
 /** Internal endpoint used to report completed provisioning operations without exposing secrets. */
@@ -43,7 +43,8 @@ async function discoverResources(
   state.secrets = secrets.exitCode === 0 && secretNamesPresent(secrets.output)
   if (input.tenant.hostType === 'platform') {
     const router = await input.run(`${WRANGLER} secret list --name ops-mail-router --format json`)
-    state.routerSecrets = router.exitCode === 0 && hasExactResourceName(router.output, routerSecretName(input.tenant))
+    state.routerSecrets =
+      router.exitCode === 0 && hasExactResourceName(router.output, tenantEnvKey('INTERNAL_SECRET', input.tenant.slug))
   }
 }
 
@@ -83,10 +84,6 @@ function secretNamesPresent(output: string): boolean {
   return ['PAYLOAD_SECRET', 'INTERNAL_SECRET', 'TENANT_SECRET', 'TURNSTILE_SECRET'].every((name) =>
     names.includes(name),
   )
-}
-
-function routerSecretName(tenant: Tenant): string {
-  return `INTERNAL_SECRET_${tenant.slug.toUpperCase().replaceAll('-', '_')}`
 }
 
 function parseStatus(value: unknown): Partial<ProvisionState> | undefined {

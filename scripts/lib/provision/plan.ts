@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parseJsonc } from '../jsonc'
 import { assertCommand, assertSafeToken, parseD1Id, senderStatusReady, OPENNEXT, WRANGLER } from './commands'
@@ -12,14 +13,17 @@ export { fetchProvisionClient } from './http'
 import { updateTenantD1Id } from './tenant-file'
 export { updateTenantD1Id } from './tenant-file'
 
-/** The observable completion state for the eleven provisioning steps. */
-/** Commands needed to provision a tenant, in their required order. */
-
 interface StepContext {
   readonly tenant: Tenant
   readonly deps: ProvisionDependencies
   readonly state: Partial<ProvisionState>
-  readonly secretsFile?: string
+  /** Private temporary directory for secret payload files; removed when the run ends. */
+  readonly secretsDir: string
+  readonly secrets?: Record<string, string>
+}
+
+/** Secrets carried from one step to the next. */
+interface StepResult {
   readonly secrets?: Record<string, string>
 }
 
@@ -100,8 +104,8 @@ function isComplete(key: ProvisionStep['key'], state: Partial<ProvisionState>, t
   return state[key] === true
 }
 
-function secretsFile(tenant: Tenant, payload: Record<string, string>): string {
-  const file = join(process.cwd(), `.tenant-secrets-${tenant.slug}-${String(process.pid)}.json`)
+function writeSecretsFile(dir: string, payload: Record<string, string>): string {
+  const file = join(dir, 'tenant-secrets.json')
   writeFileSync(file, JSON.stringify(payload), { mode: 0o600 })
   return file
 }
@@ -112,11 +116,16 @@ export async function provisionTenant(tenant: Tenant, deps: ProvisionDependencie
   const state: Partial<ProvisionState> = { ...deps.state }
   const print = deps.print ?? console.log
   const secrets = deps.internalSecret === undefined ? undefined : { INTERNAL_SECRET: deps.internalSecret }
-  return runProvisionSteps(
-    provisionPlan(parsed),
-    { tenant: parsed, deps, state, ...(secrets === undefined ? {} : { secrets }) },
-    print,
-  )
+  const secretsDir = mkdtempSync(join(tmpdir(), 'ops-provision-'))
+  try {
+    return await runProvisionSteps(
+      provisionPlan(parsed),
+      { tenant: parsed, deps, state, secretsDir, ...(secrets === undefined ? {} : { secrets }) },
+      print,
+    )
+  } finally {
+    rmSync(secretsDir, { recursive: true, force: true })
+  }
 }
 
 async function runProvisionSteps(
@@ -125,17 +134,11 @@ async function runProvisionSteps(
   print: (line: string) => void,
 ): Promise<ProvisionStep[]> {
   const completed: ProvisionStep[] = []
-  let secretsFilePath = context.secretsFile
   let secrets = context.secrets
-  try {
-    for (const step of steps) {
-      const result = await runProvisionStep(step, { ...context, secretsFile: secretsFilePath, secrets }, print)
-      secretsFilePath = result.secretsFile
-      secrets = result.secrets
-      completed.push(step)
-    }
-  } finally {
-    if (secretsFilePath !== undefined && existsSync(secretsFilePath)) rmSync(secretsFilePath, { force: true })
+  for (const step of steps) {
+    const result = await runProvisionStep(step, { ...context, ...(secrets === undefined ? {} : { secrets }) }, print)
+    secrets = result.secrets
+    completed.push(step)
   }
   return completed
 }
@@ -149,14 +152,11 @@ async function shouldSkip(step: ProvisionStep, context: StepContext): Promise<bo
   return discovered || isComplete(step.key, state, tenant)
 }
 
-async function executeStep(
-  step: ProvisionStep,
-  context: StepContext,
-): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
+async function executeStep(step: ProvisionStep, context: StepContext): Promise<StepResult> {
   const { tenant, deps } = context
   if (step.key === 'seed') return executeSeed(tenant, deps, context.secrets)
   if (step.key === 'routerSecrets')
-    return executeRouterSecrets({ tenant, deps, existingSecretsFile: context.secretsFile, secrets: context.secrets })
+    return executeRouterSecrets({ tenant, deps, secretsDir: context.secretsDir, secrets: context.secrets })
   const command = commandForStep(step, context)
   const environment =
     step.key === 'migration'
@@ -170,7 +170,7 @@ async function executeStep(
   assertCommand(result, command.value)
   await recordCommandResult(step, context, result.output)
   const secrets = command.secrets ?? context.secrets
-  return { secretsFile: command.file, ...(secrets === undefined ? {} : { secrets }) }
+  return secrets === undefined ? {} : { secrets }
 }
 
 async function recordCommandResult(step: ProvisionStep, context: StepContext, output: string): Promise<void> {
@@ -189,40 +189,34 @@ async function recordCommandResult(step: ProvisionStep, context: StepContext, ou
 function commandForStep(
   step: ProvisionStep,
   context: StepContext,
-): { value: string; file?: string; secrets?: Record<string, string> } {
-  const { tenant, deps, secretsFile: existingSecretsFile } = context
+): { value: string; secrets?: Record<string, string> } {
+  const { tenant, deps } = context
   if (step.key !== 'secrets') {
     if (step.command === undefined) throw new Error(`provision step ${step.key} has no command`)
     return { value: step.command }
   }
   const secret = deps.turnstileSecret
   if (secret === undefined || secret === '') throw new Error('TURNSTILE_SECRET is required to provision a tenant')
-  if (existingSecretsFile !== undefined)
-    return { value: `${WRANGLER} secret bulk ${existingSecretsFile} --env ${tenant.slug}`, file: existingSecretsFile }
   const secrets = createSecretPayload(secret)
   const existingInternalSecret = context.secrets?.['INTERNAL_SECRET']
   if (existingInternalSecret !== undefined) secrets['INTERNAL_SECRET'] = existingInternalSecret
-  const file = secretsFile(tenant, secrets)
-  return {
-    value: `${WRANGLER} secret bulk ${file} --env ${tenant.slug}`,
-    file,
-    secrets,
-  }
+  const file = writeSecretsFile(context.secretsDir, secrets)
+  return { value: `${WRANGLER} secret bulk ${file} --env ${tenant.slug}`, secrets }
 }
 
 async function runProvisionStep(
   step: ProvisionStep,
   context: StepContext,
   print: (line: string) => void,
-): Promise<{ secretsFile: string | undefined; secrets?: Record<string, string> }> {
+): Promise<StepResult> {
+  const unchanged = context.secrets === undefined ? {} : { secrets: context.secrets }
   if (await shouldSkip(step, context)) {
     print(`SKIP ${step.label}`)
-    return { secretsFile: context.secretsFile, ...(context.secrets === undefined ? {} : { secrets: context.secrets }) }
+    return unchanged
   }
   print(`RUN ${step.label}`)
   if (step.key === 'checklist') print(manualChecklist(context.tenant))
-  if (step.key === 'validate' || step.key === 'checklist')
-    return { secretsFile: context.secretsFile, ...(context.secrets === undefined ? {} : { secrets: context.secrets }) }
+  if (step.key === 'validate' || step.key === 'checklist') return unchanged
   return executeStep(step, context)
 }
 

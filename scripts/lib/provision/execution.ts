@@ -2,10 +2,9 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { assertCommand, hasExactResourceName, WRANGLER } from './commands'
 import type { ProvisionDependencies, ProvisionState } from './types'
-import type { Tenant } from '../tenant-schema'
+import { tenantEnvKey, type Tenant } from '../tenant-schema'
 
 interface StepResult {
-  readonly secretsFile: string | undefined
   readonly secrets?: Record<string, string>
 }
 
@@ -20,33 +19,37 @@ export async function executeSeed(
     throw new Error('authenticated provisioning client and INTERNAL_SECRET are required for seeding')
   const response = await deps.http.post(internalEndpoint(tenant, 'provision'), seedBody(tenant), secret)
   if (!response.ok) throw new Error(`tenant seed failed (HTTP ${String(response.status)})`)
-  return { secretsFile: undefined, secrets }
+  return secrets === undefined ? {} : { secrets }
 }
 
 /** Synchronizes a platform tenant's internal secret to the shared mail router without exposing its value. */
 export async function executeRouterSecrets(input: {
   readonly tenant: Tenant
   readonly deps: ProvisionDependencies
-  readonly existingSecretsFile: string | undefined
+  readonly secretsDir: string
   readonly secrets: Record<string, string> | undefined
 }): Promise<StepResult> {
-  const { tenant, deps, existingSecretsFile, secrets } = input
+  const { tenant, deps, secretsDir, secrets } = input
   const secret = secrets?.['INTERNAL_SECRET']
-  const name = routerSecretName(tenant)
+  const name = tenantEnvKey('INTERNAL_SECRET', tenant.slug)
   if (secret === undefined) throw new Error(`${name} is required to sync ops-mail-router`)
-  const payloadFile = tempSecretsFile(tenant, { [name]: secret })
+  const payloadFile = join(secretsDir, 'mail-router.json')
+  writeFileSync(payloadFile, JSON.stringify({ [name]: secret }), { mode: 0o600 })
   try {
-    const command = `${WRANGLER} secret bulk ${payloadFile} --name ops-mail-router`
-    const result = await deps.run(command)
-    assertCommand(result, command)
-    const list = `${WRANGLER} secret list --name ops-mail-router --format json`
-    const listed = await deps.run(list)
-    assertCommand(listed, list)
-    if (!hasExactResourceName(listed.output, name)) throw new Error(`ops-mail-router is missing ${name}`)
-    return { secretsFile: existingSecretsFile, ...(secrets === undefined ? {} : { secrets }) }
+    await runChecked(deps, `${WRANGLER} secret bulk ${payloadFile} --name ops-mail-router`)
+    const listed = await runChecked(deps, `${WRANGLER} secret list --name ops-mail-router --format json`)
+    if (!hasExactResourceName(listed, name)) throw new Error(`ops-mail-router is missing ${name}`)
+    return { secrets }
   } finally {
     if (existsSync(payloadFile)) rmSync(payloadFile, { force: true })
   }
+}
+
+/** Runs a command and returns its output, throwing when it fails. */
+async function runChecked(deps: ProvisionDependencies, command: string): Promise<string> {
+  const result = await deps.run(command)
+  assertCommand(result, command)
+  return result.output
 }
 
 /** Persists a completed remote operation through the authenticated provision boundary. */
@@ -103,14 +106,4 @@ function contentTypeFor(path: string): string {
 function internalEndpoint(tenant: Tenant, path: string): string {
   const host = tenant.hostType === 'workers_dev' ? `ops-${tenant.slug}.workers.dev` : (tenant.host ?? '')
   return `https://${host}/api/v1/internal/${path}`
-}
-
-function routerSecretName(tenant: Tenant): string {
-  return `INTERNAL_SECRET_${tenant.slug.toUpperCase().replaceAll('-', '_')}`
-}
-
-function tempSecretsFile(tenant: Tenant, payload: Record<string, string>): string {
-  const file = join(process.cwd(), `.tenant-secrets-router-${tenant.slug}-${String(process.pid)}.json`)
-  writeFileSync(file, JSON.stringify(payload), { mode: 0o600 })
-  return file
 }

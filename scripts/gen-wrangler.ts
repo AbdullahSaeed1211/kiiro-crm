@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseJsonc } from './lib/jsonc'
 import { isMain } from './lib/report'
-import { isPlatformHosted, parseTenant, type Tenant } from './lib/tenant-schema'
+import { isPlatformHosted, parseTenant, tenantEnvKey, type Tenant } from './lib/tenant-schema'
 
 type Config = Record<string, unknown>
 
@@ -135,7 +135,7 @@ export function renderMailRouterConfig(tenants: readonly Tenant[]): string {
     observability: { enabled: true },
     ...(inboundDomain === undefined ? {} : { routes: [{ pattern: inboundDomain, custom_domain: true }] }),
     services: platformTenants.map((tenant) => ({
-      binding: `TENANT_${tenant.slug.toUpperCase().replaceAll('-', '_')}`,
+      binding: tenantEnvKey('TENANT', tenant.slug),
       service: `ops-${tenant.slug}`,
     })),
     vars: { PLATFORM_DOMAIN: inboundDomain?.startsWith('in.') ? inboundDomain.slice(3) : (inboundDomain ?? '') },

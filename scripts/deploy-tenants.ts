@@ -1,5 +1,7 @@
 import { parseArgs } from 'node:util'
 import { isMain, runCli } from './lib/report'
+import { requestWithTimeout } from './lib/http'
+import { tenantEnvKey } from './lib/tenant-schema'
 import { dryRunRunner, shellRunner } from './lib/provision/commands'
 import { deployTenants } from './lib/deploy/loop'
 import { loadTenants } from './gen-wrangler'
@@ -36,7 +38,7 @@ function smokeOptions(
   execute: boolean,
   failSmoke: boolean,
 ): Parameters<typeof smokeTenant>[1] {
-  const secret = process.env[`INTERNAL_SECRET_${tenant.slug.toUpperCase().replaceAll('-', '_')}`]
+  const secret = process.env[tenantEnvKey('INTERNAL_SECRET', tenant.slug)]
   const base = tenantUrl(tenant)
   return {
     ...(execute ? { fetch, mode: 'execute' as const } : {}),
@@ -51,20 +53,8 @@ function smokeOptions(
 }
 
 async function probe(url: string, secret: string): Promise<boolean> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => {
-    controller.abort()
-  }, 10_000)
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'x-internal-secret': secret },
-      signal: controller.signal,
-    })
-    return response.ok
-  } finally {
-    clearTimeout(timer)
-  }
+  const init = { method: 'POST', headers: { 'x-internal-secret': secret } }
+  return (await requestWithTimeout({ url, init, timeoutMs: 10_000 })).ok
 }
 
 function statusOf(result: { readonly slug: string; readonly status: string }): string {

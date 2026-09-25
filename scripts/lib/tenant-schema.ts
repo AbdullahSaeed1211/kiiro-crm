@@ -62,3 +62,8 @@ export function parseTenant(value: unknown, source: string): Tenant {
   if (result.success) return result.data
   throw new Error(`${source}: ${z.prettifyError(result.error)}`)
 }
+
+/** Returns a per-tenant environment or binding name, such as `INTERNAL_SECRET_ACME_CO` for slug `acme-co`. */
+export function tenantEnvKey(prefix: string, slug: string): string {
+  return `${prefix}_${slug.toUpperCase().replaceAll('-', '_')}`
+}

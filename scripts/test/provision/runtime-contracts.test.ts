@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { commandSupportedByHelp, shellRunner, WRANGLER } from '../../lib/provision/commands'
 import { provisionTenant } from '../../lib/provision/plan'
@@ -71,6 +72,26 @@ describe('router secret synchronization', () => {
     })
     expect(commands.some((command) => command.includes('secret bulk'))).toBe(true)
     expect(commands.join(' ')).not.toContain('router-secret')
+  })
+})
+
+describe('provision secrets file', () => {
+  it('deletes the uploaded secrets file outside the working tree once later steps run', async () => {
+    const commands: string[] = []
+    await provisionTenant(tenant, {
+      state: { d1: true, r2: true, wrangler: true, secrets: false, migration: false, deployment: true, seed: true },
+      turnstileSecret: 'turnstile',
+      run: (command) => {
+        commands.push(command)
+        return Promise.resolve({ exitCode: 0, output: '' })
+      },
+      check: (key) => Promise.resolve(!['secrets', 'migration'].includes(key)),
+      print: () => undefined,
+    })
+    const file = /secret bulk (\S+) --env/.exec(commands.join('\n'))?.[1] ?? ''
+    expect(file).not.toBe('')
+    expect(file.startsWith(process.cwd())).toBe(false)
+    expect(existsSync(file)).toBe(false)
   })
 })
 
