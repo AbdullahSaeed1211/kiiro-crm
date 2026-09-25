@@ -16,7 +16,7 @@ function dateInZone(value: number, formatter: Intl.DateTimeFormat): string {
   const get = (name: string) => parts.find((part) => part.type === name)?.value ?? '00'
   return `${get('year')}-${get('month')}-${get('day')}`
 }
-function eventTone(priority: string): CalendarEvent['tone'] {
+function eventColor(priority: string): CalendarEvent['color'] {
   if (priority === 'urgent') return 'red'
   if (priority === 'high') return 'amber'
   return 'blue'
@@ -48,7 +48,7 @@ export default async function CalendarPage({
       title: task.title,
       date: dateInZone(task.dueAt, formatter),
       href: taskHref(task.id, '/calendar'),
-      tone: eventTone(task.priority),
+      color: eventColor(task.priority),
     }))
     .filter((event) => event.date.startsWith(monthPrefix))
   return (

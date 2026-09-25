@@ -3,18 +3,12 @@ import { notFound } from 'next/navigation'
 import { loadTask, loadTaskPeople } from '../../../../server/queries/work/task-details'
 import { TaskAssigneeForm } from './TaskAssigneeForm'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
+import { firstParam, safeReturnTo } from '../../search-params'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Task' }
 
 /** Full-page task detail, using the same content model as the task sheet. */
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
-
-function safeReturnTo(value: string | undefined): string {
-  return value !== undefined && value.startsWith('/') && !value.startsWith('//') ? value : '/tasks'
-}
 
 export default async function TaskPage({
   params,
@@ -25,8 +19,8 @@ export default async function TaskPage({
 }>) {
   const { id } = await params
   const query = searchParams === undefined ? {} : await searchParams
-  const panel = first(query.panel) === '1'
-  const returnTo = safeReturnTo(first(query.returnTo))
+  const panel = firstParam(query.panel) === '1'
+  const returnTo = safeReturnTo(firstParam(query.returnTo), '/tasks')
   const [task, people] = await Promise.all([loadTask(id), loadTaskPeople()])
   if (task === undefined) notFound()
   return (

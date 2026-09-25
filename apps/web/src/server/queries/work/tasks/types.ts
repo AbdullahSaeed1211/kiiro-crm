@@ -1,8 +1,6 @@
+import type { StageColor } from '@ops/ui/composites/StagePill'
 /** Task priority levels, shown with the icons of spec §15.4. */
 export type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
-
-/** Stage palette names that map to the `stage-*` color tokens (spec §15.2). */
-export type TaskStageColor = 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink'
 
 /** Columns the tasks list can sort by. */
 export type TaskSortKey = 'title' | 'stage' | 'priority' | 'dueAt'
@@ -15,7 +13,7 @@ export interface TaskSort {
 
 interface TaskStage {
   readonly name: string
-  readonly color: TaskStageColor
+  readonly color: StageColor
   readonly position: number
 }
 

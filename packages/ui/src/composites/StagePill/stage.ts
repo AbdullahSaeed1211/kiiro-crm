@@ -1,5 +1,5 @@
 import { isTerminalStage } from '../KanbanBoard/board-state'
-import { STAGE_DOT } from '../KanbanBoard/stage-dot'
+import { STAGE_DOT, STAGE_PILL } from '../KanbanBoard/stage-dot'
 import type { KanbanStage, KanbanStageColor } from '../KanbanBoard/types'
 
 /** A workflow stage as shown by pills, selects and filters (spec §9.4). */
@@ -14,6 +14,11 @@ export interface StageGroups {
   readonly terminal: readonly StageOption[]
 }
 
+/** Narrows an untyped stored color to a stage color, falling back to gray. */
+export function toStageColor(value: string): StageColor {
+  return Object.hasOwn(STAGE_DOT, value) ? (value as StageColor) : 'gray'
+}
+
 /** Solid dot class of a stage color. */
 export function stageDotClass(color: StageColor): string {
   return STAGE_DOT[color]
@@ -21,7 +26,7 @@ export function stageDotClass(color: StageColor): string {
 
 /** Subtle stage tint used by pills without making color the only stage signal. */
 export function stagePillClass(color: StageColor): string {
-  return `${STAGE_DOT[color]}/15`
+  return STAGE_PILL[color]
 }
 
 /** Splits stages into open and terminal groups, keeping the given order inside each group. */

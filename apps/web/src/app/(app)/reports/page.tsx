@@ -6,13 +6,10 @@ import type { Metadata } from 'next'
 import { REPORT_COPY } from '../../../i18n/config'
 import { loadReportFigures } from '../../../server/queries/reports'
 import { getRequestContext } from '../../../server/work/deps'
+import { firstParam } from '../search-params'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Figures' }
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
 
 function number(value: number, locale: string): string {
   return new Intl.NumberFormat(locale).format(value)
@@ -51,7 +48,7 @@ export default async function ReportsPage({
   if (context.actor.role !== 'owner' && context.actor.role !== 'manager') notFound()
   const query = await searchParams
   const figures = await loadReportFigures(
-    { range: first(query.range), from: first(query.from), to: first(query.to) },
+    { range: firstParam(query.range), from: firstParam(query.from), to: firstParam(query.to) },
     context,
   )
   const copy = REPORT_COPY[figures.locale]

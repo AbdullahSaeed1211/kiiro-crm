@@ -1,22 +1,18 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { stagePillClass, type StageColor } from '../StagePill/stage'
 
 export interface CalendarEvent {
   readonly id: string
   readonly title: string
   readonly date: string
   readonly href?: string
-  readonly tone?: 'default' | 'blue' | 'green' | 'amber' | 'red' | 'violet'
+  /** Tint of the event chip; omitted means neutral. */
+  readonly color?: StageColor
   readonly meta?: ReactNode
 }
-const TONES: Record<NonNullable<CalendarEvent['tone']>, string> = {
-  default: 'bg-muted text-foreground',
-  blue: 'bg-stage-blue/15 text-foreground',
-  green: 'bg-stage-green/15 text-foreground',
-  amber: 'bg-stage-amber/15 text-foreground',
-  red: 'bg-destructive/10 text-destructive',
-  violet: 'bg-stage-violet/15 text-foreground',
-}
+const eventClass = (color: StageColor | undefined): string =>
+  color === undefined ? 'bg-muted text-foreground' : `${stagePillClass(color)} text-foreground`
 const pad = (value: number): string => String(value).padStart(2, '0')
 const dateKey = (input: { readonly year: number; readonly month: number; readonly day: number }): string =>
   `${String(input.year).padStart(4, '0')}-${pad(input.month + 1)}-${pad(input.day)}`
@@ -33,7 +29,7 @@ function EventCell({ event }: Readonly<{ event: CalendarEvent }>) {
     <Link
       href={event.href ?? `?event=${event.id}`}
       data-task-link-id={event.id}
-      className={`block truncate rounded px-1.5 py-1 text-left text-xs ${TONES[event.tone ?? 'default']}`}
+      className={`block truncate rounded px-1.5 py-1 text-left text-xs ${eventClass(event.color)}`}
     >
       {event.title}
     </Link>

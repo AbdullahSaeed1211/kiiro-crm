@@ -37,16 +37,6 @@ export interface LeadPageData {
   readonly attachments: readonly RecordAttachment[]
 }
 
-export function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((part) => part.slice(0, 1))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
-
 export function stageFor(stages: readonly KanbanStage[], stageId: string): KanbanStage {
   return (
     stages.find((stage) => stage.id === stageId) ?? {

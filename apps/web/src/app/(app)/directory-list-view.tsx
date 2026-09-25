@@ -21,6 +21,7 @@ import { displayName, formatDirectorySort } from '../../server/crm/directory/dat
 import { safeExternalHref } from '../../server/crm/directory/utils'
 import { formatDate } from '../../i18n/format'
 import { DirectoryFilters } from './directory-filters'
+import { initials } from '@ops/ui/lib/initials'
 
 const TABLE_LABELS: DataTableLabels = {
   selectAll: 'Select all',
@@ -33,14 +34,6 @@ const TABLE_LABELS: DataTableLabels = {
 }
 function EmptyValue() {
   return <span className="text-muted-foreground">—</span>
-}
-function initials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 }
 function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
   if (owner === null) return <span className="text-muted-foreground">Unassigned</span>

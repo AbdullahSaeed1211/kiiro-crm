@@ -8,6 +8,7 @@ import { loadTaskContexts } from '../../../../server/queries/work/tasks/task-con
 import type { TaskListItem } from '../../../../server/queries/work/tasks/types'
 import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
 import { getRequestContext } from '../../../../server/work/deps'
+import { firstParam } from '../../search-params'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'New task' }
@@ -15,10 +16,6 @@ export const metadata: Metadata = { title: 'New task' }
 type RelatedType = 'organization' | 'contact' | 'lead' | 'deal'
 type TaskContextLabel = NonNullable<TaskListItem['context']>
 const RELATED_TYPES = new Set<RelatedType>(['organization', 'contact', 'lead', 'deal'])
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
 
 function relatedTypeOf(value: string | undefined): RelatedType | null {
   return value !== undefined && RELATED_TYPES.has(value as RelatedType) ? (value as RelatedType) : null
@@ -48,10 +45,10 @@ export default async function NewTaskPage({
   const query = await searchParams
   const context = await getRequestContext()
   const model = await loadWorkReadModel(context, 'projects')
-  const projectId = projectIdOf(model.projects, first(query.projectId))
+  const projectId = projectIdOf(model.projects, firstParam(query.projectId))
   const recordContext = await recordContextOf(context, {
-    type: relatedTypeOf(first(query.relatedType)),
-    id: first(query.relatedId),
+    type: relatedTypeOf(firstParam(query.relatedType)),
+    id: firstParam(query.relatedId),
   })
   return (
     <>
@@ -64,7 +61,7 @@ export default async function NewTaskPage({
           relatedType={recordContext.type}
           relatedId={recordContext.id}
           relatedLabel={recordContext.label?.label ?? null}
-          initialTitle={first(query.title) ?? ''}
+          initialTitle={firstParam(query.title) ?? ''}
           cancelHref={recordContext.label?.href ?? (projectId === '' ? '/tasks' : `/projects/${projectId}`)}
         />
       </PageContent>

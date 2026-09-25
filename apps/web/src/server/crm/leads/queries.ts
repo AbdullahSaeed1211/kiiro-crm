@@ -5,14 +5,8 @@ import { getRequestContext } from '../../work/deps'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
 import type { Activity, User } from '../../../payload-types'
-import {
-  initials,
-  stageFor,
-  type LeadActivityItem,
-  type LeadListItem,
-  type LeadPageData,
-  type LeadPerson,
-} from './types'
+import { stageFor, type LeadActivityItem, type LeadListItem, type LeadPageData, type LeadPerson } from './types'
+import { initials } from '@ops/ui/lib/initials'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import type { Where } from 'payload'
 

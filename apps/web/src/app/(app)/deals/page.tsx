@@ -17,6 +17,8 @@ import { DealCreateDialog } from './DealCreateDialog'
 import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
 import { getWorkspaceSettings } from '../../../server/auth/context'
+import { firstParam } from '../search-params'
+import { StagePill, toStageColor } from '@ops/ui/composites/StagePill'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deals' }
@@ -31,40 +33,7 @@ const LABELS: DataTableLabels = {
   range: '{from}–{to} of {total}',
   selected: '{count} selected',
 }
-const STAGE_PILL: Record<string, string> = {
-  gray: 'bg-stage-gray/15',
-  blue: 'bg-stage-blue/15',
-  green: 'bg-stage-green/15',
-  amber: 'bg-stage-amber/15',
-  red: 'bg-stage-red/15',
-  violet: 'bg-stage-violet/15',
-  teal: 'bg-stage-teal/15',
-  pink: 'bg-stage-pink/15',
-}
-const STAGE_DOT: Record<string, string> = {
-  gray: 'bg-stage-gray',
-  blue: 'bg-stage-blue',
-  green: 'bg-stage-green',
-  amber: 'bg-stage-amber',
-  red: 'bg-stage-red',
-  violet: 'bg-stage-violet',
-  teal: 'bg-stage-teal',
-  pink: 'bg-stage-pink',
-}
 
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
-function stageCell(stage: { name: string; color: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_PILL[stage.color] ?? STAGE_PILL.gray}`}
-    >
-      <span aria-hidden className={`size-2 rounded-full ${STAGE_DOT[stage.color] ?? STAGE_DOT.gray}`} />
-      {stage.name}
-    </span>
-  )
-}
 function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number]): DataTableRow {
   return {
     id: String(item.deal.id),
@@ -74,7 +43,7 @@ function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number
           {item.deal.title}
         </Link>
       ),
-      stage: stageCell(item.stage),
+      stage: <StagePill name={item.stage.name} color={toStageColor(item.stage.color)} size="sm" />,
       value: <span className="tabular-nums">{formatMoney(item.deal.value)}</span>,
       organization: item.organizationName ?? <span className="text-muted-foreground">—</span>,
       owner: item.ownerName ?? <span className="text-muted-foreground">Unassigned</span>,
@@ -117,9 +86,9 @@ export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const params = await searchParams
-  const rawQuery = first(params.q)?.trim() ?? ''
-  const stageId = first(params.stage)
-  const page = Math.max(1, Number(first(params.page) ?? 1) || 1)
+  const rawQuery = firstParam(params.q)?.trim() ?? ''
+  const stageId = firstParam(params.stage)
+  const page = Math.max(1, Number(firstParam(params.page) ?? 1) || 1)
   const [data, settings] = await Promise.all([
     getDealListData({ query: rawQuery, stageId, page }),
     getWorkspaceSettings(),
@@ -154,7 +123,7 @@ export default async function DealsPage({
           <input
             name="q"
             aria-label="Search deals"
-            defaultValue={first(params.q)}
+            defaultValue={firstParam(params.q)}
             placeholder="Search deals…"
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />

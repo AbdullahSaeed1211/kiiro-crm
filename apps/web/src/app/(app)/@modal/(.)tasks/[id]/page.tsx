@@ -1,14 +1,7 @@
 import { notFound } from 'next/navigation'
 import { loadTask, loadTaskPeople } from '../../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from '../../../tasks/[id]/TaskDetailDrawer'
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
-
-function safeReturnTo(value: string | undefined): string {
-  return value !== undefined && value.startsWith('/') && !value.startsWith('//') ? value : '/tasks'
-}
+import { firstParam, safeReturnTo } from '../../../search-params'
 
 export default async function InterceptedTaskPage({
   params,
@@ -35,7 +28,7 @@ export default async function InterceptedTaskPage({
         stageCategory: task.stageCategory,
         updatedAt: task.updatedAt,
       }}
-      returnTo={safeReturnTo(first(query.returnTo))}
+      returnTo={safeReturnTo(firstParam(query.returnTo), '/tasks')}
       restoreFocus
     />
   )

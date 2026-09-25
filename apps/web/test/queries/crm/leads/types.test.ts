@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import {
-  displayName,
-  initials,
-  isTerminalStage,
-  leadStageMoveError,
-  stageFor,
-} from '../../../../src/server/crm/leads/types'
+import { displayName, isTerminalStage, leadStageMoveError, stageFor } from '../../../../src/server/crm/leads/types'
+import { initials } from '@ops/ui/lib/initials'
 
 describe('lead view helpers', () => {
   it('builds readable initials from a person name', () => {
     expect(initials('Jane Doe')).toBe('JD')
     expect(initials('  single  ')).toBe('S')
+    expect(initials('Design & Development')).toBe('DD')
   })
 
   it('falls back to an available lead identity', () => {
