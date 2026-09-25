@@ -5,7 +5,8 @@ import { COLLECTIONS, RECORD_TYPES } from '../contracts/names'
 import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
 import { toStageRecord, toTaskRecord } from './task-mapping'
 import { createUnitOfWork } from '../uow/unit-of-work'
-import { projectData, taskData, transitionData, projectPatchData, taskPatchData } from './task-write-data'
+import { projectData, taskData, projectPatchData, taskPatchData } from './task-write-data'
+import { activityData, transitionData } from './stage-codecs'
 import {
   taskPage,
   taskPageWithNullsLast,
@@ -51,16 +52,11 @@ function createStageStore(req: PayloadRequest): StageStore {
       })
       return doc && toStageRecord(ref.type, doc)
     },
-    addTransition: () => Promise.resolve(),
-    addActivity: async ({ record, verb, actorId, data, occurredAt }) => {
-      await createAsSystem(req, COLLECTIONS.activity, {
-        recordType: record.type,
-        recordId: record.id,
-        verb,
-        actor: actorId,
-        data,
-        occurredAt,
-      })
+    addTransition: async (transition) => {
+      await createAsSystem(req, COLLECTIONS.stageTransitions, transitionData(transition))
+    },
+    addActivity: async (entry) => {
+      await createAsSystem(req, COLLECTIONS.activity, activityData(entry))
     },
   }
 }

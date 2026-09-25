@@ -1,5 +1,4 @@
 import type { ProjectDraft, ProjectPatch, TaskDatePatch, TaskDraft, TaskPatch } from '@ops/module-work'
-import type { StageTransition } from '@ops/platform'
 
 /** Persisted field name for a patch key, with an optional value conversion. */
 type FieldMap = Readonly<Record<string, readonly [field: string, convert?: (value: unknown) => unknown]>>
@@ -69,10 +68,6 @@ export function taskData(draft: TaskDraft): Record<string, unknown> {
     dueAt: orNull(draft.dueAt),
     completedAt: orNull(draft.completedAt),
   }
-}
-
-export function transitionData({ record, workflowId, ...rest }: StageTransition): Record<string, unknown> {
-  return { recordType: record.type, recordId: record.id, workflow: workflowId, ...rest }
 }
 
 export function projectPatchData(patch: ProjectPatch): Record<string, unknown> {

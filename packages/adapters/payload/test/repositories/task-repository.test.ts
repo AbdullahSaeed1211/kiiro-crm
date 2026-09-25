@@ -183,7 +183,7 @@ describe('createTaskRepository compare-and-set writes', () => {
 })
 
 describe('createTaskRepository audit writes', () => {
-  it('writes activity as system work on the same request and skips transitions', async () => {
+  it('writes the stage transition and activity as system work on the same request', async () => {
     const { repository, calls, req } = setup()
     await repository.addTransition({
       record: TASK_REF,
@@ -198,12 +198,17 @@ describe('createTaskRepository audit writes', () => {
     })
     const entry = { record: TASK_REF, verb: 'stage.changed', actorId: asId('u1'), data: { a: 1 }, occurredAt: 9 }
     await repository.addActivity(entry)
-    expect(calls).toHaveLength(1)
+    expect(calls).toHaveLength(2)
     expect(calls[0]?.args).toMatchObject({
+      collection: 'stageTransitions',
+      data: { recordType: 'task', recordId: 't1', workflow: 'w1', fromStageId: 's-open', toStageId: 's-done' },
+      overrideAccess: true,
+    })
+    expect(calls[1]?.args).toMatchObject({
       collection: 'activity',
       data: { recordType: 'task', recordId: 't1', verb: 'stage.changed', actor: 'u1', data: { a: 1 }, occurredAt: 9 },
       overrideAccess: true,
     })
-    expect(calls[0]?.args['req']).toBe(req)
+    expect(calls[1]?.args['req']).toBe(req)
   })
 })

@@ -1,19 +1,16 @@
 import type { Id } from '@ops/kernel'
-import type { StageStore, StageTrackedRecord, StageTransition, Workflow } from '@ops/platform'
+import type { StageStore, StageTrackedRecord, Workflow } from '@ops/platform'
 import type { PayloadRequest, Where } from 'payload'
-import { COLLECTIONS, type CRM_FIELDS } from '../../contracts/names'
+import { COLLECTIONS } from '../../contracts/names'
 import { oneOf, type Doc } from '../documents'
 import { createAsSystem, findAsUser, updateIfUnchanged } from '../local-api'
+import { activityData, transitionData } from '../stage-codecs'
 import { toWorkflow } from '../workflow-mapping'
 import { CRM_COLLECTIONS, toCrmRecord } from './record-codecs'
 
 const PIPELINE_TYPES = ['lead', 'deal'] as const
 
 type PipelineType = (typeof PIPELINE_TYPES)[number]
-
-type ActivityEntry = Parameters<StageStore['addActivity']>[0]
-
-type TransitionField = (typeof CRM_FIELDS.stageTransition)[number]
 
 /** Where clause matching one document id. */
 export const whereId = (id: Id): Where => ({ id: { equals: id } })
@@ -30,14 +27,6 @@ function toStageTracked(type: PipelineType, doc: Doc): StageTrackedRecord | unde
   const { id, workflowId, stageId, stageEnteredAt, updatedAt, ownerId, assigneeIds } = record
   const tracked = { ref: { type, id }, workflowId, stageId, stageEnteredAt, updatedAt, assigneeIds }
   return ownerId === null ? tracked : { ...tracked, ownerId }
-}
-
-function transitionData({ record, workflowId, ...rest }: StageTransition): Record<TransitionField, unknown> {
-  return { recordType: record.type, recordId: record.id, workflow: workflowId, ...rest }
-}
-
-function activityData({ record, actorId, ...rest }: ActivityEntry): Record<string, unknown> {
-  return { recordType: record.type, recordId: record.id, actor: actorId, ...rest }
 }
 
 async function dealStageData(input: {
