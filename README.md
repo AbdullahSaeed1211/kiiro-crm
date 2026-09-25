@@ -44,7 +44,7 @@ packages/
   templates/      @ops/templates: vertical templates as typed data
 scripts/          quality checks, gen-wrangler, local seed and reset, tenant provisioning and deploy
 tenants/          one <slug>.jsonc per tenant
-docs/             spec, architecture, ADRs, decisions, runbooks, UX, history
+docs/             spec, architecture, ADRs, decisions, backlog, runbooks, UX, history
 tooling/          shared tsconfig, ESLint rules, dependency-cruiser, knip and jscpd configs
 ```
 
@@ -122,7 +122,7 @@ Run from the repository root.
 
 ## Quality gates
 
-`pnpm verify` runs, in order: `format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:brand`, `check:vocab`, `check:disables`, `check:docs`, `test`, `build` and `size`. CI runs it on every pull request and push to `main`.
+`pnpm verify` runs, in order: `format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:brand`, `check:vocab`, `check:disables`, `check:docs`, `test`, `test:integration`, `build` and `size`. CI runs it on every pull request and push to `main`.
 
 Key limits (spec §6):
 
@@ -149,9 +149,9 @@ The one-command provisioning, deploy loop and runbooks are milestone M7 (spec §
 
 ## Working on this repository
 
-Agents and engineers start from [`AGENTS.md`](AGENTS.md): where code lives, golden examples, commands, pitfalls and how parallel work is split. Task skills for common changes are in `.claude/skills/`. Spec §0 covers roles, ownership and escalation.
+Agents and engineers start from [`AGENTS.md`](AGENTS.md): where code lives, golden examples, commands, pitfalls and how parallel work is split. Task skills for common changes are in `.claude/skills/`. Spec §0 covers roles, ownership and escalation. Open work is in [`docs/backlog/`](docs/backlog/), and the product API describes itself at `GET /api/v1` (spec §12.3).
 
 - Execution decisions are recorded in `docs/decisions/decision-register.md` (E-nnn), open questions in `docs/decisions/open-questions.md`, and architecture decisions in `docs/adr/`.
-- Conventional Commits, for example `feat(crm): ...` or `docs: ...`. A `fix(...)` commit includes the failing test that reproduces the defect.
+- Conventional Commits, for example `feat(crm): ...` or `docs: ...`. A commit that changes behavior lists the checks it was verified with under `Verified:`; a `fix(...)` commit adds a failing test only for a defect no response or type can show (see `AGENTS.md`).
 - Comments stay short: a one-line TSDoc on exported symbols, inline comments only to explain why. No commented-out code.
 - Documentation describes current behavior only; link to the owning document instead of duplicating it.

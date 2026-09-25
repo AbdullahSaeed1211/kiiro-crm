@@ -51,12 +51,7 @@ composite already does.
 - Don't hand-roll native `<select>` for a stage picker — `DealControls.tsx` and
   `DealClosingControls.tsx` under `apps/web/src/app/(app)/deals/` use raw `<select>`
   where `@ops/ui`'s `StageSelect` should be used; don't add a fourth copy.
-- `initials()` is currently duplicated across at least four files (
-  `apps/web/src/app/(app)/directory-list-view.tsx`,
-  `apps/web/src/app/(app)/tasks/page.tsx`,
-  `apps/web/src/app/(app)/inbox/inbox-model.ts`,
-  `apps/web/src/server/crm/leads/types.ts` line 40) — don't add a fifth; import one of
-  these or, if genuinely new, put it in `packages/ui`.
+- Avatar fallbacks use `initials()` from `@ops/ui/lib/initials`; stage colors use `StagePill`, `StageDot` or `stagePillClass` from `@ops/ui/composites/StagePill`, never a local color table.
 - Never fetch data inside a `packages/ui` component — pass it in as props.
 - Never add a raw `<input type="date">` where `@ops/ui` has a date/calendar
   component (see `packages/ui/src/composites/CalendarMonth`).

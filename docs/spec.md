@@ -536,7 +536,8 @@ docs/
   architecture.md                  layers, request lifecycle, tenancy, email flows (mermaid diagrams)
   decisions/decision-register.md   §2, kept current
   decisions/open-questions.md
-  adr/0001-foundation.md 0002-tenancy.md 0003-code-license.md (open) NNNN-<title>.md
+  adr/0001-foundation.md 0002-tenancy.md 0003-code-license.md (open) 0004-product-api-and-verification.md NNNN-<title>.md
+  backlog/code-health.md ux.md     open code-health and UX findings, deleted as they are fixed
   runbooks/provision-tenant.md deploy.md rollback.md onboarding-customer.md incident.md
   history.md                       condensed build history per milestone
   reports/size.json                written by check:size
@@ -803,10 +804,11 @@ Legend: O owner · M manager · S staff · *scope* = §9.10 staff scope · *pare
 ---
 
 ## 12. API contracts
-Payload REST (`/api/<collection>`) serves the Payload admin only; the product UI uses Server Actions and RSC. Custom route handlers:
+Payload REST (`/api/<collection>`) serves the Payload admin only. The product UI uses Server Actions and RSC, and the same use cases are exposed as the product API (§12.3, ADR-0004). Custom route handlers:
 | Method & path | Auth | Request | Response | Errors |
 |---|---|---|---|---|
 | GET `/api/v1/health` | none | — | `{ status: 'ok', version, migration }` | — |
+| GET `/api/v1` | session | — | `{ ok, data: { endpoints: { id, method, path, summary, success, body? }[] } }`, body as JSON Schema (§12.3) | 401 |
 | POST `/api/v1/auth/login` | none, `RATE_LIMIT_AUTH` | `{ email, password }` | sets Payload cookie; `{ redirect }` | 400, 401, 423 locked, 403 inactive, 429 |
 | POST `/api/v1/auth/forgot-password` | none, `RATE_LIMIT_AUTH` | `{ email }` | always 200 | 429 |
 | POST `/api/v1/auth/reset-password` | token, `RATE_LIMIT_AUTH` | `{ token, password }` (D-46) | `payload.resetPassword` → cookie; `{ redirect: '/' }` | 400 policy, 410 invalid/expired token, 429 |
@@ -824,7 +826,7 @@ Payload REST (`/api/<collection>`) serves the Payload admin only; the product UI
 Cookie creation after Local API login/reset/accept uses Payload's cookie helper for the users collection (verify the exported helper name in M1; else set the Payload token cookie with the collection's cookie options) and record it in the decision register.
 `src/proxy.ts` returns 404 for `/api/users/forgot-password`, `/api/users/reset-password`, `/api/users/unlock`, `/api/users/first-register`, `/api/users/verify/*` and `POST /api/users`,
 so every set-password path goes through the D-46 policy; Payload admin keeps `/api/users/login`, `/logout`, `/me`, `/refresh-token` (protected by Payload lockout).
-Server Actions (one per command) at `apps/web/src/server/actions/<module>/<command>.ts`: `parse(schema)` → `getActor()` → `execute` → `revalidatePath` → return `ActionResult` (`{ ok: true, data } | { ok: false, error: DomainError }`).
+Server Actions (one per command) at `apps/web/src/server/actions/<module>/<command>.ts`: `parse(schema)` → `getActor()` → `execute` → `revalidatePath` → return `ActionResult` from `apps/web/src/server/action-result.ts` (`{ ok: true, data } | { ok: false, error: { code, message, fields? } }`); unexpected exceptions go through `actionFailure`, which logs them and returns generic copy with code `INTERNAL`.
 
 ### 12.1 Error mapping
 | ErrorCode | HTTP | UI treatment |
@@ -842,6 +844,16 @@ Server Actions (one per command) at `apps/web/src/server/actions/<module>/<comma
 For each registered record type visible to the actor: Payload `like` (case-insensitive `LIKE '%q%'`) OR-ed across `searchFields`
 (organizations `name, email`; contacts `firstName, lastName, email, phone`; leads `title, email, phone, companyName`; deals `title`; projects `name`; tasks `title`),
 AND scope filter, ordered by `updatedAt` desc, 5 results per type, 20 total. D1 FTS5 is deferred to a Phase 3 ADR.
+
+
+### 12.3 Product API
+The product API exposes module use cases over JSON for scripts, integrations and verification. The contract registry `apps/web/src/server/api/contracts.ts` is the list of endpoints: each entry gives the method, path, summary, success status and body schema, and `GET /api/v1` serves it with every body as JSON Schema. Today it covers tasks (`/api/v1/tasks`: list, get, create, update, move, complete, reopen, dates) and projects (`/api/v1/projects`: list, get, create, update, add and remove members).
+
+- Authentication is the Payload session cookie from `POST /api/v1/auth/login`; without an active session every endpoint returns 401.
+- Request bodies are JSON and validated against the registry schema, which is the module's zod schema minus path params. Records are read with the actor's access, as in the UI.
+- Every response is an `ActionResult`. The status comes from §12.1 for failures and from the registry for success (200, or 201 for creates). A `VALIDATION` failure carries `error.fields`, keyed by dotted input path.
+- Writes that change a versioned record take `expectedUpdatedAt`; a stale version returns 409 `CONFLICT`.
+- A route calls the same module command as the matching server action and contains no business rules. `apiRoute` in `apps/web/src/server/api/http.ts` owns authentication, status mapping and exception handling.
 
 ---
 

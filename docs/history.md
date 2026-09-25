@@ -130,6 +130,22 @@ Acceptance for this pass ran an isolated Worker-preview end-to-end and accessibi
 
 Representative commits: `9bb10f9` (contextual task creation and links), `119e81c` / `90825c0` / `ecdcf5f` (board card ownership/close-date context), `d2bb4b5` (refresh deal totals after board moves), `ebf4686` (guard board drag cancellation), `faf61c4` / `87265de` (notification recovery and context), `8290a73` / `809cb21` (client walkthrough workspace seed).
 
+## Harness removal and code-health pass (2026-09-25 to 2026-09-26)
+
+The agent process harness was removed, and a first code-health pass fixed the defects and gate holes a whole-repository review had found. Verification moved from test files to curl checks against the running app, backed by a product API (ADR-0004). The open findings from that review are in [`docs/backlog/`](backlog/).
+
+- The harness, the work-package scope check, spike scripts, orchestration docs and generated reports were deleted, about 21,600 lines. `AGENTS.md` (imported by `CLAUDE.md`), task skills in `.claude/skills/` and a hook that formats edited files replaced them (`602ad09`).
+- `check:disables` now rejects a directive that names no rule. The six files that disabled lint entirely were refactored to pass it (`c76d079`).
+- Provisioning wrote the tenant secrets file into the working tree and lost track of it after the next step, so the file stayed on disk. Secret files now live in a private temporary directory removed at the end of every run (`829f866`).
+- The task repository's stage store discarded stage transitions. It now writes them through codecs shared with the CRM store (`3950b5e`).
+- dependency-cruiser excluded every `node_modules` path, so no rule about npm packages could fire. With that fixed, it found `@ops/ui` importing `next` undeclared, and `routes-no-payload` now blocks new Payload imports in route files (`bc5ec27`).
+- Duplicate search-param, initials and stage-colour helpers were replaced by shared ones, and tasks and deals render stages with `StagePill` (`32f8436`).
+- Server actions returned four result shapes and sent raw exception text to the browser from 16 catch blocks. All now return `ActionResult`, and unexpected exceptions are logged and shown as generic copy (`a004a47`).
+- Adding or removing a project member always failed, because guarded updates could not write has-many relationships. The API's first curl checks surfaced it (`1596662`).
+- Task and project use cases are on `/api/v1`, described by a contract registry and served as JSON Schema by `GET /api/v1`. Work and CRM validation failures name each invalid field (`376bf05`).
+
+Verification for this pass was local: static gates, unit and integration tests, and curl gates against the local dev server (`pnpm dev`) on the seeded workspace. The build, end-to-end suite and production were not exercised.
+
 ## Lessons that shaped the codebase
 
 - Shared cross-package contracts must live in a leaf module, never re-exported through an aggregator that other modules also import from, or the dependency graph cycles. Fixed by `8d2683b`, `2b2f249`.
@@ -140,6 +156,9 @@ Representative commits: `9bb10f9` (contextual task creation and links), `119e81c
 - Customer-facing authentication and the administrative Payload panel are two different surfaces; end-to-end coverage must exercise the customer `/login` path and assert no admin links leak into customer navigation, or a regression in the customer auth boundary can pass unnoticed.
 - A vertical is not done because its leaf tests pass; every acceptance-owned output (routes, persisted data, UI, Worker entry points) must be confirmed to exist.
 - Confirmed tenant data (owner, timezone, currency, host, email) must flow end to end from the tenant manifest into seed, settings and onboarding; a correctly branded shell can still show placeholder regional data underneath.
+- A delegated refactor can pass lint, typecheck and every test while deleting validation. Review delegated diffs against `HEAD` for removed checks and messages before committing.
+- A gate can be silently inert: a bare `eslint-disable` passed `check:disables`, and an `exclude` pattern hid every npm import from dependency-cruiser. Prove a new gate fires by planting one violation before relying on it.
+- Tailwind generates only class names written literally in source, so a colour class built at runtime renders nothing unless the literal also appears somewhere else.
 
 ## Known open items at the time of condensing (2026-09-25)
 
