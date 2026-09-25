@@ -62,4 +62,6 @@ Only for a bug that neither a response nor a type reveals:
 - a permission or tenant-scope leak,
 - a race between two writers.
 
-Write it through the module's in-memory double (`packages/modules/crm/test/memory-crm.ts`, `packages/modules/work/test/memory-work.ts`), make it fail before the fix, and commit it with the fix. Never test config literals, source text, tenant values or code nothing calls.
+When you change code that an existing test covers only by restating a schema, a config value or the mechanics of the old implementation, delete that test in the same commit instead of rewriting it. Keep tests that guard the four cases above.
+
+Write a new one through the module's in-memory double (`packages/modules/crm/test/memory-crm.ts`, `packages/modules/work/test/memory-work.ts`), make it fail before the fix, and commit it with the fix. Never test config literals, source text, tenant values or code nothing calls.

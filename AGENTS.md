@@ -33,7 +33,7 @@ Copy these instead of inventing a new shape. The task skills walk through each o
 - API endpoint: a registry entry in `apps/web/src/server/api/contracts.ts` and the route `apps/web/src/app/api/v1/tasks/[id]/route.ts`.
 - Result shape and error handling: `apps/web/src/server/action-result.ts`.
 - Stage change with transaction and activity: `packages/platform/src/workflows/change-stage.ts`.
-- Generic record list and detail: `apps/web/src/app/(app)/directory-view.tsx` with `apps/web/src/server/crm/directory/data.ts`.
+- Generic record list and detail: the `apps/web/src/app/(app)/directory-*.tsx` family (`directory-view`, `directory-list-view`, `directory-record-view`, `directory-form`, `directory-filters`) with `apps/web/src/server/crm/directory/data.ts`.
 - Optimistic board move with rollback: `packages/ui/src/composites/KanbanBoard/board-state.ts`.
 
 ## Commands
@@ -89,7 +89,7 @@ A lead that delegates a refactor diffs the result against `HEAD` for removed che
 
 ## References and licences
 
-Reference products are cloned in `../references/`; `../references/README.md` lists their licences. MIT and Apache-2.0 code (Payload, `twenty/packages/twenty-ui`, Corteza, Agentic Inbox) may be copied with its licence notice kept, following `third_party/agentic-inbox/`. Plane, Twenty's application code, Frappe CRM, Huly and Odoo are behavior references only: re-implement, do not copy, until the open code-licence decision (ADR-0003, spec D-30) says otherwise.
+Reference products are cloned in `../references/`; `../references/README.md` lists their licences. MIT and Apache-2.0 code (Payload, `twenty/packages/twenty-ui`, Corteza, Agentic Inbox) may be copied with its licence notice kept, following `third_party/agentic-inbox/`. Plane, Twenty's application code, Frappe CRM, Huly and Odoo are behavior references only: re-implement, do not copy, until the code-licence decision says otherwise. That decision is open: ADR-0003 is reserved for it and not yet written (spec D-30, open question Q-001).
 
 ## Documentation
 
