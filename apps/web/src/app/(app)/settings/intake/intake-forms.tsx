@@ -45,16 +45,12 @@ function selectedValues(event: ChangeEvent<HTMLSelectElement>): string[] {
 }
 
 function resultMessage(result: ActionResult | undefined): string | undefined {
-  if (result?.ok === false) return result.error
+  if (result?.ok === false) return result.error.message
   if (result?.ok === true) return 'Saved.'
   return undefined
 }
 
-function serverKeyOf(result: ActionResult | undefined): string | undefined {
-  if (result?.ok !== true || typeof result.data !== 'object' || result.data === null) return undefined
-  const key: unknown = Reflect.get(result.data, 'serverKey') as unknown
-  return typeof key === 'string' ? key : undefined
-}
+type RotateKeyAction = (input: unknown) => Promise<ActionResult<{ serverKey: string }>>
 
 function OptionSelect({
   label,
@@ -111,7 +107,7 @@ export function IntakeCreateForm({ action }: Readonly<{ action: Action }>) {
         router.refresh()
       }
     } catch {
-      setResult({ ok: false, error: 'Could not create this form. Please try again.' })
+      setResult({ ok: false, error: { code: 'INTERNAL', message: 'Could not create this form. Please try again.' } })
     } finally {
       setPending(false)
     }
@@ -170,7 +166,7 @@ export function IntakeFormEditor({
   action: Action
   form: IntakeFormView
   groups: readonly IntakeOption[]
-  rotateServerKey: Action
+  rotateServerKey: RotateKeyAction
   sources: readonly IntakeOption[]
   users: readonly IntakeOption[]
 }>) {
@@ -190,11 +186,11 @@ export function IntakeFormEditor({
     emailAlias: form.emailAlias,
   })
   const [result, setResult] = useState<ActionResult | undefined>()
-  const [keyResult, setKeyResult] = useState<ActionResult | undefined>()
+  const [keyResult, setKeyResult] = useState<ActionResult<{ serverKey: string }> | undefined>()
   const [pending, setPending] = useState(false)
   const [rotating, setRotating] = useState(false)
   const router = useRouter()
-  const generatedKey = serverKeyOf(keyResult)
+  const generatedKey = keyResult?.ok === true ? keyResult.data.serverKey : undefined
   const endpoint = `/api/v1/intake/${values.key}`
   const embedSnippet = `<form action="${endpoint}" method="post">
   <label>Email <input name="email" type="email" required></label>
@@ -216,7 +212,7 @@ export function IntakeFormEditor({
       setResult(response)
       if (response.ok) router.refresh()
     } catch {
-      setResult({ ok: false, error: 'Could not save this form. Please try again.' })
+      setResult({ ok: false, error: { code: 'INTERNAL', message: 'Could not save this form. Please try again.' } })
     } finally {
       setPending(false)
     }
@@ -229,7 +225,10 @@ export function IntakeFormEditor({
       setKeyResult(response)
       if (response.ok) router.refresh()
     } catch {
-      setKeyResult({ ok: false, error: 'Could not generate a server key. Please try again.' })
+      setKeyResult({
+        ok: false,
+        error: { code: 'INTERNAL', message: 'Could not generate a server key. Please try again.' },
+      })
     } finally {
       setRotating(false)
     }
@@ -443,7 +442,7 @@ export function IntakeFormEditor({
             )}
             {keyResult?.ok === false && (
               <p className="mt-2 text-xs text-destructive" role="alert">
-                {keyResult.error}
+                {keyResult.error.message}
               </p>
             )}
           </div>

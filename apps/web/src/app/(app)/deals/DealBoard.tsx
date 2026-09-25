@@ -37,10 +37,10 @@ export function DealBoard({
             return deferredLostMoveResult(stageByCard.current.get(cardId) ?? toStageId, expectedUpdatedAt)
           }
           const result = await moveDealAction({ dealId: cardId, toStageId, expectedUpdatedAt })
-          if (!result.ok) return { ok: false, error: { code: result.code ?? 'INTERNAL', message: result.message } }
+          if (!result.ok) return { ok: false, error: result.error }
           stageByCard.current.set(cardId, toStageId)
           router.refresh()
-          return { ok: true, data: { stageId: toStageId, updatedAt: result.updatedAt } }
+          return { ok: true, data: { stageId: toStageId, updatedAt: result.data.updatedAt } }
         }}
         onConflict={() => {
           router.refresh()

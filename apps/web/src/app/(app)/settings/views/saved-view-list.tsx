@@ -80,7 +80,7 @@ export function SavedViewList({
                   setError('')
                   void setSavedViewState({ id: view.id, pinned: !view.pinned }).then((result) => {
                     setPendingId(null)
-                    if (!result.ok) setError(result.error)
+                    if (!result.ok) setError(result.error.message)
                     else router.refresh()
                   })
                 }}
@@ -97,7 +97,7 @@ export function SavedViewList({
                   setError('')
                   void setSavedViewState({ id: view.id, isDefault: true }).then((result) => {
                     setPendingId(null)
-                    if (!result.ok) setError(result.error)
+                    if (!result.ok) setError(result.error.message)
                     else router.refresh()
                   })
                 }}
@@ -118,7 +118,7 @@ export function SavedViewList({
                       void saveConfiguration({ collection: 'savedViews', id: view.id, name }).then((result) => {
                         setPendingId(null)
                         if (!result.ok) {
-                          setError(result.error)
+                          setError(result.error.message)
                           return
                         }
                         setEditingId(null)
@@ -165,7 +165,7 @@ export function SavedViewList({
                   setError('')
                   void deleteConfiguration({ collection: 'savedViews', id: view.id }).then((result) => {
                     setPendingId(null)
-                    if (!result.ok) setError(result.error)
+                    if (!result.ok) setError(result.error.message)
                   })
                 }}
               >

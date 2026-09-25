@@ -125,7 +125,7 @@ export function DealCreateDialog({
         sourceLeadId: null,
       })
       if (!result.ok) {
-        setError(result.message)
+        setError(result.error.message)
         return
       }
       form.reset()

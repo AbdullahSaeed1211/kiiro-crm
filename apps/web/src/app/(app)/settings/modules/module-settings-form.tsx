@@ -39,7 +39,7 @@ export function ModuleSettingsForm({
     setMessage(undefined)
     try {
       const result = await action(values)
-      setMessage(result.ok ? 'Modules saved.' : result.error)
+      setMessage(result.ok ? 'Modules saved.' : result.error.message)
       if (result.ok) router.refresh()
     } catch {
       setMessage('Unable to save modules. Try again.')

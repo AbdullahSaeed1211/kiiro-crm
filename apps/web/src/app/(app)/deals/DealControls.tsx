@@ -28,7 +28,7 @@ function useDealAction() {
     startTransition(async () => {
       const result = await task()
       if (!result.ok) {
-        setError(result.message)
+        setError(result.error.message)
         onFailure?.()
         router.refresh()
       } else {

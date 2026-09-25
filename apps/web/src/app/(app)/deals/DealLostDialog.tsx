@@ -42,7 +42,7 @@ function useLostDealSubmission({
         lostNote: note,
       })
       if (!result.ok) {
-        setError(result.message)
+        setError(result.error.message)
         router.refresh()
         return
       }

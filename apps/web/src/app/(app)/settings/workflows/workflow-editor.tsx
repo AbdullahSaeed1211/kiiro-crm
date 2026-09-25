@@ -54,7 +54,7 @@ function WorkflowCard({
         stages,
         defaultStageId: defaultStage.id,
       })
-      setMessage(result.ok ? 'Workflow saved.' : result.error)
+      setMessage(result.ok ? 'Workflow saved.' : result.error.message)
       if (result.ok) router.refresh()
     } catch {
       setMessage('Unable to save workflow. Try again.')
@@ -68,7 +68,7 @@ function WorkflowCard({
     setMessage(undefined)
     try {
       const result = await deleteAction({ collection: 'workflows', id: draft.id })
-      setMessage(result.ok ? 'Workflow deleted.' : result.error)
+      setMessage(result.ok ? 'Workflow deleted.' : result.error.message)
       if (result.ok) router.refresh()
     } catch {
       setMessage('Unable to delete workflow. Try again.')
@@ -231,7 +231,7 @@ export function WorkflowEditor({
         stages: [stage],
         defaultStageId: stage.id,
       })
-      setMessage(result.ok ? 'Workflow created.' : result.error)
+      setMessage(result.ok ? 'Workflow created.' : result.error.message)
       if (result.ok) {
         setAdding(false)
         router.refresh()

@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { can } from '@ops/platform'
+import { actionError, actionFailure, actionOk } from '../../action-result'
 import { payloadData } from '../../auth/api'
 import { getProductContext, requireRole, type ProductContext } from '../../auth/context'
 import {
@@ -19,9 +20,9 @@ import {
   saveGroup as saveGroupAction,
   saveMember as saveMemberAction,
 } from './members'
-import type { ActionResult } from './types'
 import { isSupportedCurrency } from '../../../i18n/currencies'
-export type { ActionResult } from './types'
+import type { ActionResult } from '../../action-result'
+export type { ActionResult } from '../../action-result'
 
 const recordOf = (input: unknown): Record<string, unknown> =>
   typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
@@ -65,18 +66,18 @@ export async function updateSettings(input: unknown): Promise<ActionResult> {
   const context = await getProductContext()
   const data = normalizeSettings(recordOf(input))
   if (data.currency !== undefined && !isSupportedCurrency(data.currency))
-    return { ok: false, error: 'Choose a supported ISO 4217 currency.' }
+    return actionError('VALIDATION', 'Choose a supported ISO 4217 currency.')
   const keys = Object.keys(data)
   const owner = can(context.actor, 'manage_settings', { type: 'settings' })
   const managerUpdate =
     context.actor.role === 'manager' && keys.every((key) => key === 'terminology' || key === 'stalledDays')
-  if (!owner && !managerUpdate) return { ok: false, error: 'You do not have permission to update these settings.' }
+  if (!owner && !managerUpdate) return actionError('FORBIDDEN', 'You do not have permission to update these settings.')
   try {
     await context.payload.updateGlobal({ slug: 'settings', data, overrideAccess: true, req: context.req })
     revalidatePath('/settings')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to save settings.' }
+    return actionFailure(error, 'updateSettings', 'Unable to save settings.')
   }
 }
 
@@ -108,7 +109,7 @@ export async function createIntakeForm(input: unknown): Promise<ActionResult> {
   const key = stringValue(data.key)?.toLowerCase()
   const name = stringValue(data.name)
   if (key === undefined || name === undefined || !INTAKE_KEY_PATTERN.test(key))
-    return { ok: false, error: 'Name and a lowercase URL-safe key are required.' }
+    return actionError('VALIDATION', 'Name and a lowercase URL-safe key are required.')
   try {
     await context.payload.create({
       collection: 'intakeForms',
@@ -126,9 +127,9 @@ export async function createIntakeForm(input: unknown): Promise<ActionResult> {
       req: context.req,
     })
     revalidatePath('/settings/intake')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to create intake form.' }
+    return actionFailure(error, 'createIntakeForm', 'Unable to create intake form.')
   }
 }
 
@@ -136,9 +137,9 @@ export async function updateIntakeForm(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
   const data = recordOf(input)
   const id = stringValue(data.id)
-  if (id === undefined) return { ok: false, error: 'Intake form id is required.' }
+  if (id === undefined) return actionError('VALIDATION', 'Intake form id is required.')
   const parsed = parseIntakeFormSettings(data)
-  if (!parsed.ok) return parsed
+  if (!parsed.ok) return actionError('VALIDATION', parsed.error)
   try {
     await context.payload.update({
       collection: 'intakeForms',
@@ -147,17 +148,17 @@ export async function updateIntakeForm(input: unknown): Promise<ActionResult> {
       req: context.req,
     })
     revalidatePath('/settings/intake')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to update intake form.' }
+    return actionFailure(error, 'updateIntakeForm', 'Unable to update intake form.')
   }
 }
 
 /** Adds a new hashed server credential and returns the plaintext exactly once for copying. */
-export async function rotateIntakeServerKey(input: unknown): Promise<ActionResult> {
+export async function rotateIntakeServerKey(input: unknown): Promise<ActionResult<{ serverKey: string }>> {
   const context = await requireRole('owner', 'manager')
   const id = stringValue(recordOf(input).id)
-  if (id === undefined) return { ok: false, error: 'Intake form id is required.' }
+  if (id === undefined) return actionError('VALIDATION', 'Intake form id is required.')
   try {
     const found = await context.payload.find({
       collection: 'intakeForms',
@@ -166,7 +167,7 @@ export async function rotateIntakeServerKey(input: unknown): Promise<ActionResul
       depth: 0,
       req: context.req,
     })
-    if (found.docs.length === 0) return { ok: false, error: 'Intake form not found.' }
+    if (found.docs.length === 0) return actionError('NOT_FOUND', 'Intake form not found.')
     const form = found.docs[0]
     const currentHashes = Array.isArray(form.serverKeyHashes)
       ? form.serverKeyHashes.filter((hash): hash is string => typeof hash === 'string')
@@ -179,9 +180,9 @@ export async function rotateIntakeServerKey(input: unknown): Promise<ActionResul
       req: context.req,
     })
     revalidatePath('/settings/intake')
-    return { ok: true, data: { serverKey } }
+    return actionOk({ serverKey })
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to create server key.' }
+    return actionFailure(error, 'rotateIntakeServerKey', 'Unable to create server key.')
   }
 }
 
@@ -189,13 +190,13 @@ export async function saveTerminology(input: unknown): Promise<ActionResult> {
   return updateSettings({ terminology: recordOf(input) })
 }
 
-// eslint-disable-next-line complexity, max-statements -- configuration writes share one validated boundary
+// eslint-disable-next-line max-statements -- configuration writes share one validated boundary
 export async function saveConfiguration(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
   const data = recordOf(input)
   const collection = stringValue(data.collection)
   if (collection === undefined || !['fieldDefinitions', 'workflows', 'savedViews', 'layouts'].includes(collection))
-    return { ok: false, error: 'Configuration collection is invalid.' }
+    return actionError('VALIDATION', 'Configuration collection is invalid.')
   const id = stringValue(data.id)
   const values = { ...data }
   delete values.collection
@@ -208,9 +209,9 @@ export async function saveConfiguration(input: unknown): Promise<ActionResult> {
     else await dataPayload.update({ collection, id, data: values, overrideAccess: false, req: context.req })
     revalidatePath('/settings')
     if (collection === 'savedViews') revalidatePath('/settings/views')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to save configuration.' }
+    return actionFailure(error, 'saveConfiguration', 'Unable to save configuration.')
   }
 }
 
@@ -221,15 +222,15 @@ export async function deleteConfiguration(input: unknown): Promise<ActionResult>
   const collection = stringValue(data.collection)
   const id = stringValue(data.id)
   if (collection === undefined || !['fieldDefinitions', 'workflows', 'savedViews', 'layouts'].includes(collection))
-    return { ok: false, error: 'Configuration collection is invalid.' }
-  if (id === undefined) return { ok: false, error: 'Configuration id is required.' }
+    return actionError('VALIDATION', 'Configuration collection is invalid.')
+  if (id === undefined) return actionError('VALIDATION', 'Configuration id is required.')
   try {
     await payloadData(context.payload).delete({ collection, id, overrideAccess: false, req: context.req })
     revalidatePath('/settings')
     if (collection === 'savedViews') revalidatePath('/settings/views')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to delete configuration.' }
+    return actionFailure(error, 'deleteConfiguration', 'Unable to delete configuration.')
   }
 }
 
@@ -281,7 +282,7 @@ function savedViewStateInput(
   const pinned = typeof data.pinned === 'boolean' ? data.pinned : undefined
   const isDefault = typeof data.isDefault === 'boolean' ? data.isDefault : undefined
   return id === undefined || (pinned === undefined && isDefault === undefined)
-    ? { ok: false, error: 'A view and a state change are required.' }
+    ? actionError('VALIDATION', 'A view and a state change are required.')
     : { id, ...(pinned === undefined ? {} : { pinned }), ...(isDefault === undefined ? {} : { isDefault }) }
 }
 
@@ -300,7 +301,7 @@ export async function setSavedViewState(input: unknown): Promise<ActionResult> {
       req: context.req,
     })
     const view = found.docs.at(0)
-    if (view === undefined) return { ok: false, error: 'Saved view not found.' }
+    if (view === undefined) return actionError('NOT_FOUND', 'Saved view not found.')
     if (parsed.isDefault === true) await clearSiblingDefaults(dataPayload, view, context.req)
     await dataPayload.update({
       collection: 'savedViews',
@@ -313,22 +314,22 @@ export async function setSavedViewState(input: unknown): Promise<ActionResult> {
       req: context.req,
     })
     revalidatePath('/settings/views')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to update saved view.' }
+    return actionFailure(error, 'setSavedViewState', 'Unable to update saved view.')
   }
 }
 
 export async function saveProfile(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager', 'staff')
   const name = stringValue(recordOf(input).name)
-  if (name === undefined) return { ok: false, error: 'Name is required.' }
+  if (name === undefined) return actionError('VALIDATION', 'Name is required.')
   try {
     await context.payload.update({ collection: 'users', id: context.actor.id, data: { name }, req: context.req })
     revalidatePath('/settings/profile')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to save profile.' }
+    return actionFailure(error, 'saveProfile', 'Unable to save profile.')
   }
 }
 
@@ -346,7 +347,7 @@ export async function saveNotificationPreferences(input: unknown): Promise<Actio
       digestLocalTime !== undefined &&
       (typeof digestLocalTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(digestLocalTime)))
   )
-    return { ok: false, error: 'Notification channels or digest time are invalid.' }
+    return actionError('VALIDATION', 'Notification channels or digest time are invalid.')
   try {
     const found = await dataPayload.find({
       collection: 'notificationPrefs',
@@ -377,13 +378,13 @@ export async function saveNotificationPreferences(input: unknown): Promise<Actio
         req: context.req,
       })
     revalidatePath('/settings/notifications')
-    return { ok: true }
+    return actionOk()
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to save notification preferences.' }
+    return actionFailure(error, 'saveNotificationPreferences', 'Unable to save notification preferences.')
   }
 }
 
-export async function inviteMember(input: unknown): Promise<ActionResult> {
+export async function inviteMember(input: unknown): Promise<ActionResult<{ token: string; inviteUrl: string }>> {
   return inviteMemberAction(input)
 }
 
@@ -391,7 +392,7 @@ export async function revokeInvitation(input: unknown): Promise<ActionResult> {
   return revokeInvitationAction(input)
 }
 
-export async function resendInvitation(input: unknown): Promise<ActionResult> {
+export async function resendInvitation(input: unknown): Promise<ActionResult<{ inviteUrl: string }>> {
   return resendInvitationAction(input)
 }
 

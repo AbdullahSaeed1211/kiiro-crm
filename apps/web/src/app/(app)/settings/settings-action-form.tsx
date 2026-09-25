@@ -6,13 +6,9 @@ import { useState, type SyntheticEvent } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
 import { SearchableSelect } from './searchable-select'
 import type { CurrencyOption } from '../../../i18n/currencies'
+import type { ActionResult } from '../../../server/action-result'
 
-interface Result {
-  readonly ok: boolean
-  readonly error?: string
-  readonly data?: unknown
-}
-type Action = (input: unknown) => Promise<Result>
+type Action = (input: unknown) => Promise<ActionResult>
 
 interface Field {
   name: string
@@ -81,7 +77,7 @@ export function SettingsActionForm({
   const [values, setValues] = useState<Record<string, string>>(
     Object.fromEntries(fields.map((field) => [field.name, String(initialValues[field.name] ?? '')])),
   )
-  const [result, setResult] = useState<Result | undefined>()
+  const [result, setResult] = useState<ActionResult | undefined>()
   const [pending, setPending] = useState(false)
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -92,7 +88,7 @@ export function SettingsActionForm({
       setResult(response)
       if (response.ok) router.refresh()
     } catch {
-      setResult({ ok: false, error: "We couldn't save your changes. Please try again." })
+      setResult({ ok: false, error: { code: 'INTERNAL', message: "We couldn't save your changes. Please try again." } })
     } finally {
       setPending(false)
     }
@@ -116,7 +112,7 @@ export function SettingsActionForm({
       ))}
       {result?.ok === false && (
         <p className="text-sm text-destructive" role="alert">
-          {result.error}
+          {result.error.message}
         </p>
       )}
       {result?.ok === true && (

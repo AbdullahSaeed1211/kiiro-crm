@@ -1,30 +1,26 @@
 'use server'
 
+import type { Result } from '@ops/kernel'
 import { createDeal, markLost, moveDeal, updateDeal } from '@ops/module-crm'
 import { revalidatePath } from 'next/cache'
 import { getCrmDeps } from '../deps'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
 import { withDefaultOwner } from './view-model'
+import { actionError, actionOk, type ActionResult } from '../../action-result'
 
-export type DealActionResult =
-  | { readonly ok: true; readonly id: string; readonly updatedAt: number }
-  | { readonly ok: false; readonly message: string; readonly code?: string }
-
-function resultOf(
-  result:
-    | { readonly ok: true; readonly value: { readonly id: string; readonly updatedAt: number } }
-    | { readonly ok: false; readonly error: { readonly message: string; readonly code: string } },
-): DealActionResult {
-  return result.ok
-    ? { ok: true, id: result.value.id, updatedAt: result.value.updatedAt }
-    : { ok: false, message: result.error.message, code: result.error.code }
-}
+export type DealActionResult = ActionResult<{ readonly id: string; readonly updatedAt: number }>
 
 function refresh(id?: string) {
   revalidatePath('/deals')
   revalidatePath('/deals/board')
   if (id !== undefined) revalidatePath(`/deals/${id}`)
+}
+
+function resultOf(result: Result<{ readonly id: string; readonly updatedAt: number }>): DealActionResult {
+  return result.ok
+    ? actionOk({ id: result.value.id, updatedAt: result.value.updatedAt })
+    : actionError(result.error.code, result.error.message)
 }
 
 export async function createDealAction(input: unknown): Promise<DealActionResult> {

@@ -53,7 +53,7 @@ export function NotificationSettingsForm({
     setMessage(undefined)
     try {
       const result = await action({ channels: values, digestLocalTime: digest })
-      setMessage(result.ok ? 'Notification preferences saved.' : result.error)
+      setMessage(result.ok ? 'Notification preferences saved.' : result.error.message)
       if (result.ok) router.refresh()
     } catch {
       setMessage('Unable to save preferences. Try again.')

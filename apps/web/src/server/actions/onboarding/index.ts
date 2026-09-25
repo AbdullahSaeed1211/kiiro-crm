@@ -5,13 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '../../auth/context'
 import { applyTemplate } from './apply-template'
 import { isSupportedCurrency } from '../../../i18n/currencies'
+import { actionOk, actionError, actionFailure, type ActionResult } from '../../action-result'
 
-export async function saveOnboardingStep(step: string, input: unknown) {
+export async function saveOnboardingStep(step: string, input: unknown): Promise<ActionResult<{ step: string }>> {
   const context = await requireRole('owner')
-  if (step === '') return { ok: false, error: 'A step is required.' } as const
+  if (step === '') return actionError('VALIDATION', 'A step is required.')
   const data = typeof input === 'object' && input !== null ? { ...(input as Record<string, unknown>) } : {}
   if (step === 'workspace' && !isSupportedCurrency(data.currency))
-    return { ok: false, error: 'Choose a supported ISO 4217 currency.' } as const
+    return actionError('VALIDATION', 'Choose a supported ISO 4217 currency.')
   if (typeof data.weekStartsOn === 'string') data.weekStartsOn = Number(data.weekStartsOn)
   if (typeof data.stalledDays === 'string') data.stalledDays = Number(data.stalledDays)
   const current = (await context.payload.findGlobal({
@@ -55,13 +56,13 @@ export async function saveOnboardingStep(step: string, input: unknown) {
       req: context.req,
     })
     revalidatePath('/onboarding')
-    return { ok: true, data: { step } } as const
+    return actionOk({ step })
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to save onboarding.' } as const
+    return actionFailure(error, 'saveOnboardingStep', 'Unable to save onboarding.')
   }
 }
 
-export async function setOnboardingStep(step: number) {
+export async function setOnboardingStep(step: number): Promise<ActionResult> {
   const context = await requireRole('owner')
   const settings = (await context.payload.findGlobal({
     slug: 'settings',
@@ -88,10 +89,10 @@ export async function setOnboardingStep(step: number) {
     req: context.req,
   })
   revalidatePath('/onboarding')
-  return { ok: true } as const
+  return actionOk()
 }
 
-export async function completeOnboarding() {
+export async function completeOnboarding(): Promise<ActionResult> {
   const context = await requireRole('owner')
   await context.payload.updateGlobal({
     slug: 'settings',
@@ -100,5 +101,5 @@ export async function completeOnboarding() {
     req: context.req,
   })
   revalidatePath('/onboarding')
-  return { ok: true } as const
+  return actionOk()
 }

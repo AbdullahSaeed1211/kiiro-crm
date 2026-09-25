@@ -8,6 +8,7 @@ import {
 import { revalidatePath } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 import type { UntypedPayload } from '../../auth/api'
+import { actionOk, actionError, actionFailure, type ActionResult } from '../../action-result'
 
 interface PayloadContext {
   readonly payload: unknown
@@ -145,12 +146,9 @@ async function ensureView(payload: UntypedPayload, context: PayloadContext, view
 
 /** Applies one declarative vertical template idempotently to a tenant's configuration collections. */
 // eslint-disable-next-line complexity, max-statements, max-lines-per-function -- template application is one atomic authorized workflow.
-export async function applyTemplate(
-  context: PayloadContext,
-  key: string,
-): Promise<{ ok: true; key: string } | { ok: false; error: string }> {
+export async function applyTemplate(context: PayloadContext, key: string): Promise<ActionResult<{ key: string }>> {
   const template = templateFor(key)
-  if (template === undefined) return { ok: false, error: 'Choose a supported business type.' }
+  if (template === undefined) return actionError('VALIDATION', 'Choose a supported business type.')
   const payload = context.payload as UntypedPayload
   try {
     for (const workflow of template.workflows) await upsertWorkflow(payload, context, template, workflow.recordType)
@@ -192,8 +190,8 @@ export async function applyTemplate(
       '/deals',
     ])
       revalidatePath(path)
-    return { ok: true, key: template.key }
+    return actionOk({ key: template.key })
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Unable to apply the business preset.' }
+    return actionFailure(error, 'applyTemplate', 'Unable to apply the business preset.')
   }
 }

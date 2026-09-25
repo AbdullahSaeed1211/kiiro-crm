@@ -52,9 +52,19 @@ Each one caused a real defect here.
 - Do not disable lint for a whole file. Use a scoped `eslint-disable-next-line <rule> -- <reason>`.
 - User-facing copy goes through the i18n copy objects in `apps/web/src/i18n/`.
 
-## Tests
+## Verifying a change
 
-A test earns its place only if a realistic product bug makes it fail. Test behavior through the module's in-memory double or a real browser flow. Do not test config literals, source text, tenant values, or code nothing calls. Fix a defect by first writing the failing test, then commit it as `fix(scope): ...`.
+Check behavior against the running app, not with a new test file. Start it with `PORT=3001 pnpm dev`, sign in as the seeded owner (email in `scripts/seed/data.ts` `USERS`, password `DEV_PASSWORD`), and call the API:
+
+```sh
+curl -s -c /tmp/ops.jar -H 'content-type: application/json' \
+  -d '{"email":"<owner email>","password":"<DEV_PASSWORD>"}' http://localhost:3001/api/v1/auth/login
+curl -s -b /tmp/ops.jar 'http://localhost:3001/api/v1/search?q=site'
+```
+
+Responses carry the outcome: `{ ok, data }`, or `{ ok: false, error: { code, message, fields? } }` (`apps/web/src/server/action-result.ts`). A wrong result is a response you can read, and a wrong shape is a type error. Put validation in the module's zod schema so the response names the failing field.
+
+Add a test only for a bug that neither a response nor a type can reveal: removed validation that still returns `ok`, a lost side effect such as an unwritten audit row, a permission or tenant-scope leak, or a race. Write it through the module's in-memory double, make it fail first, and commit it with the fix as `fix(scope): ...`. Never test config literals, source text, tenant values or code nothing calls.
 
 ## Working in parallel
 

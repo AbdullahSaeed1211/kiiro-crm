@@ -71,7 +71,7 @@ export function OnboardingWizard({
         current[0],
         current[0] === 'workspace' ? values : { ...values, completed: true },
       )
-      if (!result.ok) setMessage(result.error)
+      if (!result.ok) setMessage(result.error.message)
       else {
         const next = Math.min(step + 1, 6)
         setStep(next)

@@ -5,16 +5,13 @@ import { useState, type SyntheticEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '@ops/ui/composites/ConfirmDialog'
 import { CopyButton } from '../copy-button'
+import type { ActionResult } from '../../../server/action-result'
 
-interface Result {
-  readonly ok: boolean
-  readonly error?: string
-  readonly data?: unknown
-}
-type InviteAction = (input: unknown) => Promise<Result>
-type GroupAction = (input: unknown) => Promise<Result>
-type InvitationAction = (input: unknown) => Promise<Result>
-type MemberAction = (input: unknown) => Promise<Result>
+type InviteAction = (input: unknown) => Promise<ActionResult<{ token: string; inviteUrl: string }>>
+type GroupAction = (input: unknown) => Promise<ActionResult>
+type ResendAction = (input: unknown) => Promise<ActionResult<{ inviteUrl: string }>>
+type RevokeAction = (input: unknown) => Promise<ActionResult>
+type MemberAction = (input: unknown) => Promise<ActionResult>
 
 function formText(values: FormData, key: string): string {
   const value = values.get(key)
@@ -26,7 +23,7 @@ export function InvitationActions({
   resendAction,
   revokeAction,
   canRevoke = true,
-}: Readonly<{ id: string; resendAction: InvitationAction; revokeAction: InvitationAction; canRevoke?: boolean }>) {
+}: Readonly<{ id: string; resendAction: ResendAction; revokeAction: RevokeAction; canRevoke?: boolean }>) {
   const [pending, setPending] = useState<'resend' | 'revoke' | null>(null)
   const [message, setMessage] = useState<string>()
   const [inviteUrl, setInviteUrl] = useState('')
@@ -36,10 +33,8 @@ export function InvitationActions({
     setInviteUrl('')
     try {
       const result = await resendAction({ id })
-      const data =
-        typeof result.data === 'object' && result.data !== null ? (result.data as Record<string, unknown>) : {}
-      setInviteUrl(typeof data.inviteUrl === 'string' ? data.inviteUrl : '')
-      setMessage(result.ok ? 'Invitation resent.' : (result.error ?? 'Unable to resend invitation.'))
+      setInviteUrl(result.ok ? result.data.inviteUrl : '')
+      setMessage(result.ok ? 'Invitation resent.' : result.error.message)
     } catch {
       setMessage('Unable to resend invitation. Try again.')
     } finally {
@@ -51,7 +46,7 @@ export function InvitationActions({
     setMessage(undefined)
     try {
       const result = await revokeAction({ id })
-      setMessage(result.ok ? 'Invitation revoked.' : (result.error ?? 'Unable to revoke invitation.'))
+      setMessage(result.ok ? 'Invitation revoked.' : result.error.message)
     } catch {
       setMessage('Unable to revoke invitation. Try again.')
     } finally {
@@ -116,11 +111,9 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
     setInviteUrl('')
     try {
       const result = await action({ email: submittedEmail, role: submittedRole })
-      const data =
-        typeof result.data === 'object' && result.data !== null ? (result.data as Record<string, unknown>) : {}
-      const nextInviteUrl = typeof data.inviteUrl === 'string' ? data.inviteUrl : ''
+      const nextInviteUrl = result.ok ? result.data.inviteUrl : ''
       setInviteUrl(nextInviteUrl)
-      setMessage(result.ok ? 'Invitation created.' : (result.error ?? 'Unable to create invitation.'))
+      setMessage(result.ok ? 'Invitation created.' : result.error.message)
       if (result.ok) setEmail('')
     } catch {
       setMessage('Unable to create invitation. Try again.')
@@ -215,7 +208,7 @@ export function MemberActions({
     setMessage(undefined)
     try {
       const result = await action({ id: member.id, role, active, groups: selectedGroups, reportsTo })
-      setMessage(result.ok ? 'Access saved.' : (result.error ?? 'Unable to save access.'))
+      setMessage(result.ok ? 'Access saved.' : result.error.message)
     } catch {
       setMessage('Unable to save access. Try again.')
     } finally {
@@ -318,7 +311,7 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
     setPending(true)
     try {
       const result = await action({ name })
-      setMessage(result.ok ? 'Group saved.' : (result.error ?? 'Unable to save group.'))
+      setMessage(result.ok ? 'Group saved.' : result.error.message)
       if (result.ok) setName('')
     } catch {
       setMessage('Unable to save group. Try again.')
@@ -384,7 +377,7 @@ export function GroupList({
     setPending(true)
     try {
       const result = await action({ id, name: draft.trim() })
-      setMessage(result.ok ? 'Group saved.' : result.error)
+      setMessage(result.ok ? 'Group saved.' : result.error.message)
       if (result.ok) {
         setEditing(null)
         router.refresh()
@@ -400,7 +393,7 @@ export function GroupList({
     setPending(true)
     try {
       const result = await deleteAction({ id: group.id })
-      setMessage(result.ok ? 'Group deleted.' : result.error)
+      setMessage(result.ok ? 'Group deleted.' : result.error.message)
       if (result.ok) router.refresh()
     } catch {
       setMessage('Could not delete this group. Please try again.')

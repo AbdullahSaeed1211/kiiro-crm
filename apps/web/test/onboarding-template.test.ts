@@ -26,7 +26,7 @@ describe('onboarding template application', () => {
       updateGlobal: vi.fn(() => Promise.resolve({})),
     }
     const result = await applyTemplate({ payload, req: {} as never }, 'legal')
-    expect(result).toEqual({ ok: true, key: 'legal' })
+    expect(result).toEqual({ ok: true, data: { key: 'legal' } })
     expect(updates).toContain('workflows')
     expect(creates).toContain('fieldDefinitions')
     expect(creates).toContain('savedViews')
@@ -35,7 +35,7 @@ describe('onboarding template application', () => {
   it('rejects an unsupported preset before touching tenant data', async () => {
     const payload = { findGlobal: vi.fn(), updateGlobal: vi.fn() }
     const result = await applyTemplate({ payload, req: {} as never }, 'unknown')
-    expect(result).toEqual({ ok: false, error: 'Choose a supported business type.' })
+    expect(result).toEqual({ ok: false, error: { code: 'VALIDATION', message: 'Choose a supported business type.' } })
     expect(payload.findGlobal).not.toHaveBeenCalled()
   })
 })

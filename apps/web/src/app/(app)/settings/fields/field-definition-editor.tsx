@@ -86,7 +86,7 @@ function FieldForm({
         hidden: draft.hidden,
         position: draft.position,
       })
-      setMessage(result.ok ? (isNew ? 'Field created.' : 'Field saved.') : result.error)
+      setMessage(result.ok ? (isNew ? 'Field created.' : 'Field saved.') : result.error.message)
       if (result.ok) {
         onDone()
         router.refresh()
@@ -250,7 +250,7 @@ export function FieldDefinitionEditor({
     setPendingDelete(true)
     try {
       const result = await deleteAction({ collection: 'fieldDefinitions', id: field.id })
-      setMessage(result.ok ? 'Field deleted.' : result.error)
+      setMessage(result.ok ? 'Field deleted.' : result.error.message)
       if (result.ok) router.refresh()
     } catch {
       setMessage('Could not delete this field. Please try again.')
