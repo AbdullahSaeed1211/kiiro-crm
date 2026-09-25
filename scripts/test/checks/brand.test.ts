@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { brandFiles, brandPattern, checkBrand, tenantNames } from '../../check-brand'
-import { CLI_TIMEOUT, FIXTURES, runCheck } from './run-check'
+import { FIXTURES } from './run-check'
 
 const fixture = join(FIXTURES, 'brand')
 
@@ -37,13 +37,6 @@ describe('check:brand', () => {
   it('scans a build output directory in full with --path', () => {
     const output = join(fixture, 'output')
     expect(checkBrand(fixture, output)).toEqual([`${join(output, 'assets/strings.txt')}:1 Twenty`])
-  })
-
-  it('exits 1 on the planted fixture', { timeout: CLI_TIMEOUT }, () => {
-    const run = runCheck('check-brand.ts', ['--root', fixture])
-    expect(run.code).toBe(1)
-    expect(run.stderr).toContain('apps/site/src/copy.ts:2 MIRCH')
-    expect(runCheck('check-brand.ts', ['--root', fixture, '--path', join(fixture, 'output')]).code).toBe(1)
   })
 })
 

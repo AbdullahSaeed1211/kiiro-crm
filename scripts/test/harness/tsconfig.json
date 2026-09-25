@@ -1,7 +1,0 @@
-{
-  "extends": "../../../tooling/tsconfig/base.json",
-  "compilerOptions": {
-    "allowImportingTsExtensions": true
-  },
-  "include": ["./**/*.ts", "../../harness/**/*.ts"]
-}

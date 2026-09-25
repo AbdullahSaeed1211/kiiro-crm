@@ -1,6 +1,5 @@
 import { parseArgs } from 'node:util'
-import { isMain } from './lib/report'
-import { runCli } from './harness/lib/repo'
+import { isMain, runCli } from './lib/report'
 import { loadTenant, workerName } from './lib/provision/plan'
 import type { Tenant } from './lib/tenant-schema'
 

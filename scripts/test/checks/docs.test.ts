@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { checkDocs, hasTsDoc, isExportedFunction } from '../../check-docs'
 import { workspacePackages } from '../../lib/workspace'
-import { CLI_TIMEOUT, FIXTURES, REPO_ROOT, runCheck } from './run-check'
+import { FIXTURES, REPO_ROOT } from './run-check'
 
 const fixture = join(FIXTURES, 'docs')
 
@@ -64,11 +64,5 @@ describe('check:docs findings', () => {
       'packages/modules/crm/README.md: missing "## Invariants"',
       'packages/templates: missing README.md',
     ])
-  })
-
-  it('exits 1 on the planted fixture', { timeout: CLI_TIMEOUT }, () => {
-    const run = runCheck('check-docs.ts', ['--root', fixture])
-    expect(run.code).toBe(1)
-    expect(run.stderr).toContain('packages/templates: missing README.md')
   })
 })

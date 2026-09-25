@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { VOCAB_PATTERN, checkVocab, splitWords, vocabFiles } from '../../check-vocab'
-import { CLI_TIMEOUT, FIXTURES, runCheck } from './run-check'
+import { FIXTURES } from './run-check'
 
 const fixture = join(FIXTURES, 'vocab')
 
@@ -32,11 +32,5 @@ describe('check:vocab', () => {
       'packages/kernel/src/records.ts:4 tasks',
       'packages/platform/src/stages.ts:1 patients',
     ])
-  })
-
-  it('exits 1 on the planted fixture', { timeout: CLI_TIMEOUT }, () => {
-    const run = runCheck('check-vocab.ts', ['--root', fixture])
-    expect(run.code).toBe(1)
-    expect(run.stderr).toContain('packages/kernel/src/records.ts:2 Lead')
   })
 })

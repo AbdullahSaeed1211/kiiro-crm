@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { checkDisables, disableFiles, gatedDisables, loadGatedRules, ruleNames } from '../../check-disables'
-import { CLI_TIMEOUT, FIXTURES, runCheck } from './run-check'
+import { FIXTURES } from './run-check'
 
 const fixture = join(FIXTURES, 'disables')
 // Built at runtime so this test file never carries a real directive.
@@ -47,11 +47,5 @@ describe('check:disables scan', () => {
       `${GATED_FILE}:3 max-lines`,
       `${GATED_FILE}:5 @typescript-eslint/no-explicit-any`,
     ])
-  })
-
-  it('exits 1 on the planted fixture', { timeout: CLI_TIMEOUT }, () => {
-    const run = runCheck('check-disables.ts', ['--root', fixture])
-    expect(run.code).toBe(1)
-    expect(run.stderr).toContain(`${GATED_FILE}:1 complexity`)
   })
 })

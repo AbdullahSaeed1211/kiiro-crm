@@ -14,5 +14,9 @@ tests/e2e/screenshots/
 .env.*
 !.env.example
 .tenant-secrets-*.json
-.claude/
+!.claude/
+.claude/*
+!.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
 .codex/

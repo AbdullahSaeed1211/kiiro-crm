@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { checkSize, growthFailure, measure, readBaseline } from '../../check-size'
-import { CLI_TIMEOUT, FIXTURES, runCheck } from './run-check'
+import { FIXTURES } from './run-check'
 
 const grown = join(FIXTURES, 'size', 'grown')
 
@@ -35,16 +35,12 @@ describe('check:size', () => {
     expect(readBaseline(root)).toBe(measure(join(root, 'build'))?.totalBytes)
   })
 
-  it('exits 0 with a notice when there is no build output', { timeout: CLI_TIMEOUT }, () => {
-    const run = runCheck('check-size.ts', ['--root', grown, '--build', 'missing'])
-    expect(run.code).toBe(0)
-    expect(run.stdout).toContain('no build output')
+  it('returns 0 without a build output', () => {
+    expect(checkSize({ root: grown, build: 'missing', write: false, allowGrowth: false })).toBe(0)
   })
 
-  it('exits 1 on the planted growth fixture unless --allow-growth is passed', { timeout: CLI_TIMEOUT }, () => {
-    const run = runCheck('check-size.ts', ['--root', grown, '--build', 'build'])
-    expect(run.code).toBe(1)
-    expect(run.stderr).toContain('limit +20%')
-    expect(runCheck('check-size.ts', ['--root', grown, '--build', 'build', '--allow-growth']).code).toBe(0)
+  it('fails on the planted growth fixture unless allowGrowth is set', () => {
+    expect(checkSize({ root: grown, build: 'build', write: false, allowGrowth: false })).toBe(1)
+    expect(checkSize({ root: grown, build: 'build', write: false, allowGrowth: true })).toBe(0)
   })
 })

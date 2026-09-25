@@ -1,8 +1,0 @@
-{
-  "gates": [
-    { "name": "typecheck", "exitCode": 1 },
-    { "name": "lint", "exitCode": 1 },
-    { "name": "depcruise", "exitCode": 1 }
-  ],
-  "recordedFailuresBeforeRemediation": ["typecheck", "lint"]
-}

@@ -7,7 +7,6 @@
     "**/node_modules/**",
     ".claude/**",
     "scripts/fixtures/**",
-    "harness/selftest/**",
     "**/test/**",
     "**/*.test.ts",
     "packages/templates/**",
@@ -19,9 +18,6 @@
     "**/.open-next/**",
     "**/.next/**",
     "docs/**",
-    "harness/metrics/**",
-    "harness/evals/**",
-    "harness/lessons/**",
     "**/pnpm-lock.yaml"
   ]
 }

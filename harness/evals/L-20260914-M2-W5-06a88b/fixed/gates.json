@@ -1,6 +1,0 @@
-[
-  { "name": "format:check", "exitCode": 0 },
-  { "name": "typecheck", "exitCode": 0 },
-  { "name": "lint", "exitCode": 0 },
-  { "name": "knip", "exitCode": 0 }
-]

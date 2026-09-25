@@ -1,6 +1,5 @@
 import { parseArgs } from 'node:util'
-import { isMain } from './lib/report'
-import { runCli } from './harness/lib/repo'
+import { isMain, runCli } from './lib/report'
 import { shellRunner } from './lib/provision/commands'
 import {
   discoverProvisionState,

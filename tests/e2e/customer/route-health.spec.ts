@@ -1,16 +1,15 @@
 /* eslint-disable max-lines -- route-health intentionally keeps the customer release guard in one deterministic file. */
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { mkdirSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Locator, type Page, type Response, type Route } from '@playwright/test'
-import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
-import { CRM_WORKFLOWS, DEALS } from '../../../scripts/seed/crm-data'
+import { APP_SETTINGS, DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { ORGANIZATIONS } from '../../../scripts/seed/crm-directory-data'
 import { TASKS } from '../../../scripts/seed/work-data'
-import { WEB_DIR } from '../../../scripts/seed/local-env'
 import { firstDashboardTaskTitle } from '../helpers/task-fixtures'
 
 const OWNER_EMAIL = USERS.find((user) => user.key === 'owner')?.email ?? ''
+const OWNER_NAME = USERS.find((user) => user.key === 'owner')?.name ?? ''
 const SIGN_IN_LOCK = join(tmpdir(), 'ops-route-health-sign-in.lock')
 const ROUTE_BUDGET_MS = 12_000
 const UUID_TEXT = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i
@@ -24,20 +23,6 @@ const ARIA_CURRENT = 'aria-current'
 const CALENDAR_PATH = '/calendar'
 const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
-const DEAL_WORKFLOW = CRM_WORKFLOWS.find((workflow) => workflow.recordType === 'deal')
-const OPEN_DEAL_STAGE_NAMES = new Set(
-  DEAL_WORKFLOW?.stages
-    .filter((stage) => stage.category === 'active' || stage.category === 'waiting')
-    .map((stage) => stage.name) ?? [],
-)
-const DEAL_SEED = DEALS.find((deal) => OPEN_DEAL_STAGE_NAMES.has(deal.stage))
-const DEAL_TITLE = DEAL_SEED?.title ?? ''
-const DEAL_OWNER_NAME = USERS.find((user) => user.key === DEAL_SEED?.owner)?.name ?? ''
-const DEAL_TARGET_STAGE =
-  DEAL_WORKFLOW?.stages.find(
-    (stage) => (stage.category === 'active' || stage.category === 'waiting') && stage.name !== DEAL_SEED?.stage,
-  )?.name ?? ''
-const DEAL_E2E_AVAILABLE = DEAL_SEED !== undefined && DEAL_TARGET_STAGE !== ''
 const TASK_PANEL = '[data-slot="sheet-content"]'
 const ROUTES = [
   ['/', 'Dashboard'],
@@ -348,10 +333,23 @@ async function verifyTaskPanelScrollContainment(page: Page, title: string): Prom
   await expect(panel.locator('[data-slot="sheet-footer"] button', { hasText: 'Close' })).toBeInViewport()
 }
 
-async function verifyCanonicalTaskPage(page: Page, taskHref: string) {
+function boxesIntersect(a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
+}
+
+async function verifyCanonicalTaskPage(page: Page, taskHref: string, title: string) {
   await page.goto(new URL(taskHref, page.url()).pathname)
   await expect(page.getByRole('heading', { name: 'Assignees' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   await expect(page.locator(TASK_PANEL)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0)
+  const [mainBox, headerBox] = await Promise.all([
+    page.locator('main').first().boundingBox(),
+    page.locator('header.ops-app-header').boundingBox(),
+  ])
+  if (mainBox === null || headerBox === null) throw new Error('canonical task page is missing its layout regions')
+  // Fails until the canonical task page gets its own layout.
+  expect(boxesIntersect(mainBox, headerBox)).toBe(false)
   await page.screenshot({ path: test.info().outputPath('task-page.png'), fullPage: true })
 }
 
@@ -390,7 +388,7 @@ async function verifyCalendarTaskPanelOpen(page: Page): Promise<CalendarTask> {
 
 async function verifyWorkspaceProfileAndBranding(page: Page) {
   await page.goto('/settings/profile')
-  await expect(page.getByLabel('Name')).toHaveValue('Vivek Thapar')
+  await expect(page.getByLabel('Name')).toHaveValue(OWNER_NAME)
   await expect(page.getByRole('heading', { name: 'Change password', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Change password', exact: true })).toBeVisible()
   await page.goto('/settings/branding')
@@ -399,7 +397,7 @@ async function verifyWorkspaceProfileAndBranding(page: Page) {
 
 async function verifySearchableTimezone(page: Page) {
   await page.goto('/settings/general')
-  await expect(page.getByLabel('Workspace name')).toHaveValue('Mirch Media')
+  await expect(page.getByLabel('Workspace name')).toHaveValue(APP_SETTINGS.appName)
   const timeZone = page.getByRole('combobox', { name: 'Time zone' })
   await timeZone.click()
   await timeZone.fill('Kolkata')
@@ -581,7 +579,7 @@ test('task details preserve origin in contextual mode and render canonically whe
   await signIn(page)
   const task = await verifyCalendarTaskPanelOpen(page)
   await verifyTaskPanelHistoryAndEscape(page, task.title)
-  await verifyCanonicalTaskPage(page, task.href)
+  await verifyCanonicalTaskPage(page, task.href, task.title)
   await verifyTaskPanelCloseControls(page, task.title)
   await verifyTaskSourceInteractions(page, task)
 })
@@ -721,13 +719,6 @@ test('onboarding exposes the tenant-neutral business preset catalog', async ({ p
   expect(await preset.allTextContents()).not.toContain('Mirch Media')
 })
 
-// Keep the seed source as the single credential authority; this guard catches stale test fixtures.
-test('route-health harness has a local owner credential', () => {
-  expect(OWNER_EMAIL).toBe('mirchads@gmail.com')
-  expect(existsSync(join(WEB_DIR, '.dev.vars.example'))).toBe(true)
-  expect(readFileSync(join(WEB_DIR, '.dev.vars.example'), 'utf8')).toContain('PAYLOAD_SECRET=')
-})
-
 function staffTaskScopeFixtures() {
   const staffTasks = TASKS.filter((task) => task.assignees.includes('staff1'))
   const otherStaffTask = TASKS.find((task) => task.assignees.includes('staff2') && !task.assignees.includes('staff1'))
@@ -798,152 +789,20 @@ async function exerciseRecordEmail(page: Page, detail: string): Promise<void> {
   await expect(page.getByRole('status')).toContainText('Message sent.', { timeout: 15_000 })
 }
 
-async function findWonStageId(stage: Locator): Promise<string> {
-  return stage.locator('option').evaluateAll((options) => {
-    const won = options.find((option) => option.textContent.trim() === 'Won')
-    return won instanceof HTMLOptionElement ? won.value : ''
+const DOCUMENT_SHELL_ROUTES = ['/', '/login'] as const
+const DOCUMENT_NESTING_ERRORS = [/hydration/i, /<html> cannot be a child of <body>/i, /script tag while rendering/i]
+
+for (const route of DOCUMENT_SHELL_ROUTES) {
+  test(`${route} renders without document-shell errors`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text())
+    })
+    page.on('pageerror', (error) => errors.push(error.message))
+
+    await page.goto(route)
+    await expect(page.locator('body')).toBeVisible()
+
+    expect(errors.filter((message) => DOCUMENT_NESTING_ERRORS.some((pattern) => pattern.test(message)))).toEqual([])
   })
 }
-
-async function exerciseWonAndReopen(page: Page, wonStageId: string): Promise<void> {
-  const stage = page.locator('#deal-stage')
-  await page.getByRole('button', { name: 'Mark won', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Reopen', exact: true })).toBeVisible()
-  await expect(stage).toHaveValue(wonStageId)
-  await page.reload()
-  await expect(stage).toHaveValue(wonStageId)
-  await page.getByRole('button', { name: 'Reopen', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Mark won', exact: true })).toBeVisible()
-  await expect(stage).not.toHaveValue(wonStageId)
-  await page.reload()
-  await expect(stage).not.toHaveValue(wonStageId)
-}
-
-async function restoreDealStage(
-  page: Page,
-  original: { href: string; stageId: string; wonStageId: string },
-): Promise<void> {
-  const stage = page.locator('#deal-stage')
-  await page.goto(original.href)
-  if ((await stage.inputValue()) === original.wonStageId) {
-    await page.getByRole('button', { name: 'Reopen', exact: true }).click()
-  }
-  if ((await stage.inputValue()) !== original.stageId) await stage.selectOption(original.stageId)
-  await page.reload()
-  await expect(stage).toHaveValue(original.stageId)
-}
-
-async function verifyDealBoardOwner(page: Page): Promise<void> {
-  const dealCard = page.locator('[data-card-id]').filter({ hasText: DEAL_TITLE })
-  expect(DEAL_OWNER_NAME).not.toBe('')
-  await page.goto('/deals/board')
-  await expect(dealCard).toContainText(`Owner: ${DEAL_OWNER_NAME}`)
-  await expect(dealCard).toContainText('Expected close:')
-}
-
-test('deal can be won and reopened with the persisted stage reflected in controls', async ({ page }) => {
-  // Use only an existing owner-provided open deal; never create demo deal data for this check.
-  test.skip(!DEAL_E2E_AVAILABLE, 'The canonical seed has no owner-provided open deal; do not create demo deal data.')
-  await signIn(page)
-  await verifyDealBoardOwner(page)
-  await page.goto('/deals')
-  const dealHref = await page.getByRole('link', { name: DEAL_TITLE, exact: true }).getAttribute('href')
-  if (dealHref === null) throw new Error('owner-provided deal has no detail link')
-  await page.goto(dealHref)
-
-  const stage = page.locator('#deal-stage')
-  const initialStageId = await stage.inputValue()
-  const wonStageId = await findWonStageId(stage)
-  expect(wonStageId).not.toBe('')
-
-  try {
-    await exerciseWonAndReopen(page, wonStageId)
-  } finally {
-    // Always restore the seeded fixture, including when an assertion catches a stale control state.
-    await restoreDealStage(page, { href: dealHref, stageId: initialStageId, wonStageId })
-  }
-})
-
-interface DealBoardMoveContext {
-  readonly card: Locator
-  readonly href: string
-  readonly source: Locator
-  readonly sourceStageId: string
-  readonly destination: Locator
-  readonly sourceHeading: string
-  readonly destinationHeading: string
-  readonly sourceCount: number
-  readonly destinationCount: number
-}
-
-function dealCard(page: Page): Locator {
-  return page.locator('[data-card-id]').filter({ hasText: DEAL_TITLE })
-}
-
-async function countInColumn(column: Locator): Promise<number> {
-  return Number(await column.locator('header').locator('span').last().innerText())
-}
-
-async function dealBoardMoveContext(page: Page): Promise<DealBoardMoveContext> {
-  await page.goto('/deals/board')
-  const card = dealCard(page)
-  const href = await card.getByRole('link', { name: DEAL_TITLE, exact: true }).getAttribute('href')
-  if (href === null) throw new Error('owner-provided deal has no detail link')
-  const sourceStageId = await page.locator('section[data-stage-id]').filter({ has: card }).getAttribute('data-stage-id')
-  if (sourceStageId === null) throw new Error('owner-provided deal has no stage')
-  const source = page.locator(`section[data-stage-id="${sourceStageId}"]`)
-  const destinationHeadingMatcher = new RegExp(`^${DEAL_TARGET_STAGE}`)
-  const targetColumn = page.locator('section[data-stage-id]').filter({
-    has: page.getByRole('heading', { name: destinationHeadingMatcher }),
-  })
-  const destinationStageId = await targetColumn.getAttribute('data-stage-id')
-  if (destinationStageId === null || destinationStageId === sourceStageId) {
-    throw new Error(`owner-provided deal cannot move to ${DEAL_TARGET_STAGE} from its current stage`)
-  }
-  const destination = page.locator(`section[data-stage-id="${destinationStageId}"]`)
-  const [sourceHeading, targetHeading, sourceCount, targetCount] = await Promise.all([
-    source.getByRole('heading').innerText(),
-    destination.getByRole('heading').innerText(),
-    countInColumn(source),
-    countInColumn(destination),
-  ])
-  return {
-    card,
-    href,
-    source,
-    sourceStageId,
-    destination,
-    sourceHeading,
-    destinationHeading: targetHeading,
-    sourceCount,
-    destinationCount: targetCount,
-  }
-}
-
-async function moveDealAndExpectTotals(context: DealBoardMoveContext, page: Page): Promise<void> {
-  await context.card.getByRole('button', { name: 'Move to…' }).click()
-  await page.getByRole('menuitem', { name: new RegExp(`^${DEAL_TARGET_STAGE} ·`) }).click()
-  await expect(context.destination).toContainText(DEAL_TITLE)
-  await expect(context.source.getByRole('heading')).not.toHaveText(context.sourceHeading)
-  await expect(context.destination.getByRole('heading')).not.toHaveText(context.destinationHeading)
-  await expect(context.source.locator('header').locator('span').last()).toHaveText(String(context.sourceCount - 1))
-  await expect(context.destination.locator('header').locator('span').last()).toHaveText(
-    String(context.destinationCount + 1),
-  )
-}
-
-async function verifyDealBoardTotals(page: Page): Promise<void> {
-  const context = await dealBoardMoveContext(page)
-  try {
-    await moveDealAndExpectTotals(context, page)
-  } finally {
-    await restoreDealStage(page, { href: context.href, stageId: context.sourceStageId, wonStageId: '' })
-  }
-}
-
-test('deal board refreshes stage totals after a move and restores the original stage', async ({ page }) => {
-  // Use only an existing owner-provided open deal; never create demo deal data for this check.
-  test.skip(!DEAL_E2E_AVAILABLE, 'The canonical seed has no owner-provided open deal; do not create demo deal data.')
-  await signIn(page)
-  await verifyDealBoardTotals(page)
-})

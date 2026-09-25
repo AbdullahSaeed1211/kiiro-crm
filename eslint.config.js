@@ -11,8 +11,6 @@ export default defineConfig(
       '.claude/**',
       '.codex/**',
       'scripts/fixtures/**',
-      'harness/selftest/**',
-      'harness/evals/**',
       '**/.open-next/**',
       '**/.wrangler/**',
       '**/.next/**',

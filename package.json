@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --parallel exec tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint . --max-warnings 0 --cache --cache-location node_modules/.cache/eslint",
     "depcruise": "depcruise apps packages --config tooling/depcruise/.dependency-cruiser.cjs",
     "knip": "knip --config tooling/knip/knip.json",
     "jscpd": "jscpd --config tooling/jscpd/.jscpd.json .",
@@ -24,13 +24,7 @@
     "check:formatters": "tsx scripts/check-formatters.ts",
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
-    "check:scope": "tsx scripts/check-scope.ts",
     "gen:wrangler": "tsx scripts/gen-wrangler.ts",
-    "harness:plan": "tsx scripts/harness/plan.ts",
-    "harness:brief": "tsx scripts/harness/brief.ts",
-    "harness:record": "tsx scripts/harness/record.ts",
-    "harness:retro": "tsx scripts/harness/retro.ts",
-    "harness:evals": "tsx scripts/harness/evals.ts",
     "test": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
@@ -41,7 +35,7 @@
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",
     "tenants:deploy": "tsx scripts/deploy-tenants.ts",
     "verify:fast": "pnpm format:check && pnpm typecheck && pnpm lint && vitest run --project unit --changed",
-    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm harness:evals && pnpm test && pnpm test:integration && pnpm build && pnpm size"
+    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm test && pnpm test:integration && pnpm build && pnpm size"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

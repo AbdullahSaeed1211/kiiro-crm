@@ -1,10 +1,7 @@
 {
-  "ignoreIssues": {
-    "harness/evals/**": ["files"]
-  },
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.ts", "harness/selftest/**/*.ts"],
+      "entry": ["scripts/**/*.ts"],
       "ignore": ["scripts/fixtures/**"],
       "ignoreDependencies": ["@axe-core/playwright"]
     },

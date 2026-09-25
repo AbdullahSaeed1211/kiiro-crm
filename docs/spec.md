@@ -13,41 +13,29 @@ brand-free, strictly clean (complexity-gated), documented, and free of bloat.
 
 ---
 
-## 0. Orchestration protocol
-The protocol protects the build from serious mistakes (broken contracts, security gaps, tenant leaks, data loss, architecture drift). It does not turn ordinary implementation choices into formal process.
+## 0. Working in this repository
+Agents and engineers work from [`AGENTS.md`](../AGENTS.md) and the task skills in `.claude/skills/`. This section keeps only the rules that protect the product: broken contracts, security gaps, tenant leaks, data loss and architecture drift. Ordinary implementation choices are not a formal process.
 
 ### 0.1 Roles and source of truth
-**Lead orchestrator (the lead):** owns the outcome. Plans each milestone, writes contracts, assigns work packages (WPs), reviews and integrates results, runs deployment checks, and makes acceptance and GO/FALLBACK decisions.
-**Worker:** an agent session or engineer executing one WP from a brief. Workers make ordinary implementation choices inside their scope (naming, internal structure, helper functions, test layout) and note meaningful ones in their report. There is no worker-to-worker coordination; shared questions go through the lead.
-**Source of truth, in order:** accepted ADRs (they amend the spec sections they name) → this spec (committed as `docs/spec.md`, updated in the same PR as any ADR that amends it) → decision register → tests → repository state. Chat history and tool memory are never authoritative.
-The protocol is tool-agnostic: "agent" means any capable coding agent or human.
+**Lead:** owns the outcome. Plans each milestone, writes contracts, splits work into tasks with disjoint file ownership, reviews and integrates results, runs deployment checks, and makes acceptance decisions.
+**Worker:** an agent session or engineer executing one task. Workers make ordinary implementation choices inside the files they own. Shared questions go through the lead.
+**Source of truth, in order:** accepted ADRs (they amend the spec sections they name), then this spec, then the decision register, then tests, then repository state. Chat history and tool memory are never authoritative.
 
 ### 0.2 Ownership
 **Lead-owned:** architecture; authorization and permissions; security-sensitive behavior; database consistency and transaction semantics; tenant isolation; domain-model decisions; migration strategy (only the lead generates migrations);
-contracts between workstreams; dependency changes; integration between workstreams; final review; milestone acceptance; GO/FALLBACK decision.
-**Delegable:** research; schema implementation against contracts; UI composites and pages; tests; fixtures and seed data; scripts outside tenant-isolation logic; lint/type fixes; isolated integrations; CRUD; measurement collection.
-The §21.3 tables assign owners. The lead may execute any WP itself.
+contracts between workstreams; dependency changes; integration between workstreams; final review; milestone acceptance.
+**Delegable:** research; schema implementation against contracts; UI composites and pages; tests; fixtures and seed data; scripts outside tenant-isolation logic; lint and type fixes; isolated integrations; CRUD.
 
 ### 0.3 Escalation to the human owner
 Only for: missing credentials or account access; an unavailable external service; destructive or irreversible actions (production data changes, data restores, DNS changes on client zones, deleting cloud resources);
-a contradiction inside this spec; a platform limitation that changes the architecture (including a FALLBACK result); copying non-permissive source; relaxing a quality gate; unprovable tenant isolation.
+a contradiction inside this spec; a platform limitation that changes the architecture; copying non-permissive source; relaxing a quality gate; unprovable tenant isolation.
 
 ### 0.4 Decide and record
-Choices this spec does not dictate: the lead or worker picks the simplest option consistent with the architecture and proceeds. Choices that affect other workstreams, public contracts, data shape, security or tenancy go to the lead,
-who records them in `docs/decisions/decision-register.md` (ID, decision, rationale, date). Workers return `BLOCKED` only when a choice falls in that list or the brief is contradictory.
+Choices this spec does not dictate: pick the simplest option consistent with the architecture and proceed. Choices that affect other workstreams, public contracts, data shape, security or tenancy go to the lead,
+who records them in `docs/decisions/decision-register.md` (ID, decision, rationale, date).
 
-### 0.5 Work package brief
-Every WP brief contains: **Objective** · **Spec references** · **Write scope** (where the work is expected to land) · **Inputs** (contracts and merged WPs) · **Acceptance** (commands and expected results) ·
-**Boundaries** (§0.7 critical paths untouched; no dependency or migration changes; §3 constraints) · **Report** (`docs/orchestration/m<N>/reports/<WP-ID>.md`, §0.6).
-Rendered by `pnpm harness:brief <WP-ID>` from `harness/templates/brief.md`: the §21.3 row, spec references, inputs and **Known pitfalls** from active lessons (§26.6). Wording beyond these fields is free-form.
-
-### 0.6 Worker report
-`WP` · `Status: DONE | BLOCKED` · files changed · acceptance evidence (deciding output lines) · tests added · notable implementation choices · open questions or dependency requests.
-Reports carry JSON front matter validated by `harness/schemas/report.schema.json`; workers run `pnpm harness:record <WP-ID> --attempt <k>` before reporting.
-For a retry, the report also maps each lead finding to its failure class, countermeasure, test or check, and remediation commit. A green gate does not erase a review finding.
-
-### 0.7 Critical paths
-Only the lead changes these paths; `pnpm check:scope <WP-ID>` fails a WP that touches them. Changes outside a WP's expected write scope are flagged for review, not auto-failed.
+### 0.5 Lead-reviewed paths
+Workers do not change these paths without the lead; the lead reviews every diff that touches them.
 ```text
 package.json
 pnpm-lock.yaml
@@ -56,16 +44,9 @@ eslint.config.js
 vitest.config.ts
 playwright.config.ts
 tooling/
-harness/config.yaml
-harness/schemas/
-harness/templates/
-harness/lessons/
-harness/evals/
 docs/spec.md
 docs/decisions/
 docs/adr/
-docs/orchestration/m0/plan.md
-docs/orchestration/m1/plan.md
 tenants/
 .github/workflows/deploy.yml
 scripts/gen-wrangler.ts
@@ -91,66 +72,33 @@ packages/adapters/payload/src/uow/
 packages/adapters/cloudflare/src/contracts/
 packages/ui/src/contracts/
 ```
-Each WP's own attempt files `harness/metrics/attempts/<WP-ID>-a<k>.json` are always in its scope. Each milestone's plan (`docs/orchestration/m<N>/plan.md`) is lead-owned; worker reports under `docs/orchestration/m<N>/reports/` are written by workers.
 
-### 0.8 Execution loop
-1. **Plan:** the lead copies the §21.3 table into `docs/orchestration/m<N>/plan.md`, adjusting it to the actual repository state (splits, merges, re-ordering) with a one-line reason per change.
-2. **Contracts:** wave-0 Lead WPs merge before workers start.
-3. **Dispatch:** WPs run as soon as their dependencies are merged, up to available concurrency (§0.11); parallel WPs must have non-overlapping write scopes.
-4. **Execute:** each WP works on branch `wp/<WP-ID>` from the milestone branch and writes its report. When the branch is clean, the evidence and report are committed, and the WP is DONE or BLOCKED, the worker sends one completion notification to the lead and stops.
-5. **Review:** only after that notification, the lead re-runs `pnpm harness:record <WP-ID>` (acceptance, `verify:fast`, scope), reads the diff, and checks for duplicate abstractions, authorization gaps and tenant-specific code.
-6. **Merge:** verified WPs merge into the milestone branch; the lead runs the full `pnpm verify` after each wave (per-WP checks are the fast subset, §6.6). After integrated verification passes, the lead removes the merged worker worktree and deletes its local branch.
-7. **Retry:** a failed WP gets one more attempt with the lead's findings written into the retry brief. Every post-review remediation and every `fix(...)` commit is a harness failure signal, including when all automated gates were green. The retry uses the next append-only attempt number and confirms the root-cause classes. After the retry budget, the lead finishes the WP or re-plans.
-8. **Accept:** the lead runs the §21.2 row and required runtime checks, writes `docs/reports/m<N>.md`, runs `pnpm harness:retro m<N>` and completes promoted lessons and evals (§26.8), and merges to `main`.
-**Status and resume:** `docs/orchestration/m<N>/plan.md` carries a status column (`planned | dispatched | review | merged | done-by-lead`) updated by the lead at each transition, so any new lead session resumes from the repository.
+### 0.6 Execution loop
+1. **Plan:** the lead turns the §21.3 rows for a milestone into tasks, adjusting them to the repository state.
+2. **Contracts first:** contract and port changes merge before dependent work starts.
+3. **Run in parallel:** workers share one checkout and one branch per milestone. Each task names the files it owns; parallel tasks never own the same file. Workers do not commit; the lead commits reviewed work.
+4. **Fast loop:** workers run `pnpm verify:fast` while working. Formatting and lint fixes are applied automatically and never count as a failed attempt.
+5. **Review:** the lead reads each diff and checks for duplicate abstractions, authorization gaps and tenant-specific code, then runs the full `pnpm verify` after each wave.
+6. **Fix:** a defect found in review is fixed with a failing product test first (see the `fix-bug` skill) and committed as `fix(...)`.
+7. **Accept:** the lead runs the §21.2 row and required runtime checks, and adds the milestone outcome to [`docs/history.md`](history.md).
 
-**Completion signaling:** workers own progress and completion reporting. The runtime resumes the lead through a worker return, callback, completion event, or equivalent push notification. The lead does not repeatedly wait for status, list or read worker conversations, or inspect an active worker's branch or worktree to infer progress. If the runtime cannot push completion, the worker runs synchronously to completion. While workers run, the lead may perform independent work on the milestone branch that does not inspect, modify, or merge their active work.
+Workers report completion once, when their task is done or blocked. The lead does not poll a running worker.
 
-### 0.8.1 Functional versus UX acceptance
+### 0.7 Functional versus UX acceptance
+Functional completion and visual or interaction acceptance are separate gates. Every UI task records reference captures and measurable constraints before implementation, then supplies desktop and 390 px evidence after implementation. Evidence covers typography, spacing, control density, focus states, empty, loading and error states, responsive layout, and raw persisted-ID leakage. Every drawer and dialog is exercised from each origin through backdrop, Escape, close button, footer action, browser Back, direct URL, focus return and scroll containment. References are behavior and layout inputs; deviations are documented. The lead may not close a milestone while any UX gate is open. User findings after a wave go into the UX backlog in `docs/ux/`.
 
-Functional completion and visual/interaction acceptance are separate gates. Every UI work package records reference captures and measurable constraints before implementation, then supplies side-by-side desktop and 390 px evidence after implementation. Evidence covers typography, spacing, control density, focus states, empty/loading/error states, responsive layout, and raw persisted-ID leakage. Every drawer and dialog is exercised from each origin through backdrop, Escape, close button, footer action, browser Back, direct URL, focus return, and scroll-containment paths. “Inspired by Twenty/Frappe” is not evidence: references are behavior/layout inputs only, with deviations documented. The lead performs a visual integration pass after each parallel wave and may not close a milestone or recommend GO while any UX gate is open. Post-wave user findings are recorded as append-only failed evals/lessons and fed into the next plan.
+### 0.8 Milestone completion
+Complete when: its tasks are merged and reviewed; the §21.2 acceptance row passes with evidence; authorization is tested; required runtime checks pass on the real target; risks are documented.
 
-### 0.9 Spike report template (`docs/reports/m1-spike.md`)
-```text
-What was implemented
-What worked
-What failed
-Tests performed
-Runtime measurements            (bundle size, startup_time_ms vs 1 s limit, cold first-request latency, warm p50/p95 per route, CPU time p50/p99, D1 rows read/written, R2 operations, peak memory on largest upload)
-Database / migration findings   (migration behavior, idType uuid result, transaction/atomicity result → D-36)
-Security / permission findings  (route blocking works on the deployed Worker, scope queries across relationships)
-Tenant-isolation findings       (§19.5 proof)
-Known risks
-Changes made from the original plan and why
-GO or FALLBACK                  (one word, then the evidence it rests on)
-Recommended next action
-```
+### 0.9 Operating assumptions
+- **Credentials stay with the lead:** workers implement and test locally (local D1 and R2 emulation, fixtures, Turnstile test keys, console mailer). Every authenticated Cloudflare, GitHub, DNS or email operation (`wrangler deploy`, `d1 create`, `secret bulk`, remote migrations, dashboard steps) is performed by the lead. Workers never receive tokens or secrets.
+- **Preflight (start of every session):** verify Node 22 and pnpm 10.34.5, `pnpm install --frozen-lockfile`, reference repositories present (§0.11), and, for the lead, `wrangler whoami` and the prerequisites for the current milestone (§20.1 for M8). Missing items that block the milestone trigger §0.3.
 
-### 0.10 Milestone completion
-Complete when: its WPs are merged and reviewed; the §21.2 acceptance row passes with evidence; authorization is tested; required runtime checks pass on the real target; measurements are captured where required; risks are documented.
-The next milestone starts only after this gate. After M1, the lead re-plans M2–M9 from the spike results (§21.3 tables are provisional until the M1 spike report).
-
-
-### 0.11 Operating assumptions (runtime-agnostic)
-- **Concurrency:** use as many parallel workers as the runtime supports, capped at 6 (`harness/config.yaml`); a runtime without subagents runs WPs sequentially in dependency order with the same briefs, reports and gates.
-- **Credentials stay with the lead:** workers implement and test locally (local D1/R2 emulation, fixtures, Turnstile test keys, console mailer). Every authenticated Cloudflare, GitHub, DNS or email operation (`wrangler deploy`, `d1 create`, `secret bulk`, remote migrations, dashboard steps) is performed by the lead. Workers never receive tokens or secrets.
-- **Isolation:** every concurrent worker has its own branch and worktree (for example `git worktree add ../wt/<WP-ID> -b wp/<WP-ID> m<N>-<slug>`) or equivalent filesystem isolation; no two workers share a working copy. Before editing and after every resume, the worker verifies that `pwd` and `git rev-parse --show-toplevel` both resolve to its assigned worktree. Every command sets that worktree as its working directory, every patch path starts inside it, and a mismatch stops the edit.
-- **Resume rule:** on any restart the lead reads `docs/orchestration/m<N>/plan.md` (status column), `git log` and branches (`m<N>-*`, `wp/*`), merged WPs, `docs/orchestration/m<N>/reports/`, `harness/metrics/attempts/` and acceptance evidence in `docs/reports/`, reconciles plan status with Git reality, and continues from the first unfinished WP in dependency order.
-- **Preflight (start of every session):** verify Node 22 and pnpm 10.34.5, Git clean state, `pnpm install --frozen-lockfile`, reference repositories present (§0.14), `wrangler whoami` and account access (lead only), GitHub access, and required secrets/prerequisites for the current milestone (§20.1 for M8). Missing items that block the milestone trigger §0.3; others are recorded and work continues.
-
-### 0.12 Kickoff instruction
-```text
-Act as the lead orchestrator defined in docs/spec.md. Inspect the repository, run an environment and credential preflight,
-execute milestones in order, delegate eligible work packages to isolated subagents up to available concurrency,
-independently verify every result, and persist all decisions and progress in the repository.
-Continue autonomously unless an escalation condition in §0.3 occurs.
-```
-
-### 0.13 Human involvement
+### 0.10 Human involvement
 The build runs autonomously except for: Cloudflare account and product activation (Workers Paid, Email Service onboarding); DNS and Email Routing dashboard steps; production-destructive or data-restore actions;
 customer owner and team information; access to external repositories (e.g. `mirchmedia-laravel`); CSV exports of existing client data; registering `PLATFORM_DOMAIN`. The lead batches these requests at the milestone where they are first needed.
 
-### 0.14 Reference repositories
+### 0.11 Reference repositories
 Behavior references are cloned read-only next to the product repository, never inside it, so they are never committed, linted, scanned by `check:brand` or imported.
 ```text
 crm/                         workspace: /Users/abdullahsaeed/freelance/mirchmedia-projects/crm
@@ -167,7 +115,7 @@ git clone --depth 1 https://github.com/cortezaproject/corteza.git corteza       
 git clone --depth 1 https://github.com/payloadcms/payload.git payload             # MIT: foundation source and templates/with-cloudflare-d1
 git clone --depth 1 --filter=blob:none --sparse https://github.com/odoo/odoo.git odoo && git -C odoo sparse-checkout set addons/crm addons/project   # LGPL/GPL mix: process reference only
 ```
-`references/README.md` (written by the lead) lists each clone's commit, license and allowed use. Workers may read references listed in their brief; any code reuse beyond permissive licenses triggers §0.3.
+`references/README.md` (written by the lead) lists each clone's commit, license and allowed use. Workers may read any reference; code reuse beyond permissive licenses triggers §0.3.
 
 ---
 
@@ -357,10 +305,10 @@ ops-platform/
 │  └─ templates/     @ops/templates            # §18
 ├─ tenants/<slug>.jsonc                        # §19.1 (only place client names may appear besides docs)
 ├─ scripts/  provision-tenant.ts  deploy-tenants.ts  smoke-tenant.ts  gen-wrangler.ts  seed-dev.ts  reset-local-db.ts
-│            check-brand.ts  check-vocab.ts  check-disables.ts  check-docs.ts  check-size.ts  check-scope.ts  harness/
-├─ harness/   control plane: config, schemas, templates, metrics, lessons, evals (§26.2)
+│            check-brand.ts  check-vocab.ts  check-disables.ts  check-docs.ts  check-size.ts
 ├─ tooling/  tsconfig/base.json  eslint/rules.js  depcruise/.dependency-cruiser.cjs  knip/knip.json  jscpd/.jscpd.json
 ├─ docs/     (§7)
+├─ AGENTS.md  .claude/skills/   agent guidance and task skills (§26)
 ├─ eslint.config.js  vitest.config.ts  playwright.config.ts  pnpm-workspace.yaml  package.json  .npmrc  .nvmrc  .prettierrc.json
 └─ .github/workflows/  ci.yml  deploy.yml
 ```
@@ -441,8 +389,8 @@ dependency-cruiser rules mirror §5.2 plus `no-circular`, `no-orphans` (except e
 - `check:size`: records the OpenNext Worker bundle size in `docs/reports/size.json`; fails on > 20% growth versus `main` without an ADR reference in the PR.
 
 ### 6.6 `pnpm verify` (full, run by the lead after each wave) and `pnpm verify:fast` (per WP)
-`verify:fast` = `format:check` → `typecheck` → `lint` → `vitest run --changed` → `check:scope`; no build. Full order:
-`format:check` → `typecheck` → `lint` → `depcruise` → `knip` → `jscpd` → `check:brand` → `check:vocab` → `check:disables` → `check:docs` → `harness:evals` → `test` (unit + integration with coverage) → `build` → `size`.
+`verify:fast` = `format:check` → `typecheck` → `lint` → `vitest run --changed`; no build. Full order:
+`format:check` → `typecheck` → `lint` → `depcruise` → `knip` → `jscpd` → `check:brand` → `check:vocab` → `check:disables` → `check:docs` → `test` (unit + integration with coverage) → `build` → `size`.
 Coverage (lines/branches): kernel 95/90, platform 90/85, modules 90/85, adapters 75/65, ui 60/50 (pure logic in `packages/ui/src/lib/**` only; component behavior is covered by Playwright).
 
 ### 6.7 Git
@@ -477,12 +425,6 @@ Root `package.json`:
     "check:vocab": "tsx scripts/check-vocab.ts",
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
-    "check:scope": "tsx scripts/check-scope.ts",
-    "harness:plan": "tsx scripts/harness/plan.ts",
-    "harness:brief": "tsx scripts/harness/brief.ts",
-    "harness:record": "tsx scripts/harness/record.ts",
-    "harness:retro": "tsx scripts/harness/retro.ts",
-    "harness:evals": "tsx scripts/harness/evals.ts",
     "test": "vitest run --coverage",
     "test:e2e": "playwright test",
     "size": "tsx scripts/check-size.ts",
@@ -492,7 +434,7 @@ Root `package.json`:
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",
     "tenants:deploy": "tsx scripts/deploy-tenants.ts",
     "verify:fast": "pnpm format:check && pnpm typecheck && pnpm lint && vitest run --changed",
-    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm harness:evals && pnpm test && pnpm build && pnpm size"
+    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm test && pnpm build && pnpm size"
   }
 }
 ```
@@ -596,8 +538,9 @@ docs/
   decisions/open-questions.md
   adr/0001-foundation.md 0002-tenancy.md 0003-code-license.md (open) NNNN-<title>.md
   runbooks/provision-tenant.md deploy.md rollback.md onboarding-customer.md incident.md
-  reports/m<N>.md  reports/size.json
-  orchestration/m<N>/plan.md  orchestration/m<N>/reports/
+  history.md                       condensed build history per milestone
+  reports/size.json                written by check:size
+  ux/                              UX reference contract and parity backlog
 ```
 ### 7.2 ADR template
 `# ADR-NNNN: Title` · Status (proposed | accepted | superseded) · Date · Context · Decision · Consequences · Alternatives considered.
@@ -1247,7 +1190,7 @@ Create `tenants/<slug>.jsonc` with `hostType: "platform"` → `pnpm tenant:provi
 3 Submit a test lead from each site → it appears in `/leads` with its source and the notification arrives.
 4 After 7 clean days, remove the old notification path.
 
-### 20.6 Pilot week (first customer; evidence in `docs/reports/pilot-<slug>.md`)
+### 20.6 Pilot week (first customer; outcome recorded in `docs/history.md`)
 - 100% of website leads land in the app (compare against form submission counts).
 - All active projects and open tasks live in the app; no parallel sheet or task tool is updated during the week.
 - Every staff member logs in on ≥ 3 of 5 workdays; My tasks is used daily.
@@ -1286,7 +1229,7 @@ pnpm dlx create-payload-app@3.89.0 -t with-cloudflare-d1          # template nam
 mkdir -p packages/ui && cd packages/ui && pnpm dlx shadcn@4.21.0 init && cd ../..
 pnpm --filter web exec wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts
 ```
-If `create-payload-app` cannot target `apps/web` directly, generate in a temporary directory and move it; record the procedure in `docs/reports/m0.md`.
+If `create-payload-app` cannot target `apps/web` directly, generate in a temporary directory and move it; record the procedure in `docs/history.md`.
 
 ### 21.2 Milestone table (execute in order; each ends with `pnpm verify` green and a report)
 | M | Scope | Acceptance (all must pass) |
@@ -1308,7 +1251,8 @@ If `create-payload-app` cannot target `apps/web` directly, generate in a tempora
 
 ### 21.3 Work package plans
 Columns: WP id · owner · wave (0 = contracts before any worker) · dependencies · objective · write scope (`;`-separated; a trailing `/` means the directory) · acceptance.
-These tables are the default decomposition; M2–M9 are provisional until the M1 spike report, after which the lead re-plans (§0.10). Rules: parallel write scopes are disjoint within a wave; worker scopes never overlap lead scopes of the same milestone or §0.7 paths; dependencies always point to earlier waves.
+These tables are the default decomposition; M2–M9 are provisional until the M1 spike report, after which the lead re-plans (§0.6). Rules: parallel write scopes are disjoint within a wave; worker scopes never overlap lead scopes of the same milestone or §0.5 paths; dependencies always point to earlier waves.
+M0 to M3 are complete and summarized in [`docs/history.md`](history.md); their rows are kept as the historical plan and still name the agent harness that was removed on 2026-09-25. From M4 on, milestone outcomes go to `docs/history.md` and there is no separate retro step.
 
 #### M0 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
@@ -1369,7 +1313,7 @@ These tables are the default decomposition; M2–M9 are provisional until the M1
 | M4-W1 | Worker | 1 | M4-L1 | CRM domain, commands and queries except conversion (§10.1) | `packages/modules/crm/src/domain/`; `packages/modules/crm/src/commands/`; `packages/modules/crm/src/queries/`; `packages/modules/crm/test/domain/`; `packages/modules/crm/test/commands/` | T-CRM-3, 5, 6 |
 | M4-W2 | Worker | 1 | M4-L1 | Work domain, commands and queries (§10.2) | `packages/modules/work/src/domain/`; `packages/modules/work/src/commands/`; `packages/modules/work/src/queries/`; `packages/modules/work/test/` | T-WORK-1..5 |
 | M4-W3 | Worker | 2 | M4-L2, M4-W1, M4-W2 | Adapter registrations: record types, module validators into hooks, repositories for module ports | `packages/adapters/payload/src/registrations/`; `packages/adapters/payload/test/registrations/` | integration: creating a lead writes activity; conversion through the adapter passes |
-| M4-L3 | Lead | 3 | M4-W3 | Barrels, READMEs, migration if schema changed, `pnpm verify`, report, retro | `packages/modules/crm/src/index.ts`; `packages/modules/crm/README.md`; `packages/modules/work/src/index.ts`; `packages/modules/work/README.md`; `packages/adapters/payload/src/index.ts`; `apps/web/src/migrations/`; `docs/reports/`; `harness/lessons/`; `harness/evals/` | §21.2 M4 row |
+| M4-L3 | Lead | 3 | M4-W3 | Barrels, READMEs, migration if schema changed, `pnpm verify`, history entry | `packages/modules/crm/src/index.ts`; `packages/modules/crm/README.md`; `packages/modules/work/src/index.ts`; `packages/modules/work/README.md`; `packages/adapters/payload/src/index.ts`; `apps/web/src/migrations/`; `docs/history.md` | §21.2 M4 row |
 
 #### M5 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
@@ -1388,7 +1332,7 @@ These tables are the default decomposition; M2–M9 are provisional until the M1
 | M5-W10 | Worker | 2 | M5-W1, M5-W2, M5-W3 | Settings pages §17.12: general, branding, modules, terminology, members, groups, workflows, fields, views, notifications, profile, import | `apps/web/src/app/(app)/settings/layout.tsx`; `apps/web/src/app/(app)/settings/general/`; `apps/web/src/app/(app)/settings/branding/`; `apps/web/src/app/(app)/settings/modules/`; `apps/web/src/app/(app)/settings/terminology/`; `apps/web/src/app/(app)/settings/members/`; `apps/web/src/app/(app)/settings/groups/`; `apps/web/src/app/(app)/settings/workflows/`; `apps/web/src/app/(app)/settings/fields/`; `apps/web/src/app/(app)/settings/views/`; `apps/web/src/app/(app)/settings/notifications/`; `apps/web/src/app/(app)/settings/profile/`; `apps/web/src/app/(app)/settings/import/`; `apps/web/src/server/actions/settings/`; `apps/web/src/i18n/messages/en/settings.json` | each page enforces its §17.12 "Who" column server-side |
 | M5-L3 | Lead | 3 | M5-W5, M5-W6, M5-W7, M5-W8, M5-W9, M5-W10 | Integrate pages into the shell, reconcile duplicates, locale completeness, barrels, `pnpm verify` | `apps/web/src/app/(app)/layout.tsx`; `packages/ui/src/index.ts`; `packages/ui/README.md`; `docs/decisions/` | `pnpm verify` green |
 | M5-W11 | Worker | 4 | M5-L3 | E2E T-E2E-1..7, `@axe-core/playwright` checks per page, 390 px screenshots of shell, list, record, sheet | `tests/e2e/app/`; `tests/e2e/a11y/`; `tests/e2e/screenshots/` | `pnpm test:e2e` passes; no serious or critical axe violations |
-| M5-L4 | Lead | 5 | M5-W11 | Acceptance review, report, retro | `docs/reports/`; `harness/lessons/`; `harness/evals/` | §21.2 M5 row |
+| M5-L4 | Lead | 5 | M5-W11 | Acceptance review, history entry | `docs/history.md` | §21.2 M5 row |
 
 #### M6 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
@@ -1404,16 +1348,16 @@ These tables are the default decomposition; M2–M9 are provisional until the M1
 | M6-W6 | Worker | 2 | M6-L2, M6-L3, M6-W1, M6-W3 | Settings pages intake and email §17.12, onboarding intake step | `apps/web/src/app/(app)/settings/intake/`; `apps/web/src/app/(app)/settings/email/`; `apps/web/src/app/(app)/onboarding/steps/intake/`; `apps/web/src/server/actions/intake/`; `apps/web/src/server/actions/mail/`; `apps/web/src/i18n/messages/en/intake.json`; `apps/web/src/i18n/messages/en/email.json` | pages enforce owner/manager access server-side |
 | M6-L4 | Lead | 3 | M6-W2, M6-W4, M6-W5, M6-W6 | Integrate, migration, deploy staging, real outbound and inbound round trip, deploy `ops-mail-router` | `apps/web/src/migrations/`; `apps/web/src/payload.config.ts`; `apps/web/src/payload-types.ts`; `packages/modules/intake/src/index.ts`; `packages/modules/intake/README.md`; `packages/modules/mail/src/index.ts`; `packages/modules/mail/README.md`; `packages/adapters/cloudflare/src/index.ts`; `packages/adapters/cloudflare/README.md`; `docs/decisions/` | round-trip evidence recorded |
 | M6-W7 | Worker | 4 | M6-L4 | Cross-module tests on the integrated build (T-INTAKE, T-MAIL, T-JOBS end to end) and T-E2E-8 | `tests/integration/intake-mail/`; `tests/e2e/intake/` | `pnpm test` and `pnpm test:e2e --grep intake` pass |
-| M6-L5 | Lead | 5 | M6-W7 | Acceptance, report, retro | `docs/reports/`; `harness/lessons/`; `harness/evals/` | §21.2 M6 row |
+| M6-L5 | Lead | 5 | M6-W7 | Acceptance, history entry | `docs/history.md` | §21.2 M6 row |
 
 #### M7 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
 |---|---|---|---|---|---|---|
-| M7-L1 | Lead | 0 | — | Tenant zod schema and final `gen-wrangler.ts` (isolation, rate-limit namespaces, mail-router bindings) | `scripts/gen-wrangler.ts`; `scripts/lib/tenant-schema.ts`; `tenants/`; `docs/orchestration/m7/` | generated configs contain only each tenant's own bindings |
+| M7-L1 | Lead | 0 | — | Tenant zod schema and final `gen-wrangler.ts` (isolation, rate-limit namespaces, mail-router bindings) | `scripts/gen-wrangler.ts`; `scripts/lib/tenant-schema.ts`; `tenants/` | generated configs contain only each tenant's own bindings |
 | M7-W1 | Worker | 1 | M7-L1 | `provision-tenant.ts` steps §19.3 with idempotency checks and a `--dry-run` mode; `smoke-tenant.ts` | `scripts/provision-tenant.ts`; `scripts/smoke-tenant.ts`; `scripts/lib/provision/`; `scripts/test/provision/` | dry-run prints every step; re-running skips completed steps |
 | M7-W2 | Worker | 1 | M7-L1 | `deploy-tenants.ts`: restore point, migrate, deploy, smoke, stop on failure, rollback | `scripts/deploy-tenants.ts`; `scripts/lib/deploy/`; `scripts/test/deploy/` | injected smoke failure stops the loop and triggers rollback in tests |
 | M7-W3 | Worker | 1 | M7-L1 | Runbooks provision-tenant, deploy, rollback, incident, onboarding-customer (§19, §20) | `docs/runbooks/` | `pnpm check:docs` passes |
-| M7-L2 | Lead | 2 | M7-W1, M7-W2, M7-W3 | `deploy.yml`; provision `staging-a` from scratch; injected failure drill; rollback drill; report, retro | `.github/workflows/deploy.yml`; `docs/reports/`; `harness/lessons/`; `harness/evals/` | §21.2 M7 row |
+| M7-L2 | Lead | 2 | M7-W1, M7-W2, M7-W3 | `deploy.yml`; provision `staging-a` from scratch; injected failure drill; rollback drill;, history entry | `.github/workflows/deploy.yml`; `docs/history.md` | §21.2 M7 row |
 
 #### M8 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
@@ -1421,14 +1365,14 @@ These tables are the default decomposition; M2–M9 are provisional until the M1
 | M8-L1 | Lead | 0 | — | Verify §20.1 platform and §20.2 customer prerequisites, create `tenants/mirchmedia.jsonc` (platform-hosted), provision, redeploy `ops-mail-router`, smoke | `tenants/mirchmedia.jsonc`; `docs/orchestration/m8/` | `pnpm tenant:smoke mirchmedia` passes |
 | M8-W1 | Worker | 1 | M8-L1 | Laravel forwarder for `POST /api/leads` (§20.8) on a branch of the `mirchmedia-laravel` repository, with a feature test against a mocked intake endpoint | `external:mirchmedia-laravel/routes/web.php`; `external:mirchmedia-laravel/routes/api.php`; `external:mirchmedia-laravel/tests/Feature/LeadForwardTest.php` | Laravel feature test passes |
 | M8-W2 | Worker | 1 | M8-L1 | Transform the first customer's CSV exports into the `/settings/import` templates with a validation report, in a private workspace that is never committed | `external:onboarding-workspace/mirchmedia/` | row counts match the source; validation errors listed or zero |
-| M8-L2 | Lead | 2 | M8-W1, M8-W2 | Deploy the forwarder, run imports in `/admin`, test a lead from each site, go-live report, retro | `docs/reports/`; `harness/lessons/`; `harness/evals/` | §21.2 M8 row |
+| M8-L2 | Lead | 2 | M8-W1, M8-W2 | Deploy the forwarder, run imports in `/admin`, test a lead from each site, go-live, history entry | `docs/history.md` | §21.2 M8 row |
 
 #### M9 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
 |---|---|---|---|---|---|---|
-| M9-L1 | Lead | 0 | — | Triage the pilot friction list into fix WPs `M9-W1a`, `M9-W1b`, … (fixes only, no new features) with disjoint scopes, recorded in the M9 plan | `docs/orchestration/m9/` | every fix WP has all §0.5 fields and passes `check-orchestration` rules |
-| M9-W1 | Worker | 1 | M9-L1 | Execute the fix WPs `M9-W1a…` exactly as written in `docs/orchestration/m9/plan.md`, one worker per fix WP | `(per fix WP in docs/orchestration/m9/plan.md)` | each fix WP's acceptance commands |
-| M9-L2 | Lead | 2 | M9-W1 | Verify §20.5 criteria, final report, retro | `docs/reports/`; `harness/lessons/`; `harness/evals/` | §21.2 M9 row |
+| M9-L1 | Lead | 0 | — | Triage the pilot friction list into fix WPs `M9-W1a`, `M9-W1b`, … (fixes only, no new features) with disjoint scopes, recorded in the M9 plan | `docs/history.md` | every fix task names its owned files and acceptance command |
+| M9-W1 | Worker | 1 | M9-L1 | Execute the fix WPs `M9-W1a…` exactly as written in the M9 task list, one worker per fix WP | `(per fix task)` | each fix WP's acceptance commands |
+| M9-L2 | Lead | 2 | M9-W1 | Verify §20.5 criteria, final, history entry | `docs/history.md` | §21.2 M9 row |
 
 ### 21.4 Open design items (resolved by the named WP, recorded in the decision register)
 | Item | Resolved in | Question |
@@ -1475,79 +1419,12 @@ least-privilege API tokens; secrets only in Wrangler and GitHub secrets.
 
 ---
 
-## 26. Self-improving execution harness
-The harness is the build's control plane. It heals the development process, not the application: every failure becomes a durable safeguard that future work packages inherit.
-Loop: **failure → classification → lesson → countermeasure → regression eval (reproduction + fix) → brief injection**. It is files, JSON schemas, Git diffs and shell commands, so any capable agent runtime can operate it.
-
-### 26.1 Core (built in M0) and optional sophistication (deferred)
-**Core:** planning (`harness:plan`), brief generation (`harness:brief`), scope enforcement (`check:scope`), structured reports, automatic metrics (`harness:record`), failure classification, lessons with brief injection, regression evals (`harness:evals`), retro with promotion and retirement (`harness:retro`), harness self-test.
-**Optional sophistication (deferred):** dashboards, elaborate scoring, runtime-specific adapters, comparisons between agent types, automatic prompt optimization.
-
-### 26.2 Layout
-```text
-harness/
-  config.yaml                         concurrency cap, retry budget, promotion thresholds, severe classes, retirement window
-  schemas/                            JSON schemas: attempt, report front matter, lesson, eval manifest
-  templates/brief.md  report.md  spike-report.md
-  metrics/attempts/<WP-ID>-a<k>.json  one file per attempt (no shared appends → merge-safe under parallel work)
-  lessons/<lesson-id>.md              one file per lesson
-  evals/<lesson-id>/repro/            reproduction: must FAIL the countermeasure (or reproduce the bug)
-  evals/<lesson-id>/fixed/            corrected behavior: must PASS
-  evals/<lesson-id>/eval.json         commands and expected exit codes for repro and fixed
-  CHANGELOG.md                        harness changes with lesson ids
-```
-Lesson ids are collision-free without coordination: `L-<YYYYMMDD>-<WP-ID>-<first 6 hex of sha256(title)>`.
-
-### 26.3 Automatic metrics
-`pnpm harness:record <WP-ID> --attempt <k>` runs the WP's acceptance commands, `pnpm verify:fast` and `pnpm check:scope`, and writes `harness/metrics/attempts/<WP-ID>-a<k>.json`
-(validated by `schemas/attempt.schema.json`): `{ wp, milestone, attempt, runner: "worker"|"lead", startedAt, finishedAt, gates: [{ name, exitCode, durationMs, failingLines }], scopeViolations: [paths], filesChanged, suggestedClasses: [], confirmedClasses: [], leadTookOver }`.
-Workers run it before reporting; the lead re-runs it during review (the lead's file wins). `suggestedClasses` are filled automatically from a gate→class map in `config.yaml` (e.g. `check:scope` → `SCOPE_VIOLATION`, `check:brand` → `BRAND_OR_VOCAB_LEAK`, permission test failure → `AUTHZ_GAP`); the lead confirms or corrects `confirmedClasses`.
-Review findings are metrics even when gates pass. Every `fix(...)` commit and every commit produced after the lead returns findings requires a new attempt file with confirmed root-cause classes. Attempt files and remediation commits remain append-only through the retro. First pass means attempt 1 passed and the lead returned no findings; any retry or review remediation makes first pass false.
-
-### 26.4 Failure classes
-Severe: `AUTHZ_GAP` · `TENANT_ISOLATION` · `SECRET_EXPOSURE` · `DATA_LOSS` · `DESTRUCTIVE_DEPLOY`.
-Ordinary: `SCOPE_VIOLATION` · `SPEC_GAP` · `SPEC_MISREAD` · `CONTRACT_DRIFT` · `MISSING_TEST` · `FLAKY_TEST` · `IDEMPOTENCY_GAP` · `CONCURRENCY_GAP` · `DUPLICATE_ABSTRACTION` · `BRAND_OR_VOCAB_LEAK` · `GATE_FAILURE` · `DEPENDENCY_REQUEST` · `ENV_OR_CREDENTIALS` · `PLATFORM_LIMIT` · `DOC_GAP` · `OTHER`.
-New classes are added by the lead with a changelog entry.
-
-### 26.5 Promotion
-- Severe classes promote on first occurrence, before the next WP that touches the affected paths is dispatched.
-- Ordinary classes promote at 2 confirmed occurrences in a milestone or 3 cumulative.
-- Each promotion creates one lesson with: symptom, cause, affected paths (globs), countermeasure type (`check` | `test` | `brief-clause` | `checklist` | `spec-adr`), countermeasure location, and an eval.
-- Countermeasure preference: automated check or test wired into `verify:fast` or `verify` → brief clause → checklist item → spec change via ADR.
-- Every lesson's eval has both `repro/` (the original failure is caught or reproduced) and `fixed/` (the corrected behavior passes). Detecting the old failure alone is insufficient.
-
-### 26.6 Brief injection
-`pnpm harness:brief <WP-ID>` adds every active lesson whose affected paths overlap the WP write scope under **Known pitfalls**, with its countermeasure and eval id.
-For retries, the lead writes every review finding into **Previous attempt findings** before dispatch. Each finding states the observed behavior, root-cause class, required countermeasure, and required evidence. A worker does not rely on chat history to recover these facts.
-
-### 26.7 Retirement and simplification
-- **Retirement** is evidence-based: a lesson or check that has not fired for 3 milestones, whose `fixed/` eval passes and whose risk is covered by a stronger check, may be retired or merged by the lead with a changelog entry citing the metrics.
-- Severe-class lessons retire only via ADR.
-- The retro reports harness cost (total gate duration per WP) so slow or redundant checks are simplified.
-
-### 26.8 Retro
-`pnpm harness:retro m<N>` at milestone end: aggregates attempt files, review findings and remediation commits; lists classes over threshold, severe occurrences, first-pass rate, retries, lead takeovers and gate durations. A green first attempt followed by a `fix(...)` commit is not first pass. The retro scaffolds lesson and eval folders; the lead completes them and commits the harness changes before the next milestone's wave 0.
-
-### 26.9 Harness self-test (M0 acceptance)
-A planted end-to-end failure proves the loop:
-1. A fixture WP `M0-X1` writes outside its scope and ships a failing permission test.
-2. `harness:record` classifies `SCOPE_VIOLATION` and `AUTHZ_GAP`.
-3. `harness:retro` promotes `AUTHZ_GAP` immediately.
-4. The generated eval's `repro/` fails and `fixed/` passes.
-5. `harness:brief` for a second fixture WP touching the same paths includes the lesson.
-Fixtures live under `harness/selftest/` and run in `pnpm harness:evals`.
-
-### 26.10 Scripts (`scripts/harness/`, each ≤ 250 lines, unit-tested)
-| Command | Behavior |
-|---|---|
-| `pnpm harness:plan m<N>` | Copies the §21.3 table for M<N> into `docs/orchestration/m<N>/plan.md` with a status column; keeps existing status and recorded changes |
-| `pnpm harness:brief <WP-ID>` | Renders `templates/brief.md` from the plan row, spec references, inputs and matching lessons |
-| `pnpm check:scope <WP-ID>` | Diff vs write scope and §0.7 critical paths (critical → fail; other out-of-scope → flagged) |
-| `pnpm harness:record <WP-ID> --attempt <k>` | Runs acceptance + `verify:fast` + scope check; writes the attempt file |
-| `pnpm harness:retro m<N>` | Aggregates, promotes, scaffolds lessons and evals, reports cost |
-| `pnpm harness:evals` | Runs every active eval (`repro` must fail, `fixed` must pass) and the self-test |
-
----
+## 26. Agent tooling
+Agents get better through what they are given, not through records of what they did.
+- **`AGENTS.md`**: the map of the codebase, the dependency rule, golden examples, commands and known pitfalls. Kept short; a pitfall is added when it would have prevented a real defect.
+- **Task skills** in `.claude/skills/`: `add-use-case`, `add-record-surface`, `fix-bug` and `ui-from-reference`, each pointing to real files to copy.
+- **Fast loop:** formatting and lint fixes run automatically after each edit; `pnpm verify:fast` covers format, typecheck, lint and changed unit tests; full `pnpm verify` runs in CI and before a merge.
+- **Lessons:** a defect found in review becomes a failing product test, a lint rule, or one line in `AGENTS.md`. Never a separate process record.
 
 ## 27. Reference library
 **Cloudflare:** [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) · [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/) · [D1 limits](https://developers.cloudflare.com/d1/platform/limits/) · [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) · [R2 Wrangler commands](https://developers.cloudflare.com/r2/reference/wrangler-commands/) · [Rollbacks](https://developers.cloudflare.com/workers/configuration/versions-and-deployments/rollbacks/) · [Workers Wrangler commands](https://developers.cloudflare.com/workers/wrangler/commands/workers/) · [Rate limiting binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) · [Email Service Workers API](https://developers.cloudflare.com/email-service/api/send-emails/workers-api/) · [Email Service pricing](https://developers.cloudflare.com/email-service/platform/pricing/) · [Email Service limits](https://developers.cloudflare.com/email-service/platform/limits/) · [Email subdomains](https://developers.cloudflare.com/email-service/configuration/subdomains/) · [Turnstile server-side validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/) · [Querying Workers metrics (GraphQL)](https://developers.cloudflare.com/analytics/graphql-api/tutorials/querying-workers-metrics/) · [Payload on Workers architecture](https://blog.cloudflare.com/payload-cms-workers/)
@@ -1557,4 +1434,4 @@ Fixtures live under `harness/selftest/` and run in `pnpm harness:evals`.
 **Behavior references (study only, never copy):** [Frappe CRM](https://github.com/frappe/crm) · [Frappe license and trademark](https://docs.frappe.io/legal/others/license-and-trademark) · [Twenty](https://github.com/twentyhq/twenty) · [Plane](https://github.com/makeplane/plane) · [Huly](https://github.com/hcengineering/platform) · [Corteza](https://github.com/cortezaproject/corteza)
 
 ## Verification of this plan
-The plan is satisfied when every acceptance row in §21.2 passes with evidence in `docs/reports/`. The M1 spike report is the first hard gate (GO / FALLBACK).
+The plan is satisfied when every acceptance row in §21.2 passes with evidence recorded in `docs/history.md`. The M1 spike report is the first hard gate (GO / FALLBACK).

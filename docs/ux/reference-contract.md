@@ -39,4 +39,4 @@ Every surface must be checked in empty, loading, populated, long-content, error,
 
 ## Regression rule
 
-If the same UX defect needs three corrective commits, add an automated guard in the relevant harness before continuing page-level work. Do not call a surface complete from a code-only review.
+If the same UX defect needs three corrective commits, add an automated test for it before continuing page-level work. Do not call a surface complete from a code-only review.

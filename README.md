@@ -6,7 +6,7 @@ The authoritative specification is [`docs/spec.md`](docs/spec.md); [`docs/archit
 
 ## Status
 
-The integration tree is in M3 verification. The current acceptance evidence and remaining closeout requirements are in [`docs/reports/m3.md`](docs/reports/m3.md) and [`docs/orchestration/m3/plan.md`](docs/orchestration/m3/plan.md). M2 CRM is accepted; M1 spike results remain historical evidence in [`docs/reports/m1-spike.md`](docs/reports/m1-spike.md).
+M0 to M3 are built; [`docs/history.md`](docs/history.md) summarizes each milestone and lists the open items.
 
 ## Stack
 
@@ -42,10 +42,9 @@ packages/
   adapters/       @ops/adapter-payload (collections, access, repositories), @ops/adapter-cloudflare (mail, cron, inbound)
   ui/             @ops/ui: vendored shadcn components and composites, no data fetching
   templates/      @ops/templates: vertical templates as typed data
-scripts/          quality checks, gen-wrangler, local seed and reset, harness and spike scripts
-harness/          execution harness: config, schemas, templates, attempt metrics, self-test
+scripts/          quality checks, gen-wrangler, local seed and reset, tenant provisioning and deploy
 tenants/          one <slug>.jsonc per tenant
-docs/             spec, architecture, ADRs, decisions, orchestration, reports
+docs/             spec, architecture, ADRs, decisions, runbooks, UX, history
 tooling/          shared tsconfig, ESLint rules, dependency-cruiser, knip and jscpd configs
 ```
 
@@ -100,36 +99,30 @@ Sign in at `/login`; protected product pages redirect there without a session. T
 
 Run from the repository root.
 
-| Command                                     | What it does                                                                 |
-| ------------------------------------------- | ---------------------------------------------------------------------------- |
-| `pnpm dev`                                  | Next.js dev server with locally emulated Cloudflare bindings                 |
-| `pnpm build`                                | Next.js production build of `apps/web`                                       |
-| `pnpm preview`                              | OpenNext build, then the Worker in the local workerd runtime                 |
-| `pnpm verify`                               | every quality gate, tests, build and bundle size (see below)                 |
-| `pnpm verify:fast`                          | format check, typecheck, lint and tests for changed files                    |
-| `pnpm test`                                 | Vitest unit tests with coverage                                              |
-| `pnpm test:integration`                     | Payload on a local D1 copy: scope, conflicts, duplicates (no network)        |
-| `pnpm test:e2e`                             | Playwright tests under `tests/e2e`                                           |
-| `pnpm typecheck`                            | `tsc --noEmit` in every workspace package                                    |
-| `pnpm lint`                                 | ESLint with zero warnings allowed                                            |
-| `pnpm format`                               | Prettier over the repository                                                 |
-| `pnpm check:brand`                          | fails on brand or customer names in `apps/` and `packages/`                  |
-| `pnpm check:vocab`                          | fails on vertical vocabulary (lead, task, project...) in kernel and platform |
-| `pnpm check:disables`                       | fails on `eslint-disable` comments for gated rules                           |
-| `pnpm check:docs`                           | package READMEs and TSDoc on exports                                         |
-| `pnpm check:scope <WP-ID>`                  | diff against a work package's write scope and the critical paths             |
-| `pnpm gen:wrangler`                         | regenerates `apps/web/wrangler.jsonc` from `tenants/*.jsonc`                 |
-| `pnpm db:reset:local`                       | recreates the local D1 database from migrations                              |
-| `pnpm seed:dev`                             | seeds local development data                                                 |
-| `pnpm harness:plan m<N>`                    | creates or updates a milestone plan from the spec                            |
-| `pnpm harness:brief <WP-ID>`                | renders a work package brief with matching lessons                           |
-| `pnpm harness:record <WP-ID> --attempt <k>` | runs acceptance and gates, writes an attempt file                            |
-| `pnpm harness:retro m<N>`                   | milestone retro: aggregates attempts, promotes lessons                       |
-| `pnpm harness:evals`                        | runs the harness regression evals and self-test                              |
+| Command                 | What it does                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `pnpm dev`              | Next.js dev server with locally emulated Cloudflare bindings                 |
+| `pnpm build`            | Next.js production build of `apps/web`                                       |
+| `pnpm preview`          | OpenNext build, then the Worker in the local workerd runtime                 |
+| `pnpm verify`           | every quality gate, tests, build and bundle size (see below)                 |
+| `pnpm verify:fast`      | format check, typecheck, lint and tests for changed files                    |
+| `pnpm test`             | Vitest unit tests with coverage                                              |
+| `pnpm test:integration` | Payload on a local D1 copy: scope, conflicts, duplicates (no network)        |
+| `pnpm test:e2e`         | Playwright tests under `tests/e2e`                                           |
+| `pnpm typecheck`        | `tsc --noEmit` in every workspace package                                    |
+| `pnpm lint`             | ESLint with zero warnings allowed                                            |
+| `pnpm format`           | Prettier over the repository                                                 |
+| `pnpm check:brand`      | fails on brand or customer names in `apps/` and `packages/`                  |
+| `pnpm check:vocab`      | fails on vertical vocabulary (lead, task, project...) in kernel and platform |
+| `pnpm check:disables`   | fails on `eslint-disable` comments for gated rules                           |
+| `pnpm check:docs`       | package READMEs and TSDoc on exports                                         |
+| `pnpm gen:wrangler`     | regenerates `apps/web/wrangler.jsonc` from `tenants/*.jsonc`                 |
+| `pnpm db:reset:local`   | recreates the local D1 database from migrations                              |
+| `pnpm seed:dev`         | seeds local development data                                                 |
 
 ## Quality gates
 
-`pnpm verify` runs, in order: `format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:brand`, `check:vocab`, `check:disables`, `check:docs`, `harness:evals`, `test`, `build` and `size`. CI runs it on every pull request and push to `main`.
+`pnpm verify` runs, in order: `format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:brand`, `check:vocab`, `check:disables`, `check:docs`, `test`, `build` and `size`. CI runs it on every pull request and push to `main`.
 
 Key limits (spec §6):
 
@@ -156,20 +149,9 @@ The one-command provisioning, deploy loop and runbooks are milestone M7 (spec §
 
 ## Working on this repository
 
-Work follows the spec in milestones, each split into work packages (spec §0, §21):
+Agents and engineers start from [`AGENTS.md`](AGENTS.md): where code lives, golden examples, commands, pitfalls and how parallel work is split. Task skills for common changes are in `.claude/skills/`. Spec §0 covers roles, ownership and escalation.
 
-- A lead plans each milestone in `docs/orchestration/m<N>/plan.md`, dispatches work packages to workers with a brief, reviews, and merges. Workers stay inside the brief's write scope and report in `docs/orchestration/m<N>/reports/`.
-- Workers send one completion notification and stop after committing a clean result. The lead does not poll active workers, conversations, branches, or worktrees. See spec §0.8.
 - Execution decisions are recorded in `docs/decisions/decision-register.md` (E-nnn), open questions in `docs/decisions/open-questions.md`, and architecture decisions in `docs/adr/`.
-- The harness (`harness/`, `scripts/harness/`, spec §26) records attempt metrics, classifies failures, and turns repeated failures into lessons with regression evals that later briefs include. Every `fix(...)` commit and post-review remediation is retry evidence, even when automated gates pass.
-
-Conventions:
-
-- Conventional Commits, for example `feat(crm): ...` or `docs: ...`.
-- A `fix(...)` commit is a harness signal and must be paired with an append-only attempt that confirms its root-cause class.
+- Conventional Commits, for example `feat(crm): ...` or `docs: ...`. A `fix(...)` commit includes the failing test that reproduces the defect.
 - Comments stay short: a one-line TSDoc on exported symbols, inline comments only to explain why. No commented-out code.
 - Documentation describes current behavior only; link to the owning document instead of duplicating it.
-
-## License
-
-`UNLICENSED`: proprietary, all rights reserved. The license decision is open and tracked as Q-001 in [`docs/decisions/open-questions.md`](docs/decisions/open-questions.md).

@@ -1,11 +1,69 @@
-# Agent entrypoint
+# Agent guide
 
-Read [`docs/spec.md`](docs/spec.md) sections 0 and 26 before planning, delegating, reviewing, or resuming work. The spec is authoritative if this routing note differs from it.
+ops-platform is a white-label CRM and project/task platform: one codebase, deployed as an isolated Worker, D1 database and R2 bucket per tenant. No tenant is the product. Tenant names, domains, colours and people live only in `tenants/*.jsonc` and tenant settings.
 
-Two rules are easy to miss:
+[`docs/spec.md`](docs/spec.md) is authoritative for product behavior; §0 covers roles, ownership and escalation. [`docs/history.md`](docs/history.md) summarizes what has been built.
 
-- Section 0.8 requires worker-pushed completion. A lead does not poll an active worker, its conversation, branch, or worktree for status.
-- Sections 0.6 and 26 treat every `fix(...)` commit and every post-review remediation as harness evidence. The retry must preserve the findings, classify their root causes, and add evidence that the countermeasures work.
-- Before any worker edit and after every resume, verify that `pwd` and `git rev-parse --show-toplevel` both resolve to the assigned worktree. Every command sets that worktree as its working directory, and every patch path starts inside it. A mismatch stops the edit.
+## Where things live
 
-Load the repository's technical-writing skill before changing technical documentation.
+| Layer                              | Path                                                                              | May import                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Primitives (Result, errors, clock) | `packages/kernel`                                                                 | nothing from the workspace                         |
+| Permissions, workflows, ports      | `packages/platform`                                                               | kernel                                             |
+| Domain: rules and use cases        | `packages/modules/{crm,work,intake,mail}`                                         | kernel, platform                                   |
+| Persistence and Cloudflare         | `packages/adapters/{payload,cloudflare}`                                          | the above; only `adapters/payload` imports Payload |
+| Presentational UI                  | `packages/ui` (primitives in `src/components/ui`, composites in `src/composites`) | kernel types only; no data fetching                |
+| Next.js app and composition root   | `apps/web` (routes in `src/app`, server actions in `src/server`)                  | everything                                         |
+
+`tooling/eslint/rules.js` and `tooling/depcruise/.dependency-cruiser.cjs` enforce these rules. Business rules belong in a module, not in `apps/web`.
+
+## Golden examples
+
+Copy these instead of inventing a new shape. The task skills in `.claude/skills/` walk through each one.
+
+- Use case: `packages/modules/crm/src/commands/conversion.ts`, tested against the in-memory double `packages/modules/crm/test/memory-crm.ts`.
+- Thin server action: `apps/web/src/server/actions/work/tasks/moveTask.ts`.
+- Stage change with transaction and activity: `packages/platform/src/workflows/change-stage.ts`.
+- Generic record list and detail: `apps/web/src/app/(app)/directory-view.tsx` with `apps/web/src/server/crm/directory/data.ts`.
+- Optimistic board move with rollback: `packages/ui/src/composites/KanbanBoard/board-state.ts`.
+
+## Commands
+
+| Command                                | Use                                                              |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| `pnpm dev`                             | local app on port 3000 (`PORT=3001 pnpm dev` if taken)           |
+| `pnpm db:reset:local && pnpm seed:dev` | fresh local database                                             |
+| `pnpm verify:fast`                     | while working: format check, typecheck, lint, changed unit tests |
+| `pnpm verify`                          | before merging: every gate, tests, integration tests, build      |
+| `pnpm test:e2e`                        | Playwright, against a running app                                |
+
+## Pitfalls
+
+Each one caused a real defect here.
+
+- Put shared types in a leaf contract module. Barrels only re-export, or dependency-cruiser reports a cycle.
+- Scope predicates live in platform policy. Pass the authenticated request through every repository read.
+- Board drops into a lost stage defer the write and restore the source stage and version on failure.
+- Map a stage transition to the persisted Payload shape before writing the transition row.
+- Customer sign-in stays on `/login`; product navigation never links to `/admin`.
+- Tenant prefill comes only from the tenant manifest and seed.
+- Server actions call a module use case. Do not call `payload.find` or `payload.create` from a route or action.
+- Reuse an existing composite before writing a per-entity copy: `StageSelect`, `ActivityFeed`, `DataTable`, `EmptyState`. Never add a raw `<select>` or date input where `@ops/ui` has one.
+- Do not disable lint for a whole file. Use a scoped `eslint-disable-next-line <rule> -- <reason>`.
+- User-facing copy goes through the i18n copy objects in `apps/web/src/i18n/`.
+
+## Tests
+
+A test earns its place only if a realistic product bug makes it fail. Test behavior through the module's in-memory double or a real browser flow. Do not test config literals, source text, tenant values, or code nothing calls. Fix a defect by first writing the failing test, then commit it as `fix(scope): ...`.
+
+## Working in parallel
+
+Several agents may work at once in one checkout. Each task names the files it owns, and no two running tasks own the same file. Workers do not commit or push; the lead reviews and commits. Report completion once, when the task is done or blocked. Credentials, deploys and remote migrations stay with the lead.
+
+## References and licences
+
+Reference products are cloned in `../references/`; `../references/README.md` lists their licences. MIT and Apache-2.0 code (Payload, `twenty/packages/twenty-ui`, Corteza, Agentic Inbox) may be copied with its licence notice kept, following `third_party/agentic-inbox/`. Plane, Twenty's application code, Frappe CRM, Huly and Odoo are behavior references only: re-implement, do not copy, until the open code-licence decision (ADR-0003, spec D-30) says otherwise.
+
+## Documentation
+
+Load the technical-writing skill before changing documentation. State current behavior; git history is the change log.
