@@ -39,7 +39,16 @@ export function actionError(
 
 /** Converts a module use-case `Result` into an action result. */
 export function toActionResult<T>(result: Result<T>): ActionResult<T> {
-  return result.ok ? { ok: true, data: result.value } : actionError(result.error.code, result.error.message)
+  if (result.ok) return { ok: true, data: result.value }
+  return actionError(result.error.code, result.error.message, fieldsOf(result.error.details))
+}
+
+/** The per-field messages a module attached to a validation error, if any. */
+function fieldsOf(details: Readonly<Record<string, unknown>> | undefined): Record<string, string> | undefined {
+  const fields = details?.fields
+  if (typeof fields !== 'object' || fields === null) return undefined
+  const entries = Object.entries(fields).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+  return entries.length === 0 ? undefined : Object.fromEntries(entries)
 }
 
 /**

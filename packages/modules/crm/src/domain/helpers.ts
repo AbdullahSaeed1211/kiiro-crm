@@ -1,4 +1,14 @@
-import { asId, domainError, err, ok, type DomainError, type Id, type Result } from '@ops/kernel'
+import {
+  asId,
+  domainError,
+  err,
+  invalidInput,
+  ok,
+  type DomainError,
+  type Id,
+  type InputIssue,
+  type Result,
+} from '@ops/kernel'
 import { changeStage, type Stage, type Workflow } from '@ops/platform'
 import type { CrmDeps } from '../ports/repository'
 import type { CrmCustomData, CrmRecordType, DealRecord, LeadRecord, OrganizationRecord } from '../ports/records'
@@ -28,11 +38,13 @@ export function failure<T = never>(
 
 /** Parses unknown command input into a CRM result. */
 export function parse<T>(
-  schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
+  schema: {
+    safeParse(value: unknown): { success: true; data: T } | { success: false; error: { issues: readonly InputIssue[] } }
+  },
   input: unknown,
 ): CrmResult<T> {
   const result = schema.safeParse(input)
-  return result.success ? ok(result.data) : failure('VALIDATION', 'invalid CRM input')
+  return result.success ? ok(result.data) : err(invalidInput('invalid CRM input', result.error.issues))
 }
 
 /** Converts an optional external id into the branded kernel id. */

@@ -1,68 +1,17 @@
-import { asId, ok, type Id } from '@ops/kernel'
+import { asId, err, invalidInput, ok, type Id } from '@ops/kernel'
 import type { ProjectPatch, ProjectRecord, WorkDeps, WorkResult } from '../ports/work'
-import { fail, isManagerUp, objectInput, validDate } from './input'
-
-type Fields = Record<string, unknown>
-type Check = readonly [valid: (value: Fields) => boolean, message: string]
+import { createProjectSchema, updateProjectSchema, type CreateProjectInput, type ProjectPatchInput } from '../schema'
+import { fail, isManagerUp } from './input'
 
 const CONFLICT = 'project was updated by someone else'
 const NOT_FOUND = 'project not found'
-const CREATE_FIELDS = new Set([
-  'name',
-  'organizationId',
-  'ownerId',
-  'memberIds',
-  'startAt',
-  'targetEndAt',
-  'description',
-])
 const projectResource = (project: ProjectRecord) => ({
   type: 'project',
   ...(project.ownerId === null ? {} : { ownerId: project.ownerId }),
   assigneeIds: project.memberIds,
 })
-const validName = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0 && value.trim().length <= 200
-const nullableString = (value: unknown): boolean => value === null || typeof value === 'string'
-const validDescription = (value: unknown): boolean =>
-  value === null || (typeof value === 'string' && value.length <= 20_000)
-const stringList = (value: unknown): boolean => Array.isArray(value) && value.every((id) => typeof id === 'string')
-/** Returns whether `key` is absent or passes `valid`. */
-const absentOr =
-  (key: string, valid: (field: unknown) => boolean) =>
-  (value: Fields): boolean =>
-    !(key in value) || valid(value[key])
-const idOrNull = (value: unknown): Id | null => (typeof value === 'string' ? asId(value) : null)
-const numberOrNull = (value: unknown): number | null => (typeof value === 'number' ? value : null)
-const idsOf = (value: unknown): Id[] =>
-  Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string').map(asId) : []
-
-/** Create-input checks, in the order their messages take precedence. */
-const CREATE_CHECKS: readonly Check[] = [
-  [(value) => Object.keys(value).every((key) => CREATE_FIELDS.has(key)), 'project contains unsupported fields'],
-  [absentOr('organizationId', nullableString), 'organizationId is invalid'],
-  [absentOr('ownerId', nullableString), 'ownerId is invalid'],
-  [absentOr('memberIds', stringList), 'memberIds is invalid'],
-  [
-    (value) => absentOr('startAt', validDate)(value) && absentOr('targetEndAt', validDate)(value),
-    'project dates are invalid',
-  ],
-  [absentOr('description', validDescription), 'project description is invalid'],
-  [
-    ({ startAt, targetEndAt }) =>
-      !(typeof startAt === 'number' && typeof targetEndAt === 'number' && startAt > targetEndAt),
-    'startAt must not be after targetEndAt',
-  ],
-]
-
-/** Validators for each editable project field; any other key makes a patch invalid. */
-const PATCH_CHECKS = new Map<string, (field: unknown) => boolean>([
-  ['name', validName],
-  ['organizationId', nullableString],
-  ['startAt', validDate],
-  ['targetEndAt', validDate],
-  ['description', nullableString],
-])
+const idOrNull = (value: string | null | undefined): Id | null =>
+  value === null || value === undefined ? null : asId(value)
 
 function allowedMembers(deps: WorkDeps, memberIds: readonly Id[]): boolean {
   return isManagerUp(deps.actor) || memberIds.every((memberId) => memberId === deps.actor.id)
@@ -77,15 +26,13 @@ async function organizationAllowed(deps: WorkDeps, organizationId: Id | null): P
   return organizationId === null || (await relatedVisible(deps, 'organization', organizationId))
 }
 
-function parseProjectPatch(input: unknown): ProjectPatch | undefined {
-  const value = objectInput(input)
-  if (value === undefined) return undefined
-  if (!Object.entries(value).every(([key, field]) => PATCH_CHECKS.get(key)?.(field) === true)) return undefined
-  const { name, organizationId, ...dates } = value
+/** Maps a validated patch to the port shape, keeping only the keys the caller sent. */
+function projectPatch(patch: ProjectPatchInput): ProjectPatch {
+  const { organizationId, ...plain } = patch
+  const copied = Object.fromEntries(Object.entries(plain).filter(([, value]) => value !== undefined))
   return {
-    ...(dates as Pick<ProjectPatch, 'startAt' | 'targetEndAt' | 'description'>),
-    ...('name' in value ? { name: (name as string).trim() } : {}),
-    ...('organizationId' in value ? { organizationId: idOrNull(organizationId) } : {}),
+    ...(copied as Pick<ProjectPatch, 'name' | 'startAt' | 'targetEndAt' | 'description'>),
+    ...(organizationId === undefined ? {} : { organizationId: idOrNull(organizationId) }),
   }
 }
 
@@ -100,16 +47,15 @@ interface ProjectDraft {
 }
 
 /** Maps validated create input to a draft; the owner defaults to the actor. */
-function projectDraft(value: Fields, actorId: Id): ProjectDraft {
-  const { name, ownerId, organizationId, memberIds, startAt, targetEndAt, description } = value
+function projectDraft(value: CreateProjectInput, actorId: Id): ProjectDraft {
   return {
-    name: (name as string).trim(),
-    ownerId: idOrNull(ownerId) ?? actorId,
-    organizationId: idOrNull(organizationId),
-    memberIds: idsOf(memberIds),
-    startAt: numberOrNull(startAt),
-    targetEndAt: numberOrNull(targetEndAt),
-    description: typeof description === 'string' ? description.trim() : null,
+    name: value.name,
+    ownerId: idOrNull(value.ownerId) ?? actorId,
+    organizationId: idOrNull(value.organizationId),
+    memberIds: (value.memberIds ?? []).map(asId),
+    startAt: value.startAt ?? null,
+    targetEndAt: value.targetEndAt ?? null,
+    description: value.description?.trim() ?? null,
   }
 }
 
@@ -124,12 +70,10 @@ async function createDenial(deps: WorkDeps, draft: ProjectDraft): Promise<WorkRe
 
 /** Creates a project after checking create, ownership, membership, and organization scope. */
 export async function createProject(deps: WorkDeps, input: unknown): Promise<WorkResult<ProjectRecord>> {
-  const value = objectInput(input)
-  if (value === undefined || !validName(value['name'])) return fail('VALIDATION', 'a project name is required')
-  const invalid = CREATE_CHECKS.find(([valid]) => !valid(value))
-  if (invalid !== undefined) return fail('VALIDATION', invalid[1])
+  const parsed = createProjectSchema.safeParse(input)
+  if (!parsed.success) return err(invalidInput('project fields are invalid', parsed.error.issues))
   if (!deps.can(deps.actor, 'create', { type: 'project' })) return fail('FORBIDDEN', 'not allowed to create projects')
-  const draft = projectDraft(value, deps.actor.id)
+  const draft = projectDraft(parsed.data, deps.actor.id)
   const denied = await createDenial(deps, draft)
   if (denied !== undefined) return denied
   const workflow = await deps.repo.loadDefaultWorkflow('project')
@@ -143,13 +87,10 @@ interface ProjectUpdate {
 }
 
 function parseProjectUpdate(input: unknown): WorkResult<ProjectUpdate> {
-  const value = objectInput(input) ?? {}
-  const { projectId, expectedUpdatedAt } = value
-  if (typeof projectId !== 'string' || typeof expectedUpdatedAt !== 'number' || !Number.isFinite(expectedUpdatedAt))
-    return fail('VALIDATION', 'projectId and expectedUpdatedAt are required')
-  const patch = parseProjectPatch(value['patch'])
-  if (patch === undefined) return fail('VALIDATION', 'project patch contains unsupported or invalid fields')
-  return ok({ projectId: asId(projectId), expectedUpdatedAt, patch })
+  const parsed = updateProjectSchema.safeParse(input)
+  if (!parsed.success) return err(invalidInput('project update is invalid', parsed.error.issues))
+  const { projectId, expectedUpdatedAt, patch } = parsed.data
+  return ok({ projectId: asId(projectId), expectedUpdatedAt, patch: projectPatch(patch) })
 }
 
 async function updateDenial(

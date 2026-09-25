@@ -13,15 +13,22 @@ export interface ProductContext {
   readonly user: Record<string, unknown>
 }
 
-/** Request-scoped authentication and tenant context. */
-export const getProductContext = cache(async (): Promise<ProductContext> => {
+/** Request-scoped authentication and tenant context, or `null` without an active session. API routes use this. */
+export const findProductContext = cache(async (): Promise<ProductContext | null> => {
   const payload = await getPayload({ config })
   const auth = await payload.auth({ headers: await headers() })
-  if (auth.user === null) redirect('/login')
+  if (auth.user === null) return null
   const req = await createLocalReq({ user: auth.user }, payload)
   const actor = await resolveActor(req)
-  if (actor?.active !== true) redirect('/login')
+  if (actor?.active !== true) return null
   return { payload, req, actor, user: auth.user as unknown as Record<string, unknown> }
+})
+
+/** Request-scoped authentication and tenant context; pages without an active session redirect to login. */
+export const getProductContext = cache(async (): Promise<ProductContext> => {
+  const context = await findProductContext()
+  if (context === null) redirect('/login')
+  return context
 })
 
 /** Request-scoped workspace settings shared by layouts and page queries. */

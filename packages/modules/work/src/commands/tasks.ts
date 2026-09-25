@@ -1,7 +1,7 @@
-import { asId, ok, type Id } from '@ops/kernel'
+import { ok, type Id } from '@ops/kernel'
 import type { TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
-import { fail, isManagerUp, objectInput } from './input'
-import { parseCreate, parsePatch, type ParsedTaskDraft } from './task-input'
+import { fail, isManagerUp } from './input'
+import { parseCreate, parseUpdate, type ParsedTaskDraft } from './task-input'
 import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
 export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
 const resource = (task: WorkTaskRecord) => ({
@@ -63,8 +63,9 @@ function authorizeAssignment(deps: WorkDeps, draft: ParsedTaskDraft): WorkResult
 
 /** Creates a task after checking visibility, hierarchy, assignment, and related-record scope. */
 export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const draft = parseCreate(input)
-  if (draft === undefined) return fail('VALIDATION', 'task fields are invalid')
+  const parsed = parseCreate(input)
+  if (!parsed.ok) return parsed
+  const draft = parsed.value
   if (!deps.can(deps.actor, 'create', { type: 'task' })) return fail('FORBIDDEN', 'not allowed to create tasks')
 
   const workflow = await deps.repo.loadDefaultWorkflow('task')
@@ -109,23 +110,6 @@ async function authorizeTaskUpdate(deps: WorkDeps, patch: TaskPatch, task: WorkT
   return ok(null)
 }
 
-interface UpdateInput {
-  readonly taskId: Id
-  readonly expectedUpdatedAt: number
-  readonly patch: TaskPatch
-}
-
-function parseUpdate(input: unknown): UpdateInput | undefined {
-  const value = objectInput(input)
-  if (value === undefined) return undefined
-  const { taskId, expectedUpdatedAt } = value
-  const patch = value['patch'] === undefined ? undefined : parsePatch(value['patch'])
-  if (typeof taskId !== 'string' || typeof expectedUpdatedAt !== 'number' || !Number.isFinite(expectedUpdatedAt))
-    return undefined
-  if (patch === undefined || Object.keys(patch).length === 0) return undefined
-  return { taskId: asId(taskId), expectedUpdatedAt, patch }
-}
-
 async function getAndCheckTask(
   deps: WorkDeps,
   taskId: Id,
@@ -148,8 +132,9 @@ async function persistTaskUpdate(
 
 /** Updates editable task fields only; stage, dates, and completion use dedicated commands. */
 export async function updateTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const update = parseUpdate(input)
-  if (update === undefined) return fail('VALIDATION', 'task patch is invalid')
+  const parsed = parseUpdate(input)
+  if (!parsed.ok) return parsed
+  const update = parsed.value
   const task = await getAndCheckTask(deps, update.taskId, update.expectedUpdatedAt)
   if (!task.ok) return task
   const authorized = await authorizeTaskUpdate(deps, update.patch, task.value)

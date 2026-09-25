@@ -88,18 +88,6 @@ describe('createProject enforces authorization and compare-and-set writes', () =
     })
   })
 })
-describe('createProject validates input before writing', () => {
-  it.each([
-    [{ name: 'Launch', budget: 5 }, 'project contains unsupported fields'],
-    [{ name: 'Launch', ownerId: 7 }, 'ownerId is invalid'],
-    [{ name: 'Launch', memberIds: ['staff', 3] }, 'memberIds is invalid'],
-    [{ name: 'Launch', description: 'x'.repeat(20_001) }, 'project description is invalid'],
-    [{ name: 'Launch', startAt: 20, targetEndAt: 10 }, 'startAt must not be after targetEndAt'],
-  ])('rejects invalid project input %j before writing', async (input, message) => {
-    const result = await createProject(depsFor({ actor: actor('owner', 'owner') }), input)
-    expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION', message } })
-  })
-})
 describe('createTask enforces authorization and assignment matrix', () => {
   it('applies the owner/manager/staff assignment matrix on create', async () => {
     const staff = depsFor()

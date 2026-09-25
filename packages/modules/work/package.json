@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@ops/kernel": "workspace:*",
-    "@ops/platform": "workspace:*"
+    "@ops/platform": "workspace:*",
+    "zod": "4.6.2"
   },
   "devDependencies": {
     "@types/node": "22.20.2",

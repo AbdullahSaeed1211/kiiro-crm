@@ -19,3 +19,15 @@ export { completeTask, createTask, moveTask, reopenTask, setTaskDates, updateTas
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'
 export { myTasksBuckets, type MyTaskBuckets } from './queries/my-tasks'
+export {
+  createProjectSchema,
+  createTaskSchema,
+  expectedVersionSchema,
+  moveTaskSchema,
+  projectMemberSchema,
+  projectPatchSchema,
+  taskDatesSchema,
+  taskPatchSchema,
+  updateProjectSchema,
+  updateTaskSchema,
+} from './schema'

@@ -10,6 +10,7 @@ import {
   executeCommand,
   failure,
   id,
+  parse,
   type CrmResult,
 } from '../domain/helpers'
 
@@ -53,7 +54,7 @@ export async function createWithActivity<T extends keyof CrmRecords>(
 }
 
 async function createOrganizationWork(deps: CrmDeps, input: unknown): Promise<CrmResult<OrganizationRecord>> {
-  const parsed = parseInput(createOrganizationSchema, input)
+  const parsed = parse(createOrganizationSchema, input)
   if (!parsed.ok) return parsed
   const denied = accessDenied<OrganizationRecord>({ type: 'organization', deps, record: {}, action: 'create' })
   if (denied !== undefined) return denied
@@ -76,7 +77,7 @@ export function createOrganization(deps: CrmDeps, input: unknown): Promise<CrmRe
 }
 
 async function updateOrganizationWork(deps: CrmDeps, input: unknown): Promise<CrmResult<OrganizationRecord>> {
-  const parsed = parseInput(updateOrganizationSchema, input)
+  const parsed = parse(updateOrganizationSchema, input)
   if (!parsed.ok) return parsed
   const value = parsed.value
   const current = await deps.repo.get('organization', asId(value.id))
@@ -94,7 +95,7 @@ export function updateOrganization(deps: CrmDeps, input: unknown): Promise<CrmRe
 }
 
 async function createContactWork(deps: CrmDeps, input: unknown): Promise<CrmResult<ContactRecord>> {
-  const parsed = parseInput(createContactSchema, input)
+  const parsed = parse(createContactSchema, input)
   if (!parsed.ok) return parsed
   const denied = accessDenied<ContactRecord>({ type: 'contact', deps, record: {}, action: 'create' })
   if (denied !== undefined) return denied
@@ -117,7 +118,7 @@ export function createContact(deps: CrmDeps, input: unknown): Promise<CrmResult<
 }
 
 async function updateContactWork(deps: CrmDeps, input: unknown): Promise<CrmResult<ContactRecord>> {
-  const parsed = parseInput(updateContactSchema, input)
+  const parsed = parse(updateContactSchema, input)
   if (!parsed.ok) return parsed
   const value = parsed.value
   const current = await deps.repo.get('contact', asId(value.id))
@@ -132,12 +133,4 @@ async function updateContactWork(deps: CrmDeps, input: unknown): Promise<CrmResu
 /** Validates and conditionally updates a contact. */
 export function updateContact(deps: CrmDeps, input: unknown): Promise<CrmResult<ContactRecord>> {
   return executeCommand(deps, input, updateContactWork)
-}
-
-function parseInput<T>(
-  schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
-  input: unknown,
-): CrmResult<T> {
-  const parsed = schema.safeParse(input)
-  return parsed.success ? ok(parsed.data) : failure('VALIDATION', 'invalid CRM input')
 }

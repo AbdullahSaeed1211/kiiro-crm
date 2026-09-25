@@ -2,7 +2,7 @@ import { createTaskRepository, createUnitOfWork } from '@ops/adapter-payload'
 import { systemClock } from '@ops/kernel'
 import type { WorkDeps } from '@ops/module-work'
 import { can } from '@ops/platform'
-import { getRequestContext } from './deps'
+import { getRequestContext, type RequestContext } from './deps'
 
 const RELATED_COLLECTIONS: Readonly<
   Partial<Record<string, 'organizations' | 'projects' | 'tasks' | 'contacts' | 'leads' | 'deals'>>
@@ -16,8 +16,8 @@ const RELATED_COLLECTIONS: Readonly<
 }
 
 /** Builds the authorized command boundary for work mutations. */
-export async function getWorkCommandDeps(): Promise<WorkDeps> {
-  const context = await getRequestContext()
+export async function getWorkCommandDeps(requestContext?: RequestContext): Promise<WorkDeps> {
+  const context = requestContext ?? (await getRequestContext())
   return {
     actor: context.actor,
     can,

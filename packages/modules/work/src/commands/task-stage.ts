@@ -1,6 +1,7 @@
-import { asId, domainError, err, ok, type Id } from '@ops/kernel'
+import { asId, domainError, err, invalidInput, ok, type Id } from '@ops/kernel'
 import type { StageCategory, StageTransition } from '@ops/platform'
-import { fail, objectInput } from './input'
+import { moveTaskSchema } from '../schema'
+import { fail } from './input'
 import { hasOpenChildren } from '../domain/rules'
 import { rankBetween } from '../domain/rank'
 import type { WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
@@ -18,24 +19,18 @@ interface MoveInput {
   readonly afterTaskId?: Id
 }
 
-const optionalString = (value: unknown): boolean => value === undefined || typeof value === 'string'
-const validNeighborIds = (value: Record<string, unknown>): boolean =>
-  optionalString(value['beforeTaskId']) && optionalString(value['afterTaskId'])
-const finiteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
-
-function parseMove(input: unknown): MoveInput | undefined {
-  const value = objectInput(input)
-  if (value === undefined || typeof value['taskId'] !== 'string' || typeof value['toStageId'] !== 'string')
-    return undefined
-  if (!finiteNumber(value['expectedUpdatedAt'])) return undefined
-  if (!validNeighborIds(value)) return undefined
-  return {
-    taskId: asId(value['taskId']),
-    toStageId: asId(value['toStageId']),
-    expectedUpdatedAt: value['expectedUpdatedAt'],
-    ...(typeof value['beforeTaskId'] === 'string' ? { beforeTaskId: asId(value['beforeTaskId']) } : {}),
-    ...(typeof value['afterTaskId'] === 'string' ? { afterTaskId: asId(value['afterTaskId']) } : {}),
-  }
+function parseMove(input: unknown): WorkResult<MoveInput> {
+  const parsed = moveTaskSchema.safeParse(input)
+  if (!parsed.success)
+    return err(invalidInput('taskId, toStageId and expectedUpdatedAt are required', parsed.error.issues))
+  const { taskId, toStageId, expectedUpdatedAt, beforeTaskId, afterTaskId } = parsed.data
+  return ok({
+    taskId: asId(taskId),
+    toStageId: asId(toStageId),
+    expectedUpdatedAt,
+    ...(beforeTaskId === undefined ? {} : { beforeTaskId: asId(beforeTaskId) }),
+    ...(afterTaskId === undefined ? {} : { afterTaskId: asId(afterTaskId) }),
+  })
 }
 interface NeighborOptions {
   readonly id: Id | undefined
@@ -139,8 +134,9 @@ function authorizeTaskUpdate(deps: WorkDeps, task: WorkTaskRecord): WorkResult<n
 
 /** Moves a task and persists all stage-related fields through one CAS unit. */
 export async function moveTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const move = parseMove(input)
-  if (move === undefined) return fail('VALIDATION', 'taskId, toStageId and expectedUpdatedAt are required')
+  const parsed = parseMove(input)
+  if (!parsed.ok) return parsed
+  const move = parsed.value
   const task = await deps.repo.getTask(move.taskId)
   if (task === undefined) return fail('NOT_FOUND', NOT_FOUND_TASK)
   const validate = validateTaskForMove(task, move.expectedUpdatedAt)
