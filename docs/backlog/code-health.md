@@ -727,12 +727,6 @@ Findings about the delivery tooling rather than the product code. IDs continue f
 - Fix: decide in an ADR whether to add a hook dependency (for example lefthook) running `pnpm verify:fast` on staged files; a new dependency needs that decision.
 - Effort: S
 
-### OPS-04: Spec §22 names a source project for the security headers
-
-- Location: `docs/spec.md` §22, two lines naming another codebase as the origin of `src/proxy.ts` and the Payload configuration.
-- Fix: replace the provenance with a description of the headers and configuration the code applies today.
-- Effort: S
-
 ### OPS-05: Eight merged branches remain on the remote
 
 - Location: `origin`: `codex/agentic-inbox-ui`, `codex/pilot-improvements-20260924`, `m2-crm`, `wp/M3-W1` to `wp/M3-W5`.
@@ -744,4 +738,22 @@ Findings about the delivery tooling rather than the product code. IDs continue f
 - Location: `scripts/deploy-tenants.ts`, `smokeOptions`.
 - Evidence: without `INTERNAL_SECRET_<SLUG>` the loop records a restore bookmark, migrates and deploys, then fails smoke and rolls the code back.
 - Fix: check every tenant's secret before the first remote command and exit with the missing variable names.
+- Effort: S
+
+## Security
+
+Gaps between the security baseline in spec §12 and §24 and what the running app does. IDs continue from SEC-01.
+
+### SEC-01: Responses carry no security headers
+
+- Location: `apps/web/next.config.ts` (no `headers()`); no middleware sets them.
+- Evidence: a request to `https://crm.mirchmedia.com/login` on 2026-09-26 returned no `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` or `Permissions-Policy` header, although spec §24 requires them.
+- Fix: add the §24 headers for every route through `headers()` in `next.config.ts`, confirm OpenNext applies them on the Worker, and check them with curl on the running app and after the next release. A `Content-Security-Policy` follows separately, since Next.js inline scripts need nonces.
+- Effort: S
+
+### SEC-02: Payload's own password routes are reachable
+
+- Location: spec §12 names `src/proxy.ts`, which does not exist in `apps/web/src`.
+- Evidence: on the local app, `POST /api/users/forgot-password` and `/api/users/unlock` answer 400 ("Missing email.") and `reset-password`, `first-register` and `POST /api/users` answer 403, instead of the 404 spec §12 requires. The password policy still applies on set-password paths (`packages/adapters/payload/test/people/auth.test.ts`), but Payload's own forgot-password and unlock flows run outside the product's auth routes.
+- Fix: add the proxy (Next.js `proxy.ts` or middleware) that returns 404 for the routes listed in spec §12, keeping `/api/users/login`, `/logout`, `/me` and `/refresh-token` for the admin; check each route with curl.
 - Effort: S

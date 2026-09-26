@@ -11,9 +11,10 @@ Production (`crm.mirchmedia.com`) runs release `v0.1.0` of `main`, but `/api/v1/
 - Set `APP_VERSION` at deploy so `/api/v1/health` reports the live release (UX 31).
 - Add a preflight to `scripts/deploy-tenants.ts` that fails before any remote step when a tenant's secret is missing (OPS-06).
 - If the tag-triggered release workflow stores `INTERNAL_SECRET_MIRCHMEDIA`, update it to the value rotated on 2026-09-26 (see the deploy runbook).
-- Findings: UX 31; code-health OPS-06.
+- Close the two security gaps: security headers on every response, and the spec's 404 for Payload's own password routes.
+- Findings: UX 31; code-health OPS-06, SEC-01, SEC-02.
 
-Done when: `/api/v1/health` returns the release version after a deploy, and a release without a tenant secret stops before its first remote command.
+Done when: `/api/v1/health` returns the release version after a deploy, a release without a tenant secret stops before its first remote command, production responses carry the security headers, and Payload's own password routes return 404.
 
 ## 2. Task surfaces
 
@@ -75,5 +76,5 @@ Depends on: wave 1. Done when: each phase's acceptance in the design doc is met.
 
 Taken whenever a wave leaves slack.
 
-- Shrink the three largest test files; screenshot diffs for the core surfaces; knip production mode; the pre-commit hook decision; the stale provenance note in spec §22; the merged remote branches; one shared exclusion list for the tooling configs; the seed and local-reset scripts.
-- Findings: UX 3; code-health OPS-01, OPS-02, OPS-03, OPS-04, OPS-05, SCR-12, SCR-15, SCR-20, SCR-22.
+- Shrink the three largest test files; screenshot diffs for the core surfaces; knip production mode; the pre-commit hook decision; the merged remote branches; one shared exclusion list for the tooling configs; the seed and local-reset scripts.
+- Findings: UX 3; code-health OPS-01, OPS-02, OPS-03, OPS-05, SCR-12, SCR-15, SCR-20, SCR-22.

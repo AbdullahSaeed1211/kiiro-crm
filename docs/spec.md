@@ -1422,11 +1422,10 @@ Logs: JSON `{ level, msg, tenant, requestId, route, actorId?, durationMs, error?
 Workers observability on; `/api/v1/health` returns version and migration. Track request/error rate, p95, D1 rows, job results, email failures, intake rejections.
 Security: CORS only on intake for allowlisted origins; Payload CSRF origins = tenant host; cookies per D-38; lockout per D-38; password policy D-46;
 rate limits via `ratelimits` bindings on `/api/v1/auth/*`, `/api/v1/intake/*`, `/api/v1/invitations/accept` (Payload lockout protects `/api/users/login` used by the admin; zone WAF rules optional for custom-domain zones);
-Turnstile on web intake; upload mime/size allowlist; per-object authorization on downloads; GraphQL off; depth caps; security headers ported from `hyperzod-main-website/payload-cms/src/proxy.ts`;
+Turnstile on web intake; upload mime/size allowlist; per-object authorization on downloads; GraphQL off; depth caps; security headers on every response: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` and a restrictive `Permissions-Policy`;
 least-privilege API tokens; secrets only in Wrangler and GitHub secrets.
 
 ## 25. Existing material (internal code; verify APIs before reuse)
-- `hyperzod/hyperzod-main-website/payload-cms/src/payload.config.ts` (D1/R2 adapters, platform proxy for CLI, CORS/CSRF, JSON logger, depth caps), `src/proxy.ts`, `docs/security.md`, `src/collections/Users.ts`, `package.json` deploy scripts.
 - `mirchmedia-projects/fasttrack/apps/platform-web` (Vitest/Playwright/ESLint patterns).
 - Lead flows to migrate: `mirchmedia-laravel/routes/web.php` + `routes/api.php` (`/api/leads`), `web-*-vue` forms posting to it, `etcpa-laravel` and `homestar-lara` contact controllers, `lmpm/lib/google-sheets.ts`, `lmpm/app/api/partnership-lead/route.ts`.
 - Behavior references (study only, no code): Frappe CRM sparse clone in the session scratchpad `frappe-crm/` (commit 2f6435d); Twenty, Plane, Huly, Corteza repositories (links in §27).
