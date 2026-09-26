@@ -631,14 +631,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Add an injectable `fs`/`cwd` port to `ProvisionDependencies` (or accept it narrows SCR-08's split) so provisioning tests never write real temp files.
 - Effort: M
 
-### SCR-15: Clean code function size, medium severity
-
-- Location: `scripts/seed/steps.ts:57-100` (`seedUsers`), `176-199` (`seedAll`)
-- Evidence: `seedUsers` is 44 lines with 3 levels of nesting (loop → if → nested if/await); `seedAll` orchestrates 9 sequential awaited steps in one function body with no intermediate abstraction beyond variable names.
-- Consequence: Consistent with the file's own top-of-file gate suppression - this is exactly the kind of function the repo's `max-lines-per-function`/`max-depth` ESLint gates (in `tooling/eslint/rules.js:9-13`) are meant to catch, and it's opted out rather than restructured.
-- Fix: Split the legacy-email special case (SCR-14) out of the loop body; consider a small step-runner instead of 9 manually sequenced awaits.
-- Effort: M
-
 ### SCR-16: SRP, medium severity
 
 - Location: `scripts/deploy-tenants.ts:10-33` (`main`)
@@ -663,14 +655,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Not urgent given low churn, but consider a `SCRIPTS` constants map shared with `package.json` generation if that ever exists.
 - Effort: S
 
-### SCR-12: DRY, low severity
-
-- Location: `scripts/check-formatters.ts:28-30`
-- Evidence: Manually parses `process.argv` for `--root` instead of using `node:util` `parseArgs` like every other `check-*.ts` script (`check-brand.ts:56-57`, `check-vocab.ts:31`, `check-docs.ts:64`, `check-i18n.ts:74`, `check-disables.ts:67`, `check-scope.ts:130-136`).
-- Consequence: One-off argument parsing style breaks the otherwise-consistent CLI convention (`isMain` + `parseArgs({root...})` + `report(...)`) that the other six check scripts share, and doesn't support `--help`/type validation the way `parseArgs` does.
-- Fix: Switch to `parseArgs({options:{root:{type:'string',default:process.cwd()}}})` to match siblings.
-- Effort: S
-
 ### SCR-17: Clean code comments, low severity
 
 - Location: `scripts/lib/provision/plan.ts:87-89`
@@ -693,14 +677,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: All three functions already use single-object parameters (good discipline vs. long positional lists), but the objects themselves have grown to 4-5 optional/required fields with no named type - `httpCheck`'s inline type literal duplicates shape of `probeCheck`'s.
 - Consequence: Not urgent; flagged because the object-literal duplication (rather than a shared `CheckInput<T>` type) is the seed of a future long-parameter-list problem as more checks are added.
 - Fix: Factor a shared `CheckContext` type once a third/fourth check type is added.
-- Effort: S
-
-### SCR-22: Risk next to a good pattern, low severity
-
-- Location: `scripts/reset-local-db.ts:1-19`, `scripts/seed/local-env.ts:9-21` (`assertLocalOnly`)
-- Evidence: `reset-local-db.ts` correctly calls `assertLocalOnly(process.env)` before `rmSync` - but the guard only checks `NODE_ENV`/`CLOUDFLARE_ENV`/`PAYLOAD_REMOTE_BINDINGS`; it does not verify the resolved `stateDir` (from `localD1StateDir`, which does path-traverse validation) is actually a path the current user intends to delete versus a symlinked/misconfigured `.wrangler` directory pointing elsewhere.
-- Consequence: Defense-in-depth gap: the path-safety check (`localD1StateDir`) and the environment-safety check (`assertLocalOnly`) are two separate concerns that both must hold, but nothing composes/tests them together as one "safe to rm -rf" contract.
-- Fix: Consider a single `assertSafeToDeleteLocalState()` combining both checks so the invariant is co-located and testable as one unit.
 - Effort: S
 
 ## Tooling and operations

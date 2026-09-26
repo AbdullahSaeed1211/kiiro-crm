@@ -170,7 +170,10 @@ async function seedWorkflows(
   return { taskWorkflow, projectWorkflow }
 }
 
-async function seedCrmWorkflows(payload: SeedPayload, tally: Tally): Promise<{ leadWorkflow: WorkflowRef; dealWorkflow: WorkflowRef }> {
+async function seedCrmWorkflows(
+  payload: SeedPayload,
+  tally: Tally,
+): Promise<{ leadWorkflow: WorkflowRef; dealWorkflow: WorkflowRef }> {
   const [leadSeed, dealSeed] = CRM_WORKFLOWS
   if (leadSeed === undefined || dealSeed === undefined) throw new Error('CRM workflows are incomplete')
   const leadWorkflow = await seedWorkflow(payload, leadSeed, tally)

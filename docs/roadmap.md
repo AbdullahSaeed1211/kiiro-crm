@@ -76,5 +76,5 @@ Depends on: wave 1. Done when: each phase's acceptance in the design doc is met.
 
 Taken whenever a wave leaves slack.
 
-- Shrink the three largest test files; screenshot diffs for the core surfaces; knip production mode; the pre-commit hook decision; the merged remote branches; one shared exclusion list for the tooling configs; the seed and local-reset scripts.
-- Findings: UX 3; code-health OPS-01, OPS-02, OPS-03, OPS-05, SCR-12, SCR-15, SCR-20, SCR-22.
+- Shrink the three largest test files; screenshot diffs for the core surfaces; knip production mode; the pre-commit hook decision; the merged remote branches; one shared exclusion list for the tooling configs.
+- Findings: UX 3; code-health OPS-01, OPS-02, OPS-03, OPS-05, SCR-20.
