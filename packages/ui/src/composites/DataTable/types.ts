@@ -17,6 +17,8 @@ export type DataTableColumn = Readonly<{
 export type DataTableRow = Readonly<{
   id: string
   cells: Readonly<Record<string, ReactNode>>
+  /** Where a click on a non-interactive part of the row, or Enter on the focused row, navigates. */
+  href?: string
 }>
 
 /** Sort applied by the server to the current rows. */

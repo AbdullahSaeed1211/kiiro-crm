@@ -1,5 +1,5 @@
 import { getWorkspaceSettings } from '../../auth/context'
-import { getRequestContext, type RequestContext } from '../../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import type { StageCategory } from '@ops/platform'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import { loadWorkPages, type ReadPurpose } from './read-pages'
@@ -187,10 +187,11 @@ export async function loadWorkspaceLocale(): Promise<Locale> {
   return normalizeLocale(value(settings, 'locale'))
 }
 
+/** The signed-in user's tasks with what My tasks needs to render them. */
+export type MyTaskModel = Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone' | 'stages' | 'locale'>
+
 /** Reads only the signed-in user's tasks for the dedicated My tasks page. */
-export async function loadMyTaskModel(
-  context?: RequestContext,
-): Promise<Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone'>> {
+export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskModel> {
   const requestContext = context ?? (await getRequestContext())
   const request = { depth: 0, overrideAccess: false as const, req: requestContext.req }
   const [taskPage, workflowPage, settings] = await Promise.all([
@@ -212,11 +213,14 @@ export async function loadMyTaskModel(
     getWorkspaceSettings(),
   ])
   const stages = new Map<string, StageLabel>()
-  for (const workflow of workflowPage.docs as readonly object[]) addStages(stages, workflow)
+  const workflows = workflowPage.docs as readonly object[]
+  for (const workflow of workflows) addStages(stages, workflow)
   return {
     tasks: (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages)),
     actorId: String(requestContext.actor.id),
     timeZone: text(settings, 'timezone') || 'UTC',
+    stages: workflowStages(workflows),
+    locale: normalizeLocale(value(settings, 'locale')),
   }
 }
 

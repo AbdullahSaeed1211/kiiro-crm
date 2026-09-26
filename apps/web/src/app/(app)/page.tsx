@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 import { DASHBOARD_COPY } from '../../i18n/config'
 import { loadDashboardStats } from '../../server/queries/dashboard'
 import { loadWorkReadModel } from '../../server/queries/work/read-models'
-import { getRequestContext } from '../../server/work/deps'
+import { getRequestContext } from '@/server/container'
 import { taskHref } from './task-navigation'
 import Link from 'next/link'
 

@@ -343,13 +343,14 @@ async function verifyCanonicalTaskPage(page: Page, taskHref: string, title: stri
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   await expect(page.locator(TASK_PANEL)).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0)
-  const [mainBox, headerBox] = await Promise.all([
-    page.locator('main').first().boundingBox(),
+  const [titleBox, headerBox] = await Promise.all([
+    page.getByRole('heading', { name: title, exact: true }).boundingBox(),
     page.locator('header.ops-app-header').boundingBox(),
   ])
-  if (mainBox === null || headerBox === null) throw new Error('canonical task page is missing its layout regions')
-  // Fails until the canonical task page gets its own layout.
-  expect(boxesIntersect(mainBox, headerBox)).toBe(false)
+  if (titleBox === null || headerBox === null) throw new Error('canonical task page is missing its layout regions')
+  // The task content starts below the app header instead of being drawn into it.
+  expect(boxesIntersect(titleBox, headerBox)).toBe(false)
+  expect(titleBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height)
   await page.screenshot({ path: test.info().outputPath('task-page.png'), fullPage: true })
 }
 

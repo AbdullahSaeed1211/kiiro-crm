@@ -7,19 +7,10 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { CircleCheckBig } from 'lucide-react'
 import type { Metadata } from 'next'
 import { loadMyTaskModel } from '../../../server/queries/work/read-models'
-import { taskHref } from '../task-navigation'
-import Link from 'next/link'
+import { MyTasksContent } from './MyTasksContent'
 
 export const metadata: Metadata = { title: 'My tasks' }
 export const dynamic = 'force-dynamic'
-
-const SECTIONS = [
-  ['overdue', 'Overdue'],
-  ['today', 'Today'],
-  ['next7Days', 'Next 7 days'],
-  ['later', 'Later'],
-  ['noDueDate', 'No due date'],
-] as const
 
 /** Scoped task buckets for the signed-in staff member. */
 export default async function MyTasksPage() {
@@ -41,60 +32,33 @@ export default async function MyTasksPage() {
       groupId: null,
       startAt: null,
       createdAt: 0,
-      stageCategory: task.stageCategory,
     })),
     actor: { id: asId(model.actorId) },
     timeZone: model.timeZone,
     now: Date.now(),
   })
+
+  const isEmpty =
+    buckets.overdue.length === 0 &&
+    buckets.today.length === 0 &&
+    buckets.next7Days.length === 0 &&
+    buckets.later.length === 0 &&
+    buckets.noDueDate.length === 0
+
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'My tasks' }]} />
       <PageContent>
         <PageHeader title="My tasks" description="Open work assigned to you." />
-        <div className="space-y-4">
-          {SECTIONS.map(([key, label]) => {
-            const rows = buckets[key]
-            return (
-              <section className="ops-dashboard-card" key={key}>
-                <header className="flex items-center justify-between border-b px-4 py-3">
-                  <h2 className="font-medium">{label}</h2>
-                  <span className="text-sm text-muted-foreground">{rows.length}</span>
-                </header>
-                {rows.length === 0 ? (
-                  <div className="px-4 py-5 text-sm text-muted-foreground">Nothing here.</div>
-                ) : (
-                  <ul>
-                    {rows.map((task) => (
-                      <li className="border-b px-4 py-3 last:border-0" key={task.id}>
-                        <Link
-                          className="font-medium hover:text-primary"
-                          href={taskHref(task.id, '/my-tasks')}
-                          data-task-link-id={task.id}
-                        >
-                          {task.title}
-                        </Link>
-                        <span className="ml-3 text-xs text-muted-foreground">{task.priority}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )
-          })}
-        </div>
-        {buckets.overdue.length +
-          buckets.today.length +
-          buckets.next7Days.length +
-          buckets.later.length +
-          buckets.noDueDate.length ===
-        0 ? (
+        {isEmpty ? (
           <EmptyState
             icon={CircleCheckBig}
             title="Nothing assigned to you"
             description="New work assigned to you will appear here."
           />
-        ) : null}
+        ) : (
+          <MyTasksContent buckets={buckets} model={model} />
+        )}
       </PageContent>
     </>
   )

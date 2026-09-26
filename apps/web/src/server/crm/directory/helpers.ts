@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- related record loaders share the same authorization and normalization boundary. */
-import type { RequestContext } from '../../work/deps'
+import type { RequestContext } from '../../container'
 import type { Where } from 'payload'
 import type {
   ActivityItem,

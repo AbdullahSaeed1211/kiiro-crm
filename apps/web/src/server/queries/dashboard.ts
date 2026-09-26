@@ -1,5 +1,5 @@
 import type { PayloadRequest, Where } from 'payload'
-import { getRequestContext, type RequestContext } from '../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 
 const TERMINAL_CATEGORIES: ReadonlySet<string> = new Set(['done_success', 'done_failure', 'cancelled'])
 const PIPELINE_TYPES = ['lead', 'deal'] as const

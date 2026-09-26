@@ -24,7 +24,7 @@ import { formatDate } from '../../../i18n/format'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import { listSavedViews, type SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
-import { getRequestContext } from '../../../server/work/deps'
+import { getRequestContext } from '@/server/container'
 import type {
   TaskListItem,
   TaskListResult,
@@ -114,6 +114,7 @@ function toRow({
 }: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale }>): DataTableRow {
   return {
     id: task.id,
+    href: taskHref(task.id, returnTo),
     cells: {
       title: (
         <Link

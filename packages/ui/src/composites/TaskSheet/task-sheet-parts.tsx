@@ -1,6 +1,9 @@
 import { Button } from '@ops/ui/components/ui/button'
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@ops/ui/components/ui/sheet'
+import { SheetFooter, SheetHeader, SheetTitle } from '@ops/ui/components/ui/sheet'
 import type { CompleteTaskParams, TaskSheetTask } from './types'
+
+type BusyAction = 'description' | 'complete' | null
+type CompleteHandler = (params: CompleteTaskParams) => Promise<boolean> | boolean
 
 function TaskMeta({ task }: Readonly<{ task: TaskSheetTask }>) {
   const assignees = task.assignees.length === 0 ? 'Unassigned' : task.assignees.join(', ')
@@ -16,21 +19,33 @@ function TaskMeta({ task }: Readonly<{ task: TaskSheetTask }>) {
 function TaskSheetHeader({
   title,
   task,
-  renderAsPage,
 }: Readonly<{
   title: string
   task: TaskSheetTask
-  renderAsPage: boolean
 }>) {
   return (
     <SheetHeader>
-      {renderAsPage ? (
-        <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
-      ) : (
-        <SheetTitle>{title}</SheetTitle>
-      )}
+      <SheetTitle>{title}</SheetTitle>
       <TaskMeta task={task} />
     </SheetHeader>
+  )
+}
+
+function TaskPageHeader({
+  title,
+  task,
+}: Readonly<{
+  title: string
+  task: TaskSheetTask
+}>) {
+  return (
+    <div className="border-b">
+      <div className="px-4 py-3">
+        <p className="text-xs font-medium text-muted-foreground mb-1">Task</p>
+        <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
+        <TaskMeta task={task} />
+      </div>
+    </div>
   )
 }
 
@@ -42,9 +57,9 @@ function TaskSheetFooter({
   busy,
   handleComplete,
 }: Readonly<{
-  onComplete: ((params: CompleteTaskParams) => Promise<boolean> | boolean) | undefined
+  onComplete: CompleteHandler | undefined
   onOpenChange: (open: boolean) => void
-  busyAction: 'description' | 'complete' | null
+  busyAction: BusyAction
   terminal: boolean
   busy: boolean
   handleComplete: () => Promise<void>
@@ -69,8 +84,28 @@ function TaskSheetFooter({
   )
 }
 
-function isTerminalStage(stageCategory: string | undefined): boolean {
-  return ['done_success', 'done_failure', 'cancelled'].includes(stageCategory ?? '')
+function TaskPageFooter({
+  onComplete,
+  busyAction,
+  terminal,
+  busy,
+  handleComplete,
+}: Readonly<{
+  onComplete: CompleteHandler | undefined
+  busyAction: BusyAction
+  terminal: boolean
+  busy: boolean
+  handleComplete: () => Promise<void>
+}>) {
+  return (
+    <div className="border-t px-4 py-3 flex-row gap-2">
+      {onComplete === undefined ? null : (
+        <Button onClick={() => void handleComplete()} disabled={busy}>
+          {getCompleteButtonLabel(busyAction, terminal)}
+        </Button>
+      )}
+    </div>
+  )
 }
 
 function getCompleteButtonLabel(busyAction: 'description' | 'complete' | null, terminal: boolean): string {
@@ -89,37 +124,4 @@ function MessageDisplay({ message }: Readonly<{ message: string | null }>) {
   )
 }
 
-function TaskSheetPageWrapper({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  return (
-    <section className="mx-auto flex min-h-[min(720px,calc(100vh-2rem))] max-w-3xl flex-col overflow-hidden rounded-xl border bg-card shadow-sm">
-      {children}
-    </section>
-  )
-}
-
-function TaskSheetViewWrapper({
-  renderAsPage,
-  detail,
-  open,
-  onOpenChange,
-}: Readonly<{
-  renderAsPage: boolean
-  detail: React.ReactNode
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}>) {
-  if (renderAsPage) return <TaskSheetPageWrapper>{detail}</TaskSheetPageWrapper>
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-hidden overscroll-contain sm:max-w-[560px]">
-        {detail}
-      </SheetContent>
-    </Sheet>
-  )
-}
-
-export { TaskSheetHeader, TaskSheetFooter, MessageDisplay, TaskSheetViewWrapper, isTerminalStage }
+export { TaskSheetHeader, TaskPageHeader, TaskSheetFooter, TaskPageFooter, MessageDisplay }

@@ -1,4 +1,4 @@
-import { getRequestContext, type RequestContext } from '../../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import { addStages, mapTask, type StageLabel, type WorkListTask } from './read-models'
 
 /** Loads one scoped task and its workflow labels without reading workspace-wide work records. */

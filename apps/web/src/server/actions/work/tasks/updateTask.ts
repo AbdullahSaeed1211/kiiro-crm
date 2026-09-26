@@ -2,10 +2,10 @@
 
 import { updateTask as updateTaskCommand } from '@ops/module-work'
 import { revalidatePath } from 'next/cache'
-import { getWorkCommandDeps } from '../../../work/command-deps'
+import { workCommandDeps } from '@/server/container'
 
 export async function updateTask(input: unknown) {
-  const result = await updateTaskCommand(await getWorkCommandDeps(), input)
+  const result = await updateTaskCommand(await workCommandDeps(), input)
   if (result.ok) {
     revalidatePath('/tasks')
     revalidatePath('/tasks/board')

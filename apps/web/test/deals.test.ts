@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { deferredLostMoveResult } from '../src/app/(app)/deals/deal-board-model'
 import { loadActivity } from '../src/server/crm/deals/activity'
 import { applyWorkspaceCurrency } from '../src/server/crm/workspace-currency'
-import type { RequestContext } from '../src/server/work/deps'
+import type { RequestContext } from '../src/server/container'
 import { aggregateStageTotals, filterDeals, formatMoney, withDefaultOwner } from '../src/server/crm/deals/view-model'
 
 const workflow = {

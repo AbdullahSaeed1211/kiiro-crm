@@ -1,18 +1,11 @@
-import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { stagePillClass, type StageColor } from '../StagePill/stage'
+import { DayCell } from './DayCell'
 
-export interface CalendarEvent {
-  readonly id: string
-  readonly title: string
-  readonly date: string
-  readonly href?: string
-  /** Tint of the event chip; omitted means neutral. */
-  readonly color?: StageColor
-  readonly meta?: ReactNode
-}
-const eventClass = (color: StageColor | undefined): string =>
-  color === undefined ? 'bg-muted text-foreground' : `${stagePillClass(color)} text-foreground`
+import type { CalendarEvent } from './types'
+
+export type { CalendarEvent }
+
+const MAX_VISIBLE_EVENTS = 4
 const pad = (value: number): string => String(value).padStart(2, '0')
 const dateKey = (input: { readonly year: number; readonly month: number; readonly day: number }): string =>
   `${String(input.year).padStart(4, '0')}-${pad(input.month + 1)}-${pad(input.day)}`
@@ -24,37 +17,6 @@ function monthHref(input: { readonly year: number; readonly month: number; reado
   const next = new Date(Date.UTC(input.year, input.month + input.delta, 1))
   return `?month=${String(next.getUTCMonth() + 1)}&year=${String(next.getUTCFullYear())}`
 }
-function EventCell({ event }: Readonly<{ event: CalendarEvent }>) {
-  return (
-    <Link
-      href={event.href ?? `?event=${event.id}`}
-      data-task-link-id={event.id}
-      className={`block truncate rounded px-1.5 py-1 text-left text-xs ${eventClass(event.color)}`}
-    >
-      {event.title}
-    </Link>
-  )
-}
-function DayCell({
-  date,
-  day,
-  events,
-}: Readonly<{ date: string | null; day: number; events: readonly CalendarEvent[] }>) {
-  if (date === null) return <div className="min-h-20 border-b border-r bg-muted/10 p-1 sm:min-h-28 sm:p-2" />
-  return (
-    <div className="min-h-20 min-w-0 border-b border-r p-1 sm:min-h-28 sm:p-2">
-      <time dateTime={date} className="text-xs font-medium text-muted-foreground">
-        {day}
-      </time>
-      <div className="mt-1 space-y-1">
-        {events.slice(0, 4).map((event) => (
-          <EventCell key={event.id} event={event} />
-        ))}
-        {events.length > 4 ? <span className="text-xs text-muted-foreground">+{events.length - 4} more</span> : null}
-      </div>
-    </div>
-  )
-}
 
 /** A compact month grid with deterministic event placement. */
 export function CalendarMonth({
@@ -63,14 +25,14 @@ export function CalendarMonth({
   events,
   weekStartsOn = 1,
   locale = 'en',
-  labels = { previous: 'Previous month', next: 'Next month' },
+  labels = { previous: 'Previous month', next: 'Next month', more: '+{count} more' },
 }: Readonly<{
   year: number
   month: number
   events: readonly CalendarEvent[]
   weekStartsOn?: 0 | 1
   locale?: string
-  labels?: Readonly<{ previous: string; next: string }>
+  labels?: Readonly<{ previous: string; next: string; more: string }>
 }>) {
   const leading = firstWeekday({ year, month, weekStartsOn })
   const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
@@ -122,6 +84,8 @@ export function CalendarMonth({
               date={date}
               day={day}
               events={date === null ? [] : (byDate.get(date) ?? [])}
+              maxVisible={MAX_VISIBLE_EVENTS}
+              moreLabel={labels.more}
             />
           )
         })}

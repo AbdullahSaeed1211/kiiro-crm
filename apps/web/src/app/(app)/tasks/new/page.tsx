@@ -7,7 +7,7 @@ import { NewTaskForm } from './NewTaskForm'
 import { loadTaskContexts } from '../../../../server/queries/work/tasks/task-contexts'
 import type { TaskListItem } from '../../../../server/queries/work/tasks/types'
 import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
-import { getRequestContext } from '../../../../server/work/deps'
+import { getRequestContext } from '@/server/container'
 import { firstParam } from '../../search-params'
 
 export const dynamic = 'force-dynamic'

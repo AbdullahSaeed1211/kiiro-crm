@@ -1,7 +1,7 @@
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import type { StageCategory } from '@ops/platform'
-import { getRequestContext, type RequestContext } from '../../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 
 interface CalendarTask {
   readonly id: string

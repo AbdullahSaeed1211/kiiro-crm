@@ -1,5 +1,5 @@
 import { getWorkspaceSettings } from '../../auth/context'
-import type { getRequestContext } from '../../work/deps'
+import type { getRequestContext } from '@/server/container'
 import type { Where } from 'payload'
 
 export type ReadPurpose = 'full' | 'dashboard' | 'projects' | 'reports'

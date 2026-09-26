@@ -1,6 +1,6 @@
 'use client'
 
-import { TaskSheet, type TaskSheetTask } from '@ops/ui/composites/TaskSheet'
+import { TaskSheet, TaskPage, type TaskSheetTask } from '@ops/ui/composites/TaskSheet'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { completeOrReopenTask } from '../../../../server/actions/work/tasks/completeOrReopenTask'
@@ -14,24 +14,37 @@ export function TaskDetailDrawer({
   restoreFocus = false,
 }: Readonly<{ task: TaskSheetTask; returnTo?: string; panel?: boolean; restoreFocus?: boolean }>) {
   const router = useRouter()
+
   useEffect(() => {
     if (restoreFocus) window.sessionStorage.setItem('task-panel-focus-return', task.id)
   }, [restoreFocus, task.id])
-  return (
-    <TaskSheet
-      open={panel}
-      renderAsPage={!panel}
-      task={task}
-      onSaveDescription={({ taskId, expectedUpdatedAt, description }) =>
-        saveTaskDescriptionForSheet(taskId, expectedUpdatedAt, description)
-      }
-      onComplete={({ taskId, expectedUpdatedAt, reopen }) => completeOrReopenTask(taskId, expectedUpdatedAt, reopen)}
-      onOpenChange={(open) => {
-        if (!open) {
-          if (restoreFocus) router.back()
-          else router.replace(returnTo)
+
+  if (panel) {
+    return (
+      <TaskSheet
+        open
+        task={task}
+        onSaveDescription={(params) =>
+          saveTaskDescriptionForSheet(params.taskId, params.expectedUpdatedAt, params.description)
         }
-      }}
+        onComplete={(params) => completeOrReopenTask(params.taskId, params.expectedUpdatedAt, params.reopen)}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (restoreFocus) router.back()
+            else router.replace(returnTo)
+          }
+        }}
+      />
+    )
+  }
+
+  return (
+    <TaskPage
+      task={task}
+      onSaveDescription={(params) =>
+        saveTaskDescriptionForSheet(params.taskId, params.expectedUpdatedAt, params.description)
+      }
+      onComplete={(params) => completeOrReopenTask(params.taskId, params.expectedUpdatedAt, params.reopen)}
     />
   )
 }

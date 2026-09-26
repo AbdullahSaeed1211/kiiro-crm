@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { asId } from '@ops/kernel'
 import { runConvertLead, runCreateLead, runMarkLost, runMoveLead, runUpdateLead } from '@ops/module-crm'
-import { getCrmDeps } from '../deps'
+import { crmDeps } from '../../container'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
 import { leadStageMoveError } from './types'
@@ -20,7 +20,7 @@ function moveInput(input: unknown): { leadId: string; toStageId: string } | null
 async function validateLeadMoveDestination(input: unknown): Promise<ActionResult<void> | null> {
   const value = moveInput(input)
   if (value === null) return actionError('VALIDATION', 'Choose a valid lead stage.')
-  const deps = await getCrmDeps()
+  const deps = await crmDeps()
   const lead = await deps.repo.get('lead', asId(value.leadId))
   if (lead === undefined) return actionError('NOT_FOUND', 'lead not found')
   const workflow = await deps.repo.loadWorkflow(lead.workflowId)
@@ -31,12 +31,12 @@ async function validateLeadMoveDestination(input: unknown): Promise<ActionResult
 
 /** Creates a lead and revalidates the Leads routes. */
 export async function createLead(input: unknown): Promise<ActionResult<unknown>> {
-  return toActionResult(await runCreateLead(await getCrmDeps(), input))
+  return toActionResult(await runCreateLead(await crmDeps(), input))
 }
 
 /** Updates a lead using its expected version. */
 export async function updateLead(input: unknown): Promise<ActionResult<unknown>> {
-  const result = await runUpdateLead(await getCrmDeps(), input)
+  const result = await runUpdateLead(await crmDeps(), input)
   if (result.ok) revalidatePath('/leads')
   return toActionResult(result)
 }
@@ -45,7 +45,7 @@ export async function updateLead(input: unknown): Promise<ActionResult<unknown>>
 export async function moveLead(input: unknown): Promise<ActionResult<{ stageId: string; updatedAt: number }>> {
   const invalid = await validateLeadMoveDestination(input)
   if (invalid !== null) return invalid as ActionResult<never>
-  const result = await runMoveLead(await getCrmDeps(), input)
+  const result = await runMoveLead(await crmDeps(), input)
   if (result.ok) {
     revalidatePath('/leads')
     revalidatePath('/leads/board')
@@ -56,7 +56,7 @@ export async function moveLead(input: unknown): Promise<ActionResult<{ stageId: 
 
 /** Converts a lead into an organization/contact/deal set. */
 export async function convertLead(input: unknown): Promise<ActionResult<unknown>> {
-  const [deps, settings] = await Promise.all([getCrmDeps(), getWorkspaceSettings()])
+  const [deps, settings] = await Promise.all([crmDeps(), getWorkspaceSettings()])
   const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   const result = await runConvertLead(deps, applyWorkspaceCurrency(input, currency, true))
   if (result.ok) {
@@ -69,7 +69,7 @@ export async function convertLead(input: unknown): Promise<ActionResult<unknown>
 
 /** Marks a lead lost with a reason and optional note. */
 export async function markLost(input: unknown): Promise<ActionResult<unknown>> {
-  const result = await runMarkLost(await getCrmDeps(), input)
+  const result = await runMarkLost(await crmDeps(), input)
   if (result.ok) {
     revalidatePath('/leads')
     revalidatePath('/leads/board')

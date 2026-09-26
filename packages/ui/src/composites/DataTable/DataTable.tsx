@@ -9,7 +9,8 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ops/ui/components/ui/table'
 import { cn } from '@ops/ui/lib/utils'
@@ -32,6 +33,7 @@ export type DataTableProps = Readonly<{
   selectable?: boolean
   /** Optional controls placed before the column picker in the view toolbar. */
   toolbarStart?: ReactNode
+  /** Optional function to get the navigation href for a row; ignores clicks on interactive elements. */
   className?: string
 }>
 
@@ -72,9 +74,53 @@ function HeadCell({ header }: Readonly<{ header: Header<DataTableFeatures, DataT
   )
 }
 
-function BodyRow({ row }: Readonly<{ row: Row<DataTableFeatures, DataTableRow> }>) {
+function isInteractiveElement(element: HTMLElement): boolean {
+  const interactiveTags = ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']
+  if (interactiveTags.includes(element.tagName)) return true
+  if (element.getAttribute('role') === 'checkbox') return true
+  if (element.closest('[data-row-click="ignore"]')) return true
+  if (element.closest('a') || element.closest('button')) return true
+  return false
+}
+
+function BodyRow({
+  row,
+  href,
+  onNavigate,
+}: Readonly<{
+  row: Row<DataTableFeatures, DataTableRow>
+  href?: string
+  onNavigate?: (href: string) => void
+}>) {
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLTableRowElement>) => {
+      if (href === undefined || onNavigate === undefined) return
+      const target = event.target as HTMLElement
+      if (isInteractiveElement(target)) return
+      onNavigate(href)
+    },
+    [href, onNavigate],
+  )
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+      if (href === undefined || onNavigate === undefined) return
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        onNavigate(href)
+      }
+    },
+    [href, onNavigate],
+  )
+
   return (
-    <TableRow data-state={row.getIsSelected() ? 'selected' : undefined}>
+    <TableRow
+      data-state={row.getIsSelected() ? 'selected' : undefined}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={href !== undefined ? 'cursor-pointer' : undefined}
+      tabIndex={href !== undefined ? 0 : undefined}
+    >
       {row.getVisibleCells().map((cell) => (
         <TableCell
           key={cell.id}
@@ -87,14 +133,34 @@ function BodyRow({ row }: Readonly<{ row: Row<DataTableFeatures, DataTableRow> }
   )
 }
 
-function Body({ table, emptyState }: Readonly<{ table: DataTableInstance; emptyState: ReactNode }>) {
+function Body({
+  table,
+  emptyState,
+  onNavigate,
+}: Readonly<{
+  table: DataTableInstance
+  emptyState: ReactNode
+  onNavigate?: (href: string) => void
+}>) {
   const rows = table.getRowModel().rows
   if (rows.length > 0) {
     return (
       <TableBody>
-        {rows.map((row) => (
-          <BodyRow key={row.id} row={row} />
-        ))}
+        {rows.map((row) => {
+          const href = row.original.href
+          const rowProps = {
+            key: row.id,
+            row,
+            ...(href !== undefined && { href }),
+            ...(onNavigate !== undefined && { onNavigate }),
+          } as Readonly<{
+            key: string
+            row: Row<DataTableFeatures, DataTableRow>
+            href?: string
+            onNavigate?: (href: string) => void
+          }>
+          return <BodyRow {...rowProps} />
+        })}
       </TableBody>
     )
   }
@@ -121,6 +187,7 @@ export function DataTable({
   toolbarStart,
   className,
 }: DataTableProps) {
+  const router = useRouter()
   const columnDefs = useMemo(() => buildColumns({ columns, labels, selectable }), [columns, labels, selectable])
   const sorting = useMemo<SortingState>(
     () => (sort === undefined ? NO_SORTING : [{ id: sort.id, desc: sort.desc }]),
@@ -135,6 +202,12 @@ export function DataTable({
     manualSorting: true,
     state: { sorting },
   })
+  const handleNavigate = useCallback(
+    (href: string) => {
+      router.push(href)
+    },
+    [router],
+  )
   return (
     <div className={cn('ops-data-table flex flex-col gap-2', className)}>
       <div className="ops-data-table-toolbar flex flex-wrap items-center justify-end gap-2">
@@ -156,7 +229,7 @@ export function DataTable({
               </TableRow>
             ))}
           </TableHeader>
-          <Body table={table} emptyState={emptyState} />
+          <Body table={table} emptyState={emptyState} onNavigate={handleNavigate} />
         </Table>
       </div>
       <DataTableFooter pagination={pagination} labels={labels} selectedCount={table.getSelectedRowIds().length} />

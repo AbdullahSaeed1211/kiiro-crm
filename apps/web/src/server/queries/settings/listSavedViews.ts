@@ -1,4 +1,4 @@
-import { getRequestContext, type RequestContext } from '../../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 
 export interface SavedViewSummary {
   readonly id: string

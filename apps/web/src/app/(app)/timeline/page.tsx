@@ -6,7 +6,7 @@ import { ChartGantt } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY } from '../../../i18n/config'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
-import { getRequestContext, getWorkDeps } from '../../../server/work/deps'
+import { getRequestContext, workDeps } from '@/server/container'
 import type { TaskRecord } from '../../../server/work/task-repository'
 import type { TimelineTask } from './save-dates'
 import { TimelineChart } from './TimelineChart'
@@ -28,7 +28,7 @@ function toTimelineTask({ id, title, startAt, dueAt, updatedAt }: TaskRecord): T
 /** Timeline (spec §17.9). */
 export default async function TimelinePage() {
   const context = await getRequestContext()
-  const { tasks: repository } = await getWorkDeps(context)
+  const { tasks: repository } = await workDeps(context)
   const [records, locale] = await Promise.all([repository.listTasks(), loadWorkspaceLocale()])
   const tasks = records.filter((task) => task.startAt !== null || task.dueAt !== null).map(toTimelineTask)
   const copy = TASK_COPY[locale]

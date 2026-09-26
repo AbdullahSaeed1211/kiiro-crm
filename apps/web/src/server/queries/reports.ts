@@ -1,7 +1,7 @@
 import { createCrmRepository } from '@ops/adapter-payload'
 import type { DealRecord, LeadRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
-import { getRequestContext, type RequestContext } from '../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import { resolveReportRange, type ReportRange } from './report-range'
 import { loadWorkReadModel, type WorkReadModel } from './work/read-models'
 

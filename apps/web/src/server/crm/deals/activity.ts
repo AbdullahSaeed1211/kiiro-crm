@@ -1,4 +1,4 @@
-import type { RequestContext } from '../../work/deps'
+import type { RequestContext } from '../../container'
 
 export interface ActivityItem {
   readonly id: string

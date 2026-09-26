@@ -1,7 +1,7 @@
 import { COLLECTIONS } from '@ops/adapter-payload'
 import type { TaskRecord } from '@ops/module-work'
 import type { CollectionSlug } from 'payload'
-import type { RequestContext } from '../../../work/deps'
+import type { RequestContext } from '../../../container'
 import type { TaskListItem } from './types'
 
 type ContextType = 'project' | 'organization' | 'contact' | 'lead' | 'deal'

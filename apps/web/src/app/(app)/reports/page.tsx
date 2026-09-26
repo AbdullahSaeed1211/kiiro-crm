@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { REPORT_COPY } from '../../../i18n/config'
 import { loadReportFigures } from '../../../server/queries/reports'
-import { getRequestContext } from '../../../server/work/deps'
+import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
 
 export const dynamic = 'force-dynamic'

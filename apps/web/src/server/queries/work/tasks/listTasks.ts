@@ -1,7 +1,7 @@
 import { createTaskRepository, listTaskPage } from '@ops/adapter-payload'
 import type { TaskRecord } from '@ops/module-work'
 import type { Workflow } from '@ops/platform'
-import { getRequestContext, type RequestContext } from '../../../work/deps'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import { toTaskListItem, type PeopleById } from './task-items'
 import { loadTaskContexts } from './task-contexts'
 import type { TaskListItem, TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'

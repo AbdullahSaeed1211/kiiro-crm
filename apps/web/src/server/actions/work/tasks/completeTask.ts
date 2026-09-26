@@ -3,10 +3,10 @@
 import { completeTask as completeTaskCommand } from '@ops/module-work'
 import { asId } from '@ops/kernel'
 import { revalidatePath } from 'next/cache'
-import { getWorkCommandDeps } from '../../../work/command-deps'
+import { workCommandDeps } from '@/server/container'
 
 export async function completeTask(taskId: string, expectedUpdatedAt: number) {
-  const result = await completeTaskCommand(await getWorkCommandDeps(), asId(taskId), expectedUpdatedAt)
+  const result = await completeTaskCommand(await workCommandDeps(), asId(taskId), expectedUpdatedAt)
   if (result.ok) {
     revalidatePath('/tasks')
     revalidatePath(`/tasks/${taskId}`)

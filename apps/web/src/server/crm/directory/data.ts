@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- directory data keeps list and authorized detail loaders together. */
 import { createCrmRepository } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
-import { getRequestContext } from '../../work/deps'
+import { getRequestContext } from '@/server/container'
 import {
   listActivities,
   listEmailMessages,

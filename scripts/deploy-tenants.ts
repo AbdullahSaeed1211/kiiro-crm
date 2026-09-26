@@ -16,11 +16,7 @@ function preflight(tenants: ReturnType<typeof loadTenants>, execute: boolean): v
   }
 }
 
-async function runDeploy(
-  tag: string,
-  execute: boolean,
-  failSmoke: boolean,
-): Promise<{ failed: boolean }> {
+async function runDeploy(tag: string, execute: boolean, failSmoke: boolean): Promise<{ failed: boolean }> {
   const tenants = loadTenants(process.cwd())
   preflight(tenants, execute)
   const runner = execute ? shellRunner(process.cwd()) : dryRunRunner(console.log)

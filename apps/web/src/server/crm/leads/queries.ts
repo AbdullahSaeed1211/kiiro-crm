@@ -1,7 +1,7 @@
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
-import { getRequestContext } from '../../work/deps'
+import { getRequestContext } from '@/server/container'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
 import type { Activity, User } from '../../../payload-types'

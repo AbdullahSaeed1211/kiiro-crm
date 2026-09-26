@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
+import { formatUTCDateTime } from '../../lib/dates'
 import { newestFirst, type ActivityEntry } from './activity'
 
 /** Translated strings and formatting supplied by the page. */
@@ -24,9 +25,7 @@ export type ActivityFeedProps = Readonly<{
 }>
 
 function ActivityTime({ timestamp }: Readonly<{ timestamp: number }>) {
-  const date = new Date(timestamp)
-  const twoDigits = (value: number) => String(value).padStart(2, '0')
-  const value = `${String(date.getUTCFullYear())}-${twoDigits(date.getUTCMonth() + 1)}-${twoDigits(date.getUTCDate())} ${twoDigits(date.getUTCHours())}:${twoDigits(date.getUTCMinutes())} UTC`
+  const value = formatUTCDateTime(timestamp)
   return (
     <time dateTime={new Date(timestamp).toISOString()} className="text-xs text-muted-foreground">
       {value}

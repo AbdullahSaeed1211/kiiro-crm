@@ -6,9 +6,9 @@ import type { Workflow } from '@ops/platform'
 import { CalendarDays, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY, type Locale } from '../../../../i18n/config'
-import { getWorkDeps } from '../../../../server/work/deps'
+import { workDeps } from '@/server/container'
 import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
-import { getRequestContext } from '../../../../server/work/deps'
+import { getRequestContext } from '@/server/container'
 import { loadTaskPeople } from '../../../../server/queries/work/task-details'
 import type { TaskPriority, TaskRecord } from '../../../../server/work/task-repository'
 import { taskHref } from '../../task-navigation'
@@ -104,7 +104,7 @@ function toCard(
 /** Task board (spec §17.5). */
 export default async function TaskBoardPage() {
   const context = await getRequestContext()
-  const { tasks } = await getWorkDeps(context)
+  const { tasks } = await workDeps(context)
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])

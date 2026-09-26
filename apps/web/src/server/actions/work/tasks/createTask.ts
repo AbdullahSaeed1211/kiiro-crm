@@ -2,10 +2,10 @@
 
 import { createTask as createTaskCommand } from '@ops/module-work'
 import { revalidatePath } from 'next/cache'
-import { getWorkCommandDeps } from '../../../work/command-deps'
+import { workCommandDeps } from '@/server/container'
 
 export async function createTask(input: unknown) {
-  const result = await createTaskCommand(await getWorkCommandDeps(), input)
+  const result = await createTaskCommand(await workCommandDeps(), input)
   if (result.ok) {
     revalidatePath('/tasks')
     revalidatePath('/my-tasks')

@@ -3,6 +3,7 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Metadata } from 'next'
+import { formatDateISO } from '@ops/ui/lib/dates'
 import { TASK_COPY } from '../../../i18n/config'
 import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
 import { taskHref } from '../task-navigation'
@@ -10,12 +11,6 @@ import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Calendar' }
-
-function dateInZone(value: number, formatter: Intl.DateTimeFormat): string {
-  const parts = formatter.formatToParts(value)
-  const get = (name: string) => parts.find((part) => part.type === name)?.value ?? '00'
-  return `${get('year')}-${get('month')}-${get('day')}`
-}
 function eventColor(priority: string): CalendarEvent['color'] {
   if (priority === 'urgent') return 'red'
   if (priority === 'high') return 'amber'
@@ -46,7 +41,7 @@ export default async function CalendarPage({
     .map((task) => ({
       id: task.id,
       title: task.title,
-      date: dateInZone(task.dueAt, formatter),
+      date: formatDateISO(task.dueAt, formatter),
       href: taskHref(task.id, '/calendar'),
       color: eventColor(task.priority),
     }))
@@ -65,7 +60,7 @@ export default async function CalendarPage({
           month={month}
           weekStartsOn={model.weekStartsOn}
           locale={model.locale}
-          labels={{ previous: copy.previousMonth, next: copy.nextMonth }}
+          labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore }}
           events={events}
         />
       </PageContent>
