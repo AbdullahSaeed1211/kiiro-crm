@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-lines-per-function, max-depth, sonarjs/cognitive-complexity -- the deterministic seed keeps dependency ordering explicit. */
+/* eslint-disable complexity -- the deterministic seed keeps dependency ordering explicit. */
 import { COLLECTIONS, SETTINGS_GLOBAL } from '../../packages/adapters/payload/src/contracts/names'
 import {
   idOf,
@@ -54,47 +54,60 @@ async function seedGroups(payload: SeedPayload, tally: Tally): Promise<IdMap> {
   return ids
 }
 
-async function seedUsers(payload: SeedPayload, groups: IdMap, tally: Tally): Promise<IdMap> {
-  const users = new Map<string, string>()
-  for (const seed of USERS) {
-    if (seed.key === 'owner' && seed.email === 'mirchads@gmail.com') {
-      const legacy = await payload.find({
-        ...LOCAL,
-        collection: COLLECTIONS.users,
-        where: { email: equals('mirchads@example.test') },
-        limit: 1,
-      })
-      if (legacy.docs[0] !== undefined) {
-        const current = await payload.find({
-          ...LOCAL,
-          collection: COLLECTIONS.users,
-          where: { email: equals(seed.email) },
-          limit: 1,
-        })
-        if (current.docs[0] === undefined)
-          await payload.update({
-            ...LOCAL,
-            collection: COLLECTIONS.users,
-            id: legacy.docs[0].id,
-            data: { email: seed.email, name: seed.name },
-          })
-      }
-    }
-    const data = (): Data => userData(seed, { users, groups })
-    const doc = await upsert(
-      payload,
-      { collection: COLLECTIONS.users, where: { email: equals(seed.email) }, data },
-      tally,
-    )
-    if (doc['name'] !== seed.name)
+async function migrateLegacyOwnerEmail(payload: SeedPayload, ownerEmail: string): Promise<void> {
+  const legacy = await payload.find({
+    ...LOCAL,
+    collection: COLLECTIONS.users,
+    where: { email: equals('mirchads@example.test') },
+    limit: 1,
+  })
+  if (legacy.docs[0] !== undefined) {
+    const current = await payload.find({
+      ...LOCAL,
+      collection: COLLECTIONS.users,
+      where: { email: equals(ownerEmail) },
+      limit: 1,
+    })
+    if (current.docs[0] === undefined)
       await payload.update({
         ...LOCAL,
         collection: COLLECTIONS.users,
-        id: doc.id,
-        data: { name: seed.name },
-        overrideAccess: true,
+        id: legacy.docs[0].id,
+        data: { email: ownerEmail, name: 'Owner' },
       })
-    users.set(seed.key, doc.id)
+  }
+}
+
+async function upsertUser(
+  payload: SeedPayload,
+  seed: (typeof USERS)[number],
+  input: { readonly groups: IdMap; users: Map<string, string>; readonly tally: Tally },
+): Promise<void> {
+  const data = (): Data => userData(seed, { users: input.users, groups: input.groups })
+  const doc = await upsert(
+    payload,
+    { collection: COLLECTIONS.users, where: { email: equals(seed.email) }, data },
+    input.tally,
+  )
+  if (doc['name'] !== seed.name)
+    await payload.update({
+      ...LOCAL,
+      collection: COLLECTIONS.users,
+      id: doc.id,
+      data: { name: seed.name },
+      overrideAccess: true,
+    })
+  input.users.set(seed.key, doc.id)
+}
+
+async function seedUsers(payload: SeedPayload, groups: IdMap, tally: Tally): Promise<IdMap> {
+  const users = new Map<string, string>()
+  const input = { groups, users, tally }
+  for (const seed of USERS) {
+    if (seed.key === 'owner' && seed.email === 'mirchads@gmail.com') {
+      await migrateLegacyOwnerEmail(payload, seed.email)
+    }
+    await upsertUser(payload, seed, input)
   }
   return users
 }
@@ -148,6 +161,23 @@ async function seedTasks(
   }
 }
 
+async function seedWorkflows(
+  payload: SeedPayload,
+  tally: Tally,
+): Promise<{ taskWorkflow: WorkflowRef; projectWorkflow: WorkflowRef }> {
+  const taskWorkflow = await seedWorkflow(payload, TASK_WORKFLOW, tally)
+  const projectWorkflow = await seedWorkflow(payload, PROJECT_WORKFLOW, tally)
+  return { taskWorkflow, projectWorkflow }
+}
+
+async function seedCrmWorkflows(payload: SeedPayload, tally: Tally): Promise<{ leadWorkflow: WorkflowRef; dealWorkflow: WorkflowRef }> {
+  const [leadSeed, dealSeed] = CRM_WORKFLOWS
+  if (leadSeed === undefined || dealSeed === undefined) throw new Error('CRM workflows are incomplete')
+  const leadWorkflow = await seedWorkflow(payload, leadSeed, tally)
+  const dealWorkflow = await seedWorkflow(payload, dealSeed, tally)
+  return { leadWorkflow, dealWorkflow }
+}
+
 async function seedWork(
   payload: SeedPayload,
   input: {
@@ -179,12 +209,8 @@ export async function seedAll(payload: SeedPayload, now: number): Promise<Tally>
   await seedSettings(payload, tally)
   const groups = await seedGroups(payload, tally)
   const users = await seedUsers(payload, groups, tally)
-  const taskWorkflow = await seedWorkflow(payload, TASK_WORKFLOW, tally)
-  const projectWorkflow = await seedWorkflow(payload, PROJECT_WORKFLOW, tally)
-  const [leadSeed, dealSeed] = CRM_WORKFLOWS
-  if (leadSeed === undefined || dealSeed === undefined) throw new Error('CRM workflows are incomplete')
-  const leadWorkflow = await seedWorkflow(payload, leadSeed, tally)
-  const dealWorkflow = await seedWorkflow(payload, dealSeed, tally)
+  const { taskWorkflow, projectWorkflow } = await seedWorkflows(payload, tally)
+  const { leadWorkflow, dealWorkflow } = await seedCrmWorkflows(payload, tally)
   const organizations = await seedCrm(payload, { now, users, leadWorkflow, dealWorkflow, tally })
   await seedWork(payload, {
     now,

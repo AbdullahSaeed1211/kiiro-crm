@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assertLocalOnly,
+  assertSafeToDeleteLocalState,
   localD1StateDir,
   localDevEnvironment,
   localPayloadSecret,
@@ -93,5 +94,32 @@ describe('localDevEnvironment', () => {
 describe('localD1StateDir', () => {
   it('stays inside the web app .wrangler directory', () => {
     expect(localD1StateDir('/repo/apps/web')).toBe('/repo/apps/web/.wrangler/state/v3/d1')
+  })
+})
+
+describe('assertSafeToDeleteLocalState', () => {
+  const webDir = '/repo/apps/web'
+
+  it('combines environment and path safety checks', () => {
+    const result = assertSafeToDeleteLocalState({ NODE_ENV: 'development' }, webDir)
+    expect(result).toBe('/repo/apps/web/.wrangler/state/v3/d1')
+  })
+
+  it('throws for production environment', () => {
+    expect(() => {
+      assertSafeToDeleteLocalState({ NODE_ENV: 'production' }, webDir)
+    }).toThrow(/production/)
+  })
+
+  it('throws for remote Cloudflare environment', () => {
+    expect(() => {
+      assertSafeToDeleteLocalState({ CLOUDFLARE_ENV: 'staging' }, webDir)
+    }).toThrow(/CLOUDFLARE_ENV/)
+  })
+
+  it('throws for production environment combined with path check', () => {
+    expect(() => {
+      assertSafeToDeleteLocalState({ NODE_ENV: 'production' }, '/repo/apps/web')
+    }).toThrow(/production/)
   })
 })

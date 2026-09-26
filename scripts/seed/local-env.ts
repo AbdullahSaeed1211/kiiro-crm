@@ -20,6 +20,12 @@ export function assertLocalOnly(env: Env): void {
   if (reason !== undefined) throw new Error(`refusing to touch the local database: ${reason}`)
 }
 
+/** Throws when it is unsafe to delete the local D1 state directory. Combines environment and path safety checks. */
+export function assertSafeToDeleteLocalState(env: Env, webDir: string): string {
+  assertLocalOnly(env)
+  return localD1StateDir(webDir)
+}
+
 const QUOTED = /^(["'])(.*)\1$/
 
 const devVarsPath = (webDir: string): string | undefined =>

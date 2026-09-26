@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { parseArgs } from 'node:util'
 import { isMain, report } from './lib/report'
 import { isSourceFile, listFiles, readText } from './lib/files'
 
@@ -26,6 +27,6 @@ export function formatterFindings(root: string): string[] {
 }
 
 if (isMain(import.meta.url)) {
-  const root = process.argv.includes('--root') ? process.argv[process.argv.indexOf('--root') + 1] : process.cwd()
-  report('check:formatters', formatterFindings(root ?? process.cwd()))
+  const { values } = parseArgs({ options: { root: { type: 'string', default: process.cwd() } } })
+  report('check:formatters', formatterFindings(values.root))
 }
