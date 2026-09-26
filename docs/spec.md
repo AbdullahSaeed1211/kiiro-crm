@@ -537,7 +537,9 @@ docs/
   decisions/decision-register.md   §2, kept current
   decisions/open-questions.md
   adr/0001-foundation.md 0002-tenancy.md 0003-code-license.md (open) 0004-product-api-and-verification.md NNNN-<title>.md
-  backlog/code-health.md ux.md     open code-health and UX findings, deleted as they are fixed
+  backlog/code-health.md ux.md     open code-health, tooling and UX findings, deleted as they are fixed
+  roadmap.md                       the order of open work, in waves
+  design/                          proposals awaiting a decision (self-serve-saas.md)
   runbooks/provision-tenant.md deploy.md rollback.md onboarding-customer.md incident.md
   history.md                       condensed build history per milestone
   reports/size.json                written by check:size

@@ -725,3 +725,46 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: Defense-in-depth gap: the path-safety check (`localD1StateDir`) and the environment-safety check (`assertLocalOnly`) are two separate concerns that both must hold, but nothing composes/tests them together as one "safe to rm -rf" contract.
 - Fix: Consider a single `assertSafeToDeleteLocalState()` combining both checks so the invariant is co-located and testable as one unit.
 - Effort: S
+
+## Tooling and operations
+
+Findings about the delivery tooling rather than the product code. IDs continue from OPS-01.
+
+### OPS-01: The three largest test files hold most of the remaining test code
+
+- Location: `tests/e2e/customer/route-health.spec.ts` (808 lines), `packages/adapters/payload/test/repositories/job-store.test.ts` (401 lines), `tests/e2e/spike/smoke.spec.ts` (280 lines).
+- Fix: keep the flows and races they guard, and remove cases that only assert headings, literals or mechanics. Fold the spike smoke flows that duplicate `route-health` into it.
+- Effort: M
+
+### OPS-02: Knip counts tests as consumers, so dead production code survives
+
+- Location: `tooling/knip/knip.json`.
+- Evidence: `runMoveTask` stayed alive only through its test until it was deleted by hand. `knip --production` is too noisy without entry markers for route files and scripts.
+- Fix: add production entry points for `apps/web/src/app/**` route and page files and `scripts/*.ts`, then run `knip --production` in `pnpm verify`.
+- Effort: S
+
+### OPS-03: No pre-commit hook
+
+- Location: repository root.
+- Evidence: formatting and lint failures reach CI; the agent format hook in `.claude/hooks/` covers only agent edits.
+- Fix: decide in an ADR whether to add a hook dependency (for example lefthook) running `pnpm verify:fast` on staged files; a new dependency needs that decision.
+- Effort: S
+
+### OPS-04: Spec §22 names a source project for the security headers
+
+- Location: `docs/spec.md` §22, two lines naming another codebase as the origin of `src/proxy.ts` and the Payload configuration.
+- Fix: replace the provenance with a description of the headers and configuration the code applies today.
+- Effort: S
+
+### OPS-05: Eight merged branches remain on the remote
+
+- Location: `origin`: `codex/agentic-inbox-ui`, `codex/pilot-improvements-20260924`, `m2-crm`, `wp/M3-W1` to `wp/M3-W5`.
+- Fix: `git push origin --delete` for each; every one is merged into `main`.
+- Effort: S
+
+### OPS-06: A release without the tenant secret fails late
+
+- Location: `scripts/deploy-tenants.ts`, `smokeOptions`.
+- Evidence: without `INTERNAL_SECRET_<SLUG>` the loop records a restore bookmark, migrates and deploys, then fails smoke and rolls the code back.
+- Fix: check every tenant's secret before the first remote command and exit with the missing variable names.
+- Effort: S

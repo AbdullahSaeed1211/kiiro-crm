@@ -143,8 +143,10 @@ The agent process harness was removed, and a first code-health pass fixed the de
 - Server actions returned four result shapes and sent raw exception text to the browser from 16 catch blocks. All now return `ActionResult`, and unexpected exceptions are logged and shown as generic copy (`a004a47`).
 - Adding or removing a project member always failed, because guarded updates could not write has-many relationships. The API's first curl checks surfaced it (`1596662`).
 - Task and project use cases are on `/api/v1`, described by a contract registry and served as JSON Schema by `GET /api/v1`. Work and CRM validation failures name each invalid field (`376bf05`).
+- The first operator release of this work rolled back: the operator shell lacked `INTERNAL_SECRET_MIRCHMEDIA`, so the authenticated R2 smoke probe could not run. The smoke check now names the missing variable, and the deploy runbook lists it (`fbc7966`).
+- Tests were cut to those that guard what a response or type cannot show, from 90 files and 8,615 lines to 57 files and 6,771 lines (`e41d230`).
 
-Verification for this pass was local: static gates, unit and integration tests, and curl gates against the local dev server (`pnpm dev`) on the seeded workspace. The build, end-to-end suite and production were not exercised.
+Verification for this pass was local: static gates, unit and integration tests, the production build, and curl gates against the local dev server (`pnpm dev`) on the seeded workspace. The end-to-end suite was not run, and production still runs the earlier build.
 
 ## Lessons that shaped the codebase
 
