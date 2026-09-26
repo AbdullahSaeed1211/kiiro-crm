@@ -145,8 +145,9 @@ The agent process harness was removed, and a first code-health pass fixed the de
 - Task and project use cases are on `/api/v1`, described by a contract registry and served as JSON Schema by `GET /api/v1`. Work and CRM validation failures name each invalid field (`376bf05`).
 - The first operator release of this work rolled back: the operator shell lacked `INTERNAL_SECRET_MIRCHMEDIA`, so the authenticated R2 smoke probe could not run. The smoke check now names the missing variable, and the deploy runbook lists it (`fbc7966`).
 - Tests were cut to those that guard what a response or type cannot show, from 90 files and 8,615 lines to 57 files and 6,771 lines (`e41d230`).
+- Release `v0.1.0` reached production on 2026-09-26 after the tenant's internal secret was rotated with `wrangler versions secret put`; health, login, R2 and email-configuration smoke checks passed, and the database was already at the newest migration.
 
-Verification for this pass was local: static gates, unit and integration tests, the production build, and curl gates against the local dev server (`pnpm dev`) on the seeded workspace. The end-to-end suite was not run, and production still runs the earlier build.
+Verification for this pass was local: static gates, unit and integration tests, the production build, and curl gates against the local dev server (`pnpm dev`) on the seeded workspace. The end-to-end suite was not run; production received the work as release `v0.1.0`.
 
 ## Lessons that shaped the codebase
 

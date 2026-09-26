@@ -52,6 +52,19 @@ Re-enabling a tenant is the forward path: set `email.enabled` to `true`, onboard
 with Cloudflare Email Sending, refresh the operator token with the `email_sending` scope, regenerate Wrangler config, and
 rerun the tagged deployment. Never bypass the smoke gate by treating an enabled-but-unavailable sender as disabled.
 
+## Rotating a tenant's internal secret
+
+Cloudflare stores Worker secrets write-only, so a lost `INTERNAL_SECRET` cannot be read back; rotate it instead. The Worker's cron and inbound-email bridges read the same binding, so a custom-host tenant needs nothing else. A platform-host tenant's copy in `ops-mail-router` (`INTERNAL_SECRET_<SLUG>`) must be updated too, and so must any CI secret of the same name.
+
+```sh
+umask 077 && mkdir -p ~/.ops-secrets
+node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))" > ~/.ops-secrets/<slug>.internal
+printf 'export INTERNAL_SECRET_<SLUG>="$(cat ~/.ops-secrets/<slug>.internal)"\n' > ~/.ops-secrets/<slug>.env
+cd apps/web && npx wrangler secret put INTERNAL_SECRET --env <slug> < ~/.ops-secrets/<slug>.internal
+```
+
+When the latest uploaded version is not the deployed one, for example after a rolled-back release, `secret put` refuses. Use `npx wrangler versions secret put INTERNAL_SECRET --env <slug>` instead: it stores the secret on a new version without deploying it, and the next release's upload inherits it. Then run the release with `source ~/.ops-secrets/<slug>.env` in the same shell.
+
 ## Failure handling
 
 After a restore bookmark exists, any migration, deploy, or smoke failure runs a code-only rollback:

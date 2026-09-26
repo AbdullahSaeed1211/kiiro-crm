@@ -4,15 +4,14 @@ The order in which open work ships. Each wave names the backlog entries it close
 
 Waves 2 to 5 fix what a user of the current product hits; wave 6 turns the platform into a self-serve SaaS. Waves 2 and 3 can run in parallel, as they touch different files.
 
-## 1. Release the current main
+## 1. Release visibility
 
-Production (`crm.mirchmedia.com`) runs a build from before the code-health pass; the first release attempt rolled back because the operator shell lacked `INTERNAL_SECRET_MIRCHMEDIA`.
+Production (`crm.mirchmedia.com`) runs release `v0.1.0` of `main`, but `/api/v1/health` still reports `version: "dev"`.
 
-- Run the operator release from [the deploy runbook](runbooks/deploy.md) with the tenant secret set.
-- Set `APP_VERSION` at deploy so `/api/v1/health` reports the live commit (UX 31).
+- Set `APP_VERSION` at deploy so `/api/v1/health` reports the live release (UX 31).
 - Add a preflight to `scripts/deploy-tenants.ts` that fails before any remote step when a tenant's secret is missing (OPS-06).
 
-Done when: the release loop reports `deployed` for every tenant, `/api/v1/health` returns the release version, and the smoke checks pass.
+Done when: `/api/v1/health` returns the release version after a deploy, and a release without a tenant secret stops before its first remote command.
 
 ## 2. Task surfaces
 
