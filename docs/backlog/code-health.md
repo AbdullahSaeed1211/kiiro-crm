@@ -709,13 +709,6 @@ Findings about the delivery tooling rather than the product code. IDs continue f
 - Fix: `git push origin --delete` for each; every one is merged into `main`.
 - Effort: S
 
-### OPS-06: A release without the tenant secret fails late
-
-- Location: `scripts/deploy-tenants.ts`, `smokeOptions`.
-- Evidence: without `INTERNAL_SECRET_<SLUG>` the loop records a restore bookmark, migrates and deploys, then fails smoke and rolls the code back.
-- Fix: check every tenant's secret before the first remote command and exit with the missing variable names.
-- Effort: S
-
 ## Security
 
 Gaps between the security baseline in spec §12 and §24 and what the running app does. IDs continue from SEC-01.

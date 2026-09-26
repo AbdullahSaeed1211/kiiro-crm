@@ -90,4 +90,19 @@ describe('deployment safety', () => {
     expect(result.exitCode).toBe(0)
     expect(result.output).toContain('1.20.6')
   }, 30_000)
+
+  it('includes APP_VERSION in the deploy command', async () => {
+    const commands: string[] = []
+    const tenant = makeTenant('alpha', 0)
+    const tag = 'v1.2.3'
+    await deployTenants([tenant], tag, {
+      run: (command) => {
+        commands.push(command)
+        return Promise.resolve({ exitCode: 0, output: 'bookmark: stable' })
+      },
+      smoke: () => Promise.resolve(okay),
+    })
+    const deployCommand = commands.find((cmd) => cmd.includes(OPENNEXT))
+    expect(deployCommand).toContain(`--var APP_VERSION:${tag}`)
+  })
 })

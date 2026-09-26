@@ -9,10 +9,9 @@ Waves 2 and 3 run in parallel, as they touch different files. Wave 4 needs wave 
 Production (`crm.mirchmedia.com`) runs release `v0.1.0` of `main`, but `/api/v1/health` still reports `version: "dev"`.
 
 - Set `APP_VERSION` at deploy so `/api/v1/health` reports the live release (UX 31).
-- Add a preflight to `scripts/deploy-tenants.ts` that fails before any remote step when a tenant's secret is missing (OPS-06).
 - If the tag-triggered release workflow stores `INTERNAL_SECRET_MIRCHMEDIA`, update it to the value rotated on 2026-09-26 (see the deploy runbook).
 - Close the two security gaps: security headers on every response, and the spec's 404 for Payload's own password routes.
-- Findings: UX 31; code-health OPS-06, SEC-01, SEC-02.
+- Findings: UX 31; code-health SEC-01, SEC-02.
 
 Done when: `/api/v1/health` returns the release version after a deploy, a release without a tenant secret stops before its first remote command, production responses carry the security headers, and Payload's own password routes return 404.
 

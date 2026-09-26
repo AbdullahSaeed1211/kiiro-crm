@@ -69,7 +69,7 @@ async function deployOne(tenant: Tenant, tag: string, deps: DeploymentDependenci
     return { slug: tenant.slug, status: 'failed', error, rolledBack: false }
   }
   try {
-    await runMigrationAndDeploy(tenant, deps.run)
+    await runMigrationAndDeploy(tenant, deps.run, tag)
     const smoke = await (deps.smoke ?? ((current) => smokeTenant(current, {})))(tenant)
     if (!smoke.ok) throw new Error('smoke failed')
     return { slug: tenant.slug, status: 'deployed', bookmark, rolledBack: false, smoke }
@@ -80,7 +80,7 @@ async function deployOne(tenant: Tenant, tag: string, deps: DeploymentDependenci
   }
 }
 
-async function runMigrationAndDeploy(tenant: Tenant, run: CommandRunner): Promise<void> {
+async function runMigrationAndDeploy(tenant: Tenant, run: CommandRunner, tag: string): Promise<void> {
   const migrate = `PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`
   assertCommand(
     await run(migrate, {
@@ -91,7 +91,7 @@ async function runMigrationAndDeploy(tenant: Tenant, run: CommandRunner): Promis
     }),
     migrate,
   )
-  const deploy = `${OPENNEXT} deploy --env=${tenant.slug}`
+  const deploy = `${OPENNEXT} deploy --env=${tenant.slug} --var APP_VERSION:${tag}`
   assertCommand(await run(deploy), deploy)
 }
 

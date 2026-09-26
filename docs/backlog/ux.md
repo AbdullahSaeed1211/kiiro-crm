@@ -165,6 +165,7 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Platform. Effort: Quick.
 - Production `/api/v1/health` returns `version: "dev"` because `APP_VERSION` isn't set at deploy time, and most deployment messages are empty. The live Worker is 48 commits behind `main`, deployed 23 Sep 21:03 UTC. The schema matches the repo. Stamp the git commit into the build.
+- Status: partly fixed. The release loop passes `--var APP_VERSION:<tag>` to the deploy (`scripts/lib/deploy/loop.ts`); confirm `/api/v1/health` reports the tag after the next release, then delete this entry.
 
 ### 32. The time zone list is duplicated and force-adds one zone
 
