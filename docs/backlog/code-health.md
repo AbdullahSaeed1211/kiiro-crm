@@ -1,9 +1,10 @@
 # Code-health backlog
 
-84 findings are open: 12 high, 36 medium and 36 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 18 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+81 findings are open: 12 high, 36 medium and 33 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
+- [The roadmap](../roadmap.md) assigns every finding to one wave; work a finding as part of its wave.
 - Fix a whole root cause where you can: one shared change closes every finding in its group.
 - Delete a finding from this file in the commit that fixes it. When a fix is partial, replace its status line with what remains.
 - Keep each fix behavior-preserving unless the finding says otherwise, and verify it as described in [AGENTS.md](../../AGENTS.md#verifying-a-change).
@@ -171,14 +172,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: Comment: "this bounded adapter scan is the verification boundary for HMAC addresses" - function does a full unbounded `find` (`limit: 0, pagination: false`) across all 6 record collections and recomputes an HMAC address per document to find one match.
 - Consequence: Named like a lookup but is actually an O(n) full-table scan with per-row crypto; the function signature gives no hint of this cost, and "bounded" in the comment is misleading since `limit: 0` is literally unbounded.
 - Fix: Rename to `scanRecordsForAddressToken` and/or fix comment; longer term, store the token derivable without a full scan (e.g. index it).
-- Effort: S
-
-### DOM-11: Clean code magic values, low severity
-
-- Location: `packages/adapters/payload/src/repositories/task-repository.ts:118`
-- Evidence: `rank: draft.rank ?? '000000000001'` - a 12-digit zero-padded string magic default embedded inline in `taskData`.
-- Consequence: Unexplained fixed-width rank string with no named constant or comment on why 12 digits / this value; a rank-collision bug would be hard to trace back here.
-- Fix: Extract `const DEFAULT_TASK_RANK = '000000000001'` near `packages/modules/work/src/domain/rank.ts` (which already owns ranking logic) so the constant lives with its domain rules instead of the Payload adapter.
 - Effort: S
 
 ### DOM-12: Clean code naming, low severity
@@ -662,28 +655,12 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Low priority given the low churn rate of generated paths, but a shared `tooling/generated-paths.json` consumed by both the check scripts and tool configs would remove the duplication.
 - Effort: M
 
-### SCR-06: DRY, low severity
-
-- Location: `scripts/lib/provision/plan.ts:103-107` (`secretsFile`) vs `execution.ts:112-116` (`tempSecretsFile`)
-- Evidence: Both write `.tenant-secrets*-<slug>-<pid>.json` to `process.cwd()` with `mode: 0o600`; only the filename prefix differs (`.tenant-secrets-` vs `.tenant-secrets-router-`).
-- Consequence: Same write-temp-secrets-file logic exists twice with slightly different names, which is exactly the seed noted in the task and the root cause behind SCR-01.
-- Fix: Extract one `writeTempSecrets(prefix, tenant, payload)` used by both, returning a disposer.
-- Effort: S
-
 ### SCR-10: Clean code magic values, low severity
 
 - Location: `scripts/lib/provision/plan.ts:69,79,85,91` and `scripts/lib/provision/commands.ts:10-11`
 - Evidence: Command strings are partially centralized (`WRANGLER`, `OPENNEXT` constants) but step commands still interpolate raw literals like `--env ${tenant.slug}`, `<temporary-secrets-file>` placeholder text, and `pnpm tenant:smoke ${tenant.slug} --execute` inline; the npm script name `tenant:smoke` is a magic string duplicated from `package.json`.
 - Consequence: If the npm script is renamed, this silently drifts from `package.json` with no compile-time link.
 - Fix: Not urgent given low churn, but consider a `SCRIPTS` constants map shared with `package.json` generation if that ever exists.
-- Effort: S
-
-### SCR-11: Clean code naming/comments, low severity
-
-- Location: `scripts/lib/provision/plan.ts:15-16`
-- Evidence: Two doc comments sit above unrelated code: `/** The observable completion state for the eleven provisioning steps. */` and `/** Commands needed... */` immediately precede `interface StepContext`, not `ProvisionState`/`ProvisionStep` (which are now in `types.ts`, imported on line 8).
-- Consequence: Stale/misplaced comments describe types that no longer live in this file; a reader following the comment finds `StepContext` instead.
-- Fix: Delete or move these two comments to `types.ts`.
 - Effort: S
 
 ### SCR-12: DRY, low severity

@@ -149,7 +149,7 @@ The one-command provisioning, deploy loop and runbooks are milestone M7 (spec §
 
 ## Working on this repository
 
-Agents and engineers start from [`AGENTS.md`](AGENTS.md): where code lives, golden examples, commands, pitfalls and how parallel work is split. Task skills for common changes are in `.claude/skills/`. Spec §0 covers roles, ownership and escalation. The order of open work is in [`docs/roadmap.md`](docs/roadmap.md), the items in [`docs/backlog/`](docs/backlog/), and the self-serve SaaS proposal in [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md); and the product API describes itself at `GET /api/v1` (spec §12.3).
+Agents and engineers start from [`AGENTS.md`](AGENTS.md): where code lives, golden examples, commands, pitfalls and how parallel work is split. Task skills for common changes are in `.claude/skills/`. Spec §0 covers roles, ownership and escalation. The order of open work is in [`docs/roadmap.md`](docs/roadmap.md), with task lists in [`docs/plans/`](docs/plans/), the items in [`docs/backlog/`](docs/backlog/), and the self-serve SaaS proposal in [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md); and the product API describes itself at `GET /api/v1` (spec §12.3).
 
 - Execution decisions are recorded in `docs/decisions/decision-register.md` (E-nnn), open questions in `docs/decisions/open-questions.md`, and architecture decisions in `docs/adr/`.
 - Conventional Commits, for example `feat(crm): ...` or `docs: ...`. A commit that changes behavior lists the checks it was verified with under `Verified:`; a `fix(...)` commit adds a failing test only for a defect no response or type can show (see `AGENTS.md`).

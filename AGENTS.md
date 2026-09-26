@@ -7,7 +7,7 @@ ops-platform is a white-label CRM and project/task platform: one codebase, deplo
 ## Starting or resuming work
 
 1. Read this file, then `git log --oneline -15` and `git status` to see where the branch stands.
-2. Pick the next item of the first open wave in [`docs/roadmap.md`](docs/roadmap.md); the waves draw from the backlogs. [`docs/backlog/code-health.md`](docs/backlog/code-health.md) holds open DRY, SOLID and architecture findings with a refactor order; [`docs/backlog/ux.md`](docs/backlog/ux.md) holds open UX findings; [`docs/ux/reference-parity-backlog.md`](docs/ux/reference-parity-backlog.md) is the atomic parity inventory. Take the highest-severity item that no running task owns.
+2. Pick the next item of the first open wave in [`docs/roadmap.md`](docs/roadmap.md). If the wave has a plan in [`docs/plans/`](docs/plans/), take the next unstarted task whose group can start and whose files no running task owns; otherwise take the wave's highest-severity finding. [`docs/backlog/code-health.md`](docs/backlog/code-health.md) holds open DRY, SOLID and architecture findings with a refactor order; [`docs/backlog/ux.md`](docs/backlog/ux.md) holds open UX findings; [`docs/ux/reference-parity-backlog.md`](docs/ux/reference-parity-backlog.md) is the atomic parity inventory. Take the highest-severity item that no running task owns.
 3. Load the matching skill from `.claude/skills/`: `add-use-case`, `add-api-endpoint`, `add-record-surface`, `fix-bug`, `ui-from-reference`, and `verify-change` for every change.
 4. Delete the backlog entry in the commit that fixes it. When a fix is partial, rewrite the entry's status line to say what remains.
 

@@ -538,7 +538,8 @@ docs/
   decisions/open-questions.md
   adr/0001-foundation.md 0002-tenancy.md 0003-code-license.md (open) 0004-product-api-and-verification.md NNNN-<title>.md
   backlog/code-health.md ux.md     open code-health, tooling and UX findings, deleted as they are fixed
-  roadmap.md                       the order of open work, in waves
+  roadmap.md                       the order of open work, in waves; every open finding in exactly one wave
+  plans/                           per-wave task lists with owned files and gates
   design/                          proposals awaiting a decision (self-serve-saas.md)
   runbooks/provision-tenant.md deploy.md rollback.md onboarding-customer.md incident.md
   history.md                       condensed build history per milestone

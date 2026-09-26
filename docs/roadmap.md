@@ -1,8 +1,8 @@
 # Roadmap
 
-The order in which open work ships. Each wave names the backlog entries it closes, what it depends on and how it is accepted; the entries themselves, with locations and fixes, live in [the code-health backlog](backlog/code-health.md), [the UX backlog](backlog/ux.md) and [the tooling and operations section](backlog/code-health.md#tooling-and-operations). Delete a wave when it ships, and add the next one at the bottom.
+The order in which open work ships. Every open finding in [the code-health backlog](backlog/code-health.md) and [the UX backlog](backlog/ux.md) is assigned to exactly one wave below; the backlogs hold each finding's location, evidence and fix. A wave with a plan in `docs/plans/` lists its tasks with owned files and gates. Delete a wave when it ships, and add the next one at the bottom.
 
-Waves 2 to 5 fix what a user of the current product hits; wave 6 turns the platform into a self-serve SaaS. Waves 2 and 3 can run in parallel, as they touch different files.
+Waves 2 and 3 run in parallel, as they touch different files. Wave 4 needs wave 2. Wave 7 turns the platform into a self-serve SaaS and can start once wave 1 ships, alongside the others.
 
 ## 1. Release visibility
 
@@ -10,57 +10,70 @@ Production (`crm.mirchmedia.com`) runs release `v0.1.0` of `main`, but `/api/v1/
 
 - Set `APP_VERSION` at deploy so `/api/v1/health` reports the live release (UX 31).
 - Add a preflight to `scripts/deploy-tenants.ts` that fails before any remote step when a tenant's secret is missing (OPS-06).
+- If the tag-triggered release workflow stores `INTERNAL_SECRET_MIRCHMEDIA`, update it to the value rotated on 2026-09-26 (see the deploy runbook).
+- Findings: UX 31; code-health OPS-06.
 
 Done when: `/api/v1/health` returns the release version after a deploy, and a release without a tenant secret stops before its first remote command.
 
 ## 2. Task surfaces
 
-The task screens are where staff spend their day and where the worst UX findings sit.
+Plan: [wave 2 plan](plans/wave-2-task-surfaces.md). The task screens are where staff spend their day and where the worst UX findings sit.
 
-- One task view for the panel and the full page, with a page header and no Close button; delete `TaskAssigneeForm` (UX 2). The geometry check in `tests/e2e/customer/route-health.spec.ts` turns green with this change.
-- Editable task properties in the panel: stage, priority, assignees, dates and parent, each saving on change through `updateTask`, with the activity feed below (UX 1).
-- Open a task by clicking anywhere in its row (UX 9); the calendar shows every task in a day (UX 4); subtasks open and can be added (UX 28); My tasks reuses the task table (UX 27); the task table becomes a card list on phones (UX 29).
-- Move TaskSheet copy into the i18n catalog and split its page and sheet modes (code-health UI-01, UI-04).
+- One task view for the panel and the full page; editable properties with activity; row clicks; a calendar that shows every task; My tasks on the shared table; subtasks; a phone layout.
+- Findings: UX 1, 2, 4, 9, 27, 28, 29; code-health UI-01, UI-02, UI-03, UI-04, UI-08, UI-10, UI-11, UI-16, UI-19, UI-24, WEB-29, WEB-30.
 
-Depends on: nothing. Done when: every change's gates pass against the running app at 1440px and 390px, and the task API endpoints (`/api/v1/tasks/...`) show each edit.
+Depends on: nothing. Done when: every task in the plan is committed with its gates, and the geometry check in `tests/e2e/customer/route-health.spec.ts` passes.
 
 ## 3. One error model and an identity module
 
-Code-health refactor steps 1 and 2. Settings and membership are the last features that call Payload directly without a use case.
+Plan: [wave 3 plan](plans/wave-3-error-model-identity.md). Code-health refactor steps 1, 2 and 5: settings and membership are the last features that call Payload directly without a use case.
 
-- Adapters return `Result` instead of throwing; client `catch` blocks report through one helper (DOM-09, WEB-22, WEB-23, WEB-24, SCR-09).
-- One composition root, `apps/web/src/server/container.ts`, replaces the `get*Deps` files (ARCH-04).
-- `packages/modules/identity` owns invite, resend, revoke and member role changes, with an in-memory double; the settings actions call it (ARCH-01, ARCH-06). Expose it on `/api/v1` with the `add-api-endpoint` skill.
-- Remove the moved files from `PAYLOAD_IN_ROUTES_DEBT` (ARCH-02).
+- One composition root; adapters that return `Result`; one client error helper; `packages/modules/identity` with `/api/v1` endpoints; split mail, job, intake and directory files; a shorter Payload-in-routes debt list.
+- Findings: code-health ARCH-01, ARCH-02, ARCH-04, ARCH-06, DOM-03, DOM-04, DOM-05, DOM-06, DOM-07, DOM-08, DOM-09, DOM-10, DOM-12, DOM-14, DOM-16, SCR-09, WEB-11, WEB-13, WEB-22, WEB-23, WEB-24.
 
-Depends on: nothing. Done when: `members.ts` has no `payload.` calls, the identity endpoints pass their gates, and the debt list is shorter.
+Depends on: nothing. Done when: `members.ts` has no `payload.` call, the identity endpoints pass their gates, and no adapter file carries a file-wide lint waiver.
 
-## 4. CRM records
+## 4. First-tenant go-live and pilot week
 
-- Move lead move legality, display names, saved-view parsing and currency defaults into the CRM module (WEB-10, WEB-14, WEB-16, WEB-17).
-- Generic record machinery: extend the contacts and organizations `directory-*` pattern to leads, deals and tasks, with one lost-reason dialog, one activity card and one stage picker (WEB-03 to WEB-09, WEB-27, WEB-31; UX 17, 25).
-- Inline edit for every record field (UX 6), conversion that can attach to existing records (UX 7), and notes on records (UX 14).
-- Expose the CRM use cases on `/api/v1`.
+The spec's M8 and M9 milestones (spec §20, §21.2) for the Mirch Media tenant, run once wave 2 gives staff usable task screens. The tenant is live at `crm.mirchmedia.com`; the steps below are not verifiable from this repository and are confirmed with the owner first.
 
-Depends on: wave 3 for the shared error model. Done when: leads, deals and tasks render through the shared components and the CRM endpoints pass their gates.
+- Confirm or finish the M8 go-live items: the website lead forwarder (M8-W1, in the separate Laravel repository), the CSV imports (M8-W2), and outbound email, which `tenants/mirchmedia.jsonc` has disabled (`email.enabled: false`).
+- Run the pilot week and measure the §20.6 criteria: every website lead lands in the app, active projects and open tasks live only in the app, every staff member signs in on at least three of five workdays and uses My tasks daily, no cross-scope visibility bug, and due-soon and overdue notifications verified.
+- Turn the pilot's friction list into findings in [the UX backlog](backlog/ux.md) and assign them to waves.
 
-## 5. Design system and lists
+Depends on: wave 2. Done when: the pilot outcome and friction list are recorded in `docs/history.md`.
 
-- One view bar with search, filter and sort on every list (UX 8), used on tasks, leads, deals, contacts, organizations and projects.
-- Replace native `<select>` and date inputs with `@ops/ui` components (UX 12); one view switcher (UX 19); bulk actions through the existing `DataTable` selection (UX 13).
-- Kanban column sizing and add-to-column (UX 15); calendar drag to reschedule (UX 16); Gantt bar colours by stage (UX 23); smaller fixes UX 20, 22, 24, 26, 30, 32, 33.
+## 5. CRM records
 
-Depends on: wave 4 for the generic record lists. Done when: no native `<select>` remains outside `packages/ui`, and every list page has the same bar.
+Code-health refactor steps 3 and 4: rules move out of the web layer, and leads, deals and tasks share the generic record machinery.
 
-## 6. Self-serve SaaS
+- Move lead move legality, display names, saved-view parsing and currency defaults into the CRM module; give use cases an explicit application layer.
+- Extend the contacts and organizations `directory-*` pattern to leads, deals and tasks, with one lost-reason dialog, one activity card and one stage picker; inline edit for every field; conversion that can attach to existing records; notes on records; CRM use cases on `/api/v1`.
+- Findings: UX 6, 7, 14, 17, 25; code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-03, WEB-04, WEB-05, WEB-06, WEB-07, WEB-08, WEB-09, WEB-10, WEB-12, WEB-14, WEB-16, WEB-17, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.
+
+Depends on: wave 3 for the error model and composition root. Done when: leads, deals and tasks render through the shared components and the CRM endpoints pass their gates.
+
+## 6. Design system and lists
+
+- One view bar with search, filter and sort on every list; `@ops/ui` components instead of native selects and date inputs; one view switcher; bulk actions through `DataTable` selection.
+- Kanban column sizing and add-to-column; calendar drag to reschedule; Gantt bars coloured by stage; one token set across the stylesheets.
+- Findings: UX 8, 12, 13, 15, 16, 19, 20, 22, 23, 24, 26, 30, 32, 33; code-health UI-05, UI-06, UI-07, UI-12, UI-13, UI-14, UI-17, UI-20, UI-21, UI-23.
+
+Depends on: wave 5 for the generic record lists. Done when: no native `<select>` remains outside `packages/ui`, and every list page has the same bar.
+
+## 7. Self-serve SaaS
 
 Sign up, then automatic provisioning, as proposed in [the self-serve design](design/self-serve-saas.md). Its five phases are sub-waves: registry and API-driven provisioning, dispatch namespace and releases, public signup, custom domains, then plans and billing.
 
-- Before phase 1: a neutral demo tenant with example.test identities and a real pipeline, used by `seed:dev` and the end-to-end suite instead of the Mirch Media data (UX 10, 11; code-health SCR-14).
-- Resolve the design's open questions (D1 account limits, Workers for Platforms pricing, migrations inside a Worker, OpenNext upload to a dispatch namespace) with spikes, then record ADR-0005.
+- Before phase 1: a neutral demo tenant with example.test identities and a real pipeline, used by `seed:dev` and the end-to-end suite instead of the Mirch Media data; resolve the design's open questions with spikes, then record ADR-0005.
+- Phase 1 replaces the operator CLI, so the provisioning-script findings are closed by deleting or rewriting that code rather than refactoring it.
+- Findings: UX 10, 11; code-health ARCH-07, SCR-07, SCR-08, SCR-10, SCR-13, SCR-14, SCR-16, SCR-17, SCR-19, SCR-21.
 
-Depends on: wave 1. Can start alongside waves 2 to 5, since it adds `apps/control` and touches the product app only for its internal migrate endpoint and identity bindings. Done when: each phase's acceptance in the design doc is met.
+Depends on: wave 1. Done when: each phase's acceptance in the design doc is met.
 
-## 7. Tooling and operations
+## 8. Tooling and operations
 
-The small items in [the tooling and operations backlog](backlog/code-health.md#tooling-and-operations), taken whenever a wave leaves slack: shrinking the three largest test files, screenshot diffs for the core surfaces (UX 3), knip production mode, the pre-commit hook decision, the stale provenance note in spec §22 and the merged remote branches.
+Taken whenever a wave leaves slack.
+
+- Shrink the three largest test files; screenshot diffs for the core surfaces; knip production mode; the pre-commit hook decision; the stale provenance note in spec §22; the merged remote branches; one shared exclusion list for the tooling configs; the seed and local-reset scripts.
+- Findings: UX 3; code-health OPS-01, OPS-02, OPS-03, OPS-04, OPS-05, SCR-12, SCR-15, SCR-20, SCR-22.
