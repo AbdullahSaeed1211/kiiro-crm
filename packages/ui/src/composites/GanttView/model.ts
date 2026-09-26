@@ -36,7 +36,7 @@ export interface GanttColumnLabels {
 }
 
 /** Resolves a bar's span: start defaults to end − 1 day (spec §17.9), end to start + 1 day; spans under a day grow to one. */
-export function barSpan(bar: Pick<GanttBar, 'start' | 'end'>): BarSpan | undefined {
+function barSpan(bar: Pick<GanttBar, 'start' | 'end'>): BarSpan | undefined {
   const { start, end } = bar
   if (start === null) return end === null ? undefined : { start: end - DAY_MS, end }
   if (end === null || end - start < DAY_MS) return { start, end: start + DAY_MS }
@@ -44,13 +44,13 @@ export function barSpan(bar: Pick<GanttBar, 'start' | 'end'>): BarSpan | undefin
 }
 
 /** Maps epoch ms to a local midnight on the same UTC calendar day, the unit the library snaps to. */
-export function toLibraryDate(epochMs: number): Date {
+function toLibraryDate(epochMs: number): Date {
   const utc = new Date(epochMs)
   return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate())
 }
 
 /** Maps a library date back to epoch ms, rounded to the nearest whole day. */
-export function toEpochDay(date: Date): number {
+function toEpochDay(date: Date): number {
   const nearest = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours() + HALF_DAY_HOURS)
   return Date.UTC(nearest.getFullYear(), nearest.getMonth(), nearest.getDate())
 }

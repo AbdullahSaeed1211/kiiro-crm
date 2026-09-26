@@ -35,7 +35,7 @@ export function isTerminalCategory(category: string | undefined): boolean {
 }
 
 /** True when no two stages share a name; names compare trimmed and case-insensitively. */
-export function hasUniqueStageNames(stages: unknown): boolean {
+function hasUniqueStageNames(stages: unknown): boolean {
   const names = rowsOf(stages).map((row) => row.name)
   return new Set(names).size === names.length
 }

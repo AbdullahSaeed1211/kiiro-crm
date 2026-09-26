@@ -104,7 +104,7 @@ export function jsonField(name: string, flags: FieldFlags = {}): JSONField {
 }
 
 /** True when `value` is an array of strings. */
-export function isStringList(value: unknown): boolean {
+function isStringList(value: unknown): boolean {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
@@ -148,12 +148,12 @@ const LOST_NOTE_MAX = 5000
 const isEmpty = (value: unknown): boolean => value === null || value === undefined || value === ''
 
 /** True when `value` is a three-letter uppercase ISO 4217 code. */
-export function isCurrencyCode(value: unknown): boolean {
+function isCurrencyCode(value: unknown): boolean {
   return typeof value === 'string' && CURRENCY_CODE.test(value)
 }
 
 /** True when `value` is empty or a whole number of minor units, zero or more (decision D-10). */
-export function isOptionalMinorUnits(value: unknown): boolean {
+function isOptionalMinorUnits(value: unknown): boolean {
   return isEmpty(value) || (typeof value === 'number' && Number.isInteger(value) && value >= 0)
 }
 

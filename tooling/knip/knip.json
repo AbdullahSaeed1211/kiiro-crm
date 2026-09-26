@@ -1,9 +1,7 @@
 {
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.ts"],
-      "ignore": ["scripts/fixtures/**"],
-      "ignoreDependencies": ["@axe-core/playwright"]
+      "entry": ["scripts/**/*.ts"]
     },
     "apps/web": {
       "entry": ["open-next.config.ts", "src/app/**/*.{ts,tsx}"],

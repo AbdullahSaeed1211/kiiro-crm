@@ -48,19 +48,9 @@ export function stageFor(stages: readonly KanbanStage[], stageId: string): Kanba
   )
 }
 
-export function isTerminalStage(stage: Pick<KanbanStage, 'category'>): boolean {
-  return stage.category === 'done_success' || stage.category === 'done_failure' || stage.category === 'cancelled'
-}
-
 export function leadStageMoveError(stage: Pick<KanbanStage, 'category'>): string | null {
   if (stage.category === 'done_success') return 'Convert the lead from its record page.'
   if (stage.category === 'done_failure') return 'Choose Mark lost and provide a lost reason.'
   if (stage.category === 'cancelled') return 'Leads cannot be cancelled from the pipeline.'
   return null
-}
-
-export function displayName(lead: LeadRecord): string {
-  if (lead.title.trim() !== '') return lead.title
-  const name = [lead.firstName, lead.lastName].filter(Boolean).join(' ')
-  return name !== '' ? name : (lead.companyName ?? 'Untitled lead')
 }

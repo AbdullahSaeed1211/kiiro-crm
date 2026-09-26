@@ -7,7 +7,7 @@ import { LOCALE_VALUES, RADIUS_VALUES, SENDER_STATUS_VALUES, TIMEZONE_VALUES } f
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
 
 /** True when `value` is an IANA time zone the runtime knows. */
-export function isTimeZone(value: unknown): boolean {
+function isTimeZone(value: unknown): boolean {
   if (typeof value !== 'string' || value === '') return false
   try {
     new Intl.DateTimeFormat('en', { timeZone: value })
@@ -18,7 +18,7 @@ export function isTimeZone(value: unknown): boolean {
 }
 
 /** True for an empty value or a `#rrggbb` color. */
-export function isOptionalHexColor(value: unknown): boolean {
+function isOptionalHexColor(value: unknown): boolean {
   return value === null || value === undefined || value === '' || (typeof value === 'string' && HEX_COLOR.test(value))
 }
 
