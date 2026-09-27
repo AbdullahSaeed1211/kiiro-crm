@@ -1,6 +1,6 @@
 # UX backlog
 
-25 findings are open: 3 critical, 11 major and 11 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+24 findings are open: 3 critical, 11 major and 10 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -131,12 +131,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Design system. Effort: Quick. Codes: S-08 R-10.
 - `product.css:14` overrides shadcn's `--muted-foreground` with a darker `oklch(0.48 …)`, and example values like "Jane" and "Acme Inc." look like real data. Keep one definition of the token, lighten placeholders, and use example-style hints.
-
-### 31. You can't tell which commit is live
-
-- Area: Platform. Effort: Quick.
-- Production `/api/v1/health` returns `version: "dev"` because `APP_VERSION` isn't set at deploy time, and most deployment messages are empty. The live Worker is 48 commits behind `main`, deployed 23 Sep 21:03 UTC. The schema matches the repo. Stamp the git commit into the build.
-- Status: partly fixed. The release loop passes `--var APP_VERSION:<tag>` to the deploy (`scripts/lib/deploy/loop.ts`); confirm `/api/v1/health` reports the tag after the next release, then delete this entry.
 
 ### 32. The time zone list is duplicated and force-adds one zone
 

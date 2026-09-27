@@ -1,6 +1,6 @@
 # Code-health backlog
 
-62 findings are open: 10 high, 26 medium and 26 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+59 findings are open: 10 high, 25 medium and 24 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -553,22 +553,4 @@ Findings about the delivery tooling rather than the product code. IDs continue f
 
 - Location: `origin`: `codex/agentic-inbox-ui`, `codex/pilot-improvements-20260924`, `m2-crm`, `wp/M3-W1` to `wp/M3-W5`.
 - Fix: `git push origin --delete` for each; every one is merged into `main`.
-- Effort: S
-
-## Security
-
-Gaps between the security baseline in spec §12 and §24 and what the running app does. IDs continue from SEC-01.
-
-### SEC-01: Responses carry no security headers
-
-- Location: `apps/web/next.config.ts` (no `headers()`); no middleware sets them.
-- Evidence: a request to `https://crm.mirchmedia.com/login` on 2026-09-26 returned no `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` or `Permissions-Policy` header, although spec §24 requires them.
-- Fix: add the §24 headers for every route through `headers()` in `next.config.ts`, confirm OpenNext applies them on the Worker, and check them with curl on the running app and after the next release. A `Content-Security-Policy` follows separately, since Next.js inline scripts need nonces.
-- Effort: S
-
-### SEC-02: Payload's own password routes are reachable
-
-- Location: spec §12 names `src/proxy.ts`, which does not exist in `apps/web/src`.
-- Evidence: on the local app, `POST /api/users/forgot-password` and `/api/users/unlock` answer 400 ("Missing email.") and `reset-password`, `first-register` and `POST /api/users` answer 403, instead of the 404 spec §12 requires. The password policy still applies on set-password paths (`packages/adapters/payload/test/people/auth.test.ts`), but Payload's own forgot-password and unlock flows run outside the product's auth routes.
-- Fix: add the proxy (Next.js `proxy.ts` or middleware) that returns 404 for the routes listed in spec §12, keeping `/api/users/login`, `/logout`, `/me` and `/refresh-token` for the admin; check each route with curl.
 - Effort: S
