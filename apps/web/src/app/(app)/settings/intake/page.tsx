@@ -9,6 +9,9 @@ import {
   type IntakeSubmissionView,
 } from './intake-forms'
 import { SettingsForm, SettingsPage } from '../settings-shell'
+import { IntakeFieldMap } from './intake-field-map'
+import { saveIntakeFieldMap } from '../../../../server/actions/settings/intake-field-map'
+import { loadIntakeTargets } from '../../../../server/queries/settings/intake-targets'
 
 export const metadata: Metadata = { title: 'Intake' }
 export const dynamic = 'force-dynamic'
@@ -44,6 +47,21 @@ export default async function IntakeSettingsPage() {
     Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
   const optionList = (docs: readonly { id: string; name: string }[]): IntakeOption[] =>
     docs.map(({ id, name }) => ({ id, name }))
+  const targets = await loadIntakeTargets()
+  const fieldMaps = new Map(
+    forms.docs.map((form) => {
+      const map =
+        typeof form.fieldMap === 'object' && form.fieldMap !== null && !Array.isArray(form.fieldMap)
+          ? form.fieldMap
+          : {}
+      return [
+        form.id,
+        Object.fromEntries(
+          Object.entries(map).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+        ),
+      ] as const
+    }),
+  )
   const formViews: IntakeFormView[] = forms.docs.map((form) => ({
     id: form.id,
     name: form.name,
@@ -100,6 +118,12 @@ export default async function IntakeSettingsPage() {
             rotateServerKey={rotateIntakeServerKey}
             sources={optionList(sources.docs)}
             users={optionList(users.docs)}
+          />
+          <IntakeFieldMap
+            formId={form.id}
+            fieldMap={fieldMaps.get(form.id) ?? {}}
+            targets={targets}
+            action={saveIntakeFieldMap}
           />
         </SettingsForm>
       ))}

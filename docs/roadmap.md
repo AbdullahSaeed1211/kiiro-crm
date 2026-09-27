@@ -45,7 +45,7 @@ Code-health refactor steps 3 and 4: rules move out of the web layer, and leads, 
 
 - Move lead move legality, display names, saved-view parsing and currency defaults into the CRM module; give use cases an explicit application layer.
 - Extend the contacts and organizations `directory-*` pattern to leads, deals and tasks, with one lost-reason dialog, one activity card and one stage picker; inline edit for every field; conversion that can attach to existing records; notes on records; CRM use cases on `/api/v1`.
-- Configurable client onboarding: (a) custom fields shown and edited on every record page, (b) stage requirements — each stage lists the fields it needs and a move is refused naming the missing ones, (c) onboarding playbooks — a won deal creates a project from a tenant-configured task list, (d) intake form answers mapped to custom fields. All configured per tenant in Settings.
+- Done (v0.6.0–v0.8.0): configurable client onboarding — custom fields on organization, contact, lead and deal pages; stage requirements that name missing fields; playbooks that create a project from a won deal; intake answers mapped to lead fields and custom fields in Settings, Intake. Also done: CRM use cases on `/api/v1`.
 - Findings: UX 6, 7, 14, 17, 25; code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-03, WEB-04, WEB-05, WEB-06, WEB-07, WEB-08, WEB-09, WEB-10, WEB-12, WEB-14, WEB-16, WEB-17, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.
 
 Depends on: wave 3 for the error model and composition root. Done when: leads, deals and tasks render through the shared components and the CRM endpoints pass their gates.
