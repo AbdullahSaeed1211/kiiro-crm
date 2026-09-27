@@ -8,6 +8,7 @@ import {
   updateProjectSchema,
   updateTaskSchema,
 } from '@ops/module-work'
+import { inviteMemberSchema, saveGroupSchema, saveMemberSchema } from '@ops/module-identity'
 import type { Result } from '@ops/kernel'
 import { z } from 'zod'
 import { readBody, type BodySchema } from './http'
@@ -100,6 +101,47 @@ const API_CONTRACTS = {
     body: expectedVersionSchema,
     success: 200,
   },
+  'invitations.create': {
+    method: 'POST',
+    path: '/api/v1/invitations',
+    summary: 'Invite a person by email; returns the one-time invitation link. Owners and managers only.',
+    body: inviteMemberSchema,
+    success: 201,
+  },
+  'invitations.resend': {
+    method: 'POST',
+    path: '/api/v1/invitations/:id/resend',
+    summary: 'Replace an invitation with a fresh link and revoke the old one.',
+    success: 200,
+  },
+  'invitations.revoke': {
+    method: 'DELETE',
+    path: '/api/v1/invitations/:id',
+    summary: 'Revoke a pending invitation.',
+    success: 200,
+  },
+  'members.update': {
+    method: 'PATCH',
+    path: '/api/v1/members/:id',
+    summary: 'Change a member’s role, active flag, groups and manager; the last active owner is kept.',
+    body: saveMemberSchema.omit({ id: true }),
+    success: 200,
+  },
+  'groups.create': {
+    method: 'POST',
+    path: '/api/v1/groups',
+    summary: 'Create a group.',
+    body: saveGroupSchema.omit({ id: true }),
+    success: 201,
+  },
+  'groups.update': {
+    method: 'PATCH',
+    path: '/api/v1/groups/:id',
+    summary: 'Rename a group.',
+    body: saveGroupSchema.omit({ id: true }),
+    success: 200,
+  },
+  'groups.delete': { method: 'DELETE', path: '/api/v1/groups/:id', summary: 'Delete a group.', success: 200 },
 } as const satisfies Readonly<Record<string, ApiContract>>
 
 /** A contract id. */

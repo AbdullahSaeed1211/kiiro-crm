@@ -2,6 +2,7 @@
 export { createCrmRepository, listCrmPage, type CrmPageQuery, type CrmPageResult } from './crm'
 export { createDueItemSource } from './due-item-source'
 export { createEmailMessageSink } from './email-message-sink'
+export { createIdentityRepository } from './identity-repository'
 export { createInboundMailSink } from './mail-inbound'
 export { createMailIntakePort } from './mail-intake'
 export { createMailStore } from './mail-store'

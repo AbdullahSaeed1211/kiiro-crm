@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
     '@ops/adapter-cloudflare',
     '@ops/adapter-payload',
     '@ops/kernel',
+    '@ops/module-identity',
     '@ops/module-work',
     '@ops/platform',
   ],

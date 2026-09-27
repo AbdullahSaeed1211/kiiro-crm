@@ -18,6 +18,7 @@
     "@ops/adapter-payload": "workspace:*",
     "@ops/kernel": "workspace:*",
     "@ops/module-crm": "workspace:*",
+    "@ops/module-identity": "workspace:*",
     "@ops/module-work": "workspace:*",
     "@ops/platform": "workspace:*",
     "@ops/templates": "workspace:*",

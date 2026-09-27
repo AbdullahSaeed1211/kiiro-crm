@@ -1,6 +1,12 @@
-import { createCrmRepository, createTaskRepository, createUnitOfWork } from '@ops/adapter-payload'
+import {
+  createCrmRepository,
+  createIdentityRepository,
+  createTaskRepository,
+  createUnitOfWork,
+} from '@ops/adapter-payload'
 import { systemClock } from '@ops/kernel'
 import type { CrmDeps } from '@ops/module-crm'
+import type { IdentityDeps, InvitationToken } from '@ops/module-identity'
 import type { WorkDeps as WorkCommandDeps } from '@ops/module-work'
 import { can, type Actor } from '@ops/platform'
 import { type Payload, type PayloadRequest } from 'payload'
@@ -68,4 +74,21 @@ export async function workCommandDeps(requestContext?: RequestContext): Promise<
       return result.totalDocs > 0
     },
   }
+}
+
+const hex = (bytes: Uint8Array): string => Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+
+/** A 256-bit random invitation token and its SHA-256 hash; only the hash is stored. */
+async function newInvitationToken(): Promise<InvitationToken> {
+  const tokenBytes = new Uint8Array(32)
+  crypto.getRandomValues(tokenBytes)
+  const token = hex(tokenBytes)
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+  return { token, tokenHash: hex(new Uint8Array(digest)) }
+}
+
+/** Per-request membership dependencies for the signed-in user. */
+export async function identityDeps(requestContext?: RequestContext): Promise<IdentityDeps> {
+  const { req, actor } = requestContext ?? (await getRequestContext())
+  return { actor, can, repo: createIdentityRepository(req), now: () => systemClock.now(), newToken: newInvitationToken }
 }

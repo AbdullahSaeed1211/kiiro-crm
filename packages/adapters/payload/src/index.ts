@@ -54,6 +54,7 @@ export {
   createNotificationStore,
   createTaskRepository,
   listTaskPage,
+  createIdentityRepository,
   type TaskPageQuery,
   type TaskPageResult,
 } from './repositories'

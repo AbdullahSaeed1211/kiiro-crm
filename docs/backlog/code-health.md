@@ -1,6 +1,6 @@
 # Code-health backlog
 
-55 findings are open: 9 high, 24 medium and 22 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+53 findings are open: 8 high, 24 medium and 21 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -13,7 +13,7 @@
 
 | Root cause                                                                                                                         | Severity | Open findings                                                                |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-01 ARCH-02 ARCH-05 ARCH-06                                              |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-02 ARCH-05                                                              |
 | Errors are handled several ways: adapters throw while modules return `Result`, and client `catch` blocks discard the cause         | High     | DOM-09                                                                       |
 | Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | DOM-07 DOM-16 WEB-14 SCR-14                                                  |
 | Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 DOM-05 DOM-14 |
@@ -28,7 +28,7 @@
 Each step keeps `pnpm verify` green and makes the next one safer.
 
 1. Settle on one error model. Adapters return `Result`, and client `catch` blocks report through one helper instead of retyping generic copy (DOM-09).
-2. Add a composition root and an identity module. Replace the `get*Deps` files with one `server/container.ts`, and move invite, resend and revoke into `packages/modules/identity` with an in-memory double (ARCH-01, ARCH-06).
+2. Done: one composition root (`server/container.ts`) and the identity module (`packages/modules/identity`).
 3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14, WEB-16, WEB-17).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
 5. Split the oversized files: `mail-store` and `member-forms` (DOM-07).
@@ -42,14 +42,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - `packages/ui/src/composites/KanbanBoard/board-state.ts`: an optimistic-update state machine with rollback.
 
 ## Architecture
-
-### ARCH-01: Missing use-case layer (inconsistent), high severity
-
-- Location: `apps/web/src/server/actions/settings/members.ts:35-92`
-- Evidence: `inviteMember`/`revokeInvitation` call `payload.find({ collection: 'users'/'invitations', where: {...} })` directly with no module/port indirection, unlike CRM/work commands
-- Consequence: Membership rules (duplicate-email check, pending-invite check, token expiry) are untestable without Payload/D1, undocumented as a domain concept, and diverge in style/rigor (lint gates disabled) from the rest of the app
-- Fix: Extract a `packages/modules/identity` (or fold into `platform`) with `InvitationStore`/`MemberRepository` ports and an `inviteMember` use case; adapter implements ports in `adapters/payload`
-- Effort: M
 
 ### ARCH-02: Boundary leak / Dependency Rule (conceptual), high severity
 
@@ -74,14 +66,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: Route folders scream CRM/work domain; but `server/actions` mixes true domain actions (`work/tasks/*`) with framework-shaped ad hoc handlers (`settings/members.ts`) under one flat "actions" bucket rather than by bounded context
 - Consequence: Harder to see at a glance which server actions are backed by a tested module use case vs. inline Payload code
 - Fix: Reorganize `server/actions` by bounded context (`actions/identity`, `actions/crm`, `actions/work`) mirroring `packages/modules/*`
-- Effort: S
-
-### ARCH-06: Testability gap, low severity
-
-- Location: `packages/modules/crm/test/memory-crm.ts` exists; no equivalent in-memory fake found for identity/invitations
-- Evidence: CRM/work modules are provably runnable without Payload (in-memory repo test double); invite/provision logic (ARCH-01) has no module boundary, so it cannot be unit-tested without Payload
-- Consequence: Invitation and provisioning logic cannot be unit-tested without Payload.
-- Fix: Once ARCH-01 is done, add an in-memory identity fake that mirrors `memory-crm.ts`.
 - Effort: S
 
 ### ARCH-07: Operator/provisioning use case incomplete, low severity
