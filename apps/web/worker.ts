@@ -1,10 +1,18 @@
 import { bridgeInboundEmail, dispatchCron, type InternalForwardEnv } from '@ops/adapter-cloudflare'
 import openNext from './.open-next/worker.js'
+import { isBlockedPayloadRoute, withSecurityHeaders } from './src/server/http-policy'
 
 // Typed with the bindings this entry uses rather than the generated `CloudflareEnv`: that type refers back to this
 // module through the self-referencing service binding, and the cycle would erase the binding types.
 const worker: ExportedHandler<InternalForwardEnv> = {
-  fetch: (request, env, ctx) => openNext.fetch(request, env, ctx),
+  fetch: async (request, env, ctx) => {
+    if (isBlockedPayloadRoute(request.method, new URL(request.url).pathname)) {
+      return withSecurityHeaders(new Response('Not Found', { status: 404 }))
+    }
+    // `.open-next/worker.js` is untyped JavaScript once built, so its response type is asserted here.
+    const response = (await openNext.fetch(request, env, ctx)) as Response
+    return withSecurityHeaders(response)
+  },
   scheduled: (controller, env, ctx) => {
     ctx.waitUntil(dispatchCron(env, controller.scheduledTime))
   },
