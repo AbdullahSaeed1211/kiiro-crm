@@ -31,6 +31,7 @@ const GROUPS: readonly SettingsGroup[] = [
     [
       ['workflows', '/settings/workflows', BriefcaseBusiness, ['owner', 'manager']],
       ['fields', '/settings/fields', Database, ['owner', 'manager']],
+      ['playbooks', '/settings/playbooks', BriefcaseBusiness, ['owner', 'manager']],
       ['views', '/settings/views', BriefcaseBusiness, ['owner', 'manager']],
     ],
   ],

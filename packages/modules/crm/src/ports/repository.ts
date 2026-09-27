@@ -1,6 +1,6 @@
 import type { Clock, Id, Result } from '@ops/kernel'
 import type { Actor, Can, FieldDefinition, StageStore, UnitOfWork, Workflow } from '@ops/platform'
-import type { ContactRecord, CrmDrafts, CrmRecords, CrmRecordType, LookupRecord } from './records'
+import type { ContactRecord, CrmDrafts, CrmRecords, CrmRecordType, DealRecord, LookupRecord } from './records'
 
 /** Lookup kinds of spec §10.1. */
 export type LookupKind = 'source' | 'lostReason'
@@ -34,4 +34,9 @@ export interface CrmDeps {
   readonly repo: CrmRepository
   readonly uow: UnitOfWork
   readonly clock: Clock
+  /**
+   * Runs after a deal first closes in a won stage, for follow-up work such as an onboarding project.
+   * It must not throw: a failure here is logged by the caller's composition, never undoes the move.
+   */
+  readonly onDealWon?: (deal: DealRecord) => Promise<void>
 }

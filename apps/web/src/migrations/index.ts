@@ -5,6 +5,7 @@ import * as migration_20260914_160000_brand_assets from './20260914_160000_brand
 import * as migration_20260915_090000_workspace_search from './20260915_090000_workspace_search';
 import * as migration_20260916_090000_email_read_state from './20260916_090000_email_read_state';
 import * as migration_20260927_090000_stage_requirements from './20260927_090000_stage_requirements';
+import * as migration_20260927_120000_playbooks from './20260927_120000_playbooks';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260927_090000_stage_requirements.up,
     down: migration_20260927_090000_stage_requirements.down,
     name: '20260927_090000_stage_requirements'
+  },
+  {
+    up: migration_20260927_120000_playbooks.up,
+    down: migration_20260927_120000_playbooks.down,
+    name: '20260927_120000_playbooks'
   },
 ];

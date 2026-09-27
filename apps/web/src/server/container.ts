@@ -12,6 +12,7 @@ import { can, type Actor } from '@ops/platform'
 import { type Payload, type PayloadRequest } from 'payload'
 import { cache } from 'react'
 import { getProductContext } from './auth/context'
+import { dealWonPlaybook } from './crm/deal-won'
 import type { WorkDeps } from './work/task-repository'
 
 /** The signed-in request: Payload, a local request carrying the user, and the actor. */
@@ -29,8 +30,11 @@ export const getRequestContext = cache(async (): Promise<RequestContext> => {
 
 /** Per-request CRM dependencies for the signed-in user. */
 export async function crmDeps(requestContext?: RequestContext): Promise<CrmDeps> {
-  const { req, actor } = requestContext ?? (await getRequestContext())
-  return { actor, can, repo: createCrmRepository(req), uow: createUnitOfWork(req), clock: systemClock }
+  const context = requestContext ?? (await getRequestContext())
+  const { payload, req, actor } = context
+  const repo = createCrmRepository(req)
+  const onDealWon = dealWonPlaybook({ payload, req, crm: repo, work: () => workCommandDeps(context) })
+  return { actor, can, repo, uow: createUnitOfWork(req), clock: systemClock, onDealWon }
 }
 
 /** Per-request work dependencies for the signed-in user. */

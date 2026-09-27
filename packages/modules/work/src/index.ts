@@ -39,3 +39,4 @@ export {
   updateProjectSchema,
   updateTaskSchema,
 } from './schema'
+export { playbookPlan, playbookSchema, playbooksSchema, type Playbook, type WonDeal } from './domain/playbooks'

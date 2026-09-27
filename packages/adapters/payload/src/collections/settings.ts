@@ -63,6 +63,8 @@ export const settingsGlobal: GlobalConfig = {
       fields: [moduleToggle('crm'), moduleToggle('work'), moduleToggle('intake'), moduleToggle('mail')],
     },
     { name: 'terminology', type: 'json', defaultValue: {} },
+    // Onboarding playbooks; validated by `playbooksSchema` in @ops/module-work before they are saved.
+    { name: 'playbooks', type: 'json', defaultValue: [] },
     { name: 'stalledDays', type: 'number', required: true, defaultValue: 14, min: 1, max: 365 },
     {
       name: 'email',

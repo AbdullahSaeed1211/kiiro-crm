@@ -172,9 +172,29 @@ async function persistPipelineMove<T extends LeadRecord | DealRecord>(
   if (moved.value.stageId === current.stageId) return ok(current as T)
   const afterMove = await deps.repo.get(type, recordId)
   if (afterMove === undefined) return failure('NOT_FOUND', `${type} disappeared during stage change`)
-  return type === 'deal'
-    ? finalizeDealMove<T>({ deps, recordId, deal: afterMove as DealRecord, category: destination.category })
-    : ok(afterMove as T)
+  if (type !== 'deal') return ok(afterMove as T)
+  return completeDealMove<T>({
+    deps,
+    recordId,
+    before: current as DealRecord,
+    after: afterMove as DealRecord,
+    destination,
+  })
+}
+
+/** Sets the deal's close time, then runs the won-deal hook the first time the deal closes as won. */
+async function completeDealMove<T>(input: {
+  readonly deps: CrmDeps
+  readonly recordId: Id
+  readonly before: DealRecord
+  readonly after: DealRecord
+  readonly destination: Stage
+}): Promise<CrmResult<T>> {
+  const { deps, recordId, before, after, destination } = input
+  const finalized = await finalizeDealMove<T>({ deps, recordId, deal: after, category: destination.category })
+  const firstWin = destination.category === 'done_success' && before.closedAt === null
+  if (finalized.ok && firstWin) await deps.onDealWon?.(finalized.value as DealRecord)
+  return finalized
 }
 
 async function finalizeDealMove<T>(input: {
@@ -187,7 +207,8 @@ async function finalizeDealMove<T>(input: {
   const closed = category === 'done_success' || category === 'done_failure' ? deps.clock.now() : null
   if (deal.closedAt === closed) return ok(deal as T)
   const saved = await deps.repo.update('deal', recordId, { closedAt: closed }, deal.updatedAt)
-  return saved === undefined ? failure('CONFLICT', 'deal changed during the stage update') : ok(saved as T)
+  if (saved === undefined) return failure('CONFLICT', 'deal changed during the stage update')
+  return ok(saved as T)
 }
 
 /** Validates and persists a lead or deal stage move through the platform workflow service. */
