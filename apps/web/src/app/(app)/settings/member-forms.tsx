@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '@ops/ui/composites/ConfirmDialog'
 import { CopyButton } from '../copy-button'
 import type { ActionResult } from '../../../server/action-result'
+import { describeClientError } from '../client-errors'
 
 type InviteAction = (input: unknown) => Promise<ActionResult<{ token: string; inviteUrl: string }>>
 type GroupAction = (input: unknown) => Promise<ActionResult>
@@ -35,8 +36,8 @@ export function InvitationActions({
       const result = await resendAction({ id })
       setInviteUrl(result.ok ? result.data.inviteUrl : '')
       setMessage(result.ok ? 'Invitation resent.' : result.error.message)
-    } catch {
-      setMessage('Unable to resend invitation. Try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'invitation resend'))
     } finally {
       setPending(null)
     }
@@ -47,8 +48,8 @@ export function InvitationActions({
     try {
       const result = await revokeAction({ id })
       setMessage(result.ok ? 'Invitation revoked.' : result.error.message)
-    } catch {
-      setMessage('Unable to revoke invitation. Try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'invitation revoke'))
     } finally {
       setPending(null)
     }
@@ -115,8 +116,8 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
       setInviteUrl(nextInviteUrl)
       setMessage(result.ok ? 'Invitation created.' : result.error.message)
       if (result.ok) setEmail('')
-    } catch {
-      setMessage('Unable to create invitation. Try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'invitation create'))
     } finally {
       setPending(false)
     }
@@ -209,8 +210,8 @@ export function MemberActions({
     try {
       const result = await action({ id: member.id, role, active, groups: selectedGroups, reportsTo })
       setMessage(result.ok ? 'Access saved.' : result.error.message)
-    } catch {
-      setMessage('Unable to save access. Try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'member access save'))
     } finally {
       setPending(false)
     }
@@ -313,8 +314,8 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
       const result = await action({ name })
       setMessage(result.ok ? 'Group saved.' : result.error.message)
       if (result.ok) setName('')
-    } catch {
-      setMessage('Unable to save group. Try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'group save'))
     } finally {
       setPending(false)
     }
@@ -382,8 +383,8 @@ export function GroupList({
         setEditing(null)
         router.refresh()
       }
-    } catch {
-      setMessage('Could not save this group. Please try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'group update'))
     } finally {
       setPending(false)
     }
@@ -395,8 +396,8 @@ export function GroupList({
       const result = await deleteAction({ id: group.id })
       setMessage(result.ok ? 'Group deleted.' : result.error.message)
       if (result.ok) router.refresh()
-    } catch {
-      setMessage('Could not delete this group. Please try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'group delete'))
     } finally {
       setPending(false)
     }

@@ -76,8 +76,15 @@ export async function createProject(deps: WorkDeps, input: unknown): Promise<Wor
   const draft = projectDraft(parsed.data, deps.actor.id)
   const denied = await createDenial(deps, draft)
   if (denied !== undefined) return denied
-  const workflow = await deps.repo.loadDefaultWorkflow('project')
-  return ok(await deps.repo.createProject({ ...draft, workflowId: workflow.id, stageId: workflow.defaultStageId }))
+  const workflowResult = await deps.repo.loadDefaultWorkflow('project')
+  if (!workflowResult.ok) return workflowResult
+  const workflow = workflowResult.value
+  const createdResult: WorkResult<ProjectRecord> = await deps.repo.createProject({
+    ...draft,
+    workflowId: workflow.id,
+    stageId: workflow.defaultStageId,
+  })
+  return createdResult.ok ? ok(createdResult.value) : createdResult
 }
 
 interface ProjectUpdate {

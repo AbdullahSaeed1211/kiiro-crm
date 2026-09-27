@@ -24,6 +24,7 @@
     "check:formatters": "tsx scripts/check-formatters.ts",
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
+    "check:isolation": "tsx scripts/check-isolation.ts",
     "gen:wrangler": "tsx scripts/gen-wrangler.ts",
     "test": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",

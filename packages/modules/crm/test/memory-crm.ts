@@ -1,4 +1,4 @@
-import { asId, fixedClock, type Id } from '@ops/kernel'
+import { asId, fixedClock, ok, type Id, type Result } from '@ops/kernel'
 import { can, type StageTrackedRecord, type UnitOfWork, type Workflow } from '@ops/platform'
 import type { CrmDeps, CrmRepository } from '../src/ports/repository'
 import type { ContactRecord, CrmDrafts, CrmRecordType, CrmRecords, DealRecord, LeadRecord } from '../src/ports/records'
@@ -90,11 +90,11 @@ export class MemoryCrm {
     return Promise.resolve([...this.records[type].values()])
   }
 
-  create<T extends CrmRecordType>(type: T, draft: CrmDrafts[T]): Promise<CrmRecords[T]> {
+  create<T extends CrmRecordType>(type: T, draft: CrmDrafts[T]): Promise<Result<CrmRecords[T]>> {
     const id = asId(`${type}-${String(this.sequence++)}`)
     const created = { ...draft, id, createdAt: 9_000, updatedAt: 9_000 } as CrmRecords[T]
     this.records[type].set(id, created)
-    return Promise.resolve(created)
+    return Promise.resolve(ok(created))
   }
 
   update(...args: Parameters<CrmRepository['update']>): Promise<CrmRecords[CrmRecordType] | undefined> {
@@ -116,8 +116,8 @@ export class MemoryCrm {
     )
   }
 
-  loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Workflow> {
-    return Promise.resolve(recordType === 'lead' ? leadWorkflow : dealWorkflow)
+  loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Result<Workflow>> {
+    return Promise.resolve(ok(recordType === 'lead' ? leadWorkflow : dealWorkflow))
   }
 
   listLookups(): Promise<readonly LookupRecord[]> {

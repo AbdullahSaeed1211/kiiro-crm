@@ -1,8 +1,10 @@
 import type { CrmDrafts, CrmRecords, CrmRepository, CrmRecordType, LookupKind, LookupRecord } from '@ops/module-crm'
 import type { PayloadRequest, Sort, Where } from 'payload'
+import { domainError, err, ok, type Result } from '@ops/kernel'
+import type { Workflow } from '@ops/platform'
 import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
-import { findAsUser, updateIfUnchanged } from '../local-api'
+import { findAsUser, updateAndMap } from '../local-api'
 import { createAsUser } from './local-writes'
 import { CRM_COLLECTIONS, toCrmData, toCrmRecord } from './record-codecs'
 import { createCrmStageStore, firstWorkflow, whereId } from './stage-store'
@@ -41,9 +43,13 @@ const byName = new Intl.Collator('en', { sensitivity: 'base' })
 
 async function updateRecord<T extends CrmRecordType>(req: PayloadRequest, args: UpdateArgs<T>) {
   const { type, id, patch, expectedUpdatedAt } = args
-  const update = { collection: CRM_COLLECTIONS[type], id, expectedUpdatedAt, data: toCrmData(type, patch) }
-  const doc = await updateIfUnchanged(req, update)
-  return doc && toCrmRecord(type, doc)
+  return updateAndMap(req, {
+    collection: CRM_COLLECTIONS[type],
+    id,
+    expectedUpdatedAt,
+    data: toCrmData(type, patch),
+    mapper: (doc) => Promise.resolve(toCrmRecord(type, doc)),
+  })
 }
 
 function toLookup(doc: Doc): LookupRecord[] {
@@ -61,11 +67,13 @@ function recordAccess(req: PayloadRequest): RecordAccess {
       const docs = await findAsUser(req, { collection: CRM_COLLECTIONS[type], where: {}, sort: ['-createdAt', 'id'] })
       return docs.flatMap((doc) => toCrmRecord(type, doc) ?? [])
     },
-    create: async (type, draft) => {
+    create: async (type, draft): Promise<Result<CrmRecords[typeof type]>> => {
       const collection = CRM_COLLECTIONS[type]
-      const record = toCrmRecord(type, await createAsUser(req, collection, toCrmData(type, draft)))
-      if (record === undefined) throw new Error(`${collection} create returned an incomplete document`)
-      return record
+      const doc = await createAsUser(req, collection, toCrmData(type, draft))
+      const record = toCrmRecord(type, doc)
+      if (record === undefined)
+        return err(domainError('INTERNAL', `${collection} create returned an incomplete document`))
+      return ok(record)
     },
     update: (...args) => updateRecord(req, { type: args[0], id: args[1], patch: args[2], expectedUpdatedAt: args[3] }),
   }
@@ -80,10 +88,10 @@ function directory(req: PayloadRequest): Directory {
       const [doc] = await findAsUser(req, { collection: COLLECTIONS.contacts, where, sort: 'createdAt', limit: 1 })
       return doc && toCrmRecord('contact', doc)
     },
-    loadDefaultWorkflow: async (recordType) => {
+    loadDefaultWorkflow: async (recordType): Promise<Result<Workflow>> => {
       const workflow = await firstWorkflow(req, { recordType: { equals: recordType } })
-      if (workflow === undefined) throw new Error(`No ${recordType} workflow is configured`)
-      return workflow
+      if (workflow === undefined) return err(domainError('UNAVAILABLE', `No ${recordType} workflow is configured`))
+      return ok(workflow)
     },
     listLookups: async (kind) => {
       const docs = await findAsUser(req, { collection: LOOKUP_COLLECTIONS[kind], where: {}, sort: 'name' })

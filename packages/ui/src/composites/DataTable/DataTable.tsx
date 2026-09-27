@@ -17,7 +17,16 @@ import { cn } from '@ops/ui/lib/utils'
 import { buildColumns, dataTableFeatures, type DataTableFeatures, type DataTableInstance } from './columns'
 import { DataTableFooter } from './DataTableFooter'
 import { DataTableViewOptions } from './DataTableViewOptions'
-import type { DataTableColumn, DataTableLabels, DataTablePaginationState, DataTableRow, DataTableSort } from './types'
+import { DataTableMobileCards } from './DataTableMobileCards'
+import { isInteractiveElement } from './row-click'
+import type {
+  DataTableColumn,
+  DataTableLabels,
+  DataTableMobileCard,
+  DataTablePaginationState,
+  DataTableRow,
+  DataTableSort,
+} from './types'
 
 /** Props of {@link DataTable}. */
 export type DataTableProps = Readonly<{
@@ -33,8 +42,9 @@ export type DataTableProps = Readonly<{
   selectable?: boolean
   /** Optional controls placed before the column picker in the view toolbar. */
   toolbarStart?: ReactNode
-  /** Optional function to get the navigation href for a row; ignores clicks on interactive elements. */
   className?: string
+  /** Mobile card display configuration; renders rows as cards below md breakpoint when provided. */
+  mobileCard?: DataTableMobileCard
 }>
 
 const NO_SORTING: SortingState = []
@@ -72,15 +82,6 @@ function HeadCell({ header }: Readonly<{ header: Header<DataTableFeatures, DataT
       )}
     </TableHead>
   )
-}
-
-function isInteractiveElement(element: HTMLElement): boolean {
-  const interactiveTags = ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']
-  if (interactiveTags.includes(element.tagName)) return true
-  if (element.getAttribute('role') === 'checkbox') return true
-  if (element.closest('[data-row-click="ignore"]')) return true
-  if (element.closest('a') || element.closest('button')) return true
-  return false
 }
 
 function BodyRow({
@@ -186,6 +187,7 @@ export function DataTable({
   selectable = false,
   toolbarStart,
   className,
+  mobileCard,
 }: DataTableProps) {
   const router = useRouter()
   const columnDefs = useMemo(() => buildColumns({ columns, labels, selectable }), [columns, labels, selectable])
@@ -216,7 +218,10 @@ export function DataTable({
       </div>
       {/* The vendored table wrapper scrolls on its own; making this wrapper the scroller lets the header stick. */}
       <div
-        className="ops-data-table-viewport max-h-[calc(100svh-13rem)] overflow-auto rounded-lg border **:data-[slot=table-container]:overflow-visible"
+        className={cn(
+          'ops-data-table-viewport max-h-[calc(100svh-13rem)] overflow-auto rounded-lg border **:data-[slot=table-container]:overflow-visible',
+          mobileCard !== undefined && 'hidden md:block',
+        )}
         tabIndex={0}
       >
         <Table>
@@ -232,6 +237,14 @@ export function DataTable({
           <Body table={table} emptyState={emptyState} onNavigate={handleNavigate} />
         </Table>
       </div>
+      {mobileCard !== undefined &&
+        (rows.length > 0 ? (
+          <div className="md:hidden">
+            <DataTableMobileCards rows={rows} mobileCard={mobileCard} />
+          </div>
+        ) : (
+          <div className="md:hidden">{emptyState}</div>
+        ))}
       <DataTableFooter pagination={pagination} labels={labels} selectedCount={table.getSelectedRowIds().length} />
     </div>
   )

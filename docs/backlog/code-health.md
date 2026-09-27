@@ -1,6 +1,6 @@
 # Code-health backlog
 
-81 findings are open: 12 high, 36 medium and 33 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+62 findings are open: 10 high, 26 medium and 26 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -11,27 +11,27 @@
 
 ## Root causes
 
-| Root cause                                                                                                                         | Severity | Open findings                                                                       |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-01 ARCH-02 ARCH-04 ARCH-05 ARCH-06                                             |
-| Errors are handled several ways: adapters throw while modules return `Result`, and client `catch` blocks discard the cause         | High     | DOM-09 WEB-22 WEB-23 WEB-24 SCR-09                                                  |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | DOM-07 DOM-08 DOM-16 WEB-13 WEB-14 SCR-14                                           |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 DOM-05 DOM-06 DOM-14 |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                                                  |
-| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-10 UI-13                                                                         |
-| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-03 DOM-04 DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                                    |
-| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-01 UI-02 UI-03 UI-04 UI-06 UI-07 UI-08 UI-11 UI-19 UI-24                         |
-| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                                                  |
+| Root cause                                                                                                                         | Severity | Open findings                                                                |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-01 ARCH-02 ARCH-05 ARCH-06                                              |
+| Errors are handled several ways: adapters throw while modules return `Result`, and client `catch` blocks discard the cause         | High     | DOM-09                                                                       |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | DOM-07 DOM-16 WEB-14 SCR-14                                                  |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 DOM-05 DOM-14 |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                                           |
+| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                                        |
+| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-03 DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                                    |
+| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-01 UI-02 UI-06 UI-07 UI-24                                                |
+| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                                           |
 
 ## Refactor order
 
 Each step keeps `pnpm verify` green and makes the next one safer.
 
-1. Settle on one error model. Adapters return `Result`, and client `catch` blocks report through one helper instead of retyping generic copy (DOM-09, WEB-22 to WEB-24).
-2. Add a composition root and an identity module. Replace the `get*Deps` files with one `server/container.ts`, and move invite, resend and revoke into `packages/modules/identity` with an in-memory double (ARCH-01, ARCH-04, ARCH-06).
+1. Settle on one error model. Adapters return `Result`, and client `catch` blocks report through one helper instead of retyping generic copy (DOM-09).
+2. Add a composition root and an identity module. Replace the `get*Deps` files with one `server/container.ts`, and move invite, resend and revoke into `packages/modules/identity` with an in-memory double (ARCH-01, ARCH-06).
 3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14, WEB-16, WEB-17).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
-5. Split the oversized files: `mail-store`, `job-store`, `intake-forms`, `member-forms` and `TaskSheet` (DOM-07, DOM-08, WEB-11, UI-04).
+5. Split the oversized files: `mail-store` and `member-forms` (DOM-07).
 6. Shrink `PAYLOAD_IN_ROUTES_DEBT` in `tooling/depcruise/.dependency-cruiser.cjs` to empty by moving each route behind a `server/` query or action (ARCH-02).
 
 ## Patterns to copy
@@ -66,14 +66,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: Use cases exist as flat functions in a `commands/` folder mixed with schema/domain helpers in the same package, not a separate `application` layer with named interactors
 - Consequence: Fine at current size (crm 1,319 LOC) but as modules grow, no seam exists to keep entities (invariant-only) separate from orchestration (transactions, access checks, events) - `conversion.ts` already mixes both
 - Fix: Split each module into `domain/` (pure entities/invariants) and `application/` (commands/use cases) subfolders; enforce via boundaries config
-- Effort: M
-
-### ARCH-04: Transactions/authorization/events not centralized, medium severity
-
-- Location: `packages/platform/src/workflows/change-stage.ts:78-89` vs `apps/web/src/server/actions/settings/members.ts:35-70`
-- Evidence: `changeStage` always wraps writes in `deps.uow.run(...)` and writes an activity entry (`:55-69`); `inviteMember` has no `UnitOfWork`, no activity/event, just sequential `payload.create` calls guarded by try/catch
-- Consequence: Two invitation writes (create invitation + later revoke/consume) are not transactional or auditable the way stage changes are; inconsistent event-sourcing/activity trail across the app
-- Fix: Route membership use cases through the same `UnitOfWork`/activity-port pattern platform already defines
 - Effort: M
 
 ### ARCH-05: Screaming architecture (partial), low severity
@@ -134,36 +126,12 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Split into `mail-store.ts` (message CRUD), `mail-sender-verification.ts`, and `mail-notify.ts`, composed in `createMailStore`.
 - Effort: M
 
-### DOM-08: SRP, medium severity
-
-- Location: `packages/adapters/payload/src/repositories/job-store.ts` (343 lines, `/* eslint-disable max-lines, max-params */`)
-- Evidence: Single file implements cursor encoding, job claim/idempotency, terminal-stage computation, and 5 distinct target-listing queries (invitations, overdue, digests, stalled, rejected-purge).
-- Consequence: Mixes "generic cursor pagination machinery" with "business rule: which records count as stale/overdue" - a new job type requires understanding the whole file, and the cursor logic can't be reused/tested independently of Payload.
-- Fix: Extract `cursor.ts` (pure `withCursor`/`isAfterCursor`/`afterCursor`) from the Payload-specific query builders.
-- Effort: S
-
 ### DOM-09: Clean code error handling, medium severity
 
-- Location: `packages/adapters/payload/src/repositories/task-repository.ts:265,270,301,326` and `crm-repository.ts:67,85`
+- Location: `packages/adapters/payload/src/repositories/task-repository.ts:94` (`loadTaskWorkflow`); the create and default-workflow paths in both repositories now return `Result`
 - Evidence: `createTask`/`createProject`/`loadTaskWorkflow`/`loadDefaultWorkflow` `throw new Error(...)` while every module command (`crud.ts`, `pipeline.ts`, `submit.ts`) returns `Result`/`ok`/`err`. `executeCommand` in `domain/helpers.ts` catches exceptions and converts them to `INTERNAL` errors, but only for CRM; work module command handlers (`commands/tasks.ts`, `projects.ts`) were not inspected here to confirm they wrap similarly - unverified whether an uncaught throw from `loadTaskWorkflow` surfaces as a clean domain error or an unhandled rejection in the work module.
 - Consequence: Mixing throw-based and Result-based error styles inside the same layer (adapters called by domain code) makes error handling non-uniform; a caller that forgets a try/catch turns a configuration error ("no workflow configured") into a 500 instead of a typed domain error.
 - Fix: Standardize: adapters return `Result` (or a narrower "not configured" sentinel) instead of throwing, matching the `StageStore`/`CrmRepository` pattern used elsewhere (`saveStage` already returns `undefined` instead of throwing).
-- Effort: S
-
-### DOM-04: OCP, low severity
-
-- Location: `packages/adapters/payload/src/repositories/job-store.ts:198-202` (`recordTargets`)
-- Evidence: Hardcoded 3-collection array `[[COLLECTIONS.leads, RECORD_TYPES.leads], [COLLECTIONS.deals, ...], [COLLECTIONS.projects, ...]]` duplicated in spirit from `mail-store.ts`'s `RECORD_COLLECTIONS`.
-- Consequence: Two independent "which record types matter for staleness/mail" lists that must be kept in sync by hand; a new stage-tracked record type needs edits in both files plus `contracts/names.ts`.
-- Fix: Derive both lists from one shared "stage-tracked record types" constant in `contracts/names.ts`.
-- Effort: S
-
-### DOM-06: DRY, low severity
-
-- Location: `packages/adapters/payload/src/repositories/crm/crm-repository.ts:42-47` (`updateRecord`) vs `packages/adapters/payload/src/repositories/task-repository.ts:156-169` (`updateTaskAndMap`)
-- Evidence: Nearly identical "call `updateIfUnchanged`, map doc back to domain record, return undefined on conflict" bodies, one per repository.
-- Consequence: Same CAS-update-then-map pattern re-typed per aggregate instead of being a single generic helper (`local-api.ts` already generalizes the read/write primitives but not this composition).
-- Fix: Add a generic `updateAndMap(req, update, mapper)` to `local-api.ts`.
 - Effort: S
 
 ### DOM-10: Clean code side effects, low severity
@@ -200,9 +168,9 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ### DOM-16: Clean code comments, low severity
 
-- Location: `packages/adapters/payload/src/repositories/job-store.ts:1` and `mail-store.ts:1`
+- Location: `packages/adapters/payload/src/repositories/mail-store.ts:1`
 - Evidence: Both files open with `/* eslint-disable ... - <justification> */` as their first line, effectively documenting "this file is too big/complex" as a permanent waiver rather than fixing it.
-- Consequence: Lint-disable-with-justification comments normalize exceeding the project's own size/complexity budgets instead of triggering a split (see DOM-07, DOM-08); new code tends to accrete in these files since the guard rail is already off.
+- Consequence: Lint-disable-with-justification comments normalize exceeding the project's own size/complexity budgets instead of triggering a split (see DOM-07); new code tends to accrete in these files since the guard rail is already off.
 - Fix: Treat repeated `eslint-disable max-lines`/`complexity` on adapter files as a backlog signal to split, not a permanent waiver.
 - Effort: S
 
@@ -232,14 +200,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Move `DataTableLabels` defaults, the stage color map, and a generic `paginationOf(params)` helper into `packages/ui`/a shared `list-page` lib; `directory-view.tsx` already shows the pattern for contacts/orgs - extend it
 - Effort: M
 
-### WEB-11: SRP, high severity
-
-- Location: `apps/web/src/app/(app)/settings/intake/intake-forms.tsx` (524 lines), `apps/web/src/app/(app)/settings/member-forms.tsx` (494 lines)
-- Evidence: Single files mixing multiple dialogs, list rendering, optimistic state, fetch/catch error handling, and formatting for an entire settings sub-area
-- Consequence: Hard to test or modify one form without risk to siblings; violates single-reason-to-change
-- Fix: Split into one file per form/dialog plus a shared list component
-- Effort: M
-
 ### WEB-12: SRP, high severity
 
 - Location: `apps/web/src/app/(app)/deals/[id]/page.tsx`
@@ -255,15 +215,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: Business rule (which stage moves are legal) now has two homes: this pre-check and whatever `runMoveLead` itself enforces in the module - if they disagree, the pre-check's error message can lie about why the real module call fails
 - Fix: Push this validation into `runMoveLead` (or a `canMoveLeadTo` module export) and have the action simply call it once
 - Effort: M
-
-### WEB-22: Clean code error handling, high severity
-
-- Location: `apps/web/src/app/(app)/settings/member-forms.tsx:43,55,125,219,323,392,405`
-- Evidence: Seven bare `catch { setMessage('Unable to ... Try again.') }` blocks - the actual error (network vs validation vs auth) is discarded, and the same generic sentence is retyped seven times
-- Consequence: Swallowing errors makes support/debugging impossible ("try again" for a permissions error that will never succeed); the repeated string is a maintenance trap
-- Fix: Central `reportActionError(context)` helper that logs + returns a typed message; distinguish retryable vs terminal errors
-- Effort: M
-- Status: partly fixed. Server actions now log the real error through `actionFailure`; the client-side `catch` blocks still show generic copy without logging.
 
 ### WEB-27: DRY, high severity
 
@@ -313,14 +264,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: One comparator generic over `{ name: string, updatedAt: number }` extraction
 - Effort: S
 
-### WEB-13: SRP, medium severity
-
-- Location: `apps/web/src/server/crm/directory/data.ts` (290 lines, `eslint-disable max-lines`)
-- Evidence: List loaders, detail loaders, and sort/filter logic for both contacts and organizations in one file, with an explicit lint suppression acknowledging the size
-- Consequence: The suppression is a tell that the file already exceeds the team's own limit
-- Fix: Split into `organizations.ts` / `contacts.ts` sharing a `sort.ts` (see WEB-09)
-- Effort: S
-
 ### WEB-14: SRP, medium severity
 
 - Location: `apps/web/src/app/(app)/tasks/page.tsx` (328 lines, `eslint-disable max-lines`)
@@ -353,22 +296,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Narrow each subcomponent's props to just what it renders (e.g., `ControlsCard` shouldn't need the whole `data`)
 - Effort: M
 
-### WEB-23: Clean code error handling, medium severity
-
-- Location: `apps/web/src/app/(app)/record-related-tabs.tsx:92-94`, `apps/web/src/app/(app)/workspace-notifications.tsx:89`
-- Evidence: More bare `catch {}` swallowing fetch/network errors behind "Unable to reach the server"
-- Consequence: Same pattern as WEB-22 at smaller scale - confirms it's systemic, not one file's lapse
-- Fix: Same fix as WEB-22
-- Effort: S
-
-### WEB-24: Clean code error handling, medium severity
-
-- Location: `apps/web/src/app/(app)/tasks/error.tsx:12`
-- Evidence: Route-level error boundary description is the generic "Something went wrong while loading this page." with no distinction from any other route's error boundary
-- Consequence: Users/support can't tell which subsystem failed from the message alone
-- Fix: Include the route/feature name or the underlying error code in the boundary copy
-- Effort: S
-
 ### WEB-26: Clean code side effects, medium severity
 
 - Location: `apps/web/src/app/(app)/leads/LostReasonDialog.tsx:117-123`
@@ -376,14 +303,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: A reader can't tell from the component's shape that a failed save can trigger a full route refresh; conflict-specific refresh logic is a domain rule (optimistic concurrency) hidden in a leaf UI component
 - Fix: Centralize the "on CONFLICT, refresh" policy in whatever shared mutation hook eventually wraps `expectedUpdatedAt` actions (see WEB-27)
 - Effort: M
-
-### WEB-30: SRP/hidden I/O, medium severity
-
-- Location: `apps/web/src/app/(app)/tasks/[id]/TaskAssigneeForm.tsx:21-27`
-- Evidence: A component named for rendering a form (`TaskAssigneeForm`) also owns network call + optimistic UI state + message formatting with no separation between "form" and "mutation"
-- Consequence: Naming promises a dumb form; it is actually a full mutation controller, surprising callers who might reuse it expecting pure presentation
-- Fix: Split into presentational `AssigneeSelect` + a `useUpdateTaskAssignees` hook
-- Effort: S
 
 ### WEB-31: DRY, medium severity
 
@@ -417,14 +336,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Shared `RecordType` union + string constants exported from one module (module already likely has this - reuse it)
 - Effort: S
 
-### WEB-29: Clean code comments, low severity
-
-- Location: `apps/web/src/app/(app)/tasks/page.tsx:86`
-- Evidence: `// Tenant timezone formatting arrives with settings (decision D-39); the spike shows UTC dates.` - a stale "spike" comment describing a known-incomplete implementation, left in production code with no tracking issue link
-- Consequence: Comment documents a TODO as prose instead of a linked issue; easy to forget, no lint catches it
-- Fix: Replace with `// TODO(D-39): ...` linked to a tracked issue, or resolve it
-- Effort: S
-
 ## UI package (`packages/ui`)
 
 ### UI-01: DIP, high severity
@@ -452,23 +363,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Export `TERMINAL`/`isTerminalStage` from a shared stage module (e.g. move into `StagePill/stage.ts`, which `KanbanBoard` already imports from) and reuse in `TaskSheet`.
 - Effort: S
 
-### UI-03: OCP, medium severity
-
-- Location: `TaskSheet.tsx:109,120,189-200`
-- Evidence: `renderAsPage` boolean prop switches between `<Sheet>` and a bare `<section>` wrapper around the same `detail` JSX; the component owns both the "panel" and "page" layout branches.
-- Consequence: Every future rendering context (e.g. modal, drawer) means another boolean flag and another branch in this file.
-- Fix: Split the shared `detail` content into a presentational component and let two thin wrappers (`TaskSheetPanel`, `TaskPageSection`) compose it, or accept a `render`/slot prop as `ConfirmDialog` does with `trigger`.
-- Effort: M
-
-### UI-04: SRP, medium severity
-
-- Location: `TaskSheet.tsx:103-202`
-- Evidence: Single component manages description editing state, save busy-state, completion/reopen busy-state, status messaging, subtask read-only rendering, and page-vs-sheet chrome - five responsibilities in ~100 lines of JSX.
-- Consequence: Hard to test description-saving logic independent of layout; any subtask feature growth will keep growing this file.
-- Fix: Extract `Description` (already a separate function) and completion handling into a `useTaskSheetActions` hook; keep `TaskSheet` as layout only.
-- Effort: M
-- Status: partly fixed. Header, footer and message parts are split out; the component still switches between page and sheet with `renderAsPage`.
-
 ### UI-05: DRY, medium severity
 
 - Location: `GanttView/gantt-theme.css:8,24-27` vs `StagePill/stage.ts`, `KanbanBoard/stage-dot.ts`
@@ -476,14 +370,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: Gantt bars can never visually match a task's stage color the way Kanban cards and pills do; the theme file re-derives generic colors instead of consuming the shared stage-color system.
 - Fix: Pass the bar's resolved `--stage-*` value through inline style or a `data-stage-color` attribute consumed by `gantt-theme.css`, reusing `stageDotClass`.
 - Effort: M
-
-### UI-08: DIP, medium severity
-
-- Location: `CalendarMonth.tsx:70,74` (`labels = { previous: 'Previous month', next: 'Next month' }`), `Collaboration/Pickers.tsx`/`Primitives.tsx:47` (`labels = { trigger: 'Views' }`, `placeholder="Search views"` line ~60)
-- Evidence: Several composites take an optional `labels` prop but default it to hardcoded English literals baked into the component, rather than requiring the caller to supply translated strings.
-- Consequence: Silently defeats i18n for any page that forgets to pass labels - the failure mode is a wrong-language string in production, not a type error.
-- Fix: Make `labels` (and any inline placeholder strings) required, matching the pattern used by `StageSelect`, `KanbanBoard`, `GanttView`.
-- Effort: S
 
 ### UI-17: Clean code side effects, medium severity
 
@@ -499,22 +385,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: `DataTableProps` mixes pagination, sorting, labels (7 sub-keys), an unused `selectable` flag, and a `toolbarStart` slot; every caller must supply the full `DataTableLabels` including `selectAll`/`selectRow` even when selection is dead (UI-06).
 - Consequence: Callers pay a translation and typing tax for a feature they never use.
 - Fix: Once UI-06 is resolved, shrink `DataTableLabels` to only the fields actually rendered.
-- Effort: S
-
-### UI-10: DRY, low severity
-
-- Location: `ActivityFeed.tsx:26-29` vs `CalendarMonth.tsx:20-22`
-- Evidence: Both hand-roll zero-padded UTC date formatting (`String(value).padStart(2,'0')`) instead of using `Intl.DateTimeFormat`, which `CalendarMonth` itself uses two lines later for `monthLabel`/weekday labels, and which `GanttView/model.ts` uses throughout.
-- Consequence: Duplicated, locale-insensitive formatting logic (`ActivityFeed`'s timestamp is always `en`-shaped digits regardless of the `locale` prop it accepts but never uses for this string).
-- Fix: Route through a shared `formatUtcTimestamp(locale, ms)` helper (or `Intl.DateTimeFormat` with explicit UTC parts) in a common `lib` module.
-- Effort: S
-
-### UI-11: DIP, low severity
-
-- Location: `ActivityFeed.tsx:22` (`locale?: string`)
-- Evidence: `locale` is declared in `ActivityFeedProps` but never read anywhere in the component body (the timestamp formatter in UI-10 ignores it entirely).
-- Consequence: Dead/misleading prop - callers may believe passing `locale` localizes the timestamp; it doesn't.
-- Fix: Either use `locale` in the formatter (fixing UI-10 simultaneously) or remove the prop.
 - Effort: S
 
 ### UI-12: LSP/consistency, low severity
@@ -540,22 +410,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: Inconsistent import style across composites in the same package makes refactors (e.g. moving `Collaboration`) more error-prone and is an easy tell for copy-pasted/unreviewed code.
 - Fix: Switch to the `@ops/ui/components/ui/*` alias for consistency.
 - Effort: S
-
-### UI-16: Clean code magic values, low severity
-
-- Location: `CalendarMonth.tsx:54,57`
-- Evidence: `events.slice(0, 4)` and the "+N more" overflow threshold are inline magic numbers with no named constant, and the `+{events.length - 4} more` string is hardcoded English (not passed through the component's `labels`).
-- Consequence: Changing the visible-events-per-day limit means hunting two locations; the overflow copy can't be translated even though `previous`/`next` labels are (inconsistent i18n coverage within the same component).
-- Fix: Hoist `MAX_VISIBLE_EVENTS = 4` as a named constant; add an `overflowLabel` (template with `{count}`) to the `labels` prop.
-- Effort: S
-
-### UI-19: Clean code function size, low severity
-
-- Location: `TaskSheet.tsx:103-202`
-- Evidence: The exported `TaskSheet` function itself is ~100 lines with 3 layers of conditional JSX (`renderAsPage`, `onComplete` undefined, `onSaveDescription` undefined) inline in the return statement (`:158-168` spreads a conditionally-built object into JSX props).
-- Consequence: Conditional prop-spreading (`{...(onSaveDescription === undefined ? {} : {...})}`) is a harder-to-read pattern than a guard/ternary component; combined with UI-03/UI-04 this is the single largest, most tangled component in the audited scope relative to its line count.
-- Fix: After UI-03/UI-04 extraction, this shrinks naturally.
-- Effort: M
 
 ### UI-20: DRY, low severity
 
@@ -614,14 +468,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: Callers/tests must supply or stub an oversized interface even when exercising one step; violates ISP and hides which capability a given code path actually needs.
 - Fix: Split into role interfaces (`Runner`, `StateStore`, `HttpBoundary`, `SecretsSource`) composed per call as needed.
 - Effort: M
-
-### SCR-09: Clean code error handling, medium severity
-
-- Location: `scripts/lib/provision/state.ts:69-79` (`discoverRemoteStatus`)
-- Evidence: `catch { // Remote status is advisory during discovery; resource checks still fail closed. }` swallows every error (network, parse, auth) with no logging at all, not even to the `print` hook available elsewhere in the module.
-- Consequence: An expired/invalid `internalSecret` or a 5xx from the status endpoint becomes silently indistinguishable from "no status configured," making provisioning drift hard to diagnose.
-- Fix: At minimum log the swallowed error via the same `print` convention used elsewhere.
-- Effort: S
 
 ### SCR-13: Clean code side effects, medium severity
 

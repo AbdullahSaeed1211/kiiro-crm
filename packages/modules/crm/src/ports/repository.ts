@@ -1,4 +1,4 @@
-import type { Clock, Id } from '@ops/kernel'
+import type { Clock, Id, Result } from '@ops/kernel'
 import type { Actor, Can, StageStore, UnitOfWork, Workflow } from '@ops/platform'
 import type { ContactRecord, CrmDrafts, CrmRecords, CrmRecordType, LookupRecord } from './records'
 
@@ -13,7 +13,7 @@ export type LookupKind = 'source' | 'lostReason'
 export interface CrmRepository extends StageStore {
   get<T extends CrmRecordType>(type: T, id: Id): Promise<CrmRecords[T] | undefined>
   list<T extends CrmRecordType>(type: T): Promise<readonly CrmRecords[T][]>
-  create<T extends CrmRecordType>(type: T, draft: CrmDrafts[T]): Promise<CrmRecords[T]>
+  create<T extends CrmRecordType>(type: T, draft: CrmDrafts[T]): Promise<Result<CrmRecords[T]>>
   update<T extends CrmRecordType>(
     type: T,
     id: Id,
@@ -21,7 +21,7 @@ export interface CrmRepository extends StageStore {
     expectedUpdatedAt: number,
   ): Promise<CrmRecords[T] | undefined>
   findContactByEmail(email: string): Promise<ContactRecord | undefined>
-  loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Workflow>
+  loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Result<Workflow>>
   listLookups(kind: LookupKind): Promise<readonly LookupRecord[]>
 }
 

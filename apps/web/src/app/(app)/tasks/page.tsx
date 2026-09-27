@@ -63,8 +63,6 @@ const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
   urgent: CircleAlert,
 }
 
-// Tenant timezone formatting arrives with settings (decision D-39); the spike shows UTC dates.
-
 function EmptyValue() {
   return <span className="text-muted-foreground">—</span>
 }
@@ -278,6 +276,7 @@ export default async function TasksPage({
           pagination={paginationOf({ result, sort: effectiveSort, view })}
           labels={labelsFor(locale)}
           emptyState={<EmptyState icon={ListTodo} title={copy.noTasks} description={copy.noTasksDescription} />}
+          mobileCard={{ cells: ['title', 'stage', 'dueAt', 'assignees'] }}
         />
       </PageContent>
     </>

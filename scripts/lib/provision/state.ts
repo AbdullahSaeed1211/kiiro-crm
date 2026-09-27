@@ -19,6 +19,7 @@ export async function discoverProvisionState(input: {
   readonly run: CommandRunner
   readonly root: string
   readonly status?: { readonly client: ProvisionHttpClient; readonly secret: string }
+  readonly print?: (line: string) => void
 }): Promise<Partial<ProvisionState>> {
   const state: Partial<ProvisionState> = {
     d1: input.tenant.d1.id !== undefined,
@@ -64,6 +65,7 @@ async function discoverRemoteStatus(
   input: {
     readonly tenant: Tenant
     readonly status?: { readonly client: ProvisionHttpClient; readonly secret: string }
+    readonly print?: (line: string) => void
   },
   state: Partial<ProvisionState>,
 ): Promise<void> {
@@ -74,8 +76,10 @@ async function discoverRemoteStatus(
       const parsed = parseStatus(response.body)
       if (parsed !== undefined) Object.assign(state, parsed)
     }
-  } catch {
-    // Remote status is advisory during discovery; resource checks still fail closed.
+  } catch (error) {
+    const print = input.print ?? console.log
+    const message = error instanceof Error ? error.message : String(error)
+    print(`Warning: Could not retrieve remote provisioning status: ${message}`)
   }
 }
 

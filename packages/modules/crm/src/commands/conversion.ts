@@ -98,7 +98,7 @@ async function resolveOrganization(
   }
   const existing = await findExistingOrganization(deps, input.create.name)
   if (existing !== undefined) return ok(existing.id)
-  const created = await deps.repo.create('organization', {
+  const createdResult = await deps.repo.create('organization', {
     name: input.create.name,
     website: null,
     phone: null,
@@ -107,7 +107,7 @@ async function resolveOrganization(
     sourceId: lead.sourceId,
     customData: {},
   })
-  return ok(created.id)
+  return createdResult.ok ? ok(createdResult.value.id) : createdResult
 }
 
 async function resolveContact(input: {
@@ -124,7 +124,7 @@ async function resolveContact(input: {
   const email = cleanNullable(lead.email)
   const existing = email === null ? undefined : await deps.repo.findContactByEmail(email)
   if (existing !== undefined) return ok(existing)
-  const contact = await deps.repo.create('contact', {
+  const contactResult = await deps.repo.create('contact', {
     firstName: cleanNullable(lead.firstName) ?? lead.title,
     lastName: cleanNullable(lead.lastName),
     email,
@@ -133,7 +133,7 @@ async function resolveContact(input: {
     ownerId: lead.ownerId,
     customData: {},
   })
-  return ok(contact)
+  return contactResult.ok ? ok(contactResult.value) : contactResult
 }
 
 async function createConvertedDeal(input: {
@@ -143,7 +143,7 @@ async function createConvertedDeal(input: {
   readonly organizationId: Id | null
   readonly selection: ConvertLeadInput['deal']
   readonly workflow: Workflow
-}): Promise<DealRecord> {
+}): Promise<CrmResult<DealRecord>> {
   const { deps, lead, contact, organizationId, selection, workflow } = input
   const customData = await dealCustomData(deps, lead, selection.customData)
   const draft = {
@@ -177,12 +177,15 @@ async function resolveDeal(input: {
   const { deps, lead, contact, organizationId, selection } = input
   const existing = await findExistingDeal(deps, lead.id)
   if (existing !== undefined) return ok(existing)
-  const workflow =
+  const workflowResult =
     selection.workflowId === undefined
       ? await deps.repo.loadDefaultWorkflow('deal')
-      : await deps.repo.loadWorkflow(asId(selection.workflowId))
-  if (workflow === undefined) return failure('NOT_FOUND', 'deal workflow not found')
-  return ok(await createConvertedDeal({ deps, lead, contact, organizationId, selection, workflow }))
+      : await Promise.resolve(await deps.repo.loadWorkflow(asId(selection.workflowId))).then((w) =>
+          w === undefined ? failure('NOT_FOUND', 'deal workflow not found') : ok(w),
+        )
+  if (!workflowResult.ok) return workflowResult
+  const workflow = workflowResult.value
+  return createConvertedDeal({ deps, lead, contact, organizationId, selection, workflow })
 }
 
 interface ConversionStart {

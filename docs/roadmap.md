@@ -20,7 +20,7 @@ Done when: `/api/v1/health` returns the release version after a deploy, a releas
 Plan: [wave 2 plan](plans/wave-2-task-surfaces.md). The task screens are where staff spend their day and where the worst UX findings sit.
 
 - One task view for the panel and the full page; editable properties with activity; row clicks; a calendar that shows every task; My tasks on the shared table; subtasks; a phone layout.
-- Findings: UX 1, 2, 4, 9, 27, 28, 29; code-health UI-01, UI-02, UI-03, UI-04, UI-08, UI-10, UI-11, UI-16, UI-19, UI-24, WEB-29, WEB-30.
+- Findings: UX 1, 28; code-health UI-01, UI-02, UI-24.
 
 Depends on: nothing. Done when: every task in the plan is committed with its gates, and the geometry check in `tests/e2e/customer/route-health.spec.ts` passes.
 
@@ -29,7 +29,7 @@ Depends on: nothing. Done when: every task in the plan is committed with its gat
 Plan: [wave 3 plan](plans/wave-3-error-model-identity.md). Code-health refactor steps 1, 2 and 5: settings and membership are the last features that call Payload directly without a use case.
 
 - One composition root; adapters that return `Result`; one client error helper; `packages/modules/identity` with `/api/v1` endpoints; split mail, job, intake and directory files; a shorter Payload-in-routes debt list.
-- Findings: code-health ARCH-01, ARCH-02, ARCH-04, ARCH-06, DOM-03, DOM-04, DOM-05, DOM-06, DOM-07, DOM-08, DOM-09, DOM-10, DOM-12, DOM-14, DOM-16, SCR-09, WEB-11, WEB-13, WEB-22, WEB-23, WEB-24.
+- Findings: code-health ARCH-01, ARCH-02, ARCH-06, DOM-03, DOM-05, DOM-07, DOM-09, DOM-10, DOM-12, DOM-14, DOM-16.
 
 Depends on: nothing. Done when: `members.ts` has no `payload.` call, the identity endpoints pass their gates, and no adapter file carries a file-wide lint waiver.
 
@@ -49,6 +49,7 @@ Code-health refactor steps 3 and 4: rules move out of the web layer, and leads, 
 
 - Move lead move legality, display names, saved-view parsing and currency defaults into the CRM module; give use cases an explicit application layer.
 - Extend the contacts and organizations `directory-*` pattern to leads, deals and tasks, with one lost-reason dialog, one activity card and one stage picker; inline edit for every field; conversion that can attach to existing records; notes on records; CRM use cases on `/api/v1`.
+- Configurable client onboarding: (a) custom fields shown and edited on every record page, (b) stage requirements — each stage lists the fields it needs and a move is refused naming the missing ones, (c) onboarding playbooks — a won deal creates a project from a tenant-configured task list, (d) intake form answers mapped to custom fields. All configured per tenant in Settings.
 - Findings: UX 6, 7, 14, 17, 25; code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-03, WEB-04, WEB-05, WEB-06, WEB-07, WEB-08, WEB-09, WEB-10, WEB-12, WEB-14, WEB-16, WEB-17, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.
 
 Depends on: wave 3 for the error model and composition root. Done when: leads, deals and tasks render through the shared components and the CRM endpoints pass their gates.
@@ -77,3 +78,9 @@ Taken whenever a wave leaves slack.
 
 - Shrink the three largest test files; screenshot diffs for the core surfaces; knip production mode; the pre-commit hook decision; the merged remote branches; one shared exclusion list for the tooling configs.
 - Findings: UX 3; code-health OPS-01, OPS-02, OPS-03, OPS-05, SCR-20.
+
+## 9. Reference feature gaps
+
+Features the reference products have that this product lacks. Each is marked "decide before building": custom record types; automation rules (when X, do Y); Gmail and calendar sync; outgoing webhooks; email templates; call logs; response-time targets (SLAs); task labels, task relations (blocks/blocked by), cycles, estimates.
+
+Done when: each feature has a yes/no/defer decision recorded in an ADR or spec section, or is assigned to a wave.

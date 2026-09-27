@@ -87,3 +87,24 @@ export async function updateIfUnchanged(req: PayloadRequest, update: GuardedUpda
   const [doc] = await findAsUser(req, { collection, where: byId(id), limit: 1 })
   return doc
 }
+
+/** Updates a document and maps it to a domain record; returns undefined on conflict, or error on mapping failure. */
+export async function updateAndMap<T>(
+  req: PayloadRequest,
+  options: {
+    readonly collection: CollectionSlug
+    readonly id: string
+    readonly expectedUpdatedAt: number
+    readonly data: Readonly<Record<string, unknown>>
+    readonly mapper: (doc: Doc) => Promise<T | undefined>
+  },
+): Promise<T | undefined> {
+  const doc = await updateIfUnchanged(req, {
+    collection: options.collection,
+    id: options.id,
+    expectedUpdatedAt: options.expectedUpdatedAt,
+    data: options.data,
+  })
+  if (doc === undefined) return undefined
+  return options.mapper(doc)
+}

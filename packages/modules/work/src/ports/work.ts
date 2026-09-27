@@ -98,17 +98,17 @@ export interface TaskMoveWrite {
 export interface WorkRepository extends StageStore {
   getProject(id: Id): Promise<ProjectRecord | undefined>
   listProjects(): Promise<readonly ProjectRecord[]>
-  createProject(draft: ProjectDraft): Promise<ProjectRecord>
+  createProject(draft: ProjectDraft): Promise<Result<ProjectRecord>>
   updateProject(id: Id, patch: ProjectPatch, expectedUpdatedAt: number): Promise<ProjectRecord | undefined>
   getTask(id: Id): Promise<WorkTaskRecord | undefined>
   listTasks(): Promise<readonly WorkTaskRecord[]>
   listTasksForProject(projectId: Id): Promise<readonly WorkTaskRecord[]>
   listChildren(parentTaskId: Id): Promise<readonly WorkTaskRecord[]>
-  createTask(draft: TaskDraft): Promise<WorkTaskRecord>
+  createTask(draft: TaskDraft): Promise<Result<WorkTaskRecord>>
   updateTask(id: Id, patch: TaskPatch | TaskDatePatch, expectedUpdatedAt: number): Promise<WorkTaskRecord | undefined>
   saveTaskMove(input: TaskMoveWrite): Promise<WorkTaskRecord | undefined>
   deleteTask(id: Id): Promise<boolean>
-  loadDefaultWorkflow(type: WorkRecordType): Promise<Workflow>
+  loadDefaultWorkflow(type: WorkRecordType): Promise<Result<Workflow>>
 }
 
 export interface WorkDeps {

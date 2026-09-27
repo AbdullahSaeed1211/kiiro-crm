@@ -47,3 +47,9 @@ export type DataTableLabels = Readonly<{
   range: string
   selected: string
 }>
+
+/** Mobile card display configuration; specifies which column ids appear in the card. */
+export type DataTableMobileCard = Readonly<{
+  /** Column ids to display in the card; first becomes the title. */
+  cells: readonly string[]
+}>

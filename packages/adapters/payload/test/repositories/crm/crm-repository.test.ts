@@ -76,6 +76,27 @@ describe('createCrmRepository list', () => {
   })
 })
 
+/** The Payload document fields a deal draft maps to. */
+const DEAL_DATA = {
+  title: 'Retainer',
+  organization: ORGANIZATION_ID,
+  contacts: ['c1', 'c2'],
+  primaryContact: 'c1',
+  valueAmountMinor: 125_000,
+  valueCurrency: 'USD',
+  expectedCloseAt: 1_800_000_000_000,
+  closedAt: null,
+  sourceLead: 'l1',
+  owner: null,
+  assignees: [],
+  workflow: 'w-deal',
+  stageId: 's-proposal',
+  stageEnteredAt: 5000,
+  lostReason: 'lr-budget',
+  lostNote: 'Budget cut',
+  customData: {},
+}
+
 describe('createCrmRepository create', () => {
   const draft = Object.fromEntries(
     Object.entries(DEAL_RECORD).filter(([key]) => !['id', 'createdAt', 'updatedAt'].includes(key)),
@@ -83,33 +104,24 @@ describe('createCrmRepository create', () => {
 
   it('creates with the user access and maps draft fields to document fields', async () => {
     const { repo, calls, req } = setup({ create: (args) => Object.assign({ id: 'd1' }, TIMES, args['data']) })
-    expect(await repo.create('deal', { ...draft, workflowId: asId('w-deal') } as never)).toEqual(DEAL_RECORD)
+    const result = await repo.create('deal', { ...draft, workflowId: asId('w-deal') } as never)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value).toEqual(DEAL_RECORD)
+    }
     expect(calls[0]?.args).toMatchObject({ collection: 'deals', depth: 0, overrideAccess: false, user: USER })
     expect(calls[0]?.args['req']).toBe(req)
-    expect(calls[0]?.args['data']).toEqual({
-      title: 'Retainer',
-      organization: ORGANIZATION_ID,
-      contacts: ['c1', 'c2'],
-      primaryContact: 'c1',
-      valueAmountMinor: 125_000,
-      valueCurrency: 'USD',
-      expectedCloseAt: 1_800_000_000_000,
-      closedAt: null,
-      sourceLead: 'l1',
-      owner: null,
-      assignees: [],
-      workflow: 'w-deal',
-      stageId: 's-proposal',
-      stageEnteredAt: 5000,
-      lostReason: 'lr-budget',
-      lostNote: 'Budget cut',
-      customData: {},
-    })
+    expect(calls[0]?.args['data']).toEqual(DEAL_DATA)
   })
 
   it('fails when Payload returns an incomplete document', async () => {
     const { repo } = setup()
-    await expect(repo.create('deal', draft as never)).rejects.toThrow('deals create returned an incomplete document')
+    const result = await repo.create('deal', draft as never)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.code).toBe('INTERNAL')
+      expect(result.error.message).toContain('deals create returned an incomplete document')
+    }
   })
 })
 
@@ -166,8 +178,17 @@ describe('createCrmRepository lookups and workflows', () => {
 
   it('loads the earliest workflow of the record type and fails when none exists', async () => {
     const { repo, calls } = setup(byCollection({ workflows: [workflowDoc('deal')] }))
-    expect(await repo.loadDefaultWorkflow('deal')).toMatchObject({ id: 'w-deal', recordType: 'deal' })
+    const result = await repo.loadDefaultWorkflow('deal')
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value).toMatchObject({ id: 'w-deal', recordType: 'deal' })
+    }
     expect(calls[0]?.args).toMatchObject({ where: { recordType: { equals: 'deal' } }, sort: 'createdAt', limit: 1 })
-    await expect(setup().repo.loadDefaultWorkflow('lead')).rejects.toThrow('No lead workflow is configured')
+    const noWorkflowResult = await setup().repo.loadDefaultWorkflow('lead')
+    expect(noWorkflowResult.ok).toBe(false)
+    if (!noWorkflowResult.ok) {
+      expect(noWorkflowResult.error.code).toBe('UNAVAILABLE')
+      expect(noWorkflowResult.error.message).toContain('No lead workflow is configured')
+    }
   })
 })

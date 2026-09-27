@@ -1,4 +1,4 @@
-import { asId } from '@ops/kernel'
+import { asId, ok } from '@ops/kernel'
 import type { Actor, Workflow } from '@ops/platform'
 import type { ProjectRecord, WorkDeps, WorkRepository, WorkTaskRecord } from '../src'
 
@@ -62,13 +62,13 @@ export const project = (id = 'project'): ProjectRecord => ({
 export const createMemoryRepo = (): WorkRepository =>
   ({
     getProject: () => Promise.resolve(project()),
-    loadDefaultWorkflow: () => Promise.resolve(workflow),
+    loadDefaultWorkflow: () => Promise.resolve(ok(workflow)),
     loadWorkflow: () => Promise.resolve(workflow),
     getTask: () => Promise.resolve(undefined),
     listTasks: () => Promise.resolve([]),
     listChildren: () => Promise.resolve([]),
-    createTask: () => Promise.resolve(task('created')),
-    createProject: () => Promise.resolve(project()),
+    createTask: () => Promise.resolve(ok(task('created'))),
+    createProject: () => Promise.resolve(ok(project())),
     updateTask: () => Promise.resolve(undefined),
     saveTaskMove: () => Promise.resolve(undefined),
   }) as unknown as WorkRepository

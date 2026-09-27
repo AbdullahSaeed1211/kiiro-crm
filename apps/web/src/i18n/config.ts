@@ -207,3 +207,4 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
 }
 
 export { TASK_COPY, REPORT_COPY } from './work-copy'
+export { ERROR_COPY } from './error-copy'

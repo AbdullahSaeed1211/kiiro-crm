@@ -37,11 +37,14 @@ async function stageDefaults(input: {
   readonly stageId: string | null | undefined
 }): Promise<CrmResult<StageDefaults>> {
   const { deps, recordType, workflowId, stageId } = input
-  const workflow =
+  const workflowResult =
     workflowId === undefined || workflowId === null
       ? await deps.repo.loadDefaultWorkflow(recordType)
-      : await deps.repo.loadWorkflow(asId(workflowId))
-  if (workflow === undefined) return failure('NOT_FOUND', `${recordType} workflow not found`)
+      : await Promise.resolve(await deps.repo.loadWorkflow(asId(workflowId))).then((w) =>
+          w === undefined ? failure('NOT_FOUND', `${recordType} workflow not found`) : ok(w),
+        )
+  if (!workflowResult.ok) return workflowResult
+  const workflow = workflowResult.value
   const selected = asId(stageId ?? workflow.defaultStageId)
   const stage = workflow.stages.find((candidate) => candidate.id === selected)
   if (stage === undefined) return failure('VALIDATION', `stage is not part of the ${recordType} workflow`)

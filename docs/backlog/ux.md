@@ -1,6 +1,6 @@
 # UX backlog
 
-30 findings are open: 4 critical, 12 major and 14 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+25 findings are open: 3 critical, 11 major and 11 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -15,26 +15,12 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Reference: Plane `peek-overview/properties.tsx:81-241`: state, assignees, priority, start date, due date, parent and labels, each an inline dropdown that saves on change, with `IssueActivity` below.
 - Fix: Add a `TaskProperties` block to `TaskSheet` that calls `updateTask` on each change, and mount the existing `ActivityFeed` under it.
 
-### 2. The full task page is broken
-
-- Area: Tasks. Effort: Quick. Codes: T-02.
-- Now: `tasks/[id]/page.tsx:32-60` renders the panel as a card (`TaskSheet.tsx:189`) inside a second `<main>`. It overlaps the header search, keeps a Close button, and puts `TaskAssigneeForm`, a native multi-select, underneath.
-- Reference: Plane uses one `IssueView` (`view.tsx:43-273`) for both the peek panel and the full page.
-- Fix: Render the same content with a page header and breadcrumb, remove Close, and delete `TaskAssigneeForm` once T-01 lands.
-
 ### 3. The E2E suite can't see broken layouts
 
 - Area: Tests. Effort: Quick.
 - Now: `route-health.spec.ts:351-356` checks that an "Assignees" heading is visible and that `[data-slot="sheet-content"]` has no matches. The broken page passes both. It saves a screenshot, but nothing ever compares it. Most routes get only a "heading is visible" check.
 - Fix: Add `toHaveScreenshot` diffs for the core surfaces, and geometry checks: the content box must not intersect the header, and a standalone route must have no Close button. The file already uses bounding boxes and layout-shift checks for the panel, so this reuses a known technique.
 - Status: partly fixed. A geometry check now asserts the standalone task page does not overlap the app header and has no Close button; it fails until the page gets its own layout. Screenshot diffs are not added yet.
-
-### 4. The calendar hides tasks
-
-- Area: Boards and calendar. Effort: Quick. Codes: B-01 B-02 B-03.
-- Now: `calendar/page.tsx:53` filters events with `startsWith(monthPrefix)`, so adjacent-month cells are always empty. "+6 more" is a plain `<span>` (`CalendarMonth.tsx:57`). There is no today marker and no Today button.
-- Reference: Plane `day-tile.tsx:148-168` shows adjacent days muted but with their events. `issue-blocks.tsx:109` has a load-more control, and `header.tsx:88-113` a Today button.
-- Fix: Query the whole 6-week grid, turn the overflow text into a button or popover, and add a today badge and a Today link.
 
 ## Major
 
@@ -58,11 +44,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Now: The `/tasks` toolbar has a view menu and a Columns button. `DataTable` already has an unused `toolbarStart` slot (`DataTable.tsx:34`). Projects has no controls at all.
 - Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
 - Fix: Build one shared `ViewBar` for that slot and use it on tasks, leads, deals, contacts, organizations and projects.
-
-### 9. Clicking a row does nothing
-
-- Area: Tasks. Effort: Quick. Codes: T-03.
-- Only the title link opens a task (`tasks/page.tsx:159-166`). Frappe `TasksListView.vue:6-11` opens the record from any cell. Add a row-level handler to `DataTable`'s `BodyRow` that ignores clicks on interactive children.
 
 ### 10. The seed has no pipeline, so the CRM is never tested end to end
 
@@ -141,20 +122,10 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: CRM records. Effort: Quick. Codes: R-06.
 - The column header says Progress (`projects/page.tsx:118`), and the cell prints it again (lines 26-27). Project members are managed with two native selects. There's no search. Remove the repeated label and add the shared `ViewBar` and a member picker.
 
-### 27. My tasks is a plain text list
-
-- Area: Tasks. Effort: Quick. Codes: T-06.
-- `my-tasks/page.tsx:77` prints priority as raw text, with no stage and no complete checkbox. Reuse `PriorityCell` and `StageCell` from `tasks/page.tsx`, and wire a checkbox to `completeOrReopenTask`.
-
 ### 28. Subtasks are read-only
 
 - Area: Tasks. Effort: Structural. Codes: T-07.
 - `TaskSheet.tsx:75-100` shows ✓ and ○ marks only. Make each row open its subtask, and add "+ Add subtask" and a toggle to complete it.
-
-### 29. The task table is cramped on phones
-
-- Area: Tasks. Effort: Structural. Codes: T-09.
-- At 390px only Title and Stage fit. Below a breakpoint, show a card list built from the existing cell components.
 
 ### 30. Placeholders read as entered values
 

@@ -1,3 +1,4 @@
+import { workflowOrThrow } from '../workflow-result'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
@@ -117,7 +118,7 @@ export async function listLeads(
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
-  const workflowPromise = repo.loadDefaultWorkflow('lead')
+  const workflowPromise = repo.loadDefaultWorkflow('lead').then(workflowOrThrow)
   const sourcesPromise = repo.listLookups('source')
   const lostReasonsPromise = repo.listLookups('lostReason')
   const workflow = await workflowPromise

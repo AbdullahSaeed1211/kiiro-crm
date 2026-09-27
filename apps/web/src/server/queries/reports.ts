@@ -247,7 +247,10 @@ export async function loadReportFigures(
     loadWorkReadModel(requestContext, 'reports'),
     repository.list('lead'),
     repository.list('deal'),
-    repository.loadDefaultWorkflow('deal').catch(() => undefined),
+    repository.loadDefaultWorkflow('deal').then(
+      (result) => (result.ok ? result.value : undefined),
+      () => undefined,
+    ),
   ])
   const figures = new Map<string, FigureAccumulator>()
   const now = Date.now()

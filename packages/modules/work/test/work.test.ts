@@ -1,4 +1,4 @@
-import { asId } from '@ops/kernel'
+import { asId, ok } from '@ops/kernel'
 import { describe, expect, it } from 'vitest'
 import { createProject, createTask, moveTask, updateTask } from '../src'
 import type { ProjectDraft, WorkRepository, WorkTaskRecord } from '../src'
@@ -64,7 +64,7 @@ describe('createProject enforces authorization and compare-and-set writes', () =
       ...createMemoryRepo(),
       createProject: (input: ProjectDraft) => {
         draft = input
-        return Promise.resolve(project())
+        return Promise.resolve(ok(project()))
       },
     }
     const deps = depsFor({

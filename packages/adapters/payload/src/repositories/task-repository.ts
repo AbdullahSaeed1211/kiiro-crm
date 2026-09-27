@@ -1,8 +1,9 @@
 import type { TaskDatePatch, TaskPatch, TaskRepository, WorkRepository } from '@ops/module-work'
-import type { StageStore } from '@ops/platform'
+import type { StageStore, Workflow } from '@ops/platform'
 import type { CollectionSlug, PayloadRequest, Sort, Where } from 'payload'
+import { domainError, err, ok, type Result } from '@ops/kernel'
 import { COLLECTIONS, RECORD_TYPES } from '../contracts/names'
-import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
+import { createAsSystem, findAsUser, updateIfUnchanged, updateAndMap } from './local-api'
 import { toStageRecord, toTaskRecord } from './task-mapping'
 import { createUnitOfWork } from '../uow/unit-of-work'
 import { projectData, taskData, projectPatchData, taskPatchData } from './task-write-data'
@@ -68,13 +69,13 @@ async function updateTaskAndMap(
     readonly expectedUpdatedAt: number
   },
 ) {
-  const doc = await updateIfUnchanged(req, {
+  return updateAndMap(req, {
     collection: COLLECTIONS.tasks,
     id: options.id,
     expectedUpdatedAt: options.expectedUpdatedAt,
     data: taskPatchData(options.patch),
+    mapper: (doc) => mapTask(req, doc),
   })
-  return doc === undefined ? undefined : mapTask(req, doc)
 }
 
 /** Reads one permission-scoped task page without materializing the entire task collection. */
@@ -93,10 +94,10 @@ function workflowMethods(req: PayloadRequest): Pick<Repository, 'loadTaskWorkflo
       if (workflow === undefined) throw new Error('No task workflow is configured')
       return workflow
     },
-    loadDefaultWorkflow: async (type) => {
+    loadDefaultWorkflow: async (type): Promise<Result<Workflow>> => {
       const workflow = await findWorkflow(req, { recordType: { equals: type } })
-      if (workflow === undefined) throw new Error(`No ${type} workflow is configured`)
-      return workflow
+      if (workflow === undefined) return err(domainError('UNAVAILABLE', `No ${type} workflow is configured`))
+      return ok(workflow)
     },
   }
 }
@@ -137,8 +138,8 @@ function taskWriteMethods(
     createTask: async (draft) => {
       const doc = await createAsSystem(req, COLLECTIONS.tasks, taskData(draft))
       const mapped = await mapTask(req, doc)
-      if (mapped === undefined) throw new Error('Created task has an invalid workflow stage')
-      return mapped
+      if (mapped === undefined) return err(domainError('INTERNAL', 'Created task has an invalid workflow stage'))
+      return ok(mapped)
     },
     updateTask: (id, patch, expectedUpdatedAt) => updateTaskAndMap(req, { id, patch, expectedUpdatedAt }),
     saveDates: async ({ id, startAt, dueAt, expectedUpdatedAt }) => {
@@ -176,8 +177,8 @@ function projectMethods(
     createProject: async (draft) => {
       const doc = await createAsSystem(req, COLLECTIONS.projects, projectData(draft))
       const mapped = await mapProject(req, doc)
-      if (mapped === undefined) throw new Error('Created project has an invalid workflow stage')
-      return mapped
+      if (mapped === undefined) return err(domainError('INTERNAL', 'Created project has an invalid workflow stage'))
+      return ok(mapped)
     },
     updateProject: async (id, patch, expectedUpdatedAt) => {
       const doc = await updateIfUnchanged(req, {

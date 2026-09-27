@@ -55,6 +55,13 @@ export const RECORD_TYPES = {
   deals: 'deal',
 } as const
 
+/** Collections that track staleness via stage and updatedAt, indexed by record type. */
+export const STALE_TRACKABLE_COLLECTIONS = [
+  [RECORD_TYPES.leads, COLLECTIONS.leads],
+  [RECORD_TYPES.deals, COLLECTIONS.deals],
+  [RECORD_TYPES.projects, COLLECTIONS.projects],
+] as const
+
 /**
  * Field names of the CRM collections (spec §10.1), shared by collections and repositories.
  * Relationships store Payload ids; `contacts` and `assignees` are has-many; money is `valueAmountMinor` + `valueCurrency`.

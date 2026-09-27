@@ -61,14 +61,10 @@ function authorizeAssignment(deps: WorkDeps, draft: ParsedTaskDraft): WorkResult
     : fail('FORBIDDEN', 'cannot assign task outside your scope')
 }
 
-/** Creates a task after checking visibility, hierarchy, assignment, and related-record scope. */
-export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
-  const parsed = parseCreate(input)
-  if (!parsed.ok) return parsed
-  const draft = parsed.value
-  if (!deps.can(deps.actor, 'create', { type: 'task' })) return fail('FORBIDDEN', 'not allowed to create tasks')
-
-  const workflow = await deps.repo.loadDefaultWorkflow('task')
+async function validateTaskCreation(
+  deps: WorkDeps,
+  draft: ParsedTaskDraft,
+): Promise<WorkResult<{ readonly projectId: Id | null; readonly assigneeIds: readonly Id[] }>> {
   const parent = await parentFor(deps, draft.parentTaskId)
   if (!parent.ok) return parent
 
@@ -81,15 +77,31 @@ export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkRe
   if (!(await relatedAllowed(deps, draft.relatedType, draft.relatedId)))
     return fail('FORBIDDEN', 'related record is outside your scope')
 
-  return ok(
-    await deps.repo.createTask({
-      ...draft,
-      projectId: projectId.value,
-      assigneeIds: assigneeIds.value,
-      workflowId: workflow.id,
-      stageId: workflow.defaultStageId,
-    }),
-  )
+  return ok({ projectId: projectId.value, assigneeIds: assigneeIds.value })
+}
+
+/** Creates a task after checking visibility, hierarchy, assignment, and related-record scope. */
+export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
+  const parsed = parseCreate(input)
+  if (!parsed.ok) return parsed
+  const draft = parsed.value
+  if (!deps.can(deps.actor, 'create', { type: 'task' })) return fail('FORBIDDEN', 'not allowed to create tasks')
+
+  const workflowResult = await deps.repo.loadDefaultWorkflow('task')
+  if (!workflowResult.ok) return workflowResult
+  const workflow = workflowResult.value
+
+  const validation = await validateTaskCreation(deps, draft)
+  if (!validation.ok) return validation
+
+  const createdResult: WorkResult<WorkTaskRecord> = await deps.repo.createTask({
+    ...draft,
+    projectId: validation.value.projectId,
+    assigneeIds: validation.value.assigneeIds,
+    workflowId: workflow.id,
+    stageId: workflow.defaultStageId,
+  })
+  return createdResult.ok ? ok(createdResult.value) : createdResult
 }
 async function checkRelated(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<boolean> {
   const type = patch.relatedType === undefined ? task.relatedType : patch.relatedType

@@ -47,7 +47,9 @@ export async function createWithActivity<T extends keyof CrmRecords>(
   draft: CrmDrafts[T],
 ): Promise<CrmResult<CrmRecords[T]>> {
   return deps.uow.run(async () => {
-    const created = await deps.repo.create(type, draft)
+    const createResult = await deps.repo.create(type, draft)
+    if (!createResult.ok) return createResult
+    const created = createResult.value
     await createActivity({ deps, record: { type, id: created.id }, verb: 'record.created' })
     return ok(created)
   })

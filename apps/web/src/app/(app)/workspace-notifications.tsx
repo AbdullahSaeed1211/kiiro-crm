@@ -14,6 +14,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { taskHref } from './task-navigation'
 import { NOTIFICATION_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
+import { describeClientError } from './client-errors'
 
 interface NotificationItem {
   readonly id: string
@@ -86,8 +87,8 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
       try {
         const response = await fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
         if (!response.ok) throw new Error('notification read update failed')
-      } catch {
-        setError(copy.readFailed)
+      } catch (error) {
+        setError(describeClientError(error, 'notification read', locale))
         return
       }
       setCount((current) => Math.max(0, current - 1))

@@ -1,3 +1,4 @@
+import { workflowOrThrow } from '../workflow-result'
 import { asId, systemClock } from '@ops/kernel'
 import { createCrmRepository, createUnitOfWork, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, CrmDeps, DealRecord, OrganizationRecord } from '@ops/module-crm'
@@ -85,7 +86,7 @@ export async function getDealListData(
 ): Promise<DealListData> {
   const context = await getRequestContext()
   const deps = dealDeps(context)
-  const dealsPromise = deps.repo.loadDefaultWorkflow('deal')
+  const dealsPromise = deps.repo.loadDefaultWorkflow('deal').then(workflowOrThrow)
   const [organizations, contacts, workflow, lostReasons] = await Promise.all([
     deps.repo.list('organization'),
     deps.repo.list('contact'),

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useRef, useState, type ChangeEvent } from 'react'
 import type { RecordAttachment, RelatedTask } from '../../server/crm/directory/types'
 import { formatDate } from '../../i18n/format'
+import { describeClientError } from './client-errors'
 
 function bytes(value: number): string {
   if (value < 1024) return `${String(value)} B`
@@ -89,8 +90,8 @@ export function RecordFilesTab({
         setMessage('File uploaded.')
         router.refresh()
       }
-    } catch {
-      setMessage('Unable to reach the server. Try again.')
+    } catch (error) {
+      setMessage(describeClientError(error, 'file upload'))
     } finally {
       setPending(false)
       if (inputRef.current !== null) inputRef.current.value = ''
