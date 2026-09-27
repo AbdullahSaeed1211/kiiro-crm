@@ -1,6 +1,6 @@
 # Code-health backlog
 
-53 findings are open: 8 high, 24 medium and 21 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+49 findings are open: 8 high, 22 medium and 19 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -15,11 +15,11 @@
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
 | Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-02 ARCH-05                                                              |
 | Errors are handled several ways: adapters throw while modules return `Result`, and client `catch` blocks discard the cause         | High     | DOM-09                                                                       |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | DOM-07 DOM-16 WEB-14 SCR-14                                                  |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                                                |
 | Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 DOM-05 DOM-14 |
 | Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                                           |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                                        |
-| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-03 DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                                    |
+| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                                           |
 | UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                                                  |
 | Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                                           |
 
@@ -31,7 +31,7 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 2. Done: one composition root (`server/container.ts`) and the identity module (`packages/modules/identity`).
 3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14, WEB-16, WEB-17).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
-5. Split the oversized files: `mail-store` and `member-forms` (DOM-07).
+5. Split the oversized files: `member-forms`.
 6. Shrink `PAYLOAD_IN_ROUTES_DEBT` in `tooling/depcruise/.dependency-cruiser.cjs` to empty by moving each route behind a `server/` query or action (ARCH-02).
 
 ## Patterns to copy
@@ -86,14 +86,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Add `findDealBySourceLead` and one `listFieldDefinitions` method to the `CrmRepository` port itself (real capabilities, not optional duck-typed extras); implement fallback in the adapter, not in domain code.
 - Effort: M
 
-### DOM-03: OCP, medium severity
-
-- Location: `packages/adapters/payload/src/repositories/mail-store.ts:11-18,108-111,150-169`
-- Evidence: `RECORD_COLLECTIONS` maps 6 record types to collections; `senderMatchesRecord` then if/else-chains on `record.type` (`deals` gets special contact traversal, `organizations/contacts/leads` get direct email, everything else `false`). Adding a 7th mailable record type requires editing the map _and_ this if-chain _and_ `findRecordByAddressToken`'s full-table scan list.
-- Consequence: New record type support requires 3 coordinated edits in one file to stay consistent; miss one and sender verification silently returns `false` for the new type (fails closed, but silently).
-- Fix: Replace the type check with a small per-record-type strategy table (`{ [type]: (doc) => Promise<boolean> }`) built once, so adding a type is one table entry.
-- Effort: M
-
 ### DOM-05: DRY, medium severity
 
 - Location: `packages/adapters/payload/src/repositories/task-repository.ts:175-256` (`taskPage`, `listTaskPage`) vs `packages/adapters/payload/src/repositories/crm/crm-repository.ts:100-123` (`listCrmPage`)
@@ -102,28 +94,12 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Extract a shared `scopedPage(req, { collection, where, sort, page, limit })` helper in `local-api.ts`; keep the nulls-last logic as one general-purpose utility parameterized by field.
 - Effort: M
 
-### DOM-07: SRP, medium severity
-
-- Location: `packages/adapters/payload/src/repositories/mail-store.ts` (296 lines, `/* eslint-disable complexity, max-lines, max-lines-per-function */`)
-- Evidence: One file: message CRUD, address-token scanning across 6 collections, sender verification (with per-type logic), activity dedup, notification fan-out, quarantine release.
-- Consequence: The lint-disable at the top is itself evidence the file exceeds the project's own complexity budget; six responsibilities in one module make it hard to unit test any one concern (e.g. sender verification) without standing up the whole `MailStore`.
-- Fix: Split into `mail-store.ts` (message CRUD), `mail-sender-verification.ts`, and `mail-notify.ts`, composed in `createMailStore`.
-- Effort: M
-
 ### DOM-09: Clean code error handling, medium severity
 
 - Location: `packages/adapters/payload/src/repositories/task-repository.ts:94` (`loadTaskWorkflow`); the create and default-workflow paths in both repositories now return `Result`
 - Evidence: `createTask`/`createProject`/`loadTaskWorkflow`/`loadDefaultWorkflow` `throw new Error(...)` while every module command (`crud.ts`, `pipeline.ts`, `submit.ts`) returns `Result`/`ok`/`err`. `executeCommand` in `domain/helpers.ts` catches exceptions and converts them to `INTERNAL` errors, but only for CRM; work module command handlers (`commands/tasks.ts`, `projects.ts`) were not inspected here to confirm they wrap similarly - unverified whether an uncaught throw from `loadTaskWorkflow` surfaces as a clean domain error or an unhandled rejection in the work module.
 - Consequence: Mixing throw-based and Result-based error styles inside the same layer (adapters called by domain code) makes error handling non-uniform; a caller that forgets a try/catch turns a configuration error ("no workflow configured") into a 500 instead of a typed domain error.
 - Fix: Standardize: adapters return `Result` (or a narrower "not configured" sentinel) instead of throwing, matching the `StageStore`/`CrmRepository` pattern used elsewhere (`saveStage` already returns `undefined` instead of throwing).
-- Effort: S
-
-### DOM-10: Clean code side effects, low severity
-
-- Location: `packages/adapters/payload/src/repositories/mail-store.ts:121-142` (`findRecordByAddressToken`)
-- Evidence: Comment: "this bounded adapter scan is the verification boundary for HMAC addresses" - function does a full unbounded `find` (`limit: 0, pagination: false`) across all 6 record collections and recomputes an HMAC address per document to find one match.
-- Consequence: Named like a lookup but is actually an O(n) full-table scan with per-row crypto; the function signature gives no hint of this cost, and "bounded" in the comment is misleading since `limit: 0` is literally unbounded.
-- Fix: Rename to `scanRecordsForAddressToken` and/or fix comment; longer term, store the token derivable without a full scan (e.g. index it).
 - Effort: S
 
 ### DOM-12: Clean code naming, low severity
@@ -148,14 +124,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: File mixes generic command scaffolding (`failure`, `parse`, `executeCommand`, `accessDenied`) with pipeline-move business logic (`validatePipelineMove`, `persistPipelineMove`, `finalizeDealMove`, `movePipeline`) and lead-conversion lookups (`findExistingDeal`, `findExistingOrganization`, `dealCustomData`).
 - Consequence: Three distinct responsibilities (command infra / stage-move orchestration / conversion helpers) share one "helpers" file, which is a classic SRP smell - hard to find things, and unrelated changes (e.g. tweaking conversion custom-data selection) touch a file that also contains security-sensitive `accessDenied`.
 - Fix: Split into `command-support.ts`, `pipeline-move.ts`, `conversion-support.ts`.
-- Effort: S
-
-### DOM-16: Clean code comments, low severity
-
-- Location: `packages/adapters/payload/src/repositories/mail-store.ts:1`
-- Evidence: Both files open with `/* eslint-disable ... - <justification> */` as their first line, effectively documenting "this file is too big/complex" as a permanent waiver rather than fixing it.
-- Consequence: Lint-disable-with-justification comments normalize exceeding the project's own size/complexity budgets instead of triggering a split (see DOM-07); new code tends to accrete in these files since the guard rail is already off.
-- Fix: Treat repeated `eslint-disable max-lines`/`complexity` on adapter files as a backlog signal to split, not a permanent waiver.
 - Effort: S
 
 ### DOM-18: OCP, low severity

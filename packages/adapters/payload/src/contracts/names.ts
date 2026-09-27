@@ -55,6 +55,19 @@ export const RECORD_TYPES = {
   deals: 'deal',
 } as const
 
+/**
+ * Record types that can receive email, with the collection each lives in and how an inbound sender is verified:
+ * `email` compares the record's own email field, `contacts` compares the deal's linked contacts, `none` never matches.
+ */
+export const MAILABLE_RECORDS = [
+  { type: RECORD_TYPES.organizations, collection: COLLECTIONS.organizations, sender: 'email' },
+  { type: RECORD_TYPES.projects, collection: COLLECTIONS.projects, sender: 'none' },
+  { type: RECORD_TYPES.tasks, collection: COLLECTIONS.tasks, sender: 'none' },
+  { type: RECORD_TYPES.contacts, collection: COLLECTIONS.contacts, sender: 'email' },
+  { type: RECORD_TYPES.leads, collection: COLLECTIONS.leads, sender: 'email' },
+  { type: RECORD_TYPES.deals, collection: COLLECTIONS.deals, sender: 'contacts' },
+] as const
+
 /** Collections that track staleness via stage and updatedAt, indexed by record type. */
 export const STALE_TRACKABLE_COLLECTIONS = [
   [RECORD_TYPES.leads, COLLECTIONS.leads],
