@@ -8,23 +8,14 @@ import {
   updateProjectSchema,
   updateTaskSchema,
 } from '@ops/module-work'
-import { setCustomFieldsSchema } from '@ops/module-crm'
 import { inviteMemberSchema, saveGroupSchema, saveMemberSchema } from '@ops/module-identity'
 import type { Result } from '@ops/kernel'
 import { z } from 'zod'
 import { readBody, type BodySchema } from './http'
+import type { ApiContract } from './contract-types'
+import { CRM_CONTRACTS } from './contracts-crm'
 
 /** One endpoint of the product API: the single source for its route, its body validation and `GET /api/v1`. */
-interface ApiContract {
-  readonly method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
-  /** Path with `:param` segments. */
-  readonly path: string
-  readonly summary: string
-  /** JSON body schema; path params are not part of the body. */
-  readonly body?: z.ZodType
-  /** Status of a successful response. */
-  readonly success: 200 | 201
-}
 
 /** The product API, keyed by a stable contract id. */
 const API_CONTRACTS = {
@@ -142,14 +133,7 @@ const API_CONTRACTS = {
     body: saveGroupSchema.omit({ id: true }),
     success: 200,
   },
-  'records.customFields': {
-    method: 'PATCH',
-    path: '/api/v1/records/:type/:id/custom-fields',
-    summary:
-      'Set tenant-defined field values on an organization, contact, lead or deal while it is at expectedUpdatedAt. Empty clears a field; each invalid key is named.',
-    body: setCustomFieldsSchema.omit({ type: true, id: true }),
-    success: 200,
-  },
+  ...CRM_CONTRACTS,
   'groups.delete': { method: 'DELETE', path: '/api/v1/groups/:id', summary: 'Delete a group.', success: 200 },
 } as const satisfies Readonly<Record<string, ApiContract>>
 

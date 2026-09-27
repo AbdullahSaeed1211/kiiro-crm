@@ -15,6 +15,8 @@ export interface Stage {
   readonly color: StageColor
   readonly position: number
   readonly probability?: number
+  /** Field keys (built-in or custom) a record must have filled in before it can enter this stage. */
+  readonly requiredFields?: readonly string[]
 }
 
 /** Ordered stages for one record type; transitions are unrestricted in Phase 1. */

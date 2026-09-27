@@ -344,6 +344,15 @@ export interface Workflow {
         color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink';
         position: number;
         probability?: number | null;
+        requiredFields?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
       }[]
     | null;
   defaultStageId?: string | null;
@@ -1269,6 +1278,7 @@ export interface WorkflowsSelect<T extends boolean = true> {
         color?: T;
         position?: T;
         probability?: T;
+        requiredFields?: T;
       };
   defaultStageId?: T;
   updatedAt?: T;

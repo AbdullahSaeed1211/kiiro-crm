@@ -11,6 +11,7 @@ import {
   type ConfigAction,
   type Stage,
   type Workflow,
+  type RequirementOptions,
 } from './workflow-model'
 import { StageRow } from './workflow-stage-row'
 
@@ -19,7 +20,13 @@ function WorkflowCard({
   workflow,
   action,
   deleteAction,
-}: Readonly<{ workflow: Workflow; action: ConfigAction; deleteAction: ConfigAction }>) {
+  requirementOptions,
+}: Readonly<{
+  workflow: Workflow
+  action: ConfigAction
+  deleteAction: ConfigAction
+  requirementOptions: RequirementOptions
+}>) {
   const router = useRouter()
   const [draft, setDraft] = useState(workflow)
   const [pending, setPending] = useState<'save' | 'delete' | null>(null)
@@ -134,6 +141,7 @@ function WorkflowCard({
               key={stage.id}
               stage={stage}
               index={index}
+              requirementOptions={requirementOptions[draft.recordType] ?? []}
               onChange={(changes) => {
                 updateStage(stage.id, changes)
               }}
@@ -208,7 +216,13 @@ export function WorkflowEditor({
   workflows,
   action,
   deleteAction,
-}: Readonly<{ workflows: readonly Workflow[]; action: ConfigAction; deleteAction: ConfigAction }>) {
+  requirementOptions,
+}: Readonly<{
+  workflows: readonly Workflow[]
+  action: ConfigAction
+  deleteAction: ConfigAction
+  requirementOptions: RequirementOptions
+}>) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -245,7 +259,13 @@ export function WorkflowEditor({
   return (
     <div className="space-y-4">
       {workflows.map((workflow) => (
-        <WorkflowCard key={workflow.id} workflow={workflow} action={action} deleteAction={deleteAction} />
+        <WorkflowCard
+          key={workflow.id}
+          workflow={workflow}
+          action={action}
+          deleteAction={deleteAction}
+          requirementOptions={requirementOptions}
+        />
       ))}
       <div className="rounded-lg border border-dashed p-4">
         <button

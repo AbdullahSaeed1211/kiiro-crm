@@ -3,6 +3,7 @@ import { deleteConfiguration, saveConfiguration } from '../../../../server/actio
 import { requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { WorkflowEditor } from './workflow-editor'
+import { loadRequirementOptions } from '../../../../server/queries/settings/stage-requirements'
 
 export const metadata: Metadata = { title: 'Workflows' }
 export const dynamic = 'force-dynamic'
@@ -36,6 +37,9 @@ export default async function WorkflowsSettingsPage() {
               color: COLORS.has(stringValue(stage.color)) ? stringValue(stage.color) : 'gray',
               position,
               ...(typeof stage.probability === 'number' ? { probability: stage.probability } : {}),
+              ...(Array.isArray(stage.requiredFields)
+                ? { requiredFields: stage.requiredFields.filter((key): key is string => typeof key === 'string') }
+                : {}),
             },
           ]
         })
@@ -64,7 +68,12 @@ export default async function WorkflowsSettingsPage() {
           Every workflow is independent, so a sales pipeline, service queue, or project board can use language that fits
           the business.
         </p>
-        <WorkflowEditor workflows={workflows} action={saveConfiguration} deleteAction={deleteConfiguration} />
+        <WorkflowEditor
+          workflows={workflows}
+          action={saveConfiguration}
+          deleteAction={deleteConfiguration}
+          requirementOptions={await loadRequirementOptions()}
+        />
       </SettingsForm>
     </SettingsPage>
   )

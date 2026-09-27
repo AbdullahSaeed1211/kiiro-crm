@@ -5,7 +5,17 @@ export interface Stage {
   color: string
   position: number
   probability?: number
+  requiredFields?: string[]
 }
+
+/** A field a stage can require, keyed by built-in field name or custom field key. */
+export interface RequirementOption {
+  readonly key: string
+  readonly label: string
+}
+
+/** Requirement choices per record type; types without choices show no picker. */
+export type RequirementOptions = Readonly<Record<string, readonly RequirementOption[]>>
 
 export interface Workflow {
   id: string

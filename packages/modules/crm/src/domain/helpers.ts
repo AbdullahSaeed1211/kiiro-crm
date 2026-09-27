@@ -11,6 +11,7 @@ import {
 } from '@ops/kernel'
 import { changeStage, type Stage, type Workflow } from '@ops/platform'
 import type { CrmDeps } from '../ports/repository'
+import { unmetStageRequirements } from './stage-requirements'
 import type { CrmCustomData, CrmRecordType, DealRecord, LeadRecord, OrganizationRecord } from '../ports/records'
 
 export type CrmResult<T> = Result<T>
@@ -130,6 +131,12 @@ interface ValidatedPipelineMove {
   readonly destination: Stage
 }
 
+function lostReasonMissing(current: LeadRecord | DealRecord, destination: Stage): CrmResult<never> | undefined {
+  return destination.category === 'done_failure' && current.lostReasonId === null
+    ? failure('VALIDATION', 'a lost reason is required before moving to a lost stage')
+    : undefined
+}
+
 async function validatePipelineMove(input: PipelineMoveInput): Promise<CrmResult<ValidatedPipelineMove>> {
   const { deps, type, recordId, toStageId } = input
   const current = await deps.repo.get(type, recordId)
@@ -141,10 +148,10 @@ async function validatePipelineMove(input: PipelineMoveInput): Promise<CrmResult
   if (workflow === undefined) return failure('NOT_FOUND', `${type} workflow not found`)
   const destination = stageIn(workflow, toStageId)
   if (destination === undefined) return failure('VALIDATION', 'stage is not part of the record workflow', { toStageId })
-  if (destination.category === 'done_failure' && current.lostReasonId === null) {
-    return failure('VALIDATION', 'a lost reason is required before moving to a lost stage')
-  }
-  return ok({ input, current, destination })
+  const blocked =
+    lostReasonMissing(current, destination) ??
+    (await unmetStageRequirements(deps.repo, { type, record: current, stage: destination }))
+  return blocked ?? ok({ input, current, destination })
 }
 
 async function persistPipelineMove<T extends LeadRecord | DealRecord>(

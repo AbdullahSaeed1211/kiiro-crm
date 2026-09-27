@@ -9,6 +9,16 @@ function rowsOf(value: unknown): object[] {
     : []
 }
 
+function optionalStageFields(row: object): Pick<Stage, 'probability' | 'requiredFields'> {
+  const probability = numberOf(row, 'probability')
+  const required = fieldOf(row, 'requiredFields')
+  const requiredFields = Array.isArray(required) ? required.filter((key): key is string => typeof key === 'string') : []
+  return {
+    ...(probability === null ? {} : { probability }),
+    ...(requiredFields.length === 0 ? {} : { requiredFields }),
+  }
+}
+
 function toStage(row: object): Stage[] {
   const id = idOf(fieldOf(row, 'id'))
   const name = textOf(row, 'name')
@@ -16,8 +26,7 @@ function toStage(row: object): Stage[] {
   if (id === undefined || name === undefined || category === undefined) return []
   const color = oneOf(STAGE_COLOR_VALUES, fieldOf(row, 'color')) ?? 'gray'
   const stage = { id, name, category, color, position: numberOf(row, 'position') ?? 0 }
-  const probability = numberOf(row, 'probability')
-  return [probability === null ? stage : { ...stage, probability }]
+  return [{ ...stage, ...optionalStageFields(row) }]
 }
 
 /** Maps a workflows document to a platform `Workflow`, stages ordered by position; `undefined` when incomplete. */

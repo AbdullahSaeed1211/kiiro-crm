@@ -23,6 +23,7 @@ const stagesField: ArrayField = {
     selectOf('color', STAGE_COLOR_VALUES, { required: true, defaultValue: 'gray' }),
     { name: 'position', type: 'number', required: true, min: 0 },
     { name: 'probability', type: 'number', min: 0, max: 100 },
+    { name: 'requiredFields', type: 'json', defaultValue: [] },
   ],
 }
 
