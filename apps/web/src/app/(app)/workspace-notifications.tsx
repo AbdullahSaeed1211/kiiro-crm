@@ -88,7 +88,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
         const response = await fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
         if (!response.ok) throw new Error('notification read update failed')
       } catch (error) {
-        setError(describeClientError(error, 'notification read', locale))
+        setError(describeClientError(error, { context: 'notification read', fallback: copy.readFailed, locale }))
         return
       }
       setCount((current) => Math.max(0, current - 1))

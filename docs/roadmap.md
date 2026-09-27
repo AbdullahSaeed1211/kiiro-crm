@@ -16,7 +16,7 @@ Done: production (`crm.mirchmedia.com`) runs `v0.2.0`, `/api/v1/health` reports 
 Plan: [wave 2 plan](plans/wave-2-task-surfaces.md). The task screens are where staff spend their day and where the worst UX findings sit.
 
 - One task view for the panel and the full page; editable properties with activity; row clicks; a calendar that shows every task; My tasks on the shared table; subtasks; a phone layout.
-- Findings: UX 1, 28; code-health UI-01, UI-02, UI-24.
+- Findings: none.
 
 Depends on: nothing. Done when: every task in the plan is committed with its gates, and the geometry check in `tests/e2e/customer/route-health.spec.ts` passes.
 
@@ -54,7 +54,7 @@ Depends on: wave 3 for the error model and composition root. Done when: leads, d
 
 - One view bar with search, filter and sort on every list; `@ops/ui` components instead of native selects and date inputs; one view switcher; bulk actions through `DataTable` selection.
 - Kanban column sizing and add-to-column; calendar drag to reschedule; Gantt bars coloured by stage; one token set across the stylesheets.
-- Findings: UX 8, 12, 13, 15, 16, 19, 20, 22, 23, 24, 26, 30, 32, 33; code-health UI-05, UI-06, UI-07, UI-12, UI-13, UI-14, UI-17, UI-20, UI-21, UI-23.
+- Findings: UX 8, 12, 13, 15, 16, 19, 20, 22, 23, 24, 26, 30, 32, 33, 34, 35; code-health UI-05, UI-06, UI-07, UI-12, UI-13, UI-14, UI-17, UI-21, UI-23.
 
 Depends on: wave 5 for the generic record lists. Done when: no native `<select>` remains outside `packages/ui`, and every list page has the same bar.
 

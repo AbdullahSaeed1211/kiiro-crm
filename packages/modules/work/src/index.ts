@@ -15,7 +15,15 @@ export type {
   WorkResult,
 } from './ports/work'
 export { createProject, updateProject, addProjectMember, removeProjectMember } from './commands/projects'
-export { completeTask, createTask, moveTask, reopenTask, setTaskDates, updateTask } from './commands/tasks'
+export {
+  canUpdateTask,
+  completeTask,
+  createTask,
+  moveTask,
+  reopenTask,
+  setTaskDates,
+  updateTask,
+} from './commands/tasks'
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'
 export { myTasksBuckets, type MyTaskBuckets } from './queries/my-tasks'

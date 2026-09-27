@@ -37,7 +37,12 @@ export function InvitationActions({
       setInviteUrl(result.ok ? result.data.inviteUrl : '')
       setMessage(result.ok ? 'Invitation resent.' : result.error.message)
     } catch (error) {
-      setMessage(describeClientError(error, 'invitation resend'))
+      setMessage(
+        describeClientError(error, {
+          context: 'invitation resend',
+          fallback: 'Unable to resend invitation. Try again.',
+        }),
+      )
     } finally {
       setPending(null)
     }
@@ -49,7 +54,12 @@ export function InvitationActions({
       const result = await revokeAction({ id })
       setMessage(result.ok ? 'Invitation revoked.' : result.error.message)
     } catch (error) {
-      setMessage(describeClientError(error, 'invitation revoke'))
+      setMessage(
+        describeClientError(error, {
+          context: 'invitation revoke',
+          fallback: 'Unable to revoke invitation. Try again.',
+        }),
+      )
     } finally {
       setPending(null)
     }
@@ -117,7 +127,12 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
       setMessage(result.ok ? 'Invitation created.' : result.error.message)
       if (result.ok) setEmail('')
     } catch (error) {
-      setMessage(describeClientError(error, 'invitation create'))
+      setMessage(
+        describeClientError(error, {
+          context: 'invitation create',
+          fallback: 'Unable to create invitation. Try again.',
+        }),
+      )
     } finally {
       setPending(false)
     }
@@ -211,7 +226,9 @@ export function MemberActions({
       const result = await action({ id: member.id, role, active, groups: selectedGroups, reportsTo })
       setMessage(result.ok ? 'Access saved.' : result.error.message)
     } catch (error) {
-      setMessage(describeClientError(error, 'member access save'))
+      setMessage(
+        describeClientError(error, { context: 'member access save', fallback: 'Unable to save access. Try again.' }),
+      )
     } finally {
       setPending(false)
     }
@@ -315,7 +332,7 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
       setMessage(result.ok ? 'Group saved.' : result.error.message)
       if (result.ok) setName('')
     } catch (error) {
-      setMessage(describeClientError(error, 'group save'))
+      setMessage(describeClientError(error, { context: 'group save', fallback: 'Unable to save group. Try again.' }))
     } finally {
       setPending(false)
     }
@@ -384,7 +401,12 @@ export function GroupList({
         router.refresh()
       }
     } catch (error) {
-      setMessage(describeClientError(error, 'group update'))
+      setMessage(
+        describeClientError(error, {
+          context: 'group update',
+          fallback: 'Could not save this group. Please try again.',
+        }),
+      )
     } finally {
       setPending(false)
     }
@@ -397,7 +419,12 @@ export function GroupList({
       setMessage(result.ok ? 'Group deleted.' : result.error.message)
       if (result.ok) router.refresh()
     } catch (error) {
-      setMessage(describeClientError(error, 'group delete'))
+      setMessage(
+        describeClientError(error, {
+          context: 'group delete',
+          fallback: 'Could not delete this group. Please try again.',
+        }),
+      )
     } finally {
       setPending(false)
     }

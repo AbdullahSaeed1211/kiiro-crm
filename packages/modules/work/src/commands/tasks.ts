@@ -9,7 +9,10 @@ const resource = (task: WorkTaskRecord) => ({
   assigneeIds: task.assigneeIds,
   ...(task.groupId === null ? {} : { groupId: task.groupId }),
 })
-const canUpdate = (deps: WorkDeps, task: WorkTaskRecord) => deps.can(deps.actor, 'update', resource(task))
+/** True when the actor may edit the task; screens use it to show controls the commands will accept. */
+export const canUpdateTask = (deps: Pick<WorkDeps, 'actor' | 'can'>, task: WorkTaskRecord) =>
+  deps.can(deps.actor, 'update', resource(task))
+const canUpdate = canUpdateTask
 const assignmentAllowed = (deps: WorkDeps, ids: readonly Id[], groupId: Id | null) =>
   (isManagerUp(deps.actor) || ids.every((id) => id === deps.actor.id)) &&
   (groupId === null || deps.actor.groupIds.includes(groupId))

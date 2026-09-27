@@ -1,67 +1,34 @@
 'use client'
 
 import { Sheet, SheetContent } from '@ops/ui/components/ui/sheet'
-import { TaskSheetContent } from './task-sheet-content'
-import type { CompleteTaskParams, SaveDescriptionParams, TaskSaveResult, TaskSheetTask } from './types'
+import { TaskSheetContent, type TaskViewProps } from './task-sheet-content'
 
-export type { TaskSheetTask } from './types'
-export { TaskSheetContent } from './task-sheet-content'
-
-export function TaskSheet({
-  task,
-  open,
-  onOpenChange,
-  onSaveDescription,
-  onComplete,
-}: Readonly<{
-  task: TaskSheetTask | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSaveDescription?: (params: SaveDescriptionParams) => Promise<TaskSaveResult> | TaskSaveResult
-  onComplete?: (params: CompleteTaskParams) => Promise<boolean> | boolean
-}>) {
-  if (!task) return null
-  const props = {
-    task,
-    onOpenChange,
-    renderAsPage: false as const,
-    ...(onSaveDescription && { onSaveDescription }),
-    ...(onComplete && { onComplete }),
-  }
+/** Task detail in a right-side panel over the page that opened it. */
+export function TaskSheet({ onClose, ...props }: TaskViewProps & Readonly<{ onClose: () => void }>) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
       <SheetContent
         side="right"
-        className="w-full overflow-hidden overscroll-contain sm:max-w-[560px] flex flex-col p-0"
+        className="flex w-full flex-col overflow-hidden overscroll-contain p-0 sm:max-w-[560px]"
       >
-        <TaskSheetContent {...props} />
+        <TaskSheetContent {...props} asPage={false} onClose={onClose} />
       </SheetContent>
     </Sheet>
   )
 }
 
-export function TaskPage({
-  task,
-  onSaveDescription,
-  onComplete,
-}: Readonly<{
-  task: TaskSheetTask | null
-  onSaveDescription?: (params: SaveDescriptionParams) => Promise<TaskSaveResult> | TaskSaveResult
-  onComplete?: (params: CompleteTaskParams) => Promise<boolean> | boolean
-}>) {
-  if (!task) return null
-  const props = {
-    task,
-    onOpenChange: () => {
-      // Page view doesn't need to handle open state changes
-    },
-    renderAsPage: true as const,
-    ...(onSaveDescription && { onSaveDescription }),
-    ...(onComplete && { onComplete }),
-  }
+const noop = () => undefined
+
+/** The same task detail as a full page under the app header. */
+export function TaskPage(props: TaskViewProps) {
   return (
     <div className="flex flex-col overflow-hidden">
-      <TaskSheetContent {...props} />
+      <TaskSheetContent {...props} asPage onClose={noop} />
     </div>
   )
 }

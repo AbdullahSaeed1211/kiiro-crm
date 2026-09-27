@@ -2,14 +2,14 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { loadTask, loadTaskPeople } from '../../../../server/queries/work/task-details'
+import { loadTaskView } from '../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
 import { firstParam, safeReturnTo } from '../../search-params'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Task' }
 
-/** Full-page task detail, using the same content model as the task sheet. */
+/** Full-page task detail, using the same content model as the task panel. */
 export default async function TaskPage({
   params,
   searchParams,
@@ -21,28 +21,13 @@ export default async function TaskPage({
   const query = searchParams === undefined ? {} : await searchParams
   const panel = firstParam(query.panel) === '1'
   const returnTo = safeReturnTo(firstParam(query.returnTo), '/tasks')
-  const [task, people] = await Promise.all([loadTask(id), loadTaskPeople()])
-  if (task === undefined) notFound()
+  const view = await loadTaskView(id)
+  if (view === undefined) notFound()
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Tasks', href: returnTo }, { label: task.title }]} />
+      <AppHeader breadcrumbs={[{ label: 'Tasks', href: returnTo }, { label: view.task.title }]} />
       <PageContent>
-        <TaskDetailDrawer
-          task={{
-            id: task.id,
-            title: task.title,
-            stage: task.stage,
-            priority: task.priority,
-            assignees: task.assigneeIds.map((id) => people.get(id) ?? 'Unavailable member'),
-            description: task.description,
-            startAt: task.startAt,
-            dueAt: task.dueAt,
-            stageCategory: task.stageCategory,
-            updatedAt: task.updatedAt,
-          }}
-          panel={panel}
-          returnTo={returnTo}
-        />
+        <TaskDetailDrawer task={view.task} options={view.options} panel={panel} returnTo={returnTo} />
       </PageContent>
     </>
   )

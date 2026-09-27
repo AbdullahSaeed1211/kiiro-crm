@@ -48,6 +48,8 @@ async function checkWorkflowCreateRecovery(page: Page): Promise<void> {
   expect(wasIntercepted()).toBe(true)
 }
 
+const NETWORK_ERROR = 'Check your connection and try again.'
+
 async function checkGroupEditRecovery(page: Page): Promise<void> {
   await page.goto(GROUPS_SETTINGS_PATH)
   const wasIntercepted = await interceptFailedAction(page, GROUPS_SETTINGS_PATH)
@@ -56,7 +58,8 @@ async function checkGroupEditRecovery(page: Page): Promise<void> {
   await group.getByRole('textbox', { name: 'Group name' }).fill('Temporary group name')
   const button = group.getByRole('button', { name: 'Save' })
   await button.click()
-  await expect(page.getByText('Could not save this group. Please try again.', { exact: true })).toBeVisible()
+  // An aborted request never reaches the server, so the form shows the connection message.
+  await expect(page.getByText(NETWORK_ERROR, { exact: true })).toBeVisible()
   await expect(button).toBeEnabled()
   expect(wasIntercepted()).toBe(true)
   await group.getByRole('button', { name: 'Cancel' }).click()
@@ -69,7 +72,7 @@ async function checkGroupDeleteRecovery(page: Page): Promise<void> {
   page.on('dialog', (dialog) => dialog.accept())
   const button = group.getByRole('button', { name: 'Delete' })
   await button.click()
-  await expect(page.getByText('Could not delete this group. Please try again.', { exact: true })).toBeVisible()
+  await expect(page.getByText(NETWORK_ERROR, { exact: true })).toBeVisible()
   await expect(button).toBeEnabled()
   expect(wasIntercepted()).toBe(true)
 }

@@ -78,7 +78,7 @@ export interface StageLabel {
   readonly name: string
   readonly category: StageCategory
 }
-export function addStages(stages: Map<string, StageLabel>, workflow: object): void {
+function addStages(stages: Map<string, StageLabel>, workflow: object): void {
   for (const row of rows(value(workflow, 'stages'))) {
     const stageId = id(row, 'id')
     const category = value(row, 'category')
@@ -86,7 +86,7 @@ export function addStages(stages: Map<string, StageLabel>, workflow: object): vo
       stages.set(stageId, { name: text(row, 'name'), category: category as StageCategory })
   }
 }
-function workflowStages(workflows: readonly object[]): WorkReadModel['stages'] {
+export function workflowStages(workflows: readonly object[]): WorkReadModel['stages'] {
   const result = new Map<string, WorkReadModel['stages'][number]>()
   for (const workflow of workflows) {
     for (const row of rows(value(workflow, 'stages'))) {

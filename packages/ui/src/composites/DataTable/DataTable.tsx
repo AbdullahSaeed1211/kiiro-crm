@@ -150,17 +150,11 @@ function Body({
         {rows.map((row) => {
           const href = row.original.href
           const rowProps = {
-            key: row.id,
             row,
             ...(href !== undefined && { href }),
             ...(onNavigate !== undefined && { onNavigate }),
-          } as Readonly<{
-            key: string
-            row: Row<DataTableFeatures, DataTableRow>
-            href?: string
-            onNavigate?: (href: string) => void
-          }>
-          return <BodyRow {...rowProps} />
+          }
+          return <BodyRow key={row.id} {...rowProps} />
         })}
       </TableBody>
     )

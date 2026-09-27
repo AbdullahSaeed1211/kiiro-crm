@@ -339,7 +339,7 @@ function boxesIntersect(a: { x: number; y: number; width: number; height: number
 
 async function verifyCanonicalTaskPage(page: Page, taskHref: string, title: string) {
   await page.goto(new URL(taskHref, page.url()).pathname)
-  await expect(page.getByRole('heading', { name: 'Assignees' })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Assignees' })).toBeVisible()
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   await expect(page.locator(TASK_PANEL)).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0)

@@ -1,6 +1,6 @@
 # Code-health backlog
 
-59 findings are open: 10 high, 25 medium and 24 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+55 findings are open: 9 high, 24 medium and 22 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -20,7 +20,7 @@
 | Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                                           |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                                        |
 | Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-03 DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                                    |
-| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-01 UI-02 UI-06 UI-07 UI-24                                                |
+| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                                                  |
 | Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                                           |
 
 ## Refactor order
@@ -338,29 +338,12 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ## UI package (`packages/ui`)
 
-### UI-01: DIP, high severity
-
-- Location: `TaskSheet.tsx:1,24-99,141,180`
-- Evidence: File starts with `/* eslint-disable */`; all copy is inline English literals: `'Unassigned'`, `'Priority: '`, `'Description'`, `'Add a description…'`, `'No subtasks yet.'`, `'Saved.'`, `'This task changed. Refresh and try again.'`, `'Complete'/'Reopen'`. No `labels` prop exists at all, unlike every sibling composite (`KanbanBoard`, `StageSelect`, `GanttView`, `RecordForm`, `ActivityFeed`, `FilterBar`, `ConfirmDialog`, `DataTable`).
-- Consequence: Breaks the `es` locale entirely for the task detail view; the blanket eslint-disable likely suppresses the very import/i18n lint rules that would have caught this.
-- Fix: Add a `TaskSheetLabels` prop mirroring the pattern used elsewhere; remove the eslint-disable and fix real violations instead.
-- Effort: M
-- Status: partly fixed. Lint is on again; the English copy is still inline.
-
 ### UI-06: Dead code, high severity
 
 - Location: `DataTable/columns.tsx:36-65`, `DataTable/DataTable.tsx:31-32,120,124`, `DataTableFooter.tsx:26,30-34`, `types.ts:40-41,46`
 - Evidence: `selectable` prop, `selectColumn`, `row.toggleSelected`, `getSelectedRowIds`, and the `selected`/`selectAll`/`selectRow` label fields exist end-to-end. `grep -rn "selectable" apps/web/src` and `grep "<DataTable" -A15` across all 5 call sites (`directory-list-view.tsx`, `tasks/page.tsx`, `leads/page.tsx`, `deals/page.tsx`) show none pass `selectable`.
 - Consequence: ~60 lines of feature code, a TanStack feature (`rowSelectionFeature`), and 2 i18n keys per locale are maintained for a feature no page turns on - inflates the "wide prop interface" surface (see UI-07) for no product value.
 - Fix: Either wire selection into a real bulk-action page, or delete `selectable`, `selectColumn`, and the `selectAll`/`selectRow` labels until a caller needs them.
-- Effort: S
-
-### UI-02: DRY, medium severity
-
-- Location: `TaskSheet.tsx:134` vs `KanbanBoard/board-state.ts:3,11-13`
-- Evidence: `TaskSheet` inlines `['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory ?? '')`; `board-state.ts` already exports `isTerminalStage`/`TERMINAL` doing the same thing for Kanban.
-- Consequence: Two sources of truth for "what counts as terminal"; a new terminal category added to one will silently miss the other.
-- Fix: Export `TERMINAL`/`isTerminalStage` from a shared stage module (e.g. move into `StagePill/stage.ts`, which `KanbanBoard` already imports from) and reuse in `TaskSheet`.
 - Effort: S
 
 ### UI-05: DRY, medium severity
@@ -411,14 +394,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Switch to the `@ops/ui/components/ui/*` alias for consistency.
 - Effort: S
 
-### UI-20: DRY, low severity
-
-- Location: `apps/web/src/i18n/work-copy.ts:26,129` (`unassigned`) vs `config.ts` (no `unassigned` key but similar "Unassigned" concept implied elsewhere) and `TaskSheet.tsx:24` (hardcoded `'Unassigned'`)
-- Evidence: `TASK_COPY.unassigned` and `REPORT_COPY.unassigned` both translate "Unassigned" independently (harmless duplication across two legitimately different copy objects), but `TaskSheet.tsx:24` reimplements the same concept as a raw English string instead of consuming either.
-- Consequence: Shows the i18n system is otherwise consistent (per-page copy objects are an accepted pattern here) - `TaskSheet` is the outlier that opts out of it entirely, reinforcing UI-01.
-- Fix: Give `TaskSheet` its own `TaskSheetLabels.unassigned` per UI-01's fix.
-- Effort: S
-
 ### UI-21: OCP, low severity
 
 - Location: `RecordPageLayout.tsx:90,93`
@@ -434,14 +409,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: A SVAR Gantt version bump that renames `.wx-grip`/`.wx-chart` classes breaks accessibility silently (no type safety on these selectors); mixing a11y-patching with edit-policy makes it harder to reason about either in isolation.
 - Fix: Extract the accessibility-repair block into its own module (e.g. `gantt-a11y.ts`), parallel to how `model.ts` already isolates data shaping from `GanttView.tsx`.
 - Effort: M
-
-### UI-24: ISP, low severity
-
-- Location: `TaskSheet.tsx:110-121` (`onSaveDescription`, `onComplete` both optional) vs `KanbanBoard.tsx:26-30` (`onMove` required, `onConflict` optional)
-- Evidence: `TaskSheet` makes both of its two real callbacks optional, silently no-op'ing the corresponding UI (no Save button, no Complete button) when omitted, whereas `KanbanBoard` requires its core callback and only makes the secondary one optional.
-- Consequence: Inconsistent policy for "what's required" across composites makes it unclear, without reading each implementation, whether omitting a callback is a supported minimal mode or a caller bug.
-- Fix: Document (or enforce via a discriminated prop, e.g. `mode: 'readOnly' | 'editable'`) which callback combinations are actually supported call sites in `apps/web`.
-- Effort: S
 
 ## Scripts and provisioning
 

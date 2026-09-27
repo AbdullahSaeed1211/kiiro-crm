@@ -3,174 +3,110 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useEffect, useState } from 'react'
-import { TaskSheetHeader, TaskPageHeader, TaskSheetFooter, TaskPageFooter, MessageDisplay } from './task-sheet-parts'
-import { isTerminalStageCategory } from './stage'
-import type { CompleteTaskParams, SaveDescriptionParams, TaskSaveResult, TaskSheetTask } from './types'
+import { isTerminalStage } from '../KanbanBoard/board-state'
+import { TaskActionsBar, TaskHeading, TaskMessage } from './task-sheet-parts'
+import { TaskProperties } from './task-properties'
+import { TaskSubtasks } from './task-subtasks'
+import { useTaskChanges } from './use-task-changes'
+import type { TaskSheetActions, TaskSheetLabels, TaskSheetOptions, TaskSheetTask } from './types'
 
-type BusyAction = 'description' | 'complete' | null
+/** Props shared by the panel and the full page. */
+export type TaskViewProps = Readonly<{
+  task: TaskSheetTask
+  options: TaskSheetOptions
+  actions: TaskSheetActions
+  labels: TaskSheetLabels
+}>
 
-interface TaskActionHandlers {
-  onSaveDescription?: ((params: SaveDescriptionParams) => Promise<TaskSaveResult> | TaskSaveResult) | undefined
-  onComplete?: ((params: CompleteTaskParams) => Promise<boolean> | boolean) | undefined
-}
-
-function useTaskActions(task: TaskSheetTask, handlers: TaskActionHandlers) {
-  const { onSaveDescription, onComplete } = handlers
+function DescriptionSection({
+  task,
+  labels,
+  canUpdate,
+  busy,
+  onSave,
+}: Readonly<{
+  task: TaskSheetTask
+  labels: TaskSheetLabels
+  canUpdate: boolean
+  busy: boolean
+  onSave: (description: string) => void
+}>) {
   const [description, setDescription] = useState(task.description ?? '')
-  const [busyAction, setBusyAction] = useState<BusyAction>(null)
-  const [message, setMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    setMessage(null)
-  }, [task.id])
-
   useEffect(() => {
     setDescription(task.description ?? '')
   }, [task.description])
-
-  const busy = busyAction !== null
-  const terminal = isTerminalStageCategory(task.stageCategory)
-
-  const handleComplete = async () => {
-    if (!onComplete) return
-    setBusyAction('complete')
-    setMessage(null)
-    const saved = await onComplete({ taskId: task.id, expectedUpdatedAt: task.updatedAt ?? 0, reopen: terminal })
-    setBusyAction(null)
-    setMessage(saved ? 'Saved.' : 'This task changed. Refresh and try again.')
-  }
-
-  const handleSaveDescription = onSaveDescription
-    ? async () => {
-        setBusyAction('description')
-        setMessage(null)
-        const result = await onSaveDescription({ taskId: task.id, expectedUpdatedAt: task.updatedAt ?? 0, description })
-        setBusyAction(null)
-        setMessage(result.ok ? 'Saved.' : result.error)
-      }
-    : undefined
-
-  return { description, setDescription, busyAction, message, busy, terminal, handleComplete, handleSaveDescription }
-}
-
-function DescriptionSection({
-  description,
-  onDescriptionChange,
-  onSave,
-  disabled,
-}: Readonly<{
-  description: string
-  onDescriptionChange: (value: string) => void
-  onSave?: (() => void | Promise<void>) | undefined
-  disabled: boolean
-}>) {
   return (
     <section>
-      <h3 className="mb-2 text-sm font-medium">Description</h3>
+      <h3 className="mb-2 text-sm font-medium">{labels.description}</h3>
       <Textarea
         value={description}
-        onChange={(e) => {
-          onDescriptionChange(e.target.value)
+        readOnly={!canUpdate}
+        onChange={(event) => {
+          setDescription(event.target.value)
         }}
-        placeholder="Add a description…"
-        rows={7}
+        placeholder={labels.descriptionPlaceholder}
+        rows={6}
       />
-      {onSave && (
+      {canUpdate ? (
         <Button
           size="sm"
           variant="outline"
           className="mt-2"
-          disabled={disabled}
+          disabled={busy || description === (task.description ?? '')}
           onClick={() => {
-            void onSave()
+            onSave(description)
           }}
         >
-          {disabled ? 'Saving…' : 'Save description'}
+          {busy ? labels.saving : labels.saveDescription}
         </Button>
-      )}
+      ) : null}
     </section>
   )
 }
 
-function AssigneesSection({ task }: Readonly<{ task: TaskSheetTask }>) {
-  return (
-    <section>
-      <h3 className="text-sm font-medium">Assignees</h3>
-      <p className="text-sm text-muted-foreground">
-        {task.assignees.length === 0 ? 'Unassigned' : task.assignees.join(', ')}
-      </p>
-    </section>
-  )
-}
-
-function SubtasksSection({ task }: Readonly<{ task: TaskSheetTask }>) {
-  const subtasks = task.subtasks ?? []
-  const completeCount = subtasks.filter((item) => item.complete).length
-
-  return (
-    <section>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-medium">Subtasks</h3>
-        <span className="text-xs text-muted-foreground">
-          {completeCount}/{subtasks.length}
-        </span>
-      </div>
-      {subtasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No subtasks yet.</p>
-      ) : (
-        <ul className="space-y-2">
-          {subtasks.map((item) => (
-            <li key={item.id} className="flex items-center gap-2 text-sm">
-              <span aria-hidden>{item.complete ? '✓' : '○'}</span>
-              {item.title}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
+/** Task detail body: heading, editable properties, description, subtasks and the complete action. */
 export function TaskSheetContent({
   task,
-  onOpenChange,
-  onSaveDescription,
-  onComplete,
-  renderAsPage = false,
-}: Readonly<{
-  task: TaskSheetTask
-  onOpenChange: (open: boolean) => void
-  onSaveDescription?: (params: SaveDescriptionParams) => Promise<TaskSaveResult> | TaskSaveResult
-  onComplete?: (params: CompleteTaskParams) => Promise<boolean> | boolean
-  renderAsPage?: boolean
-}>) {
-  const { description, setDescription, busyAction, message, busy, terminal, handleComplete, handleSaveDescription } =
-    useTaskActions(task, { onSaveDescription, onComplete })
-
-  const Header = renderAsPage ? TaskPageHeader : TaskSheetHeader
-  const Footer = renderAsPage ? TaskPageFooter : TaskSheetFooter
-
+  options,
+  actions,
+  labels,
+  asPage,
+  onClose,
+}: TaskViewProps & Readonly<{ asPage: boolean; onClose: () => void }>) {
+  const { save, pending, message, fields } = useTaskChanges(task, actions.onChange)
+  const stage = options.stages.find((item) => item.id === task.stageId)
+  const terminal = stage !== undefined && isTerminalStage(stage)
   return (
     <>
-      <Header title={task.title} task={task} />
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4">
-        <AssigneesSection task={task} />
-        <DescriptionSection
-          description={description}
-          onDescriptionChange={setDescription}
-          onSave={handleSaveDescription}
-          disabled={busy}
+      <TaskHeading title={task.title} labels={labels} asPage={asPage} />
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-3">
+        <TaskProperties
+          task={task}
+          options={options}
+          labels={labels}
+          taskHref={actions.taskHref}
+          busy={pending !== null}
+          fields={fields}
+          onSave={(change) => void save(change)}
         />
-        <SubtasksSection task={task} />
-        <MessageDisplay message={message} />
+        <TaskMessage message={message} />
+        <DescriptionSection
+          task={task}
+          labels={labels}
+          canUpdate={options.canUpdate}
+          busy={pending === 'description'}
+          onSave={(description) => void save({ kind: 'description', description }, labels.saved)}
+        />
+        <TaskSubtasks task={task} labels={labels} actions={actions} canUpdate={options.canUpdate} />
       </div>
-      <Footer
-        onComplete={onComplete}
-        onOpenChange={onOpenChange}
-        busyAction={busyAction}
+      <TaskActionsBar
+        labels={labels}
+        asPage={asPage}
         terminal={terminal}
-        busy={busy}
-        handleComplete={handleComplete}
+        completing={pending === 'complete'}
+        canUpdate={options.canUpdate}
+        onComplete={() => void save({ kind: 'complete', reopen: terminal })}
+        onClose={onClose}
       />
     </>
   )

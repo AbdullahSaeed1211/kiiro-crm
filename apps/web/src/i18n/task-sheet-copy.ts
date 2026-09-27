@@ -1,0 +1,68 @@
+import type { TaskSheetLabels } from '@ops/ui/composites/TaskSheet'
+import { catalogFor, type Locale } from './locale'
+
+const TASK_SHEET_COPY: Readonly<Record<Locale, TaskSheetLabels>> = {
+  en: {
+    task: 'Task',
+    properties: 'Properties',
+    stage: { label: 'Stage', terminalGroup: 'Closed', placeholder: 'Choose a stage' },
+    priority: 'Priority',
+    priorities: { none: 'No priority', low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent' },
+    assignees: 'Assignees',
+    unassigned: 'Unassigned',
+    startDate: 'Start date',
+    dueDate: 'Due date',
+    noDate: 'No date',
+    clearDate: 'Clear date',
+    parent: 'Parent task',
+    noParent: 'None',
+    description: 'Description',
+    descriptionPlaceholder: 'Add a description…',
+    saveDescription: 'Save description',
+    saving: 'Saving…',
+    saved: 'Saved.',
+    subtasks: 'Subtasks',
+    noSubtasks: 'No subtasks yet.',
+    addSubtask: 'Add subtask',
+    addSubtaskPlaceholder: 'New subtask title',
+    complete: 'Complete',
+    completing: 'Completing…',
+    reopen: 'Reopen',
+    reopening: 'Reopening…',
+    close: 'Close',
+  },
+  es: {
+    task: 'Tarea',
+    properties: 'Propiedades',
+    stage: { label: 'Etapa', terminalGroup: 'Cerradas', placeholder: 'Elige una etapa' },
+    priority: 'Prioridad',
+    priorities: { none: 'Sin prioridad', low: 'Baja', medium: 'Media', high: 'Alta', urgent: 'Urgente' },
+    assignees: 'Responsables',
+    unassigned: 'Sin asignar',
+    startDate: 'Fecha de inicio',
+    dueDate: 'Fecha límite',
+    noDate: 'Sin fecha',
+    clearDate: 'Quitar fecha',
+    parent: 'Tarea principal',
+    noParent: 'Ninguna',
+    description: 'Descripción',
+    descriptionPlaceholder: 'Añade una descripción…',
+    saveDescription: 'Guardar descripción',
+    saving: 'Guardando…',
+    saved: 'Guardado.',
+    subtasks: 'Subtareas',
+    noSubtasks: 'Aún no hay subtareas.',
+    addSubtask: 'Añadir subtarea',
+    addSubtaskPlaceholder: 'Título de la subtarea',
+    complete: 'Completar',
+    completing: 'Completando…',
+    reopen: 'Reabrir',
+    reopening: 'Reabriendo…',
+    close: 'Cerrar',
+  },
+}
+
+/** Task panel and page copy for a tenant locale, with an English fallback. */
+export function taskSheetLabels(locale: unknown): TaskSheetLabels {
+  return catalogFor(TASK_SHEET_COPY, locale)
+}

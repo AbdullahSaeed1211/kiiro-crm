@@ -1,19 +1,12 @@
 # UX backlog
 
-24 findings are open: 3 critical, 11 major and 10 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+24 findings are open: 2 critical, 11 major and 11 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
 Reference files are cited to show observed behavior. Copy code only from MIT or Apache-2.0 sources, as [AGENTS.md](../../AGENTS.md#references-and-licences) describes; re-implement the rest.
 
 ## Critical
-
-### 1. Task properties can't be edited
-
-- Area: Tasks. Effort: Structural. Codes: T-01 T-08.
-- Now: `TaskSheet.tsx:23-32` renders stage, priority and assignees as a grey text line. Only the description is editable, and it needs a Save click. `startAt` and `dueAt` are loaded but never shown. There are no comments and no activity.
-- Reference: Plane `peek-overview/properties.tsx:81-241`: state, assignees, priority, start date, due date, parent and labels, each an inline dropdown that saves on change, with `IssueActivity` below.
-- Fix: Add a `TaskProperties` block to `TaskSheet` that calls `updateTask` on each change, and mount the existing `ActivityFeed` under it.
 
 ### 3. The E2E suite can't see broken layouts
 
@@ -23,6 +16,8 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Status: partly fixed. A geometry check now asserts the standalone task page does not overlap the app header and has no Close button; it fails until the page gets its own layout. Screenshot diffs are not added yet.
 
 ## Major
+
+- Status (2026-09-27, local dev server): four `route-health.spec.ts` runs fail at `v0.2.0` before any change: "workspace settings reopen" (desktop; two `Time zone` comboboxes match), "settings IA and command palette" (mobile; no `Workspace` heading in the settings navigation), and UX 34 and 35. The suite stops at the first failure per project, so later tests only run with `--grep-invert`.
 
 ### 6. Only the record title can be edited in place
 
@@ -122,11 +117,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: CRM records. Effort: Quick. Codes: R-06.
 - The column header says Progress (`projects/page.tsx:118`), and the cell prints it again (lines 26-27). Project members are managed with two native selects. There's no search. Remove the repeated label and add the shared `ViewBar` and a member picker.
 
-### 28. Subtasks are read-only
-
-- Area: Tasks. Effort: Structural. Codes: T-07.
-- `TaskSheet.tsx:75-100` shows ✓ and ○ marks only. Make each row open its subtask, and add "+ Add subtask" and a toggle to complete it.
-
 ### 30. Placeholders read as entered values
 
 - Area: Design system. Effort: Quick. Codes: S-08 R-10.
@@ -141,3 +131,13 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Boards and calendar. Effort: Quick. Codes: B-10.
 - Seen in the browser console at 390px. Our code keys by id, so the likely source is the SVAR grid's internal rows when toggling Grid and Chart. Reproduce it before fixing.
+
+### 34. Closing a task panel on phones loses focus
+
+- Area: Tasks. Effort: Quick. Codes: A-04.
+- In mobile WebKit (390px), pressing Escape on a task panel opened from `/calendar` returns to the calendar, but the task link is not focused; desktop Chromium focuses it. `app-frame.tsx` focuses `[data-task-link-id]` on the pathname change, and something focuses after it. Found by `route-health.spec.ts` "task details preserve origin", which fails on the mobile project at `v0.2.0`.
+
+### 35. The phone timeline logs a React key warning
+
+- Area: Tasks. Effort: Quick. Codes: R-10.
+- At 390px `/timeline` switches the Gantt to compact mode and React logs "Each child in a list should have a unique key" from inside `@svar-ui/react-gantt`. The route-health budget test counts console errors, so its mobile run fails. Find which prop (columns, compact grid config) produces unkeyed children, or report it upstream and filter that one message in the test.

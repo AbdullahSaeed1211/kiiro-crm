@@ -62,6 +62,8 @@ export function RelatedTasksTab({
   )
 }
 
+const UPLOAD_FAILURE = { context: 'file upload', fallback: 'Unable to reach the server. Try again.' } as const
+
 export function RecordFilesTab({
   attachments,
   recordType,
@@ -91,7 +93,7 @@ export function RecordFilesTab({
         router.refresh()
       }
     } catch (error) {
-      setMessage(describeClientError(error, 'file upload'))
+      setMessage(describeClientError(error, UPLOAD_FAILURE))
     } finally {
       setPending(false)
       if (inputRef.current !== null) inputRef.current.value = ''
