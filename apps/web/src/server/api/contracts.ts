@@ -8,6 +8,7 @@ import {
   updateProjectSchema,
   updateTaskSchema,
 } from '@ops/module-work'
+import { setCustomFieldsSchema } from '@ops/module-crm'
 import { inviteMemberSchema, saveGroupSchema, saveMemberSchema } from '@ops/module-identity'
 import type { Result } from '@ops/kernel'
 import { z } from 'zod'
@@ -139,6 +140,14 @@ const API_CONTRACTS = {
     path: '/api/v1/groups/:id',
     summary: 'Rename a group.',
     body: saveGroupSchema.omit({ id: true }),
+    success: 200,
+  },
+  'records.customFields': {
+    method: 'PATCH',
+    path: '/api/v1/records/:type/:id/custom-fields',
+    summary:
+      'Set tenant-defined field values on an organization, contact, lead or deal while it is at expectedUpdatedAt. Empty clears a field; each invalid key is named.',
+    body: setCustomFieldsSchema.omit({ type: true, id: true }),
     success: 200,
   },
   'groups.delete': { method: 'DELETE', path: '/api/v1/groups/:id', summary: 'Delete a group.', success: 200 },

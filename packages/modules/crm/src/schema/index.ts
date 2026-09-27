@@ -218,3 +218,11 @@ export type UpdateContactInput = z.infer<typeof updateContactSchema>
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>
 export type UpdateDealInput = z.infer<typeof updateDealSchema>
 export type ConvertLeadInput = z.infer<typeof convertLeadSchema>
+
+/** Input of `setCustomFields`: values keyed by field key; an empty value clears the field. */
+export const setCustomFieldsSchema = z.object({
+  type: z.enum(['organization', 'contact', 'lead', 'deal']),
+  id: z.string().min(1),
+  expectedUpdatedAt: z.number().int().nonnegative(),
+  values: z.record(z.string(), z.unknown()),
+})

@@ -13,3 +13,4 @@ export type {
 } from './ports/records'
 export type { CrmDeps, CrmRepository, LookupKind } from './ports/repository'
 export * from './commands/public'
+export { setCustomFieldsSchema } from './schema'

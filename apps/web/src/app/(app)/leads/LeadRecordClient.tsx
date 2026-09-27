@@ -4,7 +4,7 @@ import { ActivityFeed, RecordPageLayout, StageSelect, type ActivityEntry } from 
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { moveLead, updateLead } from '../../../server/crm/leads/actions'
 import type { LeadPageData } from '../../../server/crm/leads/types'
 import { ConvertDialog, LostDialog } from './LeadDialogs'
@@ -142,8 +142,10 @@ function LeadRecordLayout({
   onSaveTitle,
   onChangeStage,
   outboundEmailEnabled,
+  customFields,
 }: Readonly<{
   data: LeadPageData
+  customFields: ReactNode
   isConverted: boolean
   isTerminal: boolean
   error: string | undefined
@@ -195,7 +197,12 @@ function LeadRecordLayout({
           </div>
         }
         tabs={leadTabs(data, activity, outboundEmailEnabled)}
-        aside={<LeadAside data={data} />}
+        aside={
+          <div className="grid gap-4">
+            <LeadAside data={data} />
+            {customFields}
+          </div>
+        }
       />
     </>
   )
@@ -205,7 +212,8 @@ export function LeadRecordClient({
   data,
   outboundEmailEnabled,
   currency,
-}: Readonly<{ data: LeadPageData; outboundEmailEnabled: boolean; currency: string }>) {
+  customFields,
+}: Readonly<{ data: LeadPageData; outboundEmailEnabled: boolean; currency: string; customFields: ReactNode }>) {
   const router = useRouter()
   const [convertOpen, setConvertOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
@@ -257,6 +265,7 @@ export function LeadRecordClient({
           void changeStage(stageId)
         }}
         outboundEmailEnabled={outboundEmailEnabled}
+        customFields={customFields}
         onConvert={() => {
           setConvertOpen(true)
         }}

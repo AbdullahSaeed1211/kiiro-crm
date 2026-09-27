@@ -5,13 +5,17 @@ import type { Workflow } from '@ops/platform'
 import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
 import { findAsUser, pageAsUser, updateAndMap } from '../local-api'
+import { loadFieldDefinitions } from '../field-definitions'
 import { createAsUser } from './local-writes'
 import { CRM_COLLECTIONS, toCrmData, toCrmRecord } from './record-codecs'
 import { createCrmStageStore, firstWorkflow, whereId } from './stage-store'
 
 type RecordAccess = Pick<CrmRepository, 'get' | 'list' | 'create' | 'update'>
 
-type Directory = Pick<CrmRepository, 'findContactByEmail' | 'loadDefaultWorkflow' | 'listLookups'>
+type Directory = Pick<
+  CrmRepository,
+  'findContactByEmail' | 'loadDefaultWorkflow' | 'listLookups' | 'loadFieldDefinitions'
+>
 
 export interface CrmPageQuery<T extends CrmRecordType = CrmRecordType> {
   readonly type: T
@@ -97,6 +101,7 @@ function directory(req: PayloadRequest): Directory {
       const docs = await findAsUser(req, { collection: LOOKUP_COLLECTIONS[kind], where: {}, sort: 'name' })
       return docs.flatMap(toLookup).toSorted((a, b) => byName.compare(a.name, b.name))
     },
+    loadFieldDefinitions: (type) => loadFieldDefinitions(req, type),
   }
 }
 

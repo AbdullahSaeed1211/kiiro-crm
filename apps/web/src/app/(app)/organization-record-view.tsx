@@ -16,6 +16,7 @@ import { displayName, personLabel } from '../../server/crm/directory/data'
 import { safeExternalHref } from '../../server/crm/directory/utils'
 import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordActionLinks } from './record-action-links'
+import { RecordCustomFields } from './record-custom-fields'
 
 function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null }>) {
   const website = record.website === null ? null : safeExternalHref(record.website)
@@ -213,7 +214,12 @@ export function OrganizationRecordView({
               },
             ),
           ]}
-          aside={<OrganizationAside record={record} owner={owner} />}
+          aside={
+            <div className="grid gap-4">
+              <OrganizationAside record={record} owner={owner} />
+              <RecordCustomFields type="organization" id={record.id} />
+            </div>
+          }
         />
       </PageContent>
     </>

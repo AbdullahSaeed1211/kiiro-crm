@@ -24,3 +24,11 @@ export type { NotificationInput, NotificationStore, NotificationType } from './c
 export { can, inScope, isManagerUp } from './permissions/policy'
 export { createScopeFilter, MATCH_NOTHING } from './permissions/scope'
 export { changeStage, type ChangeStageDeps } from './workflows/change-stage'
+export {
+  CUSTOM_FIELD_TYPES,
+  validateCustomValues,
+  visibleFields,
+  type CustomFieldType,
+  type CustomValue,
+  type FieldDefinition,
+} from './fields/custom-fields'

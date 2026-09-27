@@ -15,6 +15,7 @@ import { displayName, personLabel } from '../../server/crm/directory/data'
 import { CopyButton } from './copy-button'
 import { RecordActionLinks } from './record-action-links'
 import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
+import { RecordCustomFields } from './record-custom-fields'
 
 function ContactAside({
   record,
@@ -141,7 +142,12 @@ export function ContactRecordView({
             tasks: relatedTasks,
             attachments,
           })}
-          aside={<ContactAside record={record} owner={owner} relations={relations} />}
+          aside={
+            <div className="grid gap-4">
+              <ContactAside record={record} owner={owner} relations={relations} />
+              <RecordCustomFields type="contact" id={record.id} />
+            </div>
+          }
         />
       </PageContent>
     </>

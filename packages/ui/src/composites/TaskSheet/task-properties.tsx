@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { StageSelect } from '../StageSelect/StageSelect'
-import { TaskDateField } from './task-dates'
+import { DateField } from '../DateField/DateField'
 import {
   TASK_PRIORITIES,
   type TaskChange,
@@ -134,7 +134,7 @@ export function TaskProperties({ task, options, labels, taskHref, busy, fields, 
         <AssigneeSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />
       </Property>
       <Property label={labels.startDate} error={fields['startAt']}>
-        <TaskDateField
+        <DateField
           label={labels.startDate}
           value={task.startAt}
           locale={options.locale}
@@ -147,7 +147,7 @@ export function TaskProperties({ task, options, labels, taskHref, busy, fields, 
         />
       </Property>
       <Property label={labels.dueDate} error={fields['dueAt']}>
-        <TaskDateField
+        <DateField
           label={labels.dueDate}
           value={task.dueAt}
           locale={options.locale}

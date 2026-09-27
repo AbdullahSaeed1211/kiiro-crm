@@ -12,6 +12,7 @@ import { RecordActionLinks } from '../../record-action-links'
 import { recordTabs } from '../../record-view-primitives'
 import { getOutboundEmailEnabled } from '../../../../server/capabilities'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
+import { RecordCustomFields } from '../../record-custom-fields'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -127,6 +128,7 @@ function DealRecordView({
         <div className="grid gap-4">
           <ControlsCard data={data} currency={currency} />
           <DetailsCard data={data} />
+          <RecordCustomFields type="deal" id={data.deal.id} />
         </div>
       }
     />

@@ -1,6 +1,7 @@
 export { createContact, createOrganization, updateContact, updateOrganization } from './crud'
 export { createDeal, createLead, moveDeal, moveLead, updateDeal, updateLead } from './pipeline'
 export { convertLead, markLost } from './conversion'
+export { setCustomFields } from './custom-fields'
 
 export {
   createContact as runCreateContact,

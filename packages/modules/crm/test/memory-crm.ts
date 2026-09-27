@@ -1,5 +1,5 @@
 import { asId, fixedClock, ok, type Id, type Result } from '@ops/kernel'
-import { can, type StageTrackedRecord, type UnitOfWork, type Workflow } from '@ops/platform'
+import { can, type FieldDefinition, type StageTrackedRecord, type UnitOfWork, type Workflow } from '@ops/platform'
 import type { CrmDeps, CrmRepository } from '../src/ports/repository'
 import type { ContactRecord, CrmDrafts, CrmRecordType, CrmRecords, DealRecord, LeadRecord } from '../src/ports/records'
 import type { LookupRecord } from '../src/ports/records'
@@ -79,6 +79,7 @@ export class MemoryCrm {
     { recordType: 'deal', key: 'budget', type: 'number' },
     { recordType: 'deal', key: 'sourceNote', type: 'number' },
   ]
+  customFields: FieldDefinition[] = []
   failLeadUpdate = false
   private sequence = 1
 
@@ -122,6 +123,10 @@ export class MemoryCrm {
 
   listLookups(): Promise<readonly LookupRecord[]> {
     return Promise.resolve([{ id: asId('reason-budget'), name: 'Budget' }])
+  }
+
+  loadFieldDefinitions(): Promise<readonly FieldDefinition[]> {
+    return Promise.resolve(this.customFields)
   }
 
   async loadRecord(ref: { type: string; id: Id }): Promise<StageTrackedRecord | undefined> {

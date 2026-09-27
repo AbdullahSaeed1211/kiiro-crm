@@ -1,5 +1,5 @@
 import type { Clock, Id, Result } from '@ops/kernel'
-import type { Actor, Can, StageStore, UnitOfWork, Workflow } from '@ops/platform'
+import type { Actor, Can, FieldDefinition, StageStore, UnitOfWork, Workflow } from '@ops/platform'
 import type { ContactRecord, CrmDrafts, CrmRecords, CrmRecordType, LookupRecord } from './records'
 
 /** Lookup kinds of spec §10.1. */
@@ -23,6 +23,8 @@ export interface CrmRepository extends StageStore {
   findContactByEmail(email: string): Promise<ContactRecord | undefined>
   loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Result<Workflow>>
   listLookups(kind: LookupKind): Promise<readonly LookupRecord[]>
+  /** The tenant's field definitions for a record type, including hidden ones. */
+  loadFieldDefinitions(type: CrmRecordType): Promise<readonly FieldDefinition[]>
 }
 
 /** Per-request dependencies of CRM commands. */

@@ -15,8 +15,8 @@ function fromUtcDay(value: number): Date {
   return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
 }
 
-/** Date property control: shows the day in the tenant locale and saves the picked day or a cleared value. */
-export function TaskDateField({
+/** A calendar-day control: shows the day in the given locale (UTC midnight, like the timeline) and reports the picked day or null. */
+export function DateField({
   label,
   value,
   locale,
