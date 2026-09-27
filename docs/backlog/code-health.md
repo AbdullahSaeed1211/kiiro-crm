@@ -1,6 +1,6 @@
 # Code-health backlog
 
-45 findings are open: 8 high, 20 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+44 findings are open: 7 high, 20 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -13,7 +13,7 @@
 
 | Root cause                                                                                                                         | Severity | Open findings                                                  |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-02 ARCH-05                                                |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                                        |
 | Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                                  |
 | Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
 | Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                             |
@@ -31,7 +31,7 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14, WEB-16, WEB-17).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
 5. Split the oversized files: `member-forms`.
-6. Shrink `PAYLOAD_IN_ROUTES_DEBT` in `tooling/depcruise/.dependency-cruiser.cjs` to empty by moving each route behind a `server/` query or action (ARCH-02).
+6. Done: no route calls Payload outside the admin group.
 
 ## Patterns to copy
 
@@ -41,15 +41,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - `packages/ui/src/composites/KanbanBoard/board-state.ts`: an optimistic-update state machine with rollback.
 
 ## Architecture
-
-### ARCH-02: Boundary leak / Dependency Rule (conceptual), high severity
-
-- Location: `apps/web/src/app/(app)/settings/{workflows,groups,intake,fields,notifications}/page.tsx`, `apps/web/src/app/api/v1/comments/**` (28 files total call `getPayload`/`payload.find` etc. under `apps/web/src/app`)
-- Evidence: grep of `apps/web/src/app` shows 10 files with direct `getPayload`/`payload.*` calls beyond settings/members alone
-- Consequence: Composition root's presentation layer (pages/routes) directly plays gateway role; no consistent controller→use-case→gateway pipeline, so authorization/validation for these flows lives ad hoc per page/route instead of one place
-- Fix: Route these through `server/queries`/`server/actions` + module commands the way `leads`/`deals`/`tasks` already do
-- Effort: M
-- Status: partly fixed. `routes-no-payload` in dependency-cruiser blocks new cases; the files in `PAYLOAD_IN_ROUTES_DEBT` still call Payload.
 
 ### ARCH-03: No explicit application/use-case package, medium severity
 

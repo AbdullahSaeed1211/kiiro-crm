@@ -4,6 +4,8 @@ import { ADMIN_GROUPS } from '../fields'
 import { NOTIFICATION_TYPE_VALUES } from '../values'
 
 /** Per-user in-app notifications. `dedupeKey` makes fan-out idempotent. */
+const UNGUARDED_KEYS: ReadonlySet<string> = new Set(['readAt', 'updatedAt', 'createdAt', 'id'])
+
 export const collaborationNotificationsCollection = collaborationCollection({
   slug: 'notifications',
   admin: { group: ADMIN_GROUPS.system, defaultColumns: ['type', 'user', 'readAt', 'createdAt'] },
@@ -21,10 +23,15 @@ export const collaborationNotificationsCollection = collaborationCollection({
   access: notificationAccess,
   hooks: {
     beforeChange: [
-      ({ data, operation }) => {
-        if (operation === 'update') {
-          const keys = Object.keys(data as Record<string, unknown>)
-          if (keys.some((key) => key !== 'readAt')) throw new Error('Only readAt can be updated.')
+      // Payload passes the merged document on update, so compare values: a user may change only readAt.
+      ({ data, operation, originalDoc, req }) => {
+        if (operation === 'update' && req.user) {
+          const next = data as Record<string, unknown>
+          const before = (originalDoc ?? {}) as Record<string, unknown>
+          const changed = Object.keys(next).filter(
+            (key) => !UNGUARDED_KEYS.has(key) && JSON.stringify(next[key]) !== JSON.stringify(before[key]),
+          )
+          if (changed.length > 0) throw new Error('Only readAt can be updated.')
         }
         return data
       },

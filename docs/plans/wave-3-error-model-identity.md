@@ -1,5 +1,7 @@
 # Wave 3 plan: one error model and an identity module
 
+Status: done (2026-09-27). Every task below is committed; `PAYLOAD_IN_ROUTES_DEBT` was emptied and removed.
+
 Seven tasks that finish the move to use cases returning `Result`: one composition root, adapters that return failures instead of throwing, one client error helper, an identity module for membership, split adapter and form files, and a shorter Payload-in-routes debt list. The wave's scope is in [the roadmap](../roadmap.md#3-one-error-model-and-an-identity-module); findings are in [the code-health backlog](../backlog/code-health.md).
 
 ## Order
