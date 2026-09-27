@@ -14,7 +14,8 @@ const notifications: NotificationStore = {
 }
 
 const deps: ScheduledJobsDeps = {
-  source: {},
+  // Registration never calls a source.
+  source: {} as ScheduledJobsDeps['source'],
   notifications,
   timeZone: 'UTC',
 }

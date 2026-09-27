@@ -1,4 +1,4 @@
-import type { Id } from '@ops/kernel'
+import type { Id, Result } from '@ops/kernel'
 import type { StageStore, Workflow } from '@ops/platform'
 
 /** Task priority (spec §10.2). */
@@ -31,7 +31,8 @@ export interface TaskDatesInput {
 
 /** Task persistence; the stage methods come from platform `StageStore`. */
 export interface TaskRepository extends StageStore {
-  loadTaskWorkflow(): Promise<Workflow>
+  /** `UNAVAILABLE` when the tenant has no task workflow. */
+  loadTaskWorkflow(): Promise<Result<Workflow>>
   listTasks(): Promise<readonly TaskRecord[]>
   /** Returns `undefined` when the task changed since `expectedUpdatedAt` or does not exist. */
   saveDates(input: TaskDatesInput): Promise<TaskRecord | undefined>

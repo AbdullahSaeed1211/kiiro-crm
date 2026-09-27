@@ -128,12 +128,12 @@ describe('createTaskRepository workflows', () => {
         { id: 's-done', name: 'Done', category: 'done_success', color: 'green', position: 1 },
       ],
     })
-    expect(await repository.loadTaskWorkflow()).toEqual(workflow)
+    expect(await repository.loadTaskWorkflow()).toEqual({ ok: true, value: workflow })
     expect(calls[1]?.args).toMatchObject({ collection: 'workflows', where: { recordType: { equals: 'task' } } })
   })
 
   it('fails when no task workflow exists', async () => {
-    await expect(setup().repository.loadTaskWorkflow()).rejects.toThrow('No task workflow')
+    expect(await setup().repository.loadTaskWorkflow()).toMatchObject({ ok: false, error: { code: 'UNAVAILABLE' } })
   })
 })
 

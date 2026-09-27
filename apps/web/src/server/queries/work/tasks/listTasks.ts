@@ -6,6 +6,7 @@ import { toTaskListItem, type PeopleById } from './task-items'
 import { loadTaskContexts } from './task-contexts'
 import type { TaskListItem, TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'
 import type { Where } from 'payload'
+import { workflowOrThrow } from '@/server/workflow-result'
 
 // Every list page shows 50 rows with server pagination (decision D-34).
 const PAGE_SIZE = 50
@@ -144,7 +145,7 @@ async function listSortedTaskPage({
 export async function listTasks(query: TaskListQuery, requestContext?: RequestContext): Promise<TaskListResult> {
   const context = requestContext ?? (await getRequestContext())
   const tasks = createTaskRepository(context.req)
-  const workflow = await tasks.loadTaskWorkflow()
+  const workflow = workflowOrThrow(await tasks.loadTaskWorkflow())
   const where = taskWhere(query, workflow, String(context.actor.id))
   if (query.sort.key === 'dueAt') return listDueTasks({ context, workflow, query, where })
   const records = await tasks.listTasks()

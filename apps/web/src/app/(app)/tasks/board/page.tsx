@@ -15,6 +15,7 @@ import { taskHref } from '../../task-navigation'
 import { TaskCreateForm } from '../TaskCreateForm'
 import { TaskWorkspaceViews } from '../TaskWorkspaceViews'
 import { TaskBoard } from './TaskBoard'
+import { workflowOrThrow } from '@/server/workflow-result'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Task board' }
@@ -107,7 +108,7 @@ export default async function TaskBoardPage() {
   const { tasks } = await workDeps(context)
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
-  const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow(), tasks.listTasks()])
+  const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow().then(workflowOrThrow), tasks.listTasks()])
   const assigneeIds = [...new Set(records.flatMap((task) => task.assigneeIds.map(String)))]
   const people = await loadTaskPeople(assigneeIds)
   return (

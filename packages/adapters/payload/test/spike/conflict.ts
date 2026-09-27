@@ -57,7 +57,9 @@ async function storedState(payload: Payload, id: Id): Promise<StoredState> {
 }
 
 async function openStagesBesides(tasks: TaskRepository, stageId: Id): Promise<Id[]> {
-  const { stages } = await tasks.loadTaskWorkflow()
+  const workflow = await tasks.loadTaskWorkflow()
+  if (!workflow.ok) throw new Error(workflow.error.message)
+  const { stages } = workflow.value
   return stages.filter((stage) => stage.id !== stageId && !isTerminalCategory(stage.category)).map((stage) => stage.id)
 }
 

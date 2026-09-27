@@ -108,3 +108,13 @@ export async function updateAndMap<T>(
   if (doc === undefined) return undefined
   return options.mapper(doc)
 }
+
+/** One page of a collection as the signed-in user sees it, mapped by `map`; documents it cannot map are skipped. */
+export async function pageAsUser<T>(
+  req: PayloadRequest,
+  query: Readonly<{ collection: CollectionSlug; where: Where; sort: Sort; page: number; limit: number }>,
+  map: (doc: Doc) => T | undefined,
+): Promise<{ readonly records: T[]; readonly total: number }> {
+  const result = await req.payload.find({ ...query, depth: 0, overrideAccess: false, user: req.user, req })
+  return { records: result.docs.flatMap((doc) => map(doc) ?? []), total: result.totalDocs }
+}

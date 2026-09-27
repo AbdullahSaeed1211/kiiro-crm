@@ -89,10 +89,10 @@ export async function listTaskPage(req: PayloadRequest, query: TaskPageQuery): P
 
 function workflowMethods(req: PayloadRequest): Pick<Repository, 'loadTaskWorkflow' | 'loadDefaultWorkflow'> {
   return {
-    loadTaskWorkflow: async () => {
+    loadTaskWorkflow: async (): Promise<Result<Workflow>> => {
       const workflow = await findWorkflow(req, { recordType: { equals: RECORD_TYPES.tasks } })
-      if (workflow === undefined) throw new Error('No task workflow is configured')
-      return workflow
+      if (workflow === undefined) return err(domainError('UNAVAILABLE', 'No task workflow is configured'))
+      return ok(workflow)
     },
     loadDefaultWorkflow: async (type): Promise<Result<Workflow>> => {
       const workflow = await findWorkflow(req, { recordType: { equals: type } })

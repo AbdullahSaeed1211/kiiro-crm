@@ -25,7 +25,7 @@ Depends on: nothing. Done when: every task in the plan is committed with its gat
 Plan: [wave 3 plan](plans/wave-3-error-model-identity.md). Code-health refactor steps 1, 2 and 5: settings and membership are the last features that call Payload directly without a use case.
 
 - One composition root; adapters that return `Result`; one client error helper; `packages/modules/identity` with `/api/v1` endpoints; split mail, job, intake and directory files; a shorter Payload-in-routes debt list.
-- Findings: code-health ARCH-02, DOM-05, DOM-09, DOM-12, DOM-14.
+- Findings: code-health ARCH-02.
 
 Depends on: nothing. Done when: `members.ts` has no `payload.` call, the identity endpoints pass their gates, and no adapter file carries a file-wide lint waiver.
 

@@ -4,7 +4,7 @@ import { domainError, err, ok, type Result } from '@ops/kernel'
 import type { Workflow } from '@ops/platform'
 import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
-import { findAsUser, updateAndMap } from '../local-api'
+import { findAsUser, pageAsUser, updateAndMap } from '../local-api'
 import { createAsUser } from './local-writes'
 import { CRM_COLLECTIONS, toCrmData, toCrmRecord } from './record-codecs'
 import { createCrmStageStore, firstWorkflow, whereId } from './stage-store'
@@ -110,22 +110,15 @@ export async function listCrmPage<T extends CrmRecordType>(
   req: PayloadRequest,
   query: CrmPageQuery<T>,
 ): Promise<CrmPageResult<T>> {
-  const result = await req.payload.find({
-    collection: CRM_COLLECTIONS[query.type],
-    where: query.where,
-    sort: query.sort ?? ['-createdAt', 'id'],
-    page: query.page,
-    limit: query.limit,
-    depth: 0,
-    overrideAccess: false,
-    user: req.user,
+  return pageAsUser(
     req,
-  })
-  return {
-    records: result.docs.flatMap((doc) => {
-      const record = toCrmRecord(query.type, doc)
-      return record === undefined ? [] : [record]
-    }),
-    total: result.totalDocs,
-  }
+    {
+      collection: CRM_COLLECTIONS[query.type],
+      where: query.where,
+      sort: query.sort ?? ['-createdAt', 'id'],
+      page: query.page,
+      limit: query.limit,
+    },
+    (doc) => toCrmRecord(query.type, doc),
+  )
 }

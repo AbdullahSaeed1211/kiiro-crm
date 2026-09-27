@@ -32,23 +32,23 @@ export interface RejectedSubmission {
   readonly updatedAt: number
 }
 
-/** Job data sources. Methods are intentionally narrow so local fixtures need no Payload runtime. */
+/** Job data sources. Every method is required, so a composition root that misses one fails to compile instead of processing nothing. */
 export interface JobSources {
-  listExpiredInvitations?(
+  listExpiredInvitations(
     at: number,
     limit: number,
     cursor?: JobCursor,
   ): Promise<readonly ExpiredInvitation[] | JobBatch<ExpiredInvitation>>
-  expireInvitation?(id: Id): Promise<void>
-  listOverdue?(before: number, limit: number, cursor?: JobCursor): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
-  listDigests?(
+  expireInvitation(id: Id): Promise<void>
+  listOverdue(before: number, limit: number, cursor?: JobCursor): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
+  listDigests(
     localDate: string,
     at: number,
     limit: number,
     cursor?: JobCursor,
   ): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
-  listStalled?(before: number, limit: number, cursor?: JobCursor): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
-  deleteRejected?(before: number, limit: number, cursor?: JobCursor): Promise<number | JobBatch<RejectedSubmission>>
+  listStalled(before: number, limit: number, cursor?: JobCursor): Promise<readonly JobTarget[] | JobBatch<JobTarget>>
+  deleteRejected(before: number, limit: number, cursor?: JobCursor): Promise<number | JobBatch<RejectedSubmission>>
 }
 
 /** Dependencies shared by the six scheduled jobs. */
@@ -71,13 +71,13 @@ export function createInvitationsExpireJob(deps: ScheduledJobsDeps): CronJob {
     run: async (window) => {
       if (!(await claim(deps, 'invitations.expire', window))) return ok({ processed: 0, created: 0, skipped: 0 })
       const page = asBatch(
-        await deps.source.listExpiredInvitations?.(
+        await deps.source.listExpiredInvitations(
           window.end,
           deps.limit ?? JOB_LIMIT,
           await cursorOfJob(deps, 'invitations.expire'),
         ),
       )
-      for (const row of page.rows) await deps.source.expireInvitation?.(row.id)
+      for (const row of page.rows) await deps.source.expireInvitation(row.id)
       await saveCursor({ deps, name: 'invitations.expire', rows: page.rows, next: page.nextCursor })
       return ok({ processed: page.rows.length, created: page.rows.length, skipped: 0 })
     },
@@ -93,7 +93,7 @@ export function createOverdueJob(deps: ScheduledJobsDeps): CronJob {
       if (!(await claim(deps, 'tasks.overdue', window))) return ok({ processed: 0, created: 0, skipped: 0 })
       const today = startOfLocalDay(deps.timeZone, window.end)
       const page = asBatch<JobTarget>(
-        await deps.source.listOverdue?.(today, deps.limit ?? JOB_LIMIT, await cursorOfJob(deps, 'tasks.overdue')),
+        await deps.source.listOverdue(today, deps.limit ?? JOB_LIMIT, await cursorOfJob(deps, 'tasks.overdue')),
       )
       const counts: { readonly created: number; readonly skipped: number } = await notificationCount({
         targets: page.rows,
@@ -115,7 +115,7 @@ export function createDigestJob(deps: ScheduledJobsDeps): CronJob {
       if (!(await claim(deps, 'digest.send', window))) return ok({ processed: 0, created: 0, skipped: 0 })
       const date = localDate(deps.timeZone, window.end)
       const page = asBatch<JobTarget>(
-        await deps.source.listDigests?.(
+        await deps.source.listDigests(
           date,
           window.end,
           deps.limit ?? JOB_LIMIT,
@@ -143,7 +143,7 @@ export function createStalledJob(deps: ScheduledJobsDeps): CronJob {
     run: async (window) => {
       if (!(await claim(deps, 'records.stalled', window))) return ok({ processed: 0, created: 0, skipped: 0 })
       const page = asBatch<JobTarget>(
-        await deps.source.listStalled?.(
+        await deps.source.listStalled(
           startOfLocalDay(deps.timeZone, window.end),
           deps.limit ?? JOB_LIMIT,
           await cursorOfJob(deps, 'records.stalled'),
@@ -168,13 +168,13 @@ export function createIntakeCleanupJob(deps: ScheduledJobsDeps): CronJob {
     isDue: (window) => localDateChanged(deps.timeZone, window),
     run: async (window) => {
       if (!(await claim(deps, 'intake.cleanup', window))) return ok({ processed: 0, created: 0, skipped: 0 })
-      const result = await deps.source.deleteRejected?.(
+      const result = await deps.source.deleteRejected(
         window.end - 30 * DAY_MS,
         deps.limit ?? JOB_LIMIT,
         await cursorOfJob(deps, 'intake.cleanup'),
       )
       if (typeof result === 'number') return ok({ processed: result, created: result, skipped: 0 })
-      const page = result ?? { rows: [] }
+      const page = result
       await saveCursor({ deps, name: 'intake.cleanup', rows: page.rows, next: page.nextCursor })
       return ok({ processed: page.rows.length, created: page.rows.length, skipped: 0 })
     },

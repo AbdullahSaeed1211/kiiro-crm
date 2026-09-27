@@ -1,4 +1,4 @@
-import { workflowOrThrow } from '../workflow-result'
+import { workflowOrThrow } from '../../workflow-result'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'

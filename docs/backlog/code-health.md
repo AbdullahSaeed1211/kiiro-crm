@@ -1,6 +1,6 @@
 # Code-health backlog
 
-49 findings are open: 8 high, 22 medium and 19 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+45 findings are open: 8 high, 20 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -11,23 +11,22 @@
 
 ## Root causes
 
-| Root cause                                                                                                                         | Severity | Open findings                                                                |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-02 ARCH-05                                                              |
-| Errors are handled several ways: adapters throw while modules return `Result`, and client `catch` blocks discard the cause         | High     | DOM-09                                                                       |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                                                |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 DOM-05 DOM-14 |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                                           |
-| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                                        |
-| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                                           |
-| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                                                  |
-| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                                           |
+| Root cause                                                                                                                         | Severity | Open findings                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-02 ARCH-05                                                |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                                  |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                             |
+| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                          |
+| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                             |
+| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                                    |
+| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                             |
 
 ## Refactor order
 
 Each step keeps `pnpm verify` green and makes the next one safer.
 
-1. Settle on one error model. Adapters return `Result`, and client `catch` blocks report through one helper instead of retyping generic copy (DOM-09).
+1. Done: adapters return `Result`, and client `catch` blocks report through `describeClientError`.
 2. Done: one composition root (`server/container.ts`) and the identity module (`packages/modules/identity`).
 3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14, WEB-16, WEB-17).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
@@ -85,38 +84,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: The declared `CrmRepository` port (`packages/modules/crm/src/ports/repository.ts`) has none of these members, so this is domain code silently depending on undeclared, adapter-specific extensions. A conforming `CrmRepository` implementation (e.g. a test double) gets the slow `list('deal')`/no-filter fallback without ever being told the fast path exists, and three different naming conventions for "give me field definitions" is unmaintainable.
 - Fix: Add `findDealBySourceLead` and one `listFieldDefinitions` method to the `CrmRepository` port itself (real capabilities, not optional duck-typed extras); implement fallback in the adapter, not in domain code.
 - Effort: M
-
-### DOM-05: DRY, medium severity
-
-- Location: `packages/adapters/payload/src/repositories/task-repository.ts:175-256` (`taskPage`, `listTaskPage`) vs `packages/adapters/payload/src/repositories/crm/crm-repository.ts:100-123` (`listCrmPage`)
-- Evidence: Both hand-roll the identical `payload.find({..., depth:0, overrideAccess:false, user:req.user, req})` pagination wrapper and total-count mapping; `listTaskPage` additionally reimplements a due-date-nulls-last two-bucket pagination algorithm found nowhere else.
-- Consequence: Any change to how scoped pagination is done (e.g. adding cache, depth, or error handling) must be replicated by hand in at least two files; the nulls-last algorithm in particular is intricate (dual counts, offset math) and untested duplication risk is high if a third list needs the same "nulls last" ordering.
-- Fix: Extract a shared `scopedPage(req, { collection, where, sort, page, limit })` helper in `local-api.ts`; keep the nulls-last logic as one general-purpose utility parameterized by field.
-- Effort: M
-
-### DOM-09: Clean code error handling, medium severity
-
-- Location: `packages/adapters/payload/src/repositories/task-repository.ts:94` (`loadTaskWorkflow`); the create and default-workflow paths in both repositories now return `Result`
-- Evidence: `createTask`/`createProject`/`loadTaskWorkflow`/`loadDefaultWorkflow` `throw new Error(...)` while every module command (`crud.ts`, `pipeline.ts`, `submit.ts`) returns `Result`/`ok`/`err`. `executeCommand` in `domain/helpers.ts` catches exceptions and converts them to `INTERNAL` errors, but only for CRM; work module command handlers (`commands/tasks.ts`, `projects.ts`) were not inspected here to confirm they wrap similarly - unverified whether an uncaught throw from `loadTaskWorkflow` surfaces as a clean domain error or an unhandled rejection in the work module.
-- Consequence: Mixing throw-based and Result-based error styles inside the same layer (adapters called by domain code) makes error handling non-uniform; a caller that forgets a try/catch turns a configuration error ("no workflow configured") into a 500 instead of a typed domain error.
-- Fix: Standardize: adapters return `Result` (or a narrower "not configured" sentinel) instead of throwing, matching the `StageStore`/`CrmRepository` pattern used elsewhere (`saveStage` already returns `undefined` instead of throwing).
-- Effort: S
-
-### DOM-12: Clean code naming, low severity
-
-- Location: `packages/adapters/cloudflare/src/cron/job-support.ts:82-86` (`asBatch`) vs `packages/adapters/cloudflare/src/cron/jobs.ts:36-52` (`JobSources` methods)
-- Evidence: `JobSources` methods are all declared optional (`listOverdue?`, `deleteRejected?`, etc.) and called with `?.()`, silently no-op'ing (`ok({processed:0...})`) when unset, rather than the type system requiring every job source to be wired.
-- Consequence: A composition root that forgets to wire one job source doesn't fail to compile or fail loudly - the job just silently "succeeds" processing 0 rows forever. Combined with ISP (each job only needs one method), fine, but the optionality removes a safety net the interface segregation would otherwise have kept.
-- Fix: Keep the ISP split (each job takes its single-method port) but make that single method required, not optional, on the split-out interface.
-- Effort: S
-
-### DOM-14: DRY, low severity
-
-- Location: `packages/adapters/payload/src/repositories/task-repository.ts:44-61` (`workflowFor`, `mapProject`, `mapTask`)
-- Evidence: `mapProject` and `mapTask` are structurally identical (load workflow, find stage by `stageId`, call a `to*Record` mapper) differing only in which `to*Record` function is called.
-- Consequence: Boilerplate duplicated per record kind; adding a third stage-tracked kind repeats the same 4-line pattern again.
-- Fix: Factor a generic `mapStageTracked(req, doc, mapper)` helper.
-- Effort: S
 
 ### DOM-15: SRP, low severity
 

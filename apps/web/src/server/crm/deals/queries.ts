@@ -1,4 +1,4 @@
-import { workflowOrThrow } from '../workflow-result'
+import { workflowOrThrow } from '../../workflow-result'
 import { asId, systemClock } from '@ops/kernel'
 import { createCrmRepository, createUnitOfWork, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, CrmDeps, DealRecord, OrganizationRecord } from '@ops/module-crm'

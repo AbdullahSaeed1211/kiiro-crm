@@ -93,14 +93,25 @@ function targets(count: number): JobTarget[] {
   }))
 }
 
-function deps(source: JobSources, limit = 200): ScheduledJobsDeps {
+// Sources a test does not exercise return nothing.
+const NO_SOURCES: JobSources = {
+  listExpiredInvitations: async () => [],
+  expireInvitation: async () => undefined,
+  listOverdue: async () => [],
+  listDigests: async () => [],
+  listStalled: async () => [],
+  deleteRejected: async () => 0,
+}
+
+function deps(partial: Partial<JobSources>, limit = 200): ScheduledJobsDeps {
+  const source: JobSources = { ...NO_SOURCES, ...partial }
   return { source, notifications: new InMemoryNotificationStore(), runs: runs(), timeZone: 'America/New_York', limit }
 }
 
 describe('scheduled job windows and continuation', () => {
   it('uses tenant-local midnight and fires overdue/stalled on the first run after 09:00', async () => {
     const calls: number[] = []
-    const source: JobSources = {
+    const source: Partial<JobSources> = {
       listOverdue: (before) => {
         calls.push(before)
         return Promise.resolve({ rows: [] })
@@ -124,7 +135,7 @@ describe('scheduled job windows and continuation', () => {
   it('continues capped pages for each job and keeps same-window reruns idempotent', async () => {
     const rows = targets(250)
     const notificationRows = new InMemoryNotificationStore()
-    const source: JobSources = {
+    const source: Partial<JobSources> = {
       listOverdue: (_before, limit, cursor) => Promise.resolve(page(rows, limit, cursor)),
       listDigests: (_date, _at, limit, cursor) => Promise.resolve(page(rows, limit, cursor)),
       listStalled: (_before, limit, cursor) => Promise.resolve(page(rows, limit, cursor)),

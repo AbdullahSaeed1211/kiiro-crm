@@ -1,8 +1,9 @@
 import type { PayloadRequest, Sort, Where } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import type { ProjectRecord, TaskRecord, WorkTaskRecord } from '@ops/module-work'
+import type { StageCategory } from '@ops/platform'
 import { toProjectRecord, toTaskRecord, toWorkTaskRecord } from './task-mapping'
-import { findAsUser } from './local-api'
+import { findAsUser, pageAsUser } from './local-api'
 import { fieldOf, idOf, type Doc } from './documents'
 import { toWorkflow } from './workflow-mapping'
 
@@ -23,18 +24,8 @@ function andWhere(...clauses: readonly Where[]): Where {
 }
 
 export async function taskPage(req: PayloadRequest, options: TaskPageOptions): Promise<TaskPageResult> {
-  const result = await req.payload.find({
-    collection: COLLECTIONS.tasks,
-    where: options.where,
-    sort: options.sort,
-    page: options.page,
-    limit: options.limit,
-    depth: 0,
-    overrideAccess: false,
-    user: req.user,
-    req,
-  })
-  return { records: result.docs.flatMap((doc) => toTaskRecord(doc) ?? []), total: result.totalDocs }
+  const { where, sort, page, limit } = options
+  return pageAsUser(req, { collection: COLLECTIONS.tasks, where, sort, page, limit }, toTaskRecord)
 }
 
 /**
@@ -76,17 +67,22 @@ async function workflowFor(req: PayloadRequest, doc: Doc) {
   return workflowId === undefined ? undefined : findWorkflow(req, { id: { equals: String(workflowId) } })
 }
 
-export async function mapProject(req: PayloadRequest, doc: Doc): Promise<ProjectRecord | undefined> {
+/** Maps a stage-tracked document through its workflow; `undefined` when its stage is not in that workflow. */
+async function mapStaged<T>(
+  req: PayloadRequest,
+  doc: Doc,
+  toRecord: (doc: Doc, category: StageCategory) => T | undefined,
+): Promise<T | undefined> {
   const workflow = await workflowFor(req, doc)
   const stage = workflow?.stages.find((item) => item.id === idOf(fieldOf(doc, 'stageId')))
-  return stage === undefined ? undefined : toProjectRecord(doc, stage.category)
+  return stage === undefined ? undefined : toRecord(doc, stage.category)
 }
 
-export async function mapTask(req: PayloadRequest, doc: Doc): Promise<WorkTaskRecord | undefined> {
-  const workflow = await workflowFor(req, doc)
-  const stage = workflow?.stages.find((item) => item.id === idOf(fieldOf(doc, 'stageId')))
-  return stage === undefined ? undefined : toWorkTaskRecord(doc, stage.category)
-}
+export const mapProject = (req: PayloadRequest, doc: Doc): Promise<ProjectRecord | undefined> =>
+  mapStaged(req, doc, toProjectRecord)
+
+export const mapTask = (req: PayloadRequest, doc: Doc): Promise<WorkTaskRecord | undefined> =>
+  mapStaged(req, doc, toWorkTaskRecord)
 
 export async function richTasks(req: PayloadRequest, docs: readonly Doc[]): Promise<readonly WorkTaskRecord[]> {
   const workflowIds = [...new Set(docs.flatMap((doc) => idOf(fieldOf(doc, 'workflow')) ?? []))]
