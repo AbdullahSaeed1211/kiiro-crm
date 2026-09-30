@@ -74,6 +74,10 @@ function pageHref(params: SearchParams, page: number): string {
   parseLeadStages(params.stage).forEach((stage) => {
     next.append('stage', stage)
   })
+  for (const facet of ['source', 'owner'] as const) {
+    const value = parseLeadSearch(params[facet])
+    if (value) next.set(facet, value)
+  }
   next.set('page', String(page))
   return `/leads?${next.toString()}`
 }
@@ -119,6 +123,8 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
   const result = await listLeads({
     q: parseLeadSearch(params.q),
     stages: parseLeadStages(params.stage),
+    source: parseLeadSearch(params.source),
+    owner: parseLeadSearch(params.owner),
     page: Number(params.page) || 1,
   })
   return (
@@ -126,7 +132,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
       <AppHeader breadcrumbs={[{ label: 'Leads' }]} />
       <PageContent>
         <PageHeader title="Leads" count={result.total} actions={<LeadCreateDialogClient />} />
-        <LeadListControls stages={result.stages} />
+        <LeadListControls stages={result.stages} sources={result.sources} />
         <LeadTable result={result} params={params} />
       </PageContent>
     </>

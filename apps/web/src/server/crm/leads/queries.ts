@@ -69,7 +69,21 @@ export type LeadListResult = Readonly<{
   readonly people: readonly LeadPerson[]
 }>
 
-function leadWhere(params: Readonly<{ q?: string; stages?: readonly string[] }>, workflow: Workflow): Where {
+type LeadFacets = Readonly<{ source?: string; owner?: string }>
+
+/** Source and owner narrow the list; `owner` is a user id, or `none` for leads nobody owns. */
+function facetFilters({ source, owner }: LeadFacets): Where[] {
+  const filters: Where[] = []
+  if (source) filters.push({ source: { equals: source } })
+  if (owner === 'none') filters.push({ owner: { exists: false } })
+  else if (owner) filters.push({ owner: { equals: owner } })
+  return filters
+}
+
+function leadWhere(
+  params: Readonly<{ q?: string; stages?: readonly string[] }> & LeadFacets,
+  workflow: Workflow,
+): Where {
   const filters: Where[] = []
   const stages = params.stages ?? []
   if (stages.length > 0) filters.push({ stageId: { in: stages } })
@@ -82,6 +96,7 @@ function leadWhere(params: Readonly<{ q?: string; stages?: readonly string[] }>,
       },
     })
   }
+  filters.push(...facetFilters(params))
   const query = params.q?.trim() ?? ''
   if (query !== '') {
     filters.push({
@@ -114,9 +129,10 @@ async function loadLeadPeople(
 
 /** Reads visible leads and supporting lookup data for the table/board. */
 export async function listLeads(
-  params: Readonly<{ q?: string; stages?: readonly string[]; page?: number }>,
+  params: Readonly<{ q?: string; stages?: readonly string[]; page?: number }> & LeadFacets,
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
+  const owner = params.owner === 'me' ? String(context.actor.id) : params.owner
   const repo = createCrmRepository(context.req)
   const workflowPromise = repo.loadDefaultWorkflow('lead').then(workflowOrThrow)
   const sourcesPromise = repo.listLookups('source')
@@ -125,7 +141,7 @@ export async function listLeads(
   const [pageResult, sources, lostReasons] = await Promise.all([
     listCrmPage(context.req, {
       type: 'lead',
-      where: leadWhere(params, workflow),
+      where: leadWhere({ ...params, ...(owner === undefined ? {} : { owner }) }, workflow),
       page: Math.max(1, params.page ?? 1),
       limit: PAGE_SIZE,
     }),

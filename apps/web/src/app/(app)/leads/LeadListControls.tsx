@@ -1,6 +1,7 @@
 'use client'
 
 import { FilterBar } from '@ops/ui'
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
@@ -9,7 +10,64 @@ function hrefWithQuery(path: string, query: string): string {
   return query === '' ? path : `${path}?${query}`
 }
 
-export function LeadListControls({ stages }: Readonly<{ stages: readonly KanbanStage[] }>) {
+const OWNER_OPTIONS = [
+  { value: '', label: 'Any owner' },
+  { value: 'me', label: 'My leads' },
+  { value: 'none', label: 'Unassigned' },
+] as const
+
+function FacetSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: Readonly<{
+  label: string
+  value: string
+  options: readonly { value: string; label: string }[]
+  onChange: (value: string) => void
+}>) {
+  return (
+    <NativeSelect
+      size="sm"
+      aria-label={label}
+      value={value}
+      onChange={(event) => {
+        onChange(event.target.value)
+      }}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </NativeSelect>
+  )
+}
+
+function ViewLinks({ boardHref, tableHref }: Readonly<{ boardHref: string; tableHref: string }>) {
+  return (
+    <>
+      <a
+        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
+        href={boardHref}
+      >
+        Board
+      </a>
+      <a
+        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
+        href={tableHref}
+      >
+        Table
+      </a>
+    </>
+  )
+}
+
+export function LeadListControls({
+  stages,
+  sources,
+}: Readonly<{ stages: readonly KanbanStage[]; sources: readonly { id: string; name: string }[] }>) {
   const router = useRouter()
   const pathname = usePathname()
   const search = useSearchParams()
@@ -19,6 +77,13 @@ export function LeadListControls({ stages }: Readonly<{ stages: readonly KanbanS
   queryParams.delete('view')
   const query = queryParams.toString()
   const boardHref = hrefWithQuery('/leads/board', query)
+  const setFacet = (name: 'source' | 'owner', value: string) => {
+    const params = new URLSearchParams(search.toString())
+    if (value) params.set(name, value)
+    else params.delete(name)
+    params.delete('page')
+    router.push(`${pathname}?${params.toString()}`)
+  }
   const navigate = useCallback(
     (input: Readonly<{ query: string; stages: readonly string[] }>) => {
       const { query, stages } = input
@@ -54,18 +119,23 @@ export function LeadListControls({ stages }: Readonly<{ stages: readonly KanbanS
           navigate({ query: q, stages: value })
         }}
       />
-      <a
-        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-        href={boardHref}
-      >
-        Board
-      </a>
-      <a
-        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-        href={hrefWithQuery('/leads', query)}
-      >
-        Table
-      </a>
+      <FacetSelect
+        label="Owner"
+        value={search.get('owner') ?? ''}
+        options={OWNER_OPTIONS}
+        onChange={(value) => {
+          setFacet('owner', value)
+        }}
+      />
+      <FacetSelect
+        label="Source"
+        value={search.get('source') ?? ''}
+        options={[{ value: '', label: 'Any source' }, ...sources.map(({ id, name }) => ({ value: id, label: name }))]}
+        onChange={(value) => {
+          setFacet('source', value)
+        }}
+      />
+      <ViewLinks boardHref={boardHref} tableHref={hrefWithQuery('/leads', query)} />
     </div>
   )
 }
