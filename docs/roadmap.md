@@ -67,7 +67,7 @@ Sign up, then automatic provisioning, as proposed in [the self-serve design](des
 
 - Done: a neutral demo workspace (Demo Agency, example.test identities, fictional clients) seeds `seed:dev` and the tests. Before phase 1: resolve the design's open questions with spikes, then record ADR-0005.
 - Phase 1 replaces the operator CLI, so the provisioning-script findings are closed by deleting or rewriting that code rather than refactoring it.
-- Findings: UX 10, 11; code-health ARCH-07, SCR-07, SCR-08, SCR-10, SCR-13, SCR-14, SCR-16, SCR-17, SCR-19, SCR-21.
+- Findings: UX 10, 11; code-health ARCH-07, SCR-07, SCR-08, SCR-10, SCR-13, SCR-16, SCR-17, SCR-19, SCR-21.
 
 Depends on: wave 1. Done when: each phase's acceptance in the design doc is met.
 

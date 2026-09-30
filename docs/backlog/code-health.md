@@ -250,14 +250,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ## Scripts and provisioning
 
-### SCR-14: Clean code magic values / tenant leak, high severity
-
-- Location: `scripts/seed/steps.ts:59-73` (`seedUsers`)
-- Evidence: Hardcodes `seed.email === 'mirchads@gmail.com'` and a literal legacy email `'mirchads@example.test'` as a one-off migration branch inside otherwise tenant-agnostic seed logic; file carries a blanket `/* eslint-disable complexity, max-lines-per-function, max-depth, sonarjs/cognitive-complexity */` at the top (line 1) that suppresses the complexity gates for the whole file rather than isolating this branch.
-- Consequence: Confirms the audit's known seed: this "shared" seed module is actually Mirch-Media-specific, and the disable directive hides that this one special case is what's driving the file's complexity past the gated limits.
-- Fix: Extract the legacy-email migration into a small named function (`migrateLegacyOwnerEmail`) with a narrower disable comment, or move the literal into `data.ts`'s `USERS`/`APP_SETTINGS` seed data so `steps.ts` stays tenant-agnostic.
-- Effort: M
-
 ### SCR-07: OCP, medium severity
 
 - Location: `scripts/lib/provision/plan.ts:61-93` (`provisionPlan`) + `types.ts:3-17` (`ProvisionState`/`ProvisionStep`) + `execution.ts` per-step functions + `state.ts:parseStatus` allow-list (94-105)
