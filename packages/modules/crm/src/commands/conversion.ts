@@ -1,3 +1,4 @@
+import { movePipeline } from '../domain/pipeline-move'
 import { asId, ok, type Id } from '@ops/kernel'
 import type { Workflow } from '@ops/platform'
 import type { CrmDeps } from '../ports/repository'
@@ -11,7 +12,6 @@ import {
   failure,
   findExistingDeal,
   findExistingOrganization,
-  movePipeline,
   parse,
   type CrmResult,
 } from '../domain/helpers'

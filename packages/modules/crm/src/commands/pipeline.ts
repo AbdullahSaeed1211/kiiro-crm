@@ -1,3 +1,4 @@
+import { movePipeline } from '../domain/pipeline-move'
 import { asId, ok, type Id } from '@ops/kernel'
 import type { Workflow } from '@ops/platform'
 import type { CrmDeps } from '../ports/repository'
@@ -11,18 +12,9 @@ import {
   updateLeadSchema,
 } from '../schema'
 import type { UpdateDealInput, UpdateLeadInput } from '../schema'
+import { leadMoveDestinationError } from '../domain/lead-moves'
 import { createWithActivity } from './crud'
-import {
-  accessDenied,
-  cleanNullable,
-  executeCommand,
-  failure,
-  id,
-  ids,
-  movePipeline,
-  parse,
-  type CrmResult,
-} from '../domain/helpers'
+import { accessDenied, cleanNullable, executeCommand, failure, id, ids, parse, type CrmResult } from '../domain/helpers'
 
 interface StageDefaults {
   readonly workflow: Workflow
@@ -224,6 +216,7 @@ async function moveLeadWork(deps: CrmDeps, input: unknown): Promise<CrmResult<Le
     recordId: asId(value.leadId),
     toStageId: asId(value.toStageId),
     expectedUpdatedAt: value.expectedUpdatedAt,
+    destinationRule: leadMoveDestinationError,
     ...(value.reason === undefined ? {} : { reason: value.reason }),
   })
 }

@@ -48,7 +48,7 @@ Code-health refactor steps 3 and 4: rules move out of the web layer, and leads, 
 - Add the tenant-owned custom form builder and renderer for agency and managed-client lead intake (§10.3). Field mapping alone does not complete this requirement.
 - Done (v0.6.0–v0.8.0): configurable client onboarding — custom fields on organization, contact, lead and deal pages; stage requirements that name missing fields; playbooks that create a project from a won deal; intake answers mapped to lead fields and custom fields in Settings, Intake. Also done: CRM use cases on `/api/v1`.
 - Done (v0.9.0): editable details on every record, deals on the shared record parts, conversion that attaches to existing records, notes on records, and one quick-create dialog for leads, contacts and organizations.
-- Findings: code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-03, WEB-04, WEB-05, WEB-07, WEB-08, WEB-09, WEB-10, WEB-12, WEB-14, WEB-16, WEB-17, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.
+- Findings: code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-04, WEB-05, WEB-07, WEB-08, WEB-09, WEB-10, WEB-12, WEB-14, WEB-17, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.
 
 Depends on: wave 3 for the error model and composition root. Done when: leads, deals and tasks render through the shared components and the CRM endpoints pass their gates.
 
@@ -57,7 +57,7 @@ Depends on: wave 3 for the error model and composition root. Done when: leads, d
 - Done: no native `<select>` remains outside `packages/ui`; multi-selects are checkbox lists.
 - One view bar with search, filter and sort on every list; `@ops/ui` date inputs; one view switcher; bulk actions through `DataTable` selection.
 - Kanban column sizing and add-to-column; calendar drag to reschedule; Gantt bars coloured by stage; one token set across the stylesheets.
-- Findings: UX 8, 12, 13, 15, 16, 19, 20, 22, 23, 24, 26, 30, 32, 33, 34, 35; code-health UI-05, UI-06, UI-07, UI-12, UI-13, UI-14, UI-17, UI-21, UI-23.
+- Findings: UX 8, 12, 13, 15, 16, 19, 20, 22, 23, 24, 26, 30, 32, 33, 34, 35; code-health UI-05, UI-07, UI-12, UI-13, UI-14, UI-17, UI-21, UI-23.
 
 Depends on: wave 5 for the generic record lists. Done when: no native `<select>` remains outside `packages/ui`, and every list page has the same bar.
 

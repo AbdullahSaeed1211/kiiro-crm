@@ -14,6 +14,20 @@ describe('CRM stage invariants', () => {
     expect((await context.repo.get('lead', seedLead.id))?.stageId).toBe('lead-open')
   })
 
+  it('refuses to move a lead straight to a converted stage and tells the user how to convert', async () => {
+    const context = makeDeps()
+    const result = await moveLead(context, {
+      leadId: seedLead.id,
+      toStageId: 'lead-won',
+      expectedUpdatedAt: seedLead.updatedAt,
+    })
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'VALIDATION', message: 'Convert the lead from its record page.' },
+    })
+    expect((await context.repo.get('lead', seedLead.id))?.stageId).toBe('lead-open')
+  })
+
   it('T-CRM-6 prevents staff from converting an out-of-scope lead', async () => {
     expect(await convertLead(makeDeps(undefined, 'staff'), convertInput)).toMatchObject({
       ok: false,

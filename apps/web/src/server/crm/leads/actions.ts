@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { asId } from '@ops/kernel'
 import {
   assignLeads,
   moveLeads,
@@ -14,30 +13,9 @@ import {
 import { crmDeps } from '../../container'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
-import { leadStageMoveError } from './types'
-import { actionError, toActionResult, type ActionResult } from '../../action-result'
+import { toActionResult, type ActionResult } from '../../action-result'
 
 const BOARD_PATH = '/leads/board'
-
-function moveInput(input: unknown): { leadId: string; toStageId: string } | null {
-  if (typeof input !== 'object' || input === null) return null
-  const value = input as { leadId?: unknown; toStageId?: unknown }
-  return typeof value.leadId === 'string' && typeof value.toStageId === 'string'
-    ? { leadId: value.leadId, toStageId: value.toStageId }
-    : null
-}
-
-async function validateLeadMoveDestination(input: unknown): Promise<ActionResult<void> | null> {
-  const value = moveInput(input)
-  if (value === null) return actionError('VALIDATION', 'Choose a valid lead stage.')
-  const deps = await crmDeps()
-  const lead = await deps.repo.get('lead', asId(value.leadId))
-  if (lead === undefined) return actionError('NOT_FOUND', 'lead not found')
-  const workflow = await deps.repo.loadWorkflow(lead.workflowId)
-  const stage = workflow?.stages.find((candidate) => candidate.id === asId(value.toStageId))
-  const error = stage === undefined ? null : leadStageMoveError(stage)
-  return error === null ? null : actionError('VALIDATION', error)
-}
 
 /** Creates a lead and revalidates the Leads routes. */
 export async function createLead(input: unknown): Promise<ActionResult<unknown>> {
@@ -70,8 +48,6 @@ export async function moveLeadsAction(input: unknown): Promise<ActionResult<{ up
 
 /** Moves a lead between workflow stages for board interactions. */
 export async function moveLead(input: unknown): Promise<ActionResult<{ stageId: string; updatedAt: number }>> {
-  const invalid = await validateLeadMoveDestination(input)
-  if (invalid !== null) return invalid as ActionResult<never>
   const result = await runMoveLead(await crmDeps(), input)
   if (result.ok) {
     revalidatePath('/leads')

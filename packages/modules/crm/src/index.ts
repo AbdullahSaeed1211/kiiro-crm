@@ -15,6 +15,7 @@ export type { CrmDeps, CrmRepository, LookupKind } from './ports/repository'
 export * from './commands/public'
 export { setCustomFieldsSchema } from './schema'
 export { STANDARD_STAGE_FIELDS } from './domain/stage-requirements'
+export { leadMoveDestinationError } from './domain/lead-moves'
 export {
   convertLeadSchema,
   createContactSchema,

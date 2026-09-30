@@ -1,6 +1,6 @@
 # Code-health backlog
 
-44 findings are open: 7 high, 20 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+40 findings are open: 4 high, 19 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -11,16 +11,16 @@
 
 ## Root causes
 
-| Root cause                                                                                                                         | Severity | Open findings                                           |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------- |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                                 |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                           |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                      |
-| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                   |
-| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                      |
-| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                             |
-| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                      |
+| Root cause                                                                                                                         | Severity | Open findings                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------ |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                          |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                    |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-05 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-17 DOM-02                      |
+| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                            |
+| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20               |
+| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-07                                            |
+| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19               |
 
 ## Refactor order
 
@@ -28,7 +28,7 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 1. Done: adapters return `Result`, and client `catch` blocks report through `describeClientError`.
 2. Done: one composition root (`server/container.ts`) and the identity module (`packages/modules/identity`).
-3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14, WEB-16, WEB-17).
+3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14,, WEB-17).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
 5. Split the oversized files: `member-forms`.
 6. Done: no route calls Payload outside the admin group.
@@ -94,14 +94,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ## Web app (`apps/web`)
 
-### WEB-03: DRY, high severity
-
-- Location: `apps/web/src/app/(app)/deals/[id]/page.tsx:20-46` vs `apps/web/src/app/(app)/leads/LeadRecordClient.tsx:106` / `record-view-primitives.tsx:35`
-- Evidence: Deal record page hand-rolls an `ActivityCard` (verb/actor/time layout) instead of using `ActivityFeed` from `@ops/ui`, which the lead record and generic record view already use
-- Consequence: New activity verbs or styling changes must be made twice; deal's activity feed will visibly diverge (no icons, no grouping) from every other record type
-- Fix: Replace `ActivityCard` with `<ActivityFeed items={data.activity} />`, mapping `ActivityItem`→`ActivityEntry` the way `LeadRecordClient.tsx` does
-- Effort: S
-
 ### WEB-08: DRY, high severity
 
 - Location: `apps/web/src/app/(app)/leads/page.tsx:80-114`, `apps/web/src/app/(app)/deals/page.tsx:68-114`, `apps/web/src/app/(app)/tasks/page.tsx:88-217`
@@ -115,15 +107,7 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Location: `apps/web/src/app/(app)/deals/[id]/page.tsx`
 - Evidence: One file mixes: activity rendering (`ActivityCard`), money/date formatting glue, contact-name joining (`[contact.firstName, contact.lastName].filter(Boolean).join(' ')` duplicated at lines 92 and 121), layout composition, and data fetching orchestration
 - Consequence: Any of these four concerns changing forces touching the same file; the name-joining logic is copy-pasted twice in the same file
-- Fix: Extract `ActivityCard`→shared feed (WEB-03), move `displayName`-style helpers to view-model, keep the page as pure composition
-- Effort: M
-
-### WEB-16: DIP/Layering, high severity
-
-- Location: `apps/web/src/server/crm/leads/actions.ts:40-50`
-- Evidence: `validateLeadMoveDestination` fetches the lead and workflow directly and re-derives transition legality in the web layer, ahead of calling `runMoveLead`
-- Consequence: Business rule (which stage moves are legal) now has two homes: this pre-check and whatever `runMoveLead` itself enforces in the module - if they disagree, the pre-check's error message can lie about why the real module call fails
-- Fix: Push this validation into `runMoveLead` (or a `canMoveLeadTo` module export) and have the action simply call it once
+- Fix: Move `displayName`-style helpers to view-model, keep the page as pure composition
 - Effort: M
 
 ### WEB-27: DRY, high severity
@@ -240,14 +224,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ## UI package (`packages/ui`)
 
-### UI-06: Dead code, high severity
-
-- Location: `DataTable/columns.tsx:36-65`, `DataTable/DataTable.tsx:31-32,120,124`, `DataTableFooter.tsx:26,30-34`, `types.ts:40-41,46`
-- Evidence: `selectable` prop, `selectColumn`, `row.toggleSelected`, `getSelectedRowIds`, and the `selected`/`selectAll`/`selectRow` label fields exist end-to-end. `grep -rn "selectable" apps/web/src` and `grep "<DataTable" -A15` across all 5 call sites (`directory-list-view.tsx`, `tasks/page.tsx`, `leads/page.tsx`, `deals/page.tsx`) show none pass `selectable`.
-- Consequence: ~60 lines of feature code, a TanStack feature (`rowSelectionFeature`), and 2 i18n keys per locale are maintained for a feature no page turns on - inflates the "wide prop interface" surface (see UI-07) for no product value.
-- Fix: Either wire selection into a real bulk-action page, or delete `selectable`, `selectColumn`, and the `selectAll`/`selectRow` labels until a caller needs them.
-- Effort: S
-
 ### UI-05: DRY, medium severity
 
 - Location: `GanttView/gantt-theme.css:8,24-27` vs `StagePill/stage.ts`, `KanbanBoard/stage-dot.ts`
@@ -267,9 +243,9 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 ### UI-07: ISP, low severity
 
 - Location: `DataTable.tsx:22-36`
-- Evidence: `DataTableProps` mixes pagination, sorting, labels (7 sub-keys), an unused `selectable` flag, and a `toolbarStart` slot; every caller must supply the full `DataTableLabels` including `selectAll`/`selectRow` even when selection is dead (UI-06).
+- Evidence: `DataTableProps` mixes pagination, sorting, labels (7 sub-keys), an unused `selectable` flag, and a `toolbarStart` slot; every caller must supply the full `DataTableLabels` including `selectAll`/`selectRow` even when a table does not select rows.
 - Consequence: Callers pay a translation and typing tax for a feature they never use.
-- Fix: Once UI-06 is resolved, shrink `DataTableLabels` to only the fields actually rendered.
+- Fix: Once is resolved, shrink `DataTableLabels` to only the fields actually rendered.
 - Effort: S
 
 ### UI-12: LSP/consistency, low severity

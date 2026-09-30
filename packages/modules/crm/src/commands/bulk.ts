@@ -1,6 +1,7 @@
 import { asId, ok } from '@ops/kernel'
 import { z } from 'zod'
 import { failure, parse, type CrmResult } from '../domain/helpers'
+import { leadMoveDestinationError } from '../domain/lead-moves'
 import type { CrmDeps } from '../ports/repository'
 import { moveLead, updateLead } from './pipeline'
 
@@ -49,8 +50,8 @@ export async function moveLeads(deps: CrmDeps, input: unknown): Promise<CrmResul
   if (!workflow.ok) return workflow
   const stage = workflow.value.stages.find((candidate) => candidate.id === asId(toStageId))
   if (stage === undefined) return failure('NOT_FOUND', 'stage not found')
-  if (['done_success', 'done_failure', 'cancelled'].includes(stage.category))
-    return failure('VALIDATION', 'Choose an open stage; convert or mark lost from the lead record.')
+  const blocked = leadMoveDestinationError(stage)
+  if (blocked !== null) return failure('VALIDATION', blocked)
   return ok(
     await eachLead(deps, ids, (leadId, expectedUpdatedAt) => moveLead(deps, { leadId, toStageId, expectedUpdatedAt })),
   )

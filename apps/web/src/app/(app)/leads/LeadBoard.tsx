@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { markLost } from '../../../server/crm/leads/actions'
 import { LostReasonDialog } from '../LostReasonDialog'
 import { moveLead } from '../../../server/crm/leads/actions'
-import { leadStageMoveError } from '../../../server/crm/leads/types'
+import { leadMoveDestinationError } from '@ops/module-crm'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
 import { deferredLostMoveResult } from './lead-board-model'
 
@@ -42,7 +42,7 @@ export function LeadBoard({
       return deferredLostMoveResult(stageByCard.current.get(cardId) ?? toStageId, expectedUpdatedAt)
     }
     if (destination !== undefined) {
-      const error = leadStageMoveError(destination)
+      const error = leadMoveDestinationError(destination)
       if (error !== null) return { ok: false as const, error: { code: 'VALIDATION', message: error } }
     }
     const result = await moveLead({ leadId: cardId, toStageId, expectedUpdatedAt })
