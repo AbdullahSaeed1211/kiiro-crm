@@ -3,7 +3,7 @@ import { PEOPLE_COLLECTIONS } from '../../collections/people/'
 import { FIELDS } from '../../contracts/names'
 import { fieldOf, idOf, msOf, textOf } from '../documents'
 import type { JobCursor } from './cursor'
-import type { JobTarget } from './overdue'
+import type { JobTarget } from './job-targets'
 import { isAfterCursor, withCursor } from './cursor'
 
 export async function listDigestTargets(

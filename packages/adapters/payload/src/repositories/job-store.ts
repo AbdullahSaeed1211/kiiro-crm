@@ -7,7 +7,7 @@ import { listStalledTargets } from './jobs/stalled'
 import { purgeRejected } from './jobs/rejected'
 import { createJobRunStore } from './jobs/run-store'
 import type { JobCursor } from './jobs/cursor'
-import type { JobTarget } from './jobs/overdue'
+import type { JobTarget } from './jobs/job-targets'
 
 export { createJobRunStore }
 
