@@ -2034,6 +2034,25 @@ export interface Setting {
     | number
     | boolean
     | null;
+  responseTargetHours?: number | null;
+  emailTemplates?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  automations?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   stalledDays: number;
   email: {
     fromName?: string | null;
@@ -2084,6 +2103,9 @@ export interface SettingsSelect<T extends boolean = true> {
       };
   terminology?: T;
   playbooks?: T;
+  responseTargetHours?: T;
+  emailTemplates?: T;
+  automations?: T;
   stalledDays?: T;
   email?:
     | T

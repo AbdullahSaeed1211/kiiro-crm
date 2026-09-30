@@ -12,6 +12,7 @@ import {
   textField,
   titleField,
 } from './fields'
+import { assignNewLead } from '../hooks/lead-assignment'
 
 /** Lead records (spec §10.1); `createdAt` is indexed by the timestamps Payload adds. */
 export const leadsCollection = spikeCollection({
@@ -21,6 +22,7 @@ export const leadsCollection = spikeCollection({
     useAsTitle: 'title',
     defaultColumns: ['title', 'email', 'stageId', FIELDS.owner, 'source'],
   },
+  hooks: { beforeChange: [assignNewLead] },
   fields: [
     titleField(),
     ...personFields(),

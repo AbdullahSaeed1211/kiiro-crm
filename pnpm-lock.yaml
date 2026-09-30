@@ -276,6 +276,9 @@ importers:
       '@ops/kernel':
         specifier: workspace:*
         version: link:../../kernel
+      zod:
+        specifier: 4.6.2
+        version: 4.6.2
     devDependencies:
       '@types/node':
         specifier: 22.20.2

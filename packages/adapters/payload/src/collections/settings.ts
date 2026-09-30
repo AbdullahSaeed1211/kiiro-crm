@@ -66,6 +66,12 @@ export const settingsGlobal: GlobalConfig = {
     { name: 'terminology', type: 'json', defaultValue: {} },
     // Onboarding playbooks; validated by `playbooksSchema` in @ops/module-work before they are saved.
     { name: 'playbooks', type: 'json', defaultValue: [] },
+    // How many hours a new lead may wait for a first response before it is flagged; 0 turns the flag off.
+    { name: 'responseTargetHours', type: 'number', defaultValue: 0, min: 0, max: 720 },
+    // Reusable email subjects and bodies; validated by `emailTemplatesSchema` in @ops/module-mail before they are saved.
+    { name: 'emailTemplates', type: 'json', defaultValue: [] },
+    // Rules run when a lead is created; validated by `leadRulesSchema` in @ops/module-crm before they are saved.
+    { name: 'automations', type: 'json', defaultValue: [] },
     { name: 'stalledDays', type: 'number', required: true, defaultValue: 14, min: 1, max: 365 },
     {
       name: 'email',

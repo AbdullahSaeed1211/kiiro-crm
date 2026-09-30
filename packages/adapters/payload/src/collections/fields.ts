@@ -42,6 +42,7 @@ export interface SpikeCollectionDefinition {
   readonly admin: NonNullable<CollectionConfig['admin']> & { readonly group: AdminGroup }
   readonly fields: Field[]
   readonly indexes?: CompoundIndex[]
+  readonly hooks?: NonNullable<CollectionConfig['hooks']>
 }
 
 /** Builds a collection with the §11.1 access functions of its slug, timestamps on and versions off (spec §11). */

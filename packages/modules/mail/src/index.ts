@@ -3,6 +3,7 @@ export { recordAddressLocal, receiveInboundEmail, releaseQuarantined, sendSystem
 export { parseEmail } from './parser'
 export { createRecordAddressing, resolveInboundDestination } from './addressing'
 export { escapeHtml, renderTemplate } from './templates'
+export { emailTemplatesSchema, fillTemplate, type EmailTemplate } from './saved-templates'
 export type {
   EmailMessage,
   InboundDestination,
