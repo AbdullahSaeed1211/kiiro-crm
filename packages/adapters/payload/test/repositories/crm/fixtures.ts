@@ -59,6 +59,7 @@ export const LEAD_RECORD = {
   stageEnteredAt: MS.createdAt,
   lostReasonId: null,
   lostNote: null,
+  nextActionAt: null,
   customData: {},
   ...MS,
 }
