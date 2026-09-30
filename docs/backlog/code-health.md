@@ -1,6 +1,6 @@
 # Code-health backlog
 
-33 findings are open: 2 high, 14 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+28 findings are open: 0 high, 11 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -14,9 +14,7 @@
 | Root cause                                                                                                                         | Severity | Open findings                      |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                            |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14                             |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-27                      |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 DOM-02               |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 DOM-02                      |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                              |
 | Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20 |
 | UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-07                              |
@@ -28,7 +26,7 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 1. Done: adapters return `Result`, and client `catch` blocks report through `describeClientError`.
 2. Done: one composition root (`server/container.ts`) and the identity module (`packages/modules/identity`).
-3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10, WEB-14,,).
+3. Move web-layer rules into the modules: lead move legality, display names, saved-view parsing and currency defaults (WEB-10,,,).
 4. Build generic record machinery. Extend the contacts and organizations `directory-view` approach to leads, deals and tasks: shared lists, boards, lost dialog, activity feed and conflict handling. This also closes most of the [UX backlog](ux.md).
 5. Split the oversized files: `member-forms`.
 6. Done: no route calls Payload outside the admin group.
@@ -94,38 +92,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ## Web app (`apps/web`)
 
-### WEB-12: SRP, high severity
-
-- Location: `apps/web/src/app/(app)/deals/[id]/page.tsx`
-- Evidence: One file mixes: activity rendering (`ActivityCard`), money/date formatting glue, contact-name joining (`[contact.firstName, contact.lastName].filter(Boolean).join(' ')` duplicated at lines 92 and 121), layout composition, and data fetching orchestration
-- Consequence: Any of these four concerns changing forces touching the same file; the name-joining logic is copy-pasted twice in the same file
-- Fix: Move `displayName`-style helpers to view-model, keep the page as pure composition
-- Effort: M
-
-### WEB-27: DRY, high severity
-
-- Status: `useVersionedAction` (`apps/web/src/app/(app)/use-versioned-action.ts`) now serves the lead record, the lost-reason dialog, the convert dialog and the contact and organization forms.
-- Location: `timeline/save-dates.ts` and the board models (`lead-board-model.ts`, `deal-board-model.ts`, `TaskBoard.tsx`)
-- Evidence: The timeline's date save and the three boards still detect CONFLICT and refresh on their own (the boards through the Kanban composite's `onConflict`).
-- Fix: Move the timeline save onto the hook; leave the boards on the composite, which already owns their optimistic rollback.
-- Effort: S
-
-### WEB-04: DRY, medium severity
-
-- Location: `apps/web/src/app/(app)/tasks/[id]/TaskAssigneeForm.tsx`
-- Evidence: Separate assignee-editing form outside `TaskSheet`, using raw unstyled `<select multiple>`/`<button>` instead of `@ops/ui` components, and its own save/error handling
-- Consequence: Editing assignees behaves and looks different depending on which surface you use; a second place to keep permission/optimistic-concurrency logic in sync
-- Fix: Fold assignee editing into `TaskSheet`/`TaskDetailDrawer` and delete this component
-- Effort: M
-
-### WEB-14: SRP, medium severity
-
-- Location: `apps/web/src/app/(app)/tasks/page.tsx` (328 lines, `eslint-disable max-lines`)
-- Evidence: Single file: cell renderers, column defs, pagination, saved-view JSON decoding (a parsing/validation concern), and the page component itself
-- Consequence: Saved-view decoding (untyped JSON→typed sort/mode) is a data-layer concern trapped in a page component, untestable in isolation
-- Fix: Move `savedViewSort`/`savedViewMode`/`taskModeOf`/`parseTaskView` to `server/queries/settings/listSavedViews.ts` or a `task-view-params.ts` module; keep page.tsx to layout + fetch
-- Effort: M
-
 ### WEB-18: OCP, medium severity
 
 - Location: `apps/web/src/app/(app)/directory-view.tsx`, `directory-list-view.tsx`
@@ -140,14 +106,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: `DealRecordView`/`DealControls` take a wide, loosely-related prop surface (whole `DealDetailData`, plus separately `outboundEmailEnabled`, `currency`) rather than composing from smaller typed slices
 - Consequence: Callers must assemble the full `DealDetailData` even for a component that uses 3 of its 10 fields, and adding one field to `DealDetailData` forces re-checking every consumer
 - Fix: Narrow each subcomponent's props to just what it renders (e.g., `ControlsCard` shouldn't need the whole `data`)
-- Effort: M
-
-### WEB-26: Clean code side effects, medium severity
-
-- Location: `apps/web/src/app/(app)/leads/LostReasonDialog.tsx:117-123`
-- Evidence: `submit()` calls `router.refresh()` on the CONFLICT error path but not on other error paths, silently, inside a dialog component whose name suggests pure form state
-- Consequence: A reader can't tell from the component's shape that a failed save can trigger a full route refresh; conflict-specific refresh logic is a domain rule (optimistic concurrency) hidden in a leaf UI component
-- Fix: Centralize the "on CONFLICT, refresh" policy in whatever shared mutation hook eventually wraps `expectedUpdatedAt` actions (see WEB-27)
 - Effort: M
 
 ### WEB-10: DRY, low severity
