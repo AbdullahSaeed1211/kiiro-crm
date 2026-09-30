@@ -5,7 +5,9 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { KanbanCard } from '@ops/ui/composites/KanbanBoard'
 import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../../server/crm/leads/queries'
+import { BOARD_LIMIT } from '../../../../server/crm/board-limit'
 import { LeadBoard } from '../LeadBoard'
+import { leadViews } from '../lead-views'
 
 export const metadata: Metadata = { title: 'Lead board' }
 export const dynamic = 'force-dynamic'
@@ -14,7 +16,11 @@ export default async function LeadBoardPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const params = await searchParams
-  const result = await listLeads({ q: parseLeadSearch(params.q), stages: parseLeadStages(params.stage) })
+  const result = await listLeads({
+    q: parseLeadSearch(params.q),
+    stages: parseLeadStages(params.stage),
+    pageSize: BOARD_LIMIT,
+  })
   const cards: KanbanCard[] = result.items.map(({ lead, source, owner }) => ({
     id: lead.id,
     stageId: lead.stageId,
@@ -48,10 +54,7 @@ export default async function LeadBoardPage({
             <ViewSwitcher
               label="Lead views"
               active="board"
-              views={[
-                { id: 'table', label: 'Table', href: tableHref },
-                { id: 'board', label: 'Board', href: '/leads/board' },
-              ]}
+              views={leadViews({ tableHref, boardHref: '/leads/board' })}
             />
           }
         />

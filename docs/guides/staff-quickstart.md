@@ -14,6 +14,8 @@ Sign in at `/login`. The sidebar holds My tasks, the sales pages (Leads, Deals, 
 6. Move the lead along its stages from the stage control, or drag its card on the board (**Leads**, Board view). If a stage needs a field first, the message names the missing field.
 7. Email from the lead's Email tab. Pick a saved template to fill the box.
 
+Open **Follow-ups** (next to Table and Board) for the day's work: open leads grouped as overdue, today, the next 7 days, later and no date set. Change a date right there, and use "Only my leads" to see your own.
+
 A duplicate warning appears when a lead's email or phone matches one that exists. Check it before you create another record.
 
 ## Convert a lead

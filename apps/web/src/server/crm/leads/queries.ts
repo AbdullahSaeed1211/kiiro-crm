@@ -94,7 +94,7 @@ async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestCon
 
 /** Reads visible leads and supporting lookup data for the table/board. */
 export async function listLeads(
-  params: Readonly<{ q?: string; stages?: readonly string[]; page?: number }> & LeadFacets,
+  params: Readonly<{ q?: string; stages?: readonly string[]; page?: number; pageSize?: number }> & LeadFacets,
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
   const owner = params.owner === 'me' ? String(context.actor.id) : params.owner
@@ -108,7 +108,7 @@ export async function listLeads(
       type: 'lead',
       where: leadWhere({ ...params, ...(owner === undefined ? {} : { owner }) }, workflow),
       page: Math.max(1, params.page ?? 1),
-      limit: PAGE_SIZE,
+      limit: params.pageSize ?? PAGE_SIZE,
     }),
     sourcesPromise,
     lostReasonsPromise,
@@ -123,7 +123,7 @@ export async function listLeads(
     items,
     total: pageResult.total,
     page: pageNumber,
-    pageSize: PAGE_SIZE,
+    pageSize: params.pageSize ?? PAGE_SIZE,
     stages,
     sources,
     lostReasons,

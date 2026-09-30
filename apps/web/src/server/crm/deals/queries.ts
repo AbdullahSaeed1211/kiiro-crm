@@ -66,7 +66,7 @@ function dealWhere(
 }
 
 export async function getDealListData(
-  input: Readonly<{ query?: string; stageId?: string; page?: number }> = {},
+  input: Readonly<{ query?: string; stageId?: string; page?: number; pageSize?: number }> = {},
 ): Promise<DealListData> {
   const context = await getRequestContext()
   const deps = dealDeps(context)
@@ -81,7 +81,7 @@ export async function getDealListData(
     type: 'deal',
     where: dealWhere(input, organizations),
     page: Math.max(1, input.page ?? 1),
-    limit: 50,
+    limit: input.pageSize ?? 50,
   })
   const ownerIds = dealsPage.records.flatMap((deal) => (deal.ownerId === null ? [] : [deal.ownerId]))
   const owners = await loadPeople(context, ownerIds)

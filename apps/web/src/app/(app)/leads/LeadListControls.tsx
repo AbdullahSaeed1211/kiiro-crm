@@ -6,6 +6,7 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
+import { leadViews } from './lead-views'
 
 function hrefWithQuery(path: string, query: string): string {
   return query === '' ? path : `${path}?${query}`
@@ -47,16 +48,7 @@ function FacetSelect({
 }
 
 function ViewLinks({ boardHref, tableHref }: Readonly<{ boardHref: string; tableHref: string }>) {
-  return (
-    <ViewSwitcher
-      label="Lead views"
-      active="table"
-      views={[
-        { id: 'table', label: 'Table', href: tableHref },
-        { id: 'board', label: 'Board', href: boardHref },
-      ]}
-    />
-  )
+  return <ViewSwitcher label="Lead views" active="table" views={leadViews({ tableHref, boardHref })} />
 }
 
 export function LeadListControls({

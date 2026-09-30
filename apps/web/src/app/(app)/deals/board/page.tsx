@@ -6,6 +6,7 @@ import type { KanbanBoardLabels, KanbanCard, KanbanStage } from '@ops/ui/composi
 import type { Metadata } from 'next'
 import { DealBoard } from '../DealBoard'
 import { DealCreateDialog } from '../DealCreateDialog'
+import { BOARD_LIMIT } from '../../../../server/crm/board-limit'
 import { getDealListData } from '../../../../server/crm/deals/queries'
 import { aggregateStageTotals, formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
@@ -28,7 +29,7 @@ function stageAmount(amountMinor: number, currency: string | null): string {
 }
 
 export default async function DealBoardPage() {
-  const [data, settings] = await Promise.all([getDealListData(), getWorkspaceSettings()])
+  const [data, settings] = await Promise.all([getDealListData({ pageSize: BOARD_LIMIT }), getWorkspaceSettings()])
   const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   const totals = aggregateStageTotals(
     data.items.map(({ deal }) => deal),
