@@ -1,5 +1,6 @@
 import { escapeHtml } from '@ops/module-mail'
 import type { Payload } from 'payload'
+import { recordSend } from './history'
 import { unsubscribeToken } from './token'
 
 /** Sends stop at this many recipients per click; larger lists send in several rounds. */
@@ -47,6 +48,8 @@ export async function sendCampaign(input: {
   readonly origin: string
   readonly recipients: readonly Subscriber[]
   readonly message: CampaignMessage
+  /** When set, each delivered email is also recorded on its contact under this sender address. */
+  readonly record?: Readonly<{ campaignId: string; from: string }>
 }): Promise<{ sent: number; failed: number }> {
   let sent = 0
   let failed = 0
@@ -57,7 +60,14 @@ export async function sendCampaign(input: {
     } catch (error) {
       console.error('[newsletter.send]', error)
       failed += 1
+      continue
     }
+    if (input.record !== undefined)
+      await recordSend({ ...input.record, payload: input.payload, subscriber, message: input.message }).catch(
+        (error: unknown) => {
+          console.error('[newsletter.record]', error)
+        },
+      )
   }
   return { sent, failed }
 }

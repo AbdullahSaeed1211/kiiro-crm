@@ -10,7 +10,7 @@ The owner scope added on 2026-09-30: lead management is the most polished part o
 4. **Lead notes.** Notes with author and time, edit and delete by the author, pinned note, mentions of staff.
 5. **Lead status.** Move lead-move legality into the CRM module (W5-1); status changes write activity and can require fields through stage requirements.
 6. **Lead to onboarding.** Convert to contact, organization and deal attaching to existing records; a won deal starts the tenant's onboarding playbook (project and tasks) and records the link on the lead.
-7. **Newsletter.** Done: opt-in checkbox custom field on contacts, test send, send to all subscribers, signed unsubscribe link and one-click headers. Website sign-ups arrive as a lead opt-in and carry to the contact on conversion. Open: campaign history.
+7. **Newsletter.** Done: opt-in checkbox custom field on contacts, test send, send to all subscribers, signed unsubscribe link and one-click headers. Website sign-ups arrive as a lead opt-in and carry to the contact on conversion. Campaign history is recorded per contact and listed on the newsletter page.
 
 ## Order
 

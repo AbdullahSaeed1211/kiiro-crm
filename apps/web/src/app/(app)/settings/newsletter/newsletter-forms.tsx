@@ -8,6 +8,28 @@ import { useState, useTransition } from 'react'
 import { enableNewsletter, sendNewsletter } from '../../../../server/actions/newsletter'
 
 type Subscriber = Readonly<{ id: string; email: string; name: string }>
+type Campaign = Readonly<{ id: string; subject: string; sentAt: number; recipients: number }>
+
+/** The last few campaigns sent, so nobody sends the same message twice by accident. */
+function CampaignHistory({ campaigns }: Readonly<{ campaigns: readonly Campaign[] }>) {
+  if (campaigns.length === 0) return null
+  return (
+    <section aria-label="Recent campaigns" className="grid gap-1 text-sm">
+      <h3 className="font-medium">Recent campaigns</h3>
+      <ul className="divide-y rounded-md border">
+        {campaigns.map((campaign) => (
+          <li key={campaign.id} className="flex flex-wrap justify-between gap-2 px-3 py-2">
+            <span>{campaign.subject}</span>
+            <span className="text-muted-foreground">
+              {new Date(campaign.sentAt).toLocaleDateString('en', { dateStyle: 'medium', timeZone: 'UTC' })} ·{' '}
+              {campaign.recipients} recipient{campaign.recipients === 1 ? '' : 's'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
 type Task = (task: () => Promise<string | null>) => void
 
@@ -117,7 +139,13 @@ export function NewsletterForms({
   enabled,
   outboundEnabled,
   subscribers,
-}: Readonly<{ enabled: boolean; outboundEnabled: boolean; subscribers: readonly Subscriber[] }>) {
+  campaigns,
+}: Readonly<{
+  enabled: boolean
+  outboundEnabled: boolean
+  subscribers: readonly Subscriber[]
+  campaigns: readonly Campaign[]
+}>) {
   if (!enabled) return <EnableNewsletter />
   return (
     <div className="grid gap-4">
@@ -127,6 +155,7 @@ export function NewsletterForms({
       </p>
       {outboundEnabled ? null : <p role="status">Email sending is not available for this workspace.</p>}
       <Composer outboundEnabled={outboundEnabled} count={subscribers.length} />
+      <CampaignHistory campaigns={campaigns} />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 'use server'
 
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
@@ -81,11 +82,13 @@ export async function sendNewsletter(input: unknown): Promise<ActionResult<{ sen
     const recipients = parsed.data.testOnly
       ? [{ id: String(context.actor.id), email: own.email, name: own.name }]
       : await listSubscribers(await crmDeps())
+    const { env } = await getCloudflareContext({ async: true })
     const result = await sendCampaign({
       payload: context.payload,
       origin: await siteOrigin(),
       recipients,
       message: { subject: parsed.data.subject, body: parsed.data.body },
+      ...(parsed.data.testOnly ? {} : { record: { campaignId: crypto.randomUUID(), from: env.MAIL_FROM_ADDRESS } }),
     })
     return { ok: true, data: result }
   } catch (error) {
