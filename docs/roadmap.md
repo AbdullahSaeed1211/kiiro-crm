@@ -79,11 +79,13 @@ Taken whenever a wave leaves slack.
 
 ## 10. Sales polish
 
-Plan: [wave 10 plan](plans/wave-10-sales.md). Owner priority: lead list, pipeline, record, notes, status, lead to onboarding, and newsletter, taken right after wave 5's current batch ships.
+Plan: [wave 10 plan](plans/wave-10-sales.md). Owner priority: the lead pipeline from first contact to an onboarded client, and a newsletter.
 
+- Done (v0.9.0–v0.9.3, verified signed in on production): quick create, notes, editable details, filters by owner and source, saved views, bulk owner assign and bulk stage move, phone cards, add-to-column on the board, duplicate warning, next-action date with an overdue marker, convert that works without a company, and links between lead, deal and onboarding project.
+- Open: outbound email from `notify.mirchtravel.com` (the tenant config edit is held until the sender domain verifies), then the newsletter on top of it.
 - Findings: none.
 
-Depends on: wave 5 (shared record components, lead rules in the CRM module). Done when: every task in the plan is verified on phone and desktop and released.
+Depends on: wave 5. Done when: the newsletter plan task ships.
 
 ## 9. Reference feature gaps
 

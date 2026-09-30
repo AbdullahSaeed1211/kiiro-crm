@@ -14,6 +14,6 @@ The owner scope added on 2026-09-30: lead management is the most polished part o
 
 ## Order
 
-Tasks 1 to 6 in that order after the current batch (details, deal, convert, notes, quick-create) is released as v0.9.0. Task 7 starts when the owner confirms outbound email.
+Tasks 1 to 6 shipped in v0.9.0–v0.9.3. Task 7 needs outbound email: the sending domain is `notify.mirchtravel.com` on the Mirch Media tenant, blocked on an operator login that carries the `email_sending` scope. Consent can start as tenant custom fields on contacts before a dedicated subscriber table exists.
 
 Done when: every task is verified in the running app on a phone width and on desktop, and released to the production tenant.
