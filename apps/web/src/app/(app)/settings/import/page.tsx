@@ -11,11 +11,18 @@ const TEMPLATES = [
   ['lead', 'Leads'],
 ] as const
 
+const EXPORTS = [
+  ['organizations', 'Organizations'],
+  ['contacts', 'Contacts'],
+  ['leads', 'Leads'],
+  ['deals', 'Deals'],
+] as const
+
 export default function ImportSettingsPage() {
   return (
     <SettingsPage
-      title="Import"
-      description="Bring organizations, contacts and leads in from a spreadsheet."
+      title="Import & export"
+      description="Bring organizations, contacts and leads in from a spreadsheet, or download everything as CSV."
       roles={['owner', 'manager']}
     >
       <SettingsForm>
@@ -39,6 +46,25 @@ export default function ImportSettingsPage() {
       </SettingsForm>
       <SettingsForm>
         <ImportForm />
+      </SettingsForm>
+      <SettingsForm>
+        <h2 className="text-sm font-medium">Export</h2>
+        <p className="text-sm text-muted-foreground">
+          Download every record you can see, with your custom fields, as a CSV that opens in any spreadsheet. The
+          organization, contact and lead files can be imported again.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {EXPORTS.map(([slug, label]) => (
+            <a
+              className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              href={`/api/v1/export/${slug}`}
+              key={slug}
+              download
+            >
+              {label} <span aria-hidden>↓</span>
+            </a>
+          ))}
+        </div>
       </SettingsForm>
     </SettingsPage>
   )

@@ -20,3 +20,19 @@ export function parseCsv(input: string): string[][] {
   }
   return rows.filter((cells) => cells.some((value) => value.trim() !== ''))
 }
+
+const NEEDS_QUOTES = /[",\r\n]/u
+const FORMULA_START = /^[=+\-@\t\r]/u
+// Numbers and phone numbers ("+1 (555) 010-2000", "-5") start with these characters but cannot run anything.
+const PHONE_OR_NUMBER = /^[+-]?[\d\s().-]+$/u
+
+/** One cell, quoted when needed. A text cell that a spreadsheet would run as a formula gets a leading apostrophe. */
+function csvCell(value: string): string {
+  const safe = FORMULA_START.test(value) && !PHONE_OR_NUMBER.test(value) ? `'${value}` : value
+  return NEEDS_QUOTES.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe
+}
+
+/** Formats rows as CSV with a byte order mark so spreadsheets read the text as UTF-8. */
+export function formatCsv(rows: readonly (readonly string[])[]): string {
+  return `${BOM}${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`
+}
