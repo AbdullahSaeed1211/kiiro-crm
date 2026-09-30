@@ -64,6 +64,7 @@ export function RecordActionLinks({
   email,
   phone,
   outboundEmailEnabled = true,
+  archive,
 }: Readonly<{
   recordType: 'contact' | 'organization' | 'lead' | 'deal'
   recordId: string
@@ -72,6 +73,8 @@ export function RecordActionLinks({
   email?: string | null
   phone?: string | null
   outboundEmailEnabled?: boolean
+  /** The Archive control, already gated on the viewer's role by the page. */
+  archive?: ReactNode
 }>) {
   const taskHref = `/tasks/new?${new URLSearchParams({
     relatedType: recordType,
@@ -88,6 +91,7 @@ export function RecordActionLinks({
         : actionLink({ href: `tel:${phoneNumber}`, label: 'Call', icon: <Phone aria-hidden /> })}
       {actionLink({ href: taskHref, label: 'New task', icon: <ClipboardPlus aria-hidden /> })}
       {editHref === undefined ? null : actionLink({ href: editHref, label: 'Edit', icon: <Pencil aria-hidden /> })}
+      {archive}
     </div>
   )
 }

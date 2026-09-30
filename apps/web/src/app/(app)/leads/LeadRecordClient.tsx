@@ -160,7 +160,7 @@ function leadOwner(owner: LeadPageData['item']['owner']) {
 }
 
 /** Server-rendered sections the page passes in, because they load data with server-only code. */
-export type LeadSlots = Readonly<{ details: ReactNode; customFields: ReactNode; notes: ReactNode }>
+export type LeadSlots = Readonly<{ details: ReactNode; customFields: ReactNode; notes: ReactNode; archive: ReactNode }>
 
 function LeadRecordLayout({
   data,
@@ -220,6 +220,7 @@ function LeadRecordLayout({
               recordType="lead"
               recordId={lead.id}
               recordLabel={lead.title}
+              archive={slots.archive}
               email={lead.email}
               phone={lead.phone}
               outboundEmailEnabled={outboundEmailEnabled}

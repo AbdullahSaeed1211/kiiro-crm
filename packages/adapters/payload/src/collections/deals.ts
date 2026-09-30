@@ -16,6 +16,7 @@ import {
 
 /** Deal records (spec §10.1); the value is integer minor units plus an ISO 4217 code (decision D-10). */
 export const dealsCollection = spikeCollection({
+  trash: true,
   slug: COLLECTIONS.deals,
   admin: {
     group: ADMIN_GROUPS.records,

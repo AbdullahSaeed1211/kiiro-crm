@@ -9,6 +9,7 @@ import { getOutboundEmailEnabled } from '../../../../server/capabilities'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { recordTabs } from '../../record-view-primitives'
 import { RecordCustomFields } from '../../record-custom-fields'
+import { ArchiveRecordControl } from '../../archive-record-control'
 import { DealOriginLinks } from '../DealOriginLinks'
 import { DealRecordClient } from './DealRecordClient'
 
@@ -66,6 +67,7 @@ export default async function DealRecordPage({ params }: Readonly<{ params: Prom
           currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
           tabs={tabs}
           customFields={<RecordCustomFields type="deal" id={data.deal.id} />}
+          archive={<ArchiveRecordControl type="deal" id={data.deal.id} label={data.deal.title} />}
         />
       </PageContent>
     </>

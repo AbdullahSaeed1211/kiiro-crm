@@ -52,6 +52,10 @@ Settings, Newsletter.
 | Manager | Run the team: Members, Groups, Workflows, Fields, Playbooks, Sales, Newsletter, Intake and Reports |
 | Staff   | Work assigned to them and their groups; no workspace settings except their own profile             |
 
+## Remove a record
+
+Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database.
+
 ## Routines that keep it honest
 
 - **Daily.** Open Leads and clear the overdue markers. Every lead needs a next-action date.
@@ -62,5 +66,5 @@ Settings, Newsletter.
 ## Known limits
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
-- There is no delete or archive for CRM records in the app.
+- Archiving hides a lead, deal, contact or organization from every list and search, and there is no screen to restore one yet.
 - SMS, calendar sync and outgoing webhooks are not available.

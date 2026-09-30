@@ -6,11 +6,12 @@ import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
 import { findAsUser, pageAsUser, updateAndMap } from '../local-api'
 import { loadFieldDefinitions } from '../field-definitions'
+import { writeIfUnchanged } from '../conditional-write'
 import { createAsUser } from './local-writes'
 import { CRM_COLLECTIONS, toCrmData, toCrmRecord } from './record-codecs'
 import { createCrmStageStore, firstWorkflow, whereId } from './stage-store'
 
-type RecordAccess = Pick<CrmRepository, 'get' | 'list' | 'create' | 'update'>
+type RecordAccess = Pick<CrmRepository, 'get' | 'list' | 'create' | 'update' | 'archive'>
 
 type Directory = Pick<
   CrmRepository,
@@ -80,6 +81,15 @@ function recordAccess(req: PayloadRequest): RecordAccess {
       return ok(record)
     },
     update: (...args) => updateRecord(req, { type: args[0], id: args[1], patch: args[2], expectedUpdatedAt: args[3] }),
+    archive: (type, id, expectedUpdatedAt) =>
+      // Payload's trash marks the document with `deletedAt` and hides it from every read, so the write cannot read it back.
+      writeIfUnchanged(req.payload, {
+        collection: CRM_COLLECTIONS[type],
+        id,
+        expectedUpdatedAt: new Date(expectedUpdatedAt).toISOString(),
+        updatedAt: new Date(Math.max(Date.now(), expectedUpdatedAt + 1)).toISOString(),
+        data: { deletedAt: new Date().toISOString() },
+      }),
   }
 }
 

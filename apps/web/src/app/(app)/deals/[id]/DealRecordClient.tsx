@@ -73,12 +73,14 @@ export function DealRecordClient({
   currency,
   tabs,
   customFields,
+  archive,
 }: Readonly<{
   data: DealDetailData
   outboundEmailEnabled: boolean
   currency: string
   tabs: readonly RecordPageTab[]
   customFields: ReactNode
+  archive: ReactNode
 }>) {
   const [lostOpen, setLostOpen] = useState(false)
   return (
@@ -92,6 +94,7 @@ export function DealRecordClient({
             recordType="deal"
             recordId={data.deal.id}
             recordLabel={data.deal.title}
+            archive={archive}
             outboundEmailEnabled={outboundEmailEnabled}
           />
         }

@@ -3,6 +3,7 @@ import { ADMIN_GROUPS, customDataField, relationshipTo, spikeCollection, textFie
 
 /** Organization records (spec §10.1 subset for the spike). */
 export const organizationsCollection = spikeCollection({
+  trash: true,
   slug: COLLECTIONS.organizations,
   admin: { group: ADMIN_GROUPS.records, useAsTitle: 'name', defaultColumns: ['name', 'email', 'phone', FIELDS.owner] },
   fields: [

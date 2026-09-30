@@ -43,6 +43,8 @@ export interface SpikeCollectionDefinition {
   readonly fields: Field[]
   readonly indexes?: CompoundIndex[]
   readonly hooks?: NonNullable<CollectionConfig['hooks']>
+  /** Soft delete: archived documents get `deletedAt` and drop out of every read. */
+  readonly trash?: boolean
 }
 
 /** Builds a collection with the §11.1 access functions of its slug, timestamps on and versions off (spec §11). */

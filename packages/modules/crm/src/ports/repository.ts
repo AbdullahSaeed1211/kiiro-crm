@@ -20,6 +20,8 @@ export interface CrmRepository extends StageStore {
     patch: Partial<CrmDrafts[T]>,
     expectedUpdatedAt: number,
   ): Promise<CrmRecords[T] | undefined>
+  /** Hides the record from every list and search while it still has `expectedUpdatedAt`; false when it changed meanwhile. */
+  archive(type: CrmRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean>
   findContactByEmail(email: string): Promise<ContactRecord | undefined>
   loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Result<Workflow>>
   listLookups(kind: LookupKind): Promise<readonly LookupRecord[]>

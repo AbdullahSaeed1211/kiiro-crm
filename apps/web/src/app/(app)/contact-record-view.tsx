@@ -14,6 +14,7 @@ import type {
   RelatedTask,
 } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
+import { ArchiveRecordControl } from './archive-record-control'
 import { RecordActionLinks } from './record-action-links'
 import { Activity, DetailCard, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordCustomFields } from './record-custom-fields'
@@ -109,6 +110,7 @@ export function ContactRecordView({
               recordType="contact"
               recordId={record.id}
               recordLabel={title}
+              archive={<ArchiveRecordControl type="contact" id={record.id} label={title} />}
               editHref={`/contacts/${record.id}/edit`}
               email={record.email}
               phone={record.phone}

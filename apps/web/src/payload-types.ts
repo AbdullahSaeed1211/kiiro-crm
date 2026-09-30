@@ -252,6 +252,7 @@ export interface Organization {
     | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -286,6 +287,7 @@ export interface Contact {
     | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -331,6 +333,7 @@ export interface Lead {
     | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -415,6 +418,7 @@ export interface Deal {
     | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -715,6 +719,7 @@ export interface Activity {
   recordId: string;
   verb:
     | 'record.created'
+    | 'record.archived'
     | 'field.changed'
     | 'stage.changed'
     | 'assignment.changed'
@@ -1164,6 +1169,7 @@ export interface OrganizationsSelect<T extends boolean = true> {
   customData?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1179,6 +1185,7 @@ export interface ContactsSelect<T extends boolean = true> {
   customData?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1206,6 +1213,7 @@ export interface LeadsSelect<T extends boolean = true> {
   customData?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1231,6 +1239,7 @@ export interface DealsSelect<T extends boolean = true> {
   customData?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

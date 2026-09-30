@@ -15,6 +15,7 @@ import type {
 } from '../../server/crm/directory/data'
 import { personLabel } from '../../server/crm/directory/data'
 import { Activity, DetailCard, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
+import { ArchiveRecordControl } from './archive-record-control'
 import { RecordActionLinks } from './record-action-links'
 import { RecordCustomFields } from './record-custom-fields'
 import { RecordDetails } from './record-details'
@@ -170,6 +171,7 @@ export function OrganizationRecordView({
               recordType="organization"
               recordId={record.id}
               recordLabel={record.name}
+              archive={<ArchiveRecordControl type="organization" id={record.id} label={record.name} />}
               editHref={`/organizations/${record.id}/edit`}
               email={record.email}
               phone={record.phone}

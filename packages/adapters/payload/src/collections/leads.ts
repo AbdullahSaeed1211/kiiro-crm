@@ -16,6 +16,7 @@ import { assignNewLead } from '../hooks/lead-assignment'
 
 /** Lead records (spec §10.1); `createdAt` is indexed by the timestamps Payload adds. */
 export const leadsCollection = spikeCollection({
+  trash: true,
   slug: COLLECTIONS.leads,
   admin: {
     group: ADMIN_GROUPS.records,

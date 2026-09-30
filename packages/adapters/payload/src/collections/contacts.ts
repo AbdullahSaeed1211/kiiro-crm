@@ -3,6 +3,7 @@ import { ADMIN_GROUPS, customDataField, ownerField, personFields, relationshipTo
 
 /** Contact records (spec §10.1): people, optionally linked to an organization. */
 export const contactsCollection = spikeCollection({
+  trash: true,
   slug: COLLECTIONS.contacts,
   admin: {
     group: ADMIN_GROUPS.records,

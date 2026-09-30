@@ -112,6 +112,13 @@ export class MemoryCrm {
     return Promise.resolve(saved)
   }
 
+  archive(type: CrmRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean> {
+    const current = this.records[type].get(id)
+    if (current?.updatedAt !== expectedUpdatedAt) return Promise.resolve(false)
+    this.records[type].delete(id)
+    return Promise.resolve(true)
+  }
+
   findContactByEmail(email: string): Promise<ContactRecord | undefined> {
     return Promise.resolve(
       [...this.records.contact.values()].find((contact) => contact.email?.toLowerCase() === email.toLowerCase()),

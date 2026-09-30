@@ -72,7 +72,7 @@ export function accessDenied<T>(input: {
     readonly assigneeIds?: readonly Id[]
     readonly groupId?: Id | null
   }
-  readonly action?: 'create' | 'update' | 'convert'
+  readonly action?: 'create' | 'update' | 'convert' | 'delete'
 }): CrmResult<T> | undefined {
   const { type, deps, record, action = 'update' } = input
   return deps.can(deps.actor, action, {

@@ -40,6 +40,7 @@ export const PRIORITY_VALUES = ['none', 'low', 'medium', 'high', 'urgent'] as co
 /** Activity verbs of spec §9.5. */
 export const ACTIVITY_VERB_VALUES = [
   'record.created',
+  'record.archived',
   'field.changed',
   'stage.changed',
   'assignment.changed',
