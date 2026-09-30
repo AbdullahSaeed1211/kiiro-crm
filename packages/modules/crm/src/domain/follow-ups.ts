@@ -5,7 +5,7 @@ export const FOLLOW_UP_BUCKETS = ['overdue', 'today', 'thisWeek', 'later', 'unda
 export type FollowUpBucket = (typeof FOLLOW_UP_BUCKETS)[number]
 
 /** Start of the UTC day that contains `time`; follow-up days are stored as UTC midnight. */
-export function startOfDay(time: number): number {
+function startOfDay(time: number): number {
   return Math.floor(time / DAY_MS) * DAY_MS
 }
 
