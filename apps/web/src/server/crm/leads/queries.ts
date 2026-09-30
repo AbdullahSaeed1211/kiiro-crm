@@ -6,10 +6,22 @@ import { getRequestContext } from '@/server/container'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
 import type { Activity, User } from '../../../payload-types'
-import { stageFor, type LeadActivityItem, type LeadListItem, type LeadPageData, type LeadPerson } from './types'
+import { type LeadActivityItem, type LeadListItem, type LeadPageData, type LeadPerson } from './types'
+
 import { initials } from '@ops/ui/lib/initials'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import type { Where } from 'payload'
+
+function stageFor(stages: readonly KanbanStage[], stageId: string): KanbanStage {
+  return (
+    stages.find((stage) => stage.id === stageId) ?? {
+      id: stageId,
+      name: 'Unknown stage',
+      category: 'open',
+      color: 'gray',
+    }
+  )
+}
 
 const PAGE_SIZE = 50
 type SearchParam = string | string[] | undefined

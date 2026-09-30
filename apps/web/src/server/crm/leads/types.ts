@@ -36,14 +36,3 @@ export interface LeadPageData {
   readonly relatedTasks: readonly RelatedTask[]
   readonly attachments: readonly RecordAttachment[]
 }
-
-export function stageFor(stages: readonly KanbanStage[], stageId: string): KanbanStage {
-  return (
-    stages.find((stage) => stage.id === stageId) ?? {
-      id: stageId,
-      name: 'Unknown stage',
-      category: 'open',
-      color: 'gray',
-    }
-  )
-}

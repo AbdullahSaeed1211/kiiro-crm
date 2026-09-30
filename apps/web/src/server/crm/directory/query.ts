@@ -4,29 +4,24 @@ import { displayName, type DirectorySort } from './utils'
 
 export const DIRECTORY_PAGE_SIZE = 50
 
-export function sortOrganizations(items: readonly OrganizationListItem[], sort: DirectorySort): OrganizationListItem[] {
+/** Sorts directory rows by name (as the caller defines it) or by last update, ascending or, with a leading `-`, descending. */
+function sortDirectory<T extends { readonly record: { readonly updatedAt: number } }>(
+  items: readonly T[],
+  sort: DirectorySort,
+  nameOf: (item: T) => string,
+): T[] {
   const direction = sort.startsWith('-') ? -1 : 1
-  return [...items].sort((a, b) => {
-    const left = sort.endsWith('updatedAt') ? a.record.updatedAt : a.record.name
-    const right = sort.endsWith('updatedAt') ? b.record.updatedAt : b.record.name
-    return (
-      direction *
-      (typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right)))
-    )
-  })
+  const byUpdate = sort.endsWith('updatedAt')
+  return [...items].sort(
+    (a, b) => direction * (byUpdate ? a.record.updatedAt - b.record.updatedAt : nameOf(a).localeCompare(nameOf(b))),
+  )
 }
 
-function sortContacts(items: readonly ContactListItem[], sort: DirectorySort): ContactListItem[] {
-  const direction = sort.startsWith('-') ? -1 : 1
-  return [...items].sort((a, b) => {
-    const left = sort.endsWith('updatedAt') ? a.record.updatedAt : displayName(a.record)
-    const right = sort.endsWith('updatedAt') ? b.record.updatedAt : displayName(b.record)
-    return (
-      direction *
-      (typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right)))
-    )
-  })
-}
+export const sortOrganizations = (items: readonly OrganizationListItem[], sort: DirectorySort) =>
+  sortDirectory(items, sort, (item) => item.record.name)
+
+const sortContacts = (items: readonly ContactListItem[], sort: DirectorySort) =>
+  sortDirectory(items, sort, (item) => displayName(item.record))
 
 export function contactItems(
   records: readonly ContactRecord[],
