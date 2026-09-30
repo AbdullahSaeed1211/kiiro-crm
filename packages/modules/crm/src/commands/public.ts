@@ -4,6 +4,7 @@ export { convertLead, markLost } from './conversion'
 export { setCustomFields } from './custom-fields'
 export { assignLeads, moveLeads } from './bulk'
 export { archiveRecord } from './archive'
+export { importRecords, MAX_IMPORT_ROWS, type ImportReport } from './import'
 
 export {
   createContact as runCreateContact,
