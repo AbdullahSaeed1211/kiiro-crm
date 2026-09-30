@@ -14,18 +14,6 @@ import type { CrmCustomData, CrmRecordType, DealRecord, LeadRecord, Organization
 
 export type CrmResult<T> = Result<T>
 
-type CustomData = CrmCustomData
-
-interface CrmFieldDefinition {
-  readonly key: string
-  readonly type: string
-  readonly recordType?: string
-}
-
-interface RecordWithCustomData {
-  readonly customData: CustomData
-}
-
 /** Creates a failed CRM result with a stable domain error. */
 export function failure<T = never>(
   code: DomainError['code'],
@@ -97,10 +85,6 @@ async function withErrors<T>(work: () => Promise<CrmResult<T>>): Promise<CrmResu
   }
 }
 
-function recordCustomData(record: RecordWithCustomData): CustomData {
-  return record.customData
-}
-
 /** Runs a validated command and converts unexpected exceptions into domain failures. */
 export async function executeCommand<T, I>(
   deps: CrmDeps,
@@ -123,10 +107,6 @@ export async function createActivity(input: {
 
 /** Finds the deal already created from a lead during conversion recovery. */
 export async function findExistingDeal(deps: CrmDeps, sourceLeadId: Id): Promise<DealRecord | undefined> {
-  const candidateRepo = deps.repo as CrmDeps['repo'] & {
-    findDealBySourceLead?: (leadId: Id) => Promise<DealRecord | undefined>
-  }
-  if (candidateRepo.findDealBySourceLead !== undefined) return candidateRepo.findDealBySourceLead(sourceLeadId)
   const deals = await deps.repo.list('deal')
   return deals.find((deal) => deal.sourceLeadId === sourceLeadId)
 }
@@ -140,39 +120,17 @@ export async function findExistingOrganization(deps: CrmDeps, name: string): Pro
 /** Selects lead custom values whose field key and type also exist on deals. */
 export async function dealCustomData(
   deps: CrmDeps,
-  lead: LeadRecord & RecordWithCustomData,
-  requested: CustomData | undefined,
-): Promise<CustomData> {
-  const leadData = requested ?? recordCustomData(lead)
-  const candidateRepo = deps.repo as CrmDeps['repo'] & {
-    listFieldDefinitions?: (recordType: CrmRecordType) => Promise<readonly CrmFieldDefinition[]>
-    getFieldDefinitions?: (recordType: CrmRecordType) => Promise<readonly CrmFieldDefinition[]>
-    fieldDefinitions?: readonly CrmFieldDefinition[]
-  }
-  let leadFields: readonly CrmFieldDefinition[] = []
-  let dealFields: readonly CrmFieldDefinition[] = []
-  if (candidateRepo.listFieldDefinitions !== undefined) {
-    ;[leadFields, dealFields] = await Promise.all([
-      candidateRepo.listFieldDefinitions('lead'),
-      candidateRepo.listFieldDefinitions('deal'),
-    ])
-  } else if (candidateRepo.getFieldDefinitions !== undefined) {
-    ;[leadFields, dealFields] = await Promise.all([
-      candidateRepo.getFieldDefinitions('lead'),
-      candidateRepo.getFieldDefinitions('deal'),
-    ])
-  } else if (candidateRepo.fieldDefinitions !== undefined) {
-    leadFields = candidateRepo.fieldDefinitions.filter(
-      (field) => field.recordType === undefined || field.recordType === 'lead',
-    )
-    dealFields = candidateRepo.fieldDefinitions.filter(
-      (field) => field.recordType === undefined || field.recordType === 'deal',
-    )
-  }
+  lead: LeadRecord,
+  requested: CrmCustomData | undefined,
+): Promise<CrmCustomData> {
+  const [leadFields, dealFields] = await Promise.all([
+    deps.repo.loadFieldDefinitions('lead'),
+    deps.repo.loadFieldDefinitions('deal'),
+  ])
   const leadTypes = new Map(leadFields.map((field) => [field.key, field.type]))
   const dealTypes = new Map(dealFields.map((field) => [field.key, field.type]))
   return Object.fromEntries(
-    Object.entries(leadData).filter(
+    Object.entries(requested ?? lead.customData).filter(
       ([key]) => leadTypes.get(key) !== undefined && leadTypes.get(key) === dealTypes.get(key),
     ),
   )

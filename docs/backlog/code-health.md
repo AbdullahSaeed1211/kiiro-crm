@@ -1,6 +1,6 @@
 # Code-health backlog
 
-24 findings are open: 0 high, 10 medium and 14 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+22 findings are open: 0 high, 9 medium and 13 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -14,7 +14,7 @@
 | Root cause                                                                                                                         | Severity | Open findings                      |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                            |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 DOM-02                      |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10                             |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                              |
 | Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20 |
 | UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-07                              |
@@ -65,22 +65,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Effort: S
 
 ## Domain modules and adapters
-
-### DOM-02: DIP/ISP, medium severity
-
-- Location: `packages/modules/crm/src/domain/helpers.ts:192-246` (`findExistingDeal`, `dealCustomData`)
-- Evidence: Casts `deps.repo` to `CrmDeps['repo'] & { findDealBySourceLead?; listFieldDefinitions?; getFieldDefinitions?; fieldDefinitions? }` and duck-types through three different possible shapes at runtime with `!== undefined` checks.
-- Consequence: The declared `CrmRepository` port (`packages/modules/crm/src/ports/repository.ts`) has none of these members, so this is domain code silently depending on undeclared, adapter-specific extensions. A conforming `CrmRepository` implementation (e.g. a test double) gets the slow `list('deal')`/no-filter fallback without ever being told the fast path exists, and three different naming conventions for "give me field definitions" is unmaintainable.
-- Fix: Add `findDealBySourceLead` and one `listFieldDefinitions` method to the `CrmRepository` port itself (real capabilities, not optional duck-typed extras); implement fallback in the adapter, not in domain code.
-- Effort: M
-
-### DOM-15: SRP, low severity
-
-- Location: `packages/modules/crm/src/domain/helpers.ts` (247 lines)
-- Evidence: File mixes generic command scaffolding (`failure`, `parse`, `executeCommand`, `accessDenied`) with pipeline-move business logic (`validatePipelineMove`, `persistPipelineMove`, `finalizeDealMove`, `movePipeline`) and lead-conversion lookups (`findExistingDeal`, `findExistingOrganization`, `dealCustomData`).
-- Consequence: Three distinct responsibilities (command infra / stage-move orchestration / conversion helpers) share one "helpers" file, which is a classic SRP smell - hard to find things, and unrelated changes (e.g. tweaking conversion custom-data selection) touch a file that also contains security-sensitive `accessDenied`.
-- Fix: Split into `command-support.ts`, `pipeline-move.ts`, `conversion-support.ts`.
-- Effort: S
 
 ### DOM-18: OCP, low severity
 

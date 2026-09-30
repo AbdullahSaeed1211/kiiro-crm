@@ -65,6 +65,20 @@ function tracked(type: 'lead' | 'deal', record: LeadRecord | DealRecord): StageT
   }
 }
 
+function definedField(key: string, type: FieldDefinition['type']): FieldDefinition {
+  return {
+    key,
+    label: key,
+    type,
+    required: false,
+    options: [],
+    visibility: 'all',
+    sensitive: false,
+    hidden: false,
+    position: 0,
+  }
+}
+
 export class MemoryCrm {
   readonly records: { [T in CrmRecordType]: Map<Id, CrmRecords[T]> } = {
     organization: new Map(),
@@ -74,12 +88,11 @@ export class MemoryCrm {
   }
   readonly transitions: unknown[] = []
   readonly activities: unknown[] = []
-  readonly fieldDefinitions = [
-    { recordType: 'lead', key: 'budget', type: 'number' },
-    { recordType: 'lead', key: 'sourceNote', type: 'text' },
-    { recordType: 'deal', key: 'budget', type: 'number' },
-    { recordType: 'deal', key: 'sourceNote', type: 'number' },
-  ]
+  /** Field definitions by record type, on top of `customFields`; budget has one type on both, sourceNote differs. */
+  readonly typedFields: Readonly<Partial<Record<CrmRecordType, readonly FieldDefinition[]>>> = {
+    lead: [definedField('budget', 'number'), definedField('sourceNote', 'text')],
+    deal: [definedField('budget', 'number'), definedField('sourceNote', 'number')],
+  }
   customFields: FieldDefinition[] = []
   failLeadUpdate = false
   private sequence = 1
@@ -133,8 +146,8 @@ export class MemoryCrm {
     return Promise.resolve([{ id: asId('reason-budget'), name: 'Budget' }])
   }
 
-  loadFieldDefinitions(): Promise<readonly FieldDefinition[]> {
-    return Promise.resolve(this.customFields)
+  loadFieldDefinitions(type: CrmRecordType): Promise<readonly FieldDefinition[]> {
+    return Promise.resolve([...this.customFields, ...(this.typedFields[type] ?? [])])
   }
 
   async loadRecord(ref: { type: string; id: Id }): Promise<StageTrackedRecord | undefined> {
