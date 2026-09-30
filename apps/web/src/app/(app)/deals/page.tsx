@@ -1,6 +1,5 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
-import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import {
   DataTable,
   type DataTableColumn,
@@ -12,7 +11,7 @@ import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import { Handshake, Search } from 'lucide-react'
+import { Handshake } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DealCreateDialog } from './DealCreateDialog'
@@ -20,6 +19,7 @@ import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
 import { getWorkspaceSettings } from '../../../server/auth/context'
 import { firstParam } from '../search-params'
+import { ListSearchForm, type ListFilter } from '../list-search-form'
 import { StagePill, toStageColor } from '@ops/ui/composites/StagePill'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -72,6 +72,16 @@ function pagination(
   })
 }
 
+function stageFilter(stages: readonly { id: string; name: string }[], stageId: string | undefined): ListFilter {
+  return {
+    name: 'stage',
+    label: 'Filter by stage',
+    allLabel: 'All stages',
+    value: stageId ?? '',
+    options: stages.map((stage) => ({ value: stage.id, label: stage.name })),
+  }
+}
+
 export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
@@ -112,24 +122,12 @@ export default async function DealsPage({
             </div>
           }
         />
-        <form className="flex max-w-sm items-center gap-2" action="/deals">
-          <Search aria-hidden className="size-4 text-muted-foreground" />
-          <input
-            name="q"
-            aria-label="Search deals"
-            defaultValue={firstParam(params.q)}
-            placeholder="Search deals…"
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
-          <NativeSelect name="stage" defaultValue={stageId ?? ''} aria-label="Filter by stage">
-            <option value="">All stages</option>
-            {data.workflow.stages.map((stage) => (
-              <option key={stage.id} value={stage.id}>
-                {stage.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </form>
+        <ListSearchForm
+          action="/deals"
+          label="Search deals"
+          query={firstParam(params.q) ?? ''}
+          filter={stageFilter(data.workflow.stages, stageId)}
+        />
         <DataTable
           key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}
           columns={columns()}
