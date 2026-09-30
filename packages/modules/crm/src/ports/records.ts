@@ -59,6 +59,8 @@ export interface LeadRecord extends PipelineFields {
   readonly companyName: string | null
   readonly organizationId: Id | null
   readonly sourceId: Id | null
+  /** The day the next follow-up is due; null when nothing is scheduled. */
+  readonly nextActionAt: number | null
   readonly convertedAt: number | null
   readonly convertedDealId: Id | null
 }

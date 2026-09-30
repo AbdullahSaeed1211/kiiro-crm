@@ -74,6 +74,7 @@ const LEAD: Codecs<CrmDrafts['lead'], FieldOf<'lead'>> = {
   companyName: optionalText('companyName'),
   organizationId,
   sourceId: optionalRef('source'),
+  nextActionAt: optionalNumber('nextActionAt'),
   convertedAt: optionalNumber('convertedAt'),
   convertedDealId: optionalRef('convertedDeal'),
 }

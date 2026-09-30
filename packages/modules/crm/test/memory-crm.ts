@@ -38,6 +38,7 @@ export const seedLead: LeadRecord & { customData?: Record<string, unknown> } = {
   companyName: 'Acme',
   organizationId: null,
   sourceId: null,
+  nextActionAt: null,
   ownerId: asId('owner-1'),
   assigneeIds: [],
   workflowId: leadWorkflow.id,

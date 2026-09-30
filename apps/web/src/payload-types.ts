@@ -314,6 +314,10 @@ export interface Lead {
   /**
    * UTC time in milliseconds since 1970-01-01
    */
+  nextActionAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
   convertedAt?: number | null;
   convertedDeal?: (string | null) | Deal;
   customData?:
@@ -1187,6 +1191,7 @@ export interface LeadsSelect<T extends boolean = true> {
   stageEnteredAt?: T;
   lostReason?: T;
   lostNote?: T;
+  nextActionAt?: T;
   convertedAt?: T;
   convertedDeal?: T;
   customData?: T;

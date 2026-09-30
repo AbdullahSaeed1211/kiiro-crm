@@ -131,6 +131,7 @@ async function createLeadWork(deps: CrmDeps, input: unknown): Promise<CrmResult<
     companyName: cleanNullable(value.companyName),
     organizationId: id(value.organizationId),
     sourceId: id(value.sourceId),
+    nextActionAt: null,
     ...pipelineFields(deps, value, defaults.value),
     convertedAt: null,
     convertedDealId: null,

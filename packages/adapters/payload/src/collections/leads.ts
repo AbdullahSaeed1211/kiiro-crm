@@ -30,6 +30,7 @@ export const leadsCollection = spikeCollection({
     ...ownershipFields(),
     ...stageFields(),
     ...lostFields(),
+    epochMs('nextActionAt', { index: true }),
     epochMs('convertedAt', { index: true }),
     relationshipTo('convertedDeal', COLLECTIONS.deals),
     customDataField(),

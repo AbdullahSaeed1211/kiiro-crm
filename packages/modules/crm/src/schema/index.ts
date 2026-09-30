@@ -118,6 +118,7 @@ export const updateLeadSchema = z
         companyName: optionalText,
         organizationId: optionalId,
         sourceId: optionalId,
+        nextActionAt: optionalEpoch,
         ownerId: optionalId,
         assigneeIds: z.array(id).optional(),
         customData,

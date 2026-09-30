@@ -98,6 +98,7 @@ export const CRM_FIELDS = {
     'stageEnteredAt',
     'lostReason',
     'lostNote',
+    'nextActionAt',
     'convertedAt',
     'convertedDeal',
     'customData',

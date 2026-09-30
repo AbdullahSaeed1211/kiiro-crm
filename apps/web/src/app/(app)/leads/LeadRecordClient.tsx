@@ -9,6 +9,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { moveLead, updateLead } from '../../../server/crm/leads/actions'
 import type { LeadPageData } from '../../../server/crm/leads/types'
 import { ConvertDialog, LostDialog } from './LeadDialogs'
+import { LeadNextAction } from './LeadNextAction'
 import { RecordActionLinks } from '../record-action-links'
 import { recordTabs } from '../record-view-primitives'
 
@@ -71,6 +72,17 @@ function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
           {details.map(([label, value]) => (
             <AsideField key={label} label={label} value={value} />
           ))}
+          <div>
+            <dt className="text-muted-foreground">Next action</dt>
+            <dd className="mt-1">
+              <LeadNextAction
+                leadId={lead.id}
+                expectedUpdatedAt={lead.updatedAt}
+                value={lead.nextActionAt}
+                disabled={lead.convertedAt !== null}
+              />
+            </dd>
+          </div>
         </dl>
       </section>
       <section className="ops-detail-card rounded-lg border p-4">
