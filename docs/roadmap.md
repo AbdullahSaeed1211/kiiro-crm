@@ -45,7 +45,7 @@ Code-health refactor steps 3 and 4: rules move out of the web layer, and leads, 
 
 - Move lead move legality, display names, saved-view parsing and currency defaults into the CRM module; give use cases an explicit application layer.
 - Extend the contacts and organizations `directory-*` pattern to leads, deals and tasks, with one lost-reason dialog, one activity card and one stage picker; inline edit for every field; conversion that can attach to existing records; notes on records; CRM use cases on `/api/v1`.
-- Add the tenant-owned custom form builder and renderer for agency and managed-client lead intake (§10.3). Field mapping alone does not complete this requirement.
+- Done: a form builder and hosted renderer for lead intake (§10.3). Under Settings, Intake, add questions to a form and it gets a public page at `/forms/<key>` and an embed snippet; answers go through the same intake endpoint and field mapping. Open: a Turnstile widget on the hosted page (it relies on the rate limit today), file uploads, and conditional questions.
 - Done (v0.6.0–v0.8.0): configurable client onboarding — custom fields on organization, contact, lead and deal pages; stage requirements that name missing fields; playbooks that create a project from a won deal; intake answers mapped to lead fields and custom fields in Settings, Intake. Also done: CRM use cases on `/api/v1`.
 - Done (v0.9.0): editable details on every record, deals on the shared record parts, conversion that attaches to existing records, notes on records, and one quick-create dialog for leads, contacts and organizations.
 - Findings: code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-04, WEB-10, WEB-12, WEB-14, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.

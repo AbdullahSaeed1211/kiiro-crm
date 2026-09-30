@@ -11,6 +11,7 @@
     "typescript": "6.0.3"
   },
   "dependencies": {
-    "@ops/kernel": "workspace:*"
+    "@ops/kernel": "workspace:*",
+    "zod": "4.6.2"
   }
 }

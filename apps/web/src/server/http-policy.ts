@@ -23,10 +23,14 @@ export function isBlockedPayloadRoute(method: string, pathname: string): boolean
   return method === 'POST' && path === '/api/users'
 }
 
+/** Hosted intake forms are made to be embedded on customers' websites, so only they may be framed. */
+const isEmbeddablePath = (pathname: string): boolean => pathname.startsWith('/forms/')
+
 /** Copies the response with the security headers set; upgrade responses pass through untouched. */
-export function withSecurityHeaders(response: Response): Response {
+export function withSecurityHeaders(response: Response, pathname = ''): Response {
   if (response.status === 101) return response
   const secured = new Response(response.body, response)
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) secured.headers.set(name, value)
+  if (isEmbeddablePath(pathname)) secured.headers.delete('X-Frame-Options')
   return secured
 }

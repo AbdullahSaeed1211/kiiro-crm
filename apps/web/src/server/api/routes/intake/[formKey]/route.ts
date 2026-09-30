@@ -2,20 +2,46 @@ import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { createRateLimiter, handleIntakeRequest, verifyTurnstile } from '@ops/adapter-cloudflare'
 import { createIntakeStore, findIntakeForm, SETTINGS_GLOBAL } from '@ops/adapter-payload'
+import { formFieldsSchema } from '@ops/module-intake'
 import { getPayload } from 'payload'
 
 interface RouteContext {
   readonly params: Promise<{ readonly formKey: string }>
 }
 
+/**
+ * A form with questions is also hosted by this app, and its page posts from the app's own origin. That origin is
+ * allowed for such a form without being listed, and it is protected by the intake rate limit instead of a Turnstile
+ * widget, which the hosted page does not render.
+ */
+async function withHostedOrigin(
+  request: Request,
+  form: Awaited<ReturnType<typeof findIntakeForm>>,
+  payload: Awaited<ReturnType<typeof getPayload>>,
+) {
+  const appOrigin = new URL(request.url).origin
+  if (form === undefined || request.headers.get('origin') !== appOrigin) return form
+  const found = await payload.find({
+    collection: 'intakeForms',
+    where: { id: { equals: form.id } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const questions = formFieldsSchema.safeParse(found.docs.at(0)?.formFields ?? [])
+  const hosted = questions.success && questions.data.length > 0
+  return hosted ? { ...form, allowedOrigins: [...form.allowedOrigins, appOrigin], requireTurnstile: false } : form
+}
+
 async function handle(request: Request, context: RouteContext): Promise<Response> {
   const { env } = await getCloudflareContext({ async: true })
   const payload = await getPayload({ config })
   const { formKey } = await context.params
-  const [form, settings] = await Promise.all([
+  const [found, settings] = await Promise.all([
     findIntakeForm(payload, 'key', formKey),
     payload.findGlobal({ slug: SETTINGS_GLOBAL, depth: 0, overrideAccess: true }),
   ])
+  const form = await withHostedOrigin(request, found, payload)
   const hostnames = env.TURNSTILE_HOSTNAMES.split(',')
     .map((value) => value.trim())
     .filter(Boolean)

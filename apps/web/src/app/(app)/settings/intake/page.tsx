@@ -10,6 +10,9 @@ import {
 } from './intake-forms'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { IntakeFieldMap } from './intake-field-map'
+import { headers } from 'next/headers'
+import { IntakeFormQuestions, type Question } from './intake-form-questions'
+import { formFieldsSchema } from '@ops/module-intake'
 import { saveIntakeFieldMap } from '../../../../server/actions/settings/intake-field-map'
 import { loadIntakeTargets } from '../../../../server/queries/settings/intake-targets'
 
@@ -48,6 +51,8 @@ export default async function IntakeSettingsPage() {
   const optionList = (docs: readonly { id: string; name: string }[]): IntakeOption[] =>
     docs.map(({ id, name }) => ({ id, name }))
   const targets = await loadIntakeTargets()
+  const requestHeaders = await headers()
+  const origin = `${requestHeaders.get('x-forwarded-proto') ?? 'https'}://${requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? ''}`
   const fieldMaps = new Map(
     forms.docs.map((form) => {
       const map =
@@ -62,6 +67,11 @@ export default async function IntakeSettingsPage() {
       ] as const
     }),
   )
+  const questionsFor = (form: (typeof forms.docs)[number]): Question[] => {
+    const parsed = formFieldsSchema.safeParse(form.formFields ?? [])
+    const map = fieldMaps.get(form.id) ?? {}
+    return parsed.success ? parsed.data.map((field) => ({ ...field, target: map[field.key] ?? 'ignore' })) : []
+  }
   const formViews: IntakeFormView[] = forms.docs.map((form) => ({
     id: form.id,
     name: form.name,
@@ -118,6 +128,13 @@ export default async function IntakeSettingsPage() {
             rotateServerKey={rotateIntakeServerKey}
             sources={optionList(sources.docs)}
             users={optionList(users.docs)}
+          />
+          <IntakeFormQuestions
+            formId={form.id}
+            formKey={form.key}
+            origin={origin}
+            initial={questionsFor(forms.docs.find((doc) => doc.id === form.id) ?? forms.docs[0])}
+            targets={targets}
           />
           <IntakeFieldMap
             formId={form.id}

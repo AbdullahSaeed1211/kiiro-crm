@@ -9,7 +9,11 @@ import {
   randomServerKey,
   sha256Hex,
 } from '../../../app/(app)/settings/intake/intake-validation'
+import { formFieldsSchema } from '@ops/module-intake'
+import { z } from 'zod'
 import { recordOf, stringValue } from './input'
+
+const INTAKE_PATH = '/settings/intake'
 
 export async function createIntakeForm(input: unknown): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
@@ -34,7 +38,7 @@ export async function createIntakeForm(input: unknown): Promise<ActionResult> {
       },
       req: context.req,
     })
-    revalidatePath('/settings/intake')
+    revalidatePath(INTAKE_PATH)
     return actionOk()
   } catch (error) {
     return actionFailure(error, 'createIntakeForm', 'Unable to create intake form.')
@@ -55,7 +59,7 @@ export async function updateIntakeForm(input: unknown): Promise<ActionResult> {
       data: parsed.data,
       req: context.req,
     })
-    revalidatePath('/settings/intake')
+    revalidatePath(INTAKE_PATH)
     return actionOk()
   } catch (error) {
     return actionFailure(error, 'updateIntakeForm', 'Unable to update intake form.')
@@ -87,9 +91,52 @@ export async function rotateIntakeServerKey(input: unknown): Promise<ActionResul
       data: { serverKeyHashes: [...currentHashes, await sha256Hex(serverKey)] },
       req: context.req,
     })
-    revalidatePath('/settings/intake')
+    revalidatePath(INTAKE_PATH)
     return actionOk({ serverKey })
   } catch (error) {
     return actionFailure(error, 'rotateIntakeServerKey', 'Unable to create server key.')
+  }
+}
+
+const hostedFormSchema = z.looseObject({
+  id: z.string().trim().min(1),
+  fields: z.array(z.looseObject({ target: z.string().trim().min(1).max(80) })),
+})
+
+/** A question without its target: the target belongs to the field map, not to the stored question. */
+const withoutTarget = (field: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(field).filter(([name]) => name !== 'target'))
+
+/**
+ * Saves the questions a hosted form shows and where each answer goes: the questions are stored as they are, and each
+ * question's target is merged into the form's field map so the answers land on the lead.
+ */
+export async function saveIntakeFormFields(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const head = hostedFormSchema.safeParse(input)
+  if (!head.success) return actionError('VALIDATION', 'Choose where each question is saved.')
+  const questions = formFieldsSchema.safeParse(head.data.fields.map(withoutTarget))
+  if (!questions.success) return actionError('VALIDATION', 'Give each question a label and its own short key.')
+  try {
+    const form = await context.payload.findByID({
+      collection: 'intakeForms',
+      id: head.data.id,
+      depth: 0,
+      req: context.req,
+    })
+    const current = recordOf(form.fieldMap)
+    const targets = Object.fromEntries(
+      head.data.fields.map((field, index) => [questions.data[index]?.key ?? '', field.target]),
+    )
+    await context.payload.update({
+      collection: 'intakeForms',
+      id: head.data.id,
+      data: { formFields: questions.data, fieldMap: { ...current, ...targets } },
+      req: context.req,
+    })
+    revalidatePath(INTAKE_PATH)
+    return actionOk()
+  } catch (error) {
+    return actionFailure(error, 'saveIntakeFormFields', 'Unable to save the form questions.')
   }
 }

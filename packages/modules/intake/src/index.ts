@@ -21,3 +21,4 @@ export type {
   IntakeTurnstileVerifier,
   SubmitIntakeDeps,
 } from './contracts'
+export { formFieldsSchema, type FormField } from './form-fields'

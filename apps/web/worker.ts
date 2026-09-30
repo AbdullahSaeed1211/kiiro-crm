@@ -11,7 +11,7 @@ const worker: ExportedHandler<InternalForwardEnv> = {
     }
     // `.open-next/worker.js` is untyped JavaScript once built, so its response type is asserted here.
     const response = (await openNext.fetch(request, env, ctx)) as Response
-    return withSecurityHeaders(response)
+    return withSecurityHeaders(response, new URL(request.url).pathname)
   },
   scheduled: (controller, env, ctx) => {
     ctx.waitUntil(dispatchCron(env, controller.scheduledTime))

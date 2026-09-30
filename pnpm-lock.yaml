@@ -90,6 +90,9 @@ importers:
       '@ops/module-identity':
         specifier: workspace:*
         version: link:../../packages/modules/identity
+      '@ops/module-intake':
+        specifier: workspace:*
+        version: link:../../packages/modules/intake
       '@ops/module-mail':
         specifier: workspace:*
         version: link:../../packages/modules/mail
@@ -263,6 +266,9 @@ importers:
       '@ops/kernel':
         specifier: workspace:*
         version: link:../../kernel
+      zod:
+        specifier: 4.6.2
+        version: 4.6.2
     devDependencies:
       '@types/node':
         specifier: 22.20.2

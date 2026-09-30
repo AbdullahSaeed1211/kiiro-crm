@@ -13,7 +13,7 @@ interface Row {
   target: string
 }
 
-function TargetSelect({
+export function TargetSelect({
   label,
   value,
   targets,

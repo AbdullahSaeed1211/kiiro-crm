@@ -8,6 +8,7 @@ import * as migration_20260927_090000_stage_requirements from './20260927_090000
 import * as migration_20260927_120000_playbooks from './20260927_120000_playbooks';
 import * as migration_20260930_090000_lead_next_action from './20260930_090000_lead_next_action';
 import * as migration_20260930_150000_sales_settings from './20260930_150000_sales_settings';
+import * as migration_20260930_190000_intake_form_fields from './20260930_190000_intake_form_fields';
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20260930_150000_sales_settings.up,
     down: migration_20260930_150000_sales_settings.down,
     name: '20260930_150000_sales_settings'
+  },
+  {
+    up: migration_20260930_190000_intake_form_fields.up,
+    down: migration_20260930_190000_intake_form_fields.down,
+    name: '20260930_190000_intake_form_fields'
   },
 ];

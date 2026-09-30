@@ -635,6 +635,15 @@ export interface IntakeForm {
     | number
     | boolean
     | null;
+  formFields?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   allowedOrigins?:
     | {
         [k: string]: unknown;
@@ -1374,6 +1383,7 @@ export interface IntakeFormsSelect<T extends boolean = true> {
   active?: T;
   targetRecordType?: T;
   fieldMap?: T;
+  formFields?: T;
   allowedOrigins?: T;
   requireTurnstile?: T;
   serverKeyHashes?: T;

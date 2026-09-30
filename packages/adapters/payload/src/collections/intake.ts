@@ -29,6 +29,8 @@ export const intakeFormsCollection: CollectionConfig = {
     { name: 'active', type: 'checkbox', required: true, defaultValue: true },
     { name: 'targetRecordType', type: 'select', options: ['lead'], required: true, defaultValue: 'lead' },
     jsonField('fieldMap', { required: true }),
+    // Questions the hosted form page shows; validated by `formFieldsSchema` in @ops/module-intake before they are saved.
+    { name: 'formFields', type: 'json', defaultValue: [] },
     stringListField('allowedOrigins'),
     { name: 'requireTurnstile', type: 'checkbox', required: true, defaultValue: true },
     stringListField('serverKeyHashes'),

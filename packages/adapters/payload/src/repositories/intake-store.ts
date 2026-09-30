@@ -4,6 +4,7 @@ import type { Payload } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import { fieldOf, idOf, idsOf, numberOf, textOf, type Doc } from './documents'
 import { insertUnique } from './unique-insert'
+import { toWorkflow } from './workflow-mapping'
 
 interface LoosePayload {
   create(options: Readonly<Record<string, unknown>>): Promise<Doc>
@@ -135,50 +136,86 @@ const submissionStore = (
   markDuplicate: () => Promise.resolve(),
 })
 
+/**
+ * Where a new lead starts: the first lead workflow's default stage. A lead saved without a stage is never shown on
+ * the lead list or board, so every lead created here must carry one.
+ */
+async function startingStage(payload: Payload) {
+  const found = await payload.find({
+    collection: COLLECTIONS.workflows,
+    where: { recordType: { equals: 'lead' } },
+    sort: 'createdAt',
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const doc = found.docs.at(0)
+  const workflow = doc === undefined ? undefined : toWorkflow(doc)
+  return workflow === undefined
+    ? {}
+    : { workflow: workflow.id, stageId: workflow.defaultStageId, stageEnteredAt: Date.now() }
+}
+
+async function createLead(payload: Payload, data: Readonly<Record<string, unknown>>) {
+  const doc = await loose(payload).create({
+    collection: COLLECTIONS.leads,
+    data: { ...data, ...(await startingStage(payload)) },
+    overrideAccess: true,
+    depth: 0,
+  })
+  const id = idOf(fieldOf(doc, 'id'))
+  if (id === undefined) throw new Error('lead create returned no id')
+  return { id }
+}
+
+/** Writes a visitor's message as a note authored by the workspace owner, so the comment rules see an active author. */
+async function addOwnerNote(payload: Payload, input: Parameters<IntakeStore['addComment']>[0]): Promise<void> {
+  const { record, body } = input
+  const owner = await payload.find({
+    collection: COLLECTIONS.users,
+    where: { role: { equals: 'owner' } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const ownerDoc = owner.docs.at(0)
+  const author = ownerDoc === undefined ? undefined : idOf(fieldOf(ownerDoc, 'id'))
+  if (author === undefined) return
+  await loose(payload).create({
+    collection: 'comments',
+    data: { ...record, recordType: record.type, recordId: record.id, author, body },
+    user: ownerDoc,
+    overrideAccess: true,
+    depth: 0,
+  })
+}
+
+async function notifyUsers(payload: Payload, input: Parameters<IntakeStore['notify']>[0]): Promise<void> {
+  const { userIds, record, title } = input
+  for (const user of userIds) {
+    const dedupeKey = `${record.type}:${record.id}:intake_received:${user}`
+    await insertUnique(payload, {
+      collection: COLLECTIONS.notifications,
+      field: 'dedupeKey',
+      value: dedupeKey,
+      data: {
+        user,
+        type: 'intake_received',
+        recordType: record.type,
+        recordId: record.id,
+        data: { title },
+        dedupeKey,
+      },
+    })
+  }
+}
+
 /** Payload-backed intake command store with unique-key dedupe and system-only writes. */
-// eslint-disable-next-line max-lines-per-function -- the adapter exposes the complete intake persistence port together.
 export function createIntakeStore(payload: Payload): IntakeStore {
   return {
     ...submissionStore(payload),
-    createLead: async (data) => {
-      const doc = await loose(payload).create({ collection: COLLECTIONS.leads, data, overrideAccess: true, depth: 0 })
-      const id = idOf(fieldOf(doc, 'id'))
-      if (id === undefined) throw new Error('lead create returned no id')
-      return { id }
-    },
-    addComment: async ({ record, body }) => {
-      const owner = await payload.find({
-        collection: COLLECTIONS.users,
-        where: { role: { equals: 'owner' } },
-        limit: 1,
-        depth: 0,
-        overrideAccess: true,
-      })
-      const author = owner.docs[0] === undefined ? undefined : idOf(fieldOf(owner.docs[0], 'id'))
-      if (author !== undefined)
-        await loose(payload).create({
-          collection: 'comments',
-          data: { ...record, recordType: record.type, recordId: record.id, author, body },
-          overrideAccess: true,
-          depth: 0,
-        })
-    },
-    notify: async ({ userIds, record, title }) => {
-      for (const user of userIds) {
-        await insertUnique(payload, {
-          collection: COLLECTIONS.notifications,
-          field: 'dedupeKey',
-          value: `${record.type}:${record.id}:intake_received:${user}`,
-          data: {
-            user,
-            type: 'intake_received',
-            recordType: record.type,
-            recordId: record.id,
-            data: { title },
-            dedupeKey: `${record.type}:${record.id}:intake_received:${user}`,
-          },
-        })
-      }
-    },
+    createLead: (data) => createLead(payload, data),
+    addComment: (input) => addOwnerNote(payload, input),
+    notify: (input) => notifyUsers(payload, input),
   }
 }

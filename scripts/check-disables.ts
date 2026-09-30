@@ -18,7 +18,7 @@ const DIRECTIVE =
  * The most gated-rule waivers the repository may carry. It only goes down: when a waiver is removed, lower this to the
  * new count so the next one cannot slip in.
  */
-export const WAIVER_BUDGET = 76
+export const WAIVER_BUDGET = 75
 
 /** A directive that disables a gated rule. */
 export interface GatedDisable {
