@@ -6,10 +6,13 @@ import { QuickCreateDialog } from './QuickCreateDialog'
 
 const copy = QUICK_CREATE_COPY.en
 
-export function LeadCreateDialogClient() {
+/** `stageId` makes the new lead start in that pipeline stage; `compact` renders the small board-column trigger. */
+export function LeadCreateDialogClient({ stageId, compact }: Readonly<{ stageId?: string; compact?: boolean }>) {
   return (
     <QuickCreateDialog
       basePath="/leads"
+      {...(stageId === undefined ? {} : { preset: { stageId } })}
+      {...(compact === undefined ? {} : { compact })}
       submit={quickCreateLead}
       text={{
         title: copy.leadTitle,

@@ -1,7 +1,7 @@
 'use client'
 
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter'
-import { useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
   applyMove,
@@ -27,6 +27,8 @@ export type KanbanBoardProps = Readonly<{
   onMove: (move: KanbanMove) => Promise<KanbanMoveResult>
   /** Reloads server data after a CONFLICT, normally `router.refresh`. */
   onConflict?: () => void
+  /** Rendered in the header of every open column, such as an add-to-column button. */
+  columnAction?: (stage: KanbanStage) => ReactNode
 }>
 
 // Drag needs a fine pointer and at least the md breakpoint (D-43); the card menu covers the rest.
@@ -79,7 +81,7 @@ function useCardMoves({ cards, labels, onMove, onConflict }: Omit<KanbanBoardPro
 }
 
 /** Stage board with drag and drop between columns, optimistic moves and rollback on failure (spec §17.5). */
-export function KanbanBoard({ stages, cards, labels, onMove, onConflict }: KanbanBoardProps) {
+export function KanbanBoard({ stages, cards, labels, onMove, onConflict, columnAction }: KanbanBoardProps) {
   const { current, moveCard } = useCardMoves({ cards, labels, onMove, ...(onConflict ? { onConflict } : {}) })
   const [collapsed, setCollapsed] = useState(() => initialCollapsed(stages))
   const dragEnabled = useSyncExternalStore(subscribeDragQuery, dragQueryMatches, dragDisabledOnServer)
@@ -117,6 +119,7 @@ export function KanbanBoard({ stages, cards, labels, onMove, onConflict }: Kanba
             setCollapsed((state) => toggleCollapsed(state, stageId))
           }}
           onMove={moveCard}
+          {...(columnAction === undefined ? {} : { action: columnAction(stage) })}
         />
       ))}
     </div>

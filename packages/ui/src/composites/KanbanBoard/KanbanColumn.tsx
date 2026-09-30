@@ -1,6 +1,6 @@
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter'
 import { ChevronsLeftRight, ChevronsRightLeft } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
 import { cn } from '@ops/ui/lib/utils'
 import { isTerminalStage, readCardData, withName } from './board-state'
@@ -21,6 +21,8 @@ type KanbanColumnProps = ToggleProps &
     cards: readonly KanbanCard[]
     dragEnabled: boolean
     onMove: MoveCard
+    /** Shown at the end of the header of an open column. */
+    action?: ReactNode
   }>
 
 function useColumnDrop(stageId: string) {
@@ -82,6 +84,7 @@ export function KanbanColumn({
   labels,
   onToggle,
   onMove,
+  action,
 }: KanbanColumnProps) {
   const { ref, over } = useColumnDrop(stage.id)
   const toggle = <ToggleButton stage={stage} collapsed={collapsed} labels={labels} onToggle={onToggle} />
@@ -109,7 +112,11 @@ export function KanbanColumn({
             <StageDot stage={stage} />
             <h2 className="truncate text-sm font-medium">{stage.name}</h2>
             <CardCount count={cards.length} />
-            {isTerminalStage(stage) ? <span className="ml-auto">{toggle}</span> : null}
+            {isTerminalStage(stage) ? (
+              <span className="ml-auto">{toggle}</span>
+            ) : (
+              <span className="ml-auto">{action}</span>
+            )}
           </header>
           {cards.map((card) => (
             <KanbanCardItem

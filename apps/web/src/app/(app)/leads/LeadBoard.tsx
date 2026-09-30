@@ -13,6 +13,7 @@ import { markLost } from '../../../server/crm/leads/actions'
 import { LostReasonDialog } from '../LostReasonDialog'
 import { moveLead } from '../../../server/crm/leads/actions'
 import { leadStageMoveError } from '../../../server/crm/leads/types'
+import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
 import { deferredLostMoveResult } from './lead-board-model'
 
 type LostMove = Readonly<{ leadId: string; expectedUpdatedAt: number }>
@@ -55,6 +56,7 @@ export function LeadBoard({
         cards={cards}
         labels={labels}
         onMove={handleMove}
+        columnAction={(stage) => <LeadCreateDialogClient stageId={stage.id} compact />}
         onConflict={() => {
           router.refresh()
         }}

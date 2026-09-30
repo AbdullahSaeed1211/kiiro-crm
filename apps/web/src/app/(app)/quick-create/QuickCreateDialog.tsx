@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@ops/ui/components/ui/button'
+import { Button, buttonVariants } from '@ops/ui/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@ops/ui/components/ui/dialog'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
@@ -30,6 +31,10 @@ export interface QuickCreateConfig {
   readonly fields: readonly FormFieldProps[]
   readonly text: QuickCreateText
   readonly submit: (input: unknown) => Promise<QuickCreateResult>
+  /** Fixed values sent with every submission, such as the stage a board column adds to. */
+  readonly preset?: Readonly<Record<string, string>>
+  /** Renders a small icon trigger instead of the primary button. */
+  readonly compact?: boolean
 }
 
 function readForm(form: HTMLFormElement, fields: readonly FormFieldProps[]): Record<string, string | null> {
@@ -62,7 +67,7 @@ function QuickCreateFooter({
   )
 }
 
-export function QuickCreateDialog({ basePath, fields, text, submit }: QuickCreateConfig) {
+export function QuickCreateDialog({ basePath, fields, text, submit, preset, compact = false }: QuickCreateConfig) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -72,7 +77,7 @@ export function QuickCreateDialog({ basePath, fields, text, submit }: QuickCreat
   function send(form: HTMLFormElement) {
     const input = readForm(form, fields)
     startTransition(async () => {
-      const result = await submit(input)
+      const result = await submit({ ...input, ...preset })
       if (!result.ok) {
         setError(result.error.message)
         setFieldErrors(result.error.fields ?? {})
@@ -88,7 +93,12 @@ export function QuickCreateDialog({ basePath, fields, text, submit }: QuickCreat
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>{text.create}</Button>} />
+      <DialogTrigger
+        aria-label={text.create}
+        className={buttonVariants(compact ? { variant: 'ghost', size: 'icon-xs' } : {})}
+      >
+        {compact ? <Plus aria-hidden /> : text.create}
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{text.title}</DialogTitle>
