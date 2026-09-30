@@ -14,7 +14,7 @@
 | Root cause                                                                                                                         | Severity | Open findings                      |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                            |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                      |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14                             |
 | Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-27 WEB-31               |
 | Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 DOM-02               |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                              |
