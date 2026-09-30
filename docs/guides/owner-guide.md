@@ -65,7 +65,7 @@ Settings, Newsletter.
 
 ## Remove a record
 
-Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database.
+Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.
 
 ## Read the pipeline
 
@@ -81,5 +81,5 @@ Figures shows the team's work for a date range, then the whole pipeline in chart
 ## Known limits
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
-- Archiving hides a lead, deal, contact or organization from every list and search, and there is no screen to restore one yet.
+- Archiving hides a lead, deal, contact or organization from every list and search; Settings, Archive lists them and restores any of them.
 - SMS, calendar sync and outgoing webhooks are not available.

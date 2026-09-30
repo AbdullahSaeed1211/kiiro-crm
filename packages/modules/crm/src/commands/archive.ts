@@ -33,3 +33,28 @@ async function archiveWork(deps: CrmDeps, input: unknown): Promise<CrmResult<{ t
 export function archiveRecord(deps: CrmDeps, input: unknown): Promise<CrmResult<{ type: CrmRecordType; id: string }>> {
   return executeCommand(deps, input, archiveWork)
 }
+
+const restoreSchema = z
+  .object({
+    type: z.enum(['organization', 'contact', 'lead', 'deal']),
+    id: z.string().trim().min(1),
+    expectedUpdatedAt: z.number().int().min(0),
+  })
+  .strict()
+
+async function restoreWork(deps: CrmDeps, input: unknown): Promise<CrmResult<{ type: CrmRecordType; id: string }>> {
+  const parsed = parse(restoreSchema, input)
+  if (!parsed.ok) return parsed
+  const { type, id, expectedUpdatedAt } = parsed.value
+  const denied = accessDenied<{ type: CrmRecordType; id: string }>({ type, deps, record: {}, action: 'delete' })
+  if (denied !== undefined) return denied
+  if (!(await deps.repo.restore(type, asId(id), expectedUpdatedAt)))
+    return failure('CONFLICT', `${type} is not archived, or was changed meanwhile`)
+  await createActivity({ deps, record: { type, id: asId(id) }, verb: 'record.restored' })
+  return ok({ type, id })
+}
+
+/** Brings an archived record back into every list and search; only owners and managers may do it. */
+export function restoreRecord(deps: CrmDeps, input: unknown): Promise<CrmResult<{ type: CrmRecordType; id: string }>> {
+  return executeCommand(deps, input, restoreWork)
+}

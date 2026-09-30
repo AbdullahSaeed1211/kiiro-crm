@@ -1,6 +1,6 @@
 import { asId, fixedClock, ok, type Id, type Result } from '@ops/kernel'
 import { can, type FieldDefinition, type StageTrackedRecord, type UnitOfWork, type Workflow } from '@ops/platform'
-import type { CrmDeps, CrmRepository } from '../src/ports/repository'
+import type { ArchivedRecord, CrmDeps, CrmRepository } from '../src/ports/repository'
 import type { ContactRecord, CrmDrafts, CrmRecordType, CrmRecords, DealRecord, LeadRecord } from '../src/ports/records'
 import type { LookupRecord } from '../src/ports/records'
 
@@ -125,10 +125,35 @@ export class MemoryCrm {
     return Promise.resolve(saved)
   }
 
+  readonly archived = new Map<string, { type: CrmRecordType; record: CrmRecords[CrmRecordType] }>()
+
   archive(type: CrmRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean> {
     const current = this.records[type].get(id)
     if (current?.updatedAt !== expectedUpdatedAt) return Promise.resolve(false)
     this.records[type].delete(id)
+    this.archived.set(id, { type, record: current })
+    return Promise.resolve(true)
+  }
+
+  listArchived(type: CrmRecordType): Promise<readonly ArchivedRecord[]> {
+    return Promise.resolve(
+      [...this.archived.values()]
+        .filter((entry) => entry.type === type)
+        .map(({ record }) => ({
+          type,
+          id: record.id,
+          label: String(Reflect.get(record, 'title') ?? Reflect.get(record, 'name') ?? record.id),
+          archivedAt: 1,
+          updatedAt: record.updatedAt,
+        })),
+    )
+  }
+
+  restore(type: CrmRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean> {
+    const entry = this.archived.get(id)
+    if (entry?.type !== type || entry.record.updatedAt !== expectedUpdatedAt) return Promise.resolve(false)
+    this.archived.delete(id)
+    this.records[type].set(id, entry.record as never)
     return Promise.resolve(true)
   }
 

@@ -720,6 +720,7 @@ export interface Activity {
   verb:
     | 'record.created'
     | 'record.archived'
+    | 'record.restored'
     | 'field.changed'
     | 'stage.changed'
     | 'assignment.changed'

@@ -3,6 +3,7 @@
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import type { Role } from '@ops/platform'
 import {
+  Archive,
   Bell,
   Building2,
   Database,
@@ -63,7 +64,13 @@ const GROUPS: readonly SettingsGroup[] = [
       ['intake', '/settings/intake', FileInput, ['owner', 'manager']],
     ],
   ],
-  ['data', [['import', '/settings/import', Database, ['owner', 'manager']]]],
+  [
+    'data',
+    [
+      ['import', '/settings/import', Database, ['owner', 'manager']],
+      ['archive', '/settings/archive', Archive, ['owner', 'manager']],
+    ],
+  ],
   ['personal', [['profile', '/settings/profile', UserRound, ['owner', 'manager', 'staff']]]],
 ]
 

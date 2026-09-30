@@ -2,6 +2,15 @@ import type { Clock, Id, Result } from '@ops/kernel'
 import type { Actor, Can, FieldDefinition, StageStore, UnitOfWork, Workflow } from '@ops/platform'
 import type { ContactRecord, CrmDrafts, CrmRecords, CrmRecordType, DealRecord, LookupRecord } from './records'
 
+/** A record an owner or manager archived, as the archive screen lists it. */
+export interface ArchivedRecord {
+  readonly type: CrmRecordType
+  readonly id: Id
+  readonly label: string
+  readonly archivedAt: number
+  readonly updatedAt: number
+}
+
 /** Lookup kinds of spec §10.1. */
 export type LookupKind = 'source' | 'lostReason'
 
@@ -22,6 +31,10 @@ export interface CrmRepository extends StageStore {
   ): Promise<CrmRecords[T] | undefined>
   /** Hides the record from every list and search while it still has `expectedUpdatedAt`; false when it changed meanwhile. */
   archive(type: CrmRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean>
+  /** Archived records of one type, newest first; owners and managers only see any. */
+  listArchived(type: CrmRecordType): Promise<readonly ArchivedRecord[]>
+  /** Brings an archived record back while it still has `expectedUpdatedAt`; false when it changed meanwhile. */
+  restore(type: CrmRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean>
   findContactByEmail(email: string): Promise<ContactRecord | undefined>
   loadDefaultWorkflow(recordType: 'lead' | 'deal'): Promise<Result<Workflow>>
   listLookups(kind: LookupKind): Promise<readonly LookupRecord[]>

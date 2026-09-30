@@ -3,7 +3,7 @@ export { createDeal, createLead, moveDeal, moveLead, updateDeal, updateLead } fr
 export { convertLead, markLost } from './conversion'
 export { setCustomFields } from './custom-fields'
 export { assignLeads, moveLeads } from './bulk'
-export { archiveRecord } from './archive'
+export { archiveRecord, restoreRecord } from './archive'
 export { importRecords, MAX_IMPORT_ROWS, type ImportReport } from './import'
 
 export {

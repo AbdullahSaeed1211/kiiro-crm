@@ -1,6 +1,6 @@
 import { asId } from '@ops/kernel'
 import { describe, expect, it } from 'vitest'
-import { archiveRecord } from '../src/commands/archive'
+import { archiveRecord, restoreRecord } from '../src/commands/archive'
 import { makeDeps, MemoryCrm, seedLead } from './memory-crm'
 
 function ownedLead() {
@@ -24,5 +24,25 @@ describe('archiveRecord', () => {
     const result = await archiveRecord(makeDeps(repo, 'manager'), { type: 'lead', id: lead.id })
     expect(result.ok).toBe(true)
     expect(repo.records.lead.has(lead.id)).toBe(false)
+  })
+
+  it('brings an archived record back for a manager and refuses staff', async () => {
+    const { repo, lead } = ownedLead()
+    await archiveRecord(makeDeps(repo, 'manager'), { type: 'lead', id: lead.id })
+    const updatedAt = lead.updatedAt
+    const staff = await restoreRecord(makeDeps(repo, 'staff'), {
+      type: 'lead',
+      id: lead.id,
+      expectedUpdatedAt: updatedAt,
+    })
+    expect(staff.ok ? undefined : staff.error.code).toBe('FORBIDDEN')
+    expect(repo.records.lead.has(lead.id)).toBe(false)
+    const manager = await restoreRecord(makeDeps(repo, 'manager'), {
+      type: 'lead',
+      id: lead.id,
+      expectedUpdatedAt: updatedAt,
+    })
+    expect(manager.ok).toBe(true)
+    expect(repo.records.lead.has(lead.id)).toBe(true)
   })
 })

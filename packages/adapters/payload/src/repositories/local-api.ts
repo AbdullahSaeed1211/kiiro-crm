@@ -8,6 +8,8 @@ export interface UserQuery {
   readonly where: Where
   readonly sort?: Sort
   readonly limit?: number
+  /** Reads archived (trashed) documents instead of live ones. */
+  readonly trash?: boolean
 }
 
 /** Compare-and-set write: applies `data` only while the document's `updatedAt` equals `expectedUpdatedAt`. */
@@ -35,11 +37,12 @@ export function createAsSystem(req: PayloadRequest, collection: CollectionSlug, 
 
 /** Finds documents with the collection's access applied to the request user. */
 export async function findAsUser(req: PayloadRequest, query: UserQuery): Promise<Doc[]> {
-  const { collection, where, sort, limit = 0 } = query
+  const { collection, where, sort, limit = 0, trash = false } = query
   const page = await req.payload.find({
     collection,
     where,
     limit,
+    trash,
     ...(sort === undefined ? {} : { sort }),
     pagination: false,
     depth: 0,

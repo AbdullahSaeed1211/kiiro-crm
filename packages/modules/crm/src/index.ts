@@ -11,7 +11,7 @@ export type {
   OrganizationRecord,
   PipelineFields,
 } from './ports/records'
-export type { CrmDeps, CrmRepository, LookupKind } from './ports/repository'
+export type { ArchivedRecord, CrmDeps, CrmRepository, LookupKind } from './ports/repository'
 export * from './commands/public'
 export { setCustomFieldsSchema } from './schema'
 export { STANDARD_STAGE_FIELDS } from './domain/stage-requirements'

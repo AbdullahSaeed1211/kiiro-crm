@@ -41,6 +41,7 @@ export const PRIORITY_VALUES = ['none', 'low', 'medium', 'high', 'urgent'] as co
 export const ACTIVITY_VERB_VALUES = [
   'record.created',
   'record.archived',
+  'record.restored',
   'field.changed',
   'stage.changed',
   'assignment.changed',
