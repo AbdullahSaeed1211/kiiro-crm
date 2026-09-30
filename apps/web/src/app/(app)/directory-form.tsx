@@ -2,7 +2,7 @@
 
 import { RecordForm, type FormValue, type RecordFieldConfig } from '@ops/ui/composites/RecordForm'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useVersionedAction } from './use-versioned-action'
 import { saveContact, saveOrganization } from '../../server/crm/directory/actions'
 
 type FormKind = 'organization' | 'contact'
@@ -50,7 +50,7 @@ export function DirectoryForm({
   cancelHref,
 }: DirectoryFormProps) {
   const router = useRouter()
-  const [error, setError] = useState<string | undefined>()
+  const { run, error } = useVersionedAction()
   const organizationFields: RecordFieldConfig[] = [
     { name: 'name', label: 'Organization name', required: true, placeholder: 'e.g. Northstar Labs' },
     { name: 'website', label: 'Website', type: 'url', placeholder: 'https://…' },
@@ -71,16 +71,11 @@ export function DirectoryForm({
   ]
   const fields = kind === 'organization' ? organizationFields : contactFields
   const submit = async (values: Record<string, FormValue>) => {
-    setError(undefined)
     const payload = kind === 'organization' ? organizationPayload(values) : contactPayload(values)
-    const result = await saveRecord({ kind, id, expectedUpdatedAt, payload })
-    if (!result.ok) {
-      setError(result.error.message)
-      if (result.error.code === 'CONFLICT') router.refresh()
-      return
-    }
+    const saved = await run(() => saveRecord({ kind, id, expectedUpdatedAt, payload }))
+    if (saved === null) return
     const collection = kind === 'organization' ? 'organizations' : 'contacts'
-    router.push(`/${collection}/${result.value.id}`)
+    router.push(`/${collection}/${saved.value.id}`)
     router.refresh()
   }
   return (

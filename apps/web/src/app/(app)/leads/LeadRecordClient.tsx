@@ -4,11 +4,11 @@ import { ActivityFeed, RecordPageLayout, StageSelect, type ActivityEntry } from 
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useMemo, useState, type ReactNode } from 'react'
 import { moveLead, updateLead } from '../../../server/crm/leads/actions'
 import type { LeadPageData } from '../../../server/crm/leads/types'
 import { ConvertDialog, LostDialog } from './LeadDialogs'
+import { useVersionedAction } from '../use-versioned-action'
 import { LeadNextAction } from './LeadNextAction'
 import { RecordActionLinks } from '../record-action-links'
 import { recordTabs } from '../record-view-primitives'
@@ -245,10 +245,9 @@ export function LeadRecordClient({
   currency: string
   slots: LeadSlots
 }>) {
-  const router = useRouter()
   const [convertOpen, setConvertOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
-  const [actionError, setActionError] = useState<string | undefined>()
+  const { run, error: actionError } = useVersionedAction({ refreshOnSuccess: true })
   const lead = data.item.lead
   const isConverted = lead.convertedAt !== null
   const isTerminal = ['done_success', 'done_failure', 'cancelled'].includes(data.item.stage.category)
@@ -263,24 +262,10 @@ export function LeadRecordClient({
       })),
     [data.activities],
   )
-  const saveTitle = async (title: string) => {
-    setActionError(undefined)
-    const result = await updateLead({ id: lead.id, expectedUpdatedAt: lead.updatedAt, patch: { title } })
-    if (result.ok) router.refresh()
-    else {
-      setActionError(result.error.message)
-      if (result.error.code === 'CONFLICT') router.refresh()
-    }
-  }
-  const changeStage = async (stageId: string) => {
-    setActionError(undefined)
-    const result = await moveLead({ leadId: lead.id, toStageId: stageId, expectedUpdatedAt: lead.updatedAt })
-    if (result.ok) router.refresh()
-    else {
-      setActionError(result.error.message)
-      if (result.error.code === 'CONFLICT') router.refresh()
-    }
-  }
+  const saveTitle = (title: string) =>
+    run(() => updateLead({ id: lead.id, expectedUpdatedAt: lead.updatedAt, patch: { title } }))
+  const changeStage = (stageId: string) =>
+    run(() => moveLead({ leadId: lead.id, toStageId: stageId, expectedUpdatedAt: lead.updatedAt }))
   return (
     <>
       <LeadRecordLayout

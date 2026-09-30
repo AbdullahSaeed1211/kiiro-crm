@@ -1,5 +1,6 @@
 'use client'
 
+import { useVersionedAction } from '../use-versioned-action'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   Dialog,
@@ -9,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@ops/ui/components/ui/dialog'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { convertLead } from '../../../server/crm/leads/actions'
 import { searchConversionOptions, suggestedMatches } from '../../../server/actions/crm/conversion-options'
@@ -45,8 +45,6 @@ interface DialogState {
   suggestedContactId: string | undefined
   dealTitle: string
   value: string
-  pending: boolean
-  error: string | undefined
 }
 
 const initialState = (dealTitle: string, companyName: string | null): DialogState => ({
@@ -61,8 +59,6 @@ const initialState = (dealTitle: string, companyName: string | null): DialogStat
   suggestedContactId: undefined,
   dealTitle,
   value: '',
-  pending: false,
-  error: undefined,
 })
 
 function buildOrgInput(state: DialogState): OrgInput {
@@ -106,6 +102,8 @@ function DialogContent_(
     onOpenChange: (open: boolean) => void
     onSubmit: () => void
     currency: string
+    pending: boolean
+    error: string | undefined
   }>,
 ) {
   return (
@@ -157,13 +155,13 @@ function DialogContent_(
           }}
         />
       </div>
-      {props.state.error && (
+      {props.error && (
         <p role="alert" className="text-sm text-destructive">
-          {props.state.error}
+          {props.error}
         </p>
       )}
       <ConvertFooter
-        pending={props.state.pending}
+        pending={props.pending}
         onCancel={() => {
           props.onOpenChange(false)
         }}
@@ -174,7 +172,7 @@ function DialogContent_(
 }
 
 export function ConvertDialog(props: DialogProps) {
-  const router = useRouter()
+  const { run, error, pending } = useVersionedAction({ refreshOnSuccess: true })
   const lead = props.data.item.lead
   const [state, setState] = useState<DialogState>(initialState(lead.title, lead.companyName))
 
@@ -209,27 +207,21 @@ export function ConvertDialog(props: DialogProps) {
   }
 
   const handleSubmit = async () => {
-    setState((prev) => ({ ...prev, error: undefined, pending: true }))
-    const result = await convertLead({
-      leadId: lead.id,
-      expectedUpdatedAt: lead.updatedAt,
-      organization: buildOrgInput(state),
-      contact: buildContactInput(state),
-      deal: {
-        title: state.dealTitle.trim() || undefined,
-        value: state.value.trim()
-          ? { amountMinor: Math.round(Number(state.value) * 100), currency: props.currency }
-          : null,
-      },
-    })
-    setState((prev) => ({ ...prev, pending: false }))
-    if (result.ok) {
-      props.onOpenChange(false)
-      router.refresh()
-    } else {
-      setState((prev) => ({ ...prev, error: result.error.message }))
-      if (result.error.code === 'CONFLICT') router.refresh()
-    }
+    const converted = await run(() =>
+      convertLead({
+        leadId: lead.id,
+        expectedUpdatedAt: lead.updatedAt,
+        organization: buildOrgInput(state),
+        contact: buildContactInput(state),
+        deal: {
+          title: state.dealTitle.trim() || undefined,
+          value: state.value.trim()
+            ? { amountMinor: Math.round(Number(state.value) * 100), currency: props.currency }
+            : null,
+        },
+      }),
+    )
+    if (converted !== null) props.onOpenChange(false)
   }
 
   return (
@@ -250,6 +242,8 @@ export function ConvertDialog(props: DialogProps) {
             void handleSubmit()
           }}
           currency={props.currency}
+          pending={pending}
+          error={error}
         />
       </DialogContent>
     </Dialog>

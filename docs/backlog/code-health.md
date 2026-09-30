@@ -104,11 +104,11 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ### WEB-27: DRY, high severity
 
-- Location: 15+ files under `grep expectedUpdatedAt` (`directory-form.tsx`, `TaskBoard.tsx`, `LeadBoard.tsx`, `DealBoard.tsx`, `lead-board-model.ts`, `deal-board-model.ts`, `ConvertDialog.tsx`, etc.)
-- Evidence: Optimistic-concurrency handling (`expectedUpdatedAt` passed through, CONFLICT-code detection, refresh-on-conflict) is reimplemented per entity/board rather than behind one mutation hook
-- Consequence: This is exactly the kind of cross-cutting concern that should be a single `useVersionedAction`/`useOptimisticMutation` hook; instead every board/dialog re-derives it, and subtly differs (WEB-26)
-- Fix: Extract a shared hook wrapping `startTransition` + Result handling + conflict refresh
-- Effort: L
+- Status: `useVersionedAction` (`apps/web/src/app/(app)/use-versioned-action.ts`) now serves the lead record, the lost-reason dialog, the convert dialog and the contact and organization forms.
+- Location: `timeline/save-dates.ts` and the board models (`lead-board-model.ts`, `deal-board-model.ts`, `TaskBoard.tsx`)
+- Evidence: The timeline's date save and the three boards still detect CONFLICT and refresh on their own (the boards through the Kanban composite's `onConflict`).
+- Fix: Move the timeline save onto the hook; leave the boards on the composite, which already owns their optimistic rollback.
+- Effort: S
 
 ### WEB-04: DRY, medium severity
 

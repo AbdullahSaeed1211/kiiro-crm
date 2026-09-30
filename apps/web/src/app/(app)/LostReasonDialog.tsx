@@ -12,8 +12,8 @@ import {
 } from '@ops/ui/components/ui/dialog'
 import { Label } from '@ops/ui/components/ui/label'
 import { Textarea } from '@ops/ui/components/ui/textarea'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useVersionedAction } from './use-versioned-action'
 
 type LostResult = Readonly<{ ok: true }> | Readonly<{ ok: false; error: Readonly<{ code: string; message: string }> }>
 
@@ -108,29 +108,20 @@ function LostReasonDialogView(
 }
 
 export function LostReasonDialog(props: LostReasonDialogProps) {
-  const router = useRouter()
   const [reason, setReason] = useState(props.lostReasons[0]?.id ?? '')
   const [note, setNote] = useState('')
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | undefined>()
+  const { run, error, pending } = useVersionedAction({ refreshOnSuccess: true })
   const submit = async () => {
     if (!reason) return
-    setError(undefined)
-    setPending(true)
-    const result = await props.markLost({
-      id: props.recordId,
-      expectedUpdatedAt: props.expectedUpdatedAt,
-      lostReasonId: reason,
-      lostNote: note,
-    })
-    setPending(false)
-    if (result.ok) {
-      props.onOpenChange(false)
-      router.refresh()
-    } else {
-      setError(result.error.message)
-      if (result.error.code === 'CONFLICT') router.refresh()
-    }
+    const saved = await run(() =>
+      props.markLost({
+        id: props.recordId,
+        expectedUpdatedAt: props.expectedUpdatedAt,
+        lostReasonId: reason,
+        lostNote: note,
+      }),
+    )
+    if (saved !== null) props.onOpenChange(false)
   }
   return (
     <LostReasonDialogView
