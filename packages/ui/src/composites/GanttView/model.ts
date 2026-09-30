@@ -15,7 +15,7 @@ export interface GanttBar {
 }
 
 /** Stage colour names a bar can take. */
-export const GANTT_TONES = ['gray', 'blue', 'green', 'amber', 'red', 'violet', 'teal', 'pink'] as const
+const GANTT_TONES = ['gray', 'blue', 'green', 'amber', 'red', 'violet', 'teal', 'pink'] as const
 export type GanttTone = (typeof GANTT_TONES)[number]
 
 /** Task types the library needs declared: the default and one per stage colour. */
