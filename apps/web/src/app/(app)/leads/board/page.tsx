@@ -1,3 +1,4 @@
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -44,12 +45,14 @@ export default async function LeadBoardPage({
           title="Lead board"
           count={result.total}
           actions={
-            <a
-              className="ops-action-button rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-              href={tableHref}
-            >
-              Table view
-            </a>
+            <ViewSwitcher
+              label="Lead views"
+              active="board"
+              views={[
+                { id: 'table', label: 'Table', href: tableHref },
+                { id: 'board', label: 'Board', href: '/leads/board' },
+              ]}
+            />
           }
         />
         <LeadBoard

@@ -1,6 +1,6 @@
 # Code-health backlog
 
-36 findings are open: 3 high, 16 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+35 findings are open: 3 high, 15 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -15,7 +15,7 @@
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                            |
 | Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                      |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-05 WEB-27 WEB-31        |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-27 WEB-31               |
 | Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 DOM-02               |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                              |
 | Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20 |
@@ -116,14 +116,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Evidence: Separate assignee-editing form outside `TaskSheet`, using raw unstyled `<select multiple>`/`<button>` instead of `@ops/ui` components, and its own save/error handling
 - Consequence: Editing assignees behaves and looks different depending on which surface you use; a second place to keep permission/optimistic-concurrency logic in sync
 - Fix: Fold assignee editing into `TaskSheet`/`TaskDetailDrawer` and delete this component
-- Effort: M
-
-### WEB-05: DRY, medium severity
-
-- Location: `apps/web/src/app/(app)/tasks/TaskWorkspaceViews.tsx` vs `apps/web/src/app/(app)/leads/LeadListControls.tsx:57-68` vs `apps/web/src/app/(app)/deals/page.tsx:137-140`
-- Evidence: Three separate table/board switcher implementations: a `<nav>` of `Link`s with active-state styling (tasks), two ad hoc `<a>` tags (leads), and a `Button render={<Link/>}` (deals)
-- Consequence: Adding a new view (e.g. calendar) to leads/deals means writing bespoke markup again instead of reusing one composite
-- Fix: Extract a shared `ViewSwitcher` composite (in `packages/ui`) parameterized by `{id,label,href}[]` and `active`
 - Effort: M
 
 ### WEB-14: SRP, medium severity

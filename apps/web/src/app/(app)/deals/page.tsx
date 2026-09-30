@@ -1,6 +1,6 @@
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
-import { Button } from '@ops/ui/components/ui/button'
 import {
   DataTable,
   type DataTableColumn,
@@ -12,7 +12,7 @@ import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import { Handshake, LayoutGrid, Search } from 'lucide-react'
+import { Handshake, Search } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DealCreateDialog } from './DealCreateDialog'
@@ -93,10 +93,14 @@ export default async function DealsPage({
           count={data.total}
           actions={
             <div className="flex items-center gap-2">
-              <Button variant="outline" nativeButton={false} render={<Link href="/deals/board" />}>
-                <LayoutGrid aria-hidden />
-                Board
-              </Button>
+              <ViewSwitcher
+                label="Deal views"
+                active="table"
+                views={[
+                  { id: 'table', label: 'Table', href: '/deals' },
+                  { id: 'board', label: 'Board', href: '/deals/board' },
+                ]}
+              />
               <DealCreateDialog
                 currency={currency}
                 organizations={data.organizations.map(({ id, name }) => ({ id, name }))}

@@ -1,6 +1,7 @@
 'use client'
 
 import { FilterBar } from '@ops/ui'
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
@@ -47,20 +48,14 @@ function FacetSelect({
 
 function ViewLinks({ boardHref, tableHref }: Readonly<{ boardHref: string; tableHref: string }>) {
   return (
-    <>
-      <a
-        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-        href={boardHref}
-      >
-        Board
-      </a>
-      <a
-        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-sm font-medium hover:bg-muted"
-        href={tableHref}
-      >
-        Table
-      </a>
-    </>
+    <ViewSwitcher
+      label="Lead views"
+      active="table"
+      views={[
+        { id: 'table', label: 'Table', href: tableHref },
+        { id: 'board', label: 'Board', href: boardHref },
+      ]}
+    />
   )
 }
 

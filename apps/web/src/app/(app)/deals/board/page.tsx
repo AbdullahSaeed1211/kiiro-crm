@@ -1,10 +1,9 @@
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { KanbanBoardLabels, KanbanCard, KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Button } from '@ops/ui/components/ui/button'
 import { DealBoard } from '../DealBoard'
 import { DealCreateDialog } from '../DealCreateDialog'
 import { getDealListData } from '../../../../server/crm/deals/queries'
@@ -63,9 +62,14 @@ export default async function DealBoardPage() {
           count={data.total}
           actions={
             <div className="flex items-center gap-2">
-              <Button variant="outline" nativeButton={false} render={<Link href="/deals" />}>
-                Table
-              </Button>
+              <ViewSwitcher
+                label="Deal views"
+                active="board"
+                views={[
+                  { id: 'table', label: 'Table', href: '/deals' },
+                  { id: 'board', label: 'Board', href: '/deals/board' },
+                ]}
+              />
               <DealCreateDialog
                 currency={currency}
                 organizations={data.organizations.map(({ id, name }) => ({ id, name }))}
