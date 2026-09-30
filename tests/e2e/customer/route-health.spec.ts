@@ -596,7 +596,7 @@ async function organizationEditRoute(page: Page, name: string): Promise<string> 
 
 test('organization edit form preserves saved business contact fields', async ({ page }) => {
   await signIn(page)
-  const organization = ORGANIZATIONS.find(({ key }) => key === 'agr-gold')
+  const organization = ORGANIZATIONS.find(({ key }) => key === 'sterling-jewelers')
   if (organization === undefined) throw new Error('organization edit fixture is missing')
   await page.goto(await organizationEditRoute(page, organization.name))
 

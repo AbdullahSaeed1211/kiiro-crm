@@ -1,34 +1,45 @@
 import type { ContactSeed, OrganizationSeed } from './crm-types'
 
+/** Fictional clients of the demo agency; every domain is reserved for examples and every number is unassigned. */
 export const ORGANIZATIONS: readonly OrganizationSeed[] = [
   ...(
     [
-      ['austin-optics', 'Austin Optics', 'https://austinoptics.com', '+1 718-261-8655', ''],
-      ['etcpa', 'ETCPA', 'https://www.etcpa.com', '+1 718-261-9600', 'file@etcpa.com'],
-      ['shapiro-law-office', 'Shapiro Law Office', 'https://www.shapirolawoffice.com', '+1 718-261-8500', ''],
-      ['shapiro-the-hero', 'Shapiro The Hero', 'https://shapirothehero.com', '+1 970-742-7476', ''],
-      ['agr-gold', 'AGR Gold', 'https://agrgold.com', '+1 212-391-1012', 'customerservice@agrgold.com'],
-      ['fast-track', 'Fast Track', 'https://fasttracktlg.com', '+1 718-366-8000', 'info@fasttracktlg.com'],
+      ['northwind-optics', 'Northwind Optics', 'https://northwindoptics.example.test', '+1 555-0100-01', ''],
       [
-        'pbnj',
-        'PBNJ (property Buyer New Jersey)',
-        'https://www.propertybuyernj.com',
-        '+1 917-856-1612',
-        '',
-        'Property Buyer New Jersey',
+        'harbor-cpa',
+        'Harbor CPA',
+        'https://www.harborcpa.example.test',
+        '+1 555-0100-02',
+        'file@harborcpa.example.test',
       ],
-      ['green-vision', 'Green Vision', 'https://greenvision.eco', '', 'contact@greenvision.eco'],
-      ['mirch-media', 'Mirch Media', 'https://www.mirchmedia.com', '+1 516-969-8550', ''],
-      ['baller-squad', 'Baller Squad', 'https://www.ballersquad.com', '', ''],
+      ['lakeside-law-office', 'Lakeside Law Office', 'https://www.lakesidelaw.example.test', '+1 555-0100-03', ''],
+      ['lakeside-champion', 'Lakeside Champion', 'https://lakesidechampion.example.test', '+1 555-0100-04', ''],
+      [
+        'sterling-jewelers',
+        'Sterling Jewelers',
+        'https://sterlingjewelers.example.test',
+        '+1 555-0100-05',
+        'hello@sterlingjewelers.example.test',
+      ],
+      [
+        'summit-logistics',
+        'Summit Logistics',
+        'https://summitlogistics.example.test',
+        '+1 555-0100-06',
+        'info@summitlogistics.example.test',
+      ],
+      ['keystone-homes', 'Keystone Homes', 'https://www.keystonehomes.example.test', '+1 555-0100-07', ''],
+      [
+        'evergreen-solar',
+        'Evergreen Solar',
+        'https://evergreensolar.example.test',
+        '',
+        'contact@evergreensolar.example.test',
+      ],
+      ['demo-agency', 'Demo Agency', 'https://www.demoagency.example.test', '+1 555-0100-08', ''],
+      ['court-kings', 'Court Kings', 'https://www.courtkings.example.test', '', ''],
     ] as const
-  ).map(([key, name, website, phone, email, previousName]) => ({
-    key,
-    name,
-    website,
-    phone,
-    email,
-    ...(previousName === undefined ? {} : { previousName }),
-  })),
+  ).map(([key, name, website, phone, email]) => ({ key, name, website, phone, email })),
 ]
 
 export const CONTACTS: readonly ContactSeed[] = []

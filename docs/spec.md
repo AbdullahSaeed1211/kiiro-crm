@@ -520,9 +520,9 @@ INBOUND_DOMAIN=in.localhost
 - Inbound email locally: `curl -X POST http://localhost:3000/api/v1/internal/email/inbound -H "x-internal-secret: dev-internal-secret" -H "x-envelope-from: …" -H "x-envelope-to: …" --data-binary @fixtures/email/reply.eml`.
 - `pnpm db:reset:local`: deletes the local D1 state directory under `.wrangler/state` and re-runs `payload migrate`.
 - `pnpm seed:dev` (Local API against local D1, idempotent by email/name):
-  settings `appName "Mirch Media"`, timezone `Asia/Kolkata`, locale `en`, currency `INR`, template `agency`;
-  users (all with the local development password `DEV_PASSWORD` from `scripts/seed/data.ts`): `mirchads@gmail.com` (owner), `manager@example.test` (manager), `staff1@example.test`, `staff2@example.test` (staff, report to manager);
-  groups `Design` (staff1), `Development` (staff2); 13 organizations (including the confirmed Mirch client list), 6 contacts, 5 leads, 5 deals, 14 projects and 24 tasks,
+  settings `appName "Demo Agency"`, timezone `Asia/Kolkata`, locale `en`, currency `INR`, template `agency`;
+  users (all with the local development password `DEV_PASSWORD` from `scripts/seed/data.ts`): `owner@example.test` (owner), `manager@example.test` (manager), `staff1@example.test`, `staff2@example.test` (staff, report to manager);
+  groups `Design` (staff1), `Development` (staff2); 10 fictional organizations, 6 contacts, 5 leads, 5 deals, 14 projects and 24 tasks,
   with due dates relative to now and prefilled notify/inbound settings for the confirmed tenant.
   Fixtures live in `scripts/fixtures/*.ts`; the `example.test` domain only.
 

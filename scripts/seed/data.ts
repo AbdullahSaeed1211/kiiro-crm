@@ -4,16 +4,16 @@ export const DEV_PASSWORD = process.env['SEED_PASSWORD'] ?? 'local-dev-password'
 
 /** Settings global values the seed ensures. */
 export const APP_SETTINGS = {
-  appName: 'Mirch Media',
+  appName: 'Demo Agency',
   timezone: 'Asia/Kolkata',
   locale: 'en',
   currency: 'INR',
   brand: { primaryHex: '#E45735', radius: 'md' },
   email: {
-    fromName: 'Mirch Media',
-    fromAddress: 'no-reply@notify.mirchmedia.com',
-    inboundDomain: 'in.mirchmedia.com',
-    inboundLocalPrefix: 'mirchmedia--',
+    fromName: 'Demo Agency',
+    fromAddress: 'no-reply@notify.example.test',
+    inboundDomain: 'in.example.test',
+    inboundLocalPrefix: 'demo--',
   },
 } as const
 
@@ -53,7 +53,7 @@ export const GROUPS: readonly string[] = [DESIGN, DEVELOPMENT]
 
 /** Seeded users; a user appears after the user it reports to. */
 export const USERS: readonly UserSeed[] = [
-  { key: 'owner', email: 'mirchads@gmail.com', name: 'Vivek Thapar', role: 'owner' },
+  { key: 'owner', email: 'owner@example.test', name: 'Agency Owner', role: 'owner' },
   { key: 'manager', email: 'manager@example.test', name: 'Client Services Lead', role: 'manager' },
   {
     key: 'staff1',

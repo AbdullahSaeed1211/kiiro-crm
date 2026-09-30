@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { expect as baseExpect, test, type Page, type Response } from '@playwright/test'
-import { DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
+import { APP_SETTINGS, DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { parseDevVars, WEB_DIR } from '../../../scripts/seed/local-env'
 import { assignedTaskTitle, searchForDashboardTask } from '../helpers/task-fixtures'
 import { verifyTimelineDragPersistence } from './timeline-drag'
@@ -121,7 +121,7 @@ test('customer shell uses the custom login, workspace tools, and contained respo
   await expect(page.getByLabel('Email')).toBeVisible()
 
   await signIn(page)
-  await expect(page.getByText('Mirch Media', { exact: true })).toHaveCount(1)
+  await expect(page.getByText(APP_SETTINGS.appName, { exact: true })).toHaveCount(1)
   expect(await page.locator('a[href="/projects"]').count()).toBeGreaterThan(0)
   if (page.viewportSize()?.width !== 390)
     expect(await page.locator('a[href="/settings/general"]').count()).toBeGreaterThan(0)

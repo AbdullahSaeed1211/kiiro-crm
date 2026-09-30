@@ -54,30 +54,6 @@ async function seedGroups(payload: SeedPayload, tally: Tally): Promise<IdMap> {
   return ids
 }
 
-async function migrateLegacyOwnerEmail(payload: SeedPayload, ownerEmail: string): Promise<void> {
-  const legacy = await payload.find({
-    ...LOCAL,
-    collection: COLLECTIONS.users,
-    where: { email: equals('mirchads@example.test') },
-    limit: 1,
-  })
-  if (legacy.docs[0] !== undefined) {
-    const current = await payload.find({
-      ...LOCAL,
-      collection: COLLECTIONS.users,
-      where: { email: equals(ownerEmail) },
-      limit: 1,
-    })
-    if (current.docs[0] === undefined)
-      await payload.update({
-        ...LOCAL,
-        collection: COLLECTIONS.users,
-        id: legacy.docs[0].id,
-        data: { email: ownerEmail, name: 'Owner' },
-      })
-  }
-}
-
 async function upsertUser(
   payload: SeedPayload,
   seed: (typeof USERS)[number],
@@ -104,9 +80,6 @@ async function seedUsers(payload: SeedPayload, groups: IdMap, tally: Tally): Pro
   const users = new Map<string, string>()
   const input = { groups, users, tally }
   for (const seed of USERS) {
-    if (seed.key === 'owner' && seed.email === 'mirchads@gmail.com') {
-      await migrateLegacyOwnerEmail(payload, seed.email)
-    }
     await upsertUser(payload, seed, input)
   }
   return users
