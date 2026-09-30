@@ -1,7 +1,7 @@
 import { workflowOrThrow } from '../../workflow-result'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
-import type { Workflow } from '@ops/platform'
+import { isManagerUp, type Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { loadPeople } from '../../people'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
@@ -80,7 +80,9 @@ async function loadLeadPeople(context: RequestContext, leads: readonly LeadRecor
   )
 }
 
+/** The people a lead can be assigned to; only owners and managers assign, and staff may not read who is active. */
 async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestContext>>): Promise<LeadPerson[]> {
+  if (!isManagerUp(context.actor)) return []
   const users = await context.payload.find({
     collection: 'users',
     where: { active: { equals: true } },

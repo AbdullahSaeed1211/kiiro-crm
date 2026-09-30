@@ -46,44 +46,12 @@ function referenceOf(value: unknown): { recordType: string; recordId: string } |
     : undefined
 }
 
-function noneWhere(): Where {
-  return { id: { equals: '__collaboration_no_access__' } }
-}
-
 const scopedParents = Object.entries(RECORD_TYPES) as readonly [keyof typeof RECORD_TYPES, string][]
 
 function parentSlug(recordType: string): string | undefined {
   const entry = scopedParents.find(([, value]) => value === recordType)
   if (entry === undefined) return undefined
   return entry[0] === 'organizations' ? COLLECTIONS.organizations : `${recordType}s`
-}
-
-/** Builds a query filter from the parent collections' own Payload access rules. */
-export async function parentScopeWhere(req: PayloadRequest): Promise<boolean | Where> {
-  const actor = await resolveActor(req)
-  if (actor?.active !== true) return false
-  if (isManagerUp(actor)) return true
-  const pages = await Promise.all(
-    scopedParents.map(async ([, recordType]) => {
-      const collection = parentSlug(recordType)
-      if (collection === undefined) return { recordType, ids: [] }
-      const page = await req.payload.find({
-        collection: payloadCollection(collection),
-        depth: 0,
-        pagination: false,
-        overrideAccess: false,
-        user: req.user,
-        req,
-      })
-      return { recordType, ids: page.docs.map((doc) => idOf(doc)).filter((id): id is string => id !== undefined) }
-    }),
-  )
-  const clauses: Where[] = pages.flatMap(({ recordType, ids }) =>
-    ids.map((recordId): Where => ({
-      and: [{ recordType: { equals: recordType } }, { recordId: { equals: recordId } }] as Where[],
-    })),
-  )
-  return clauses.length > 0 ? { or: clauses } : noneWhere()
 }
 
 /** Checks one polymorphic parent through its own scoped collection access. */
@@ -148,8 +116,12 @@ function uploaderId(doc: object): string | undefined {
   return idOf(Reflect.get(doc, 'uploadedBy'))
 }
 
-/** Comments and attachments are filtered by the scope of their referenced parent record. */
-export const parentScopedRead: Access = ({ req }) => parentScopeWhere(req)
+/**
+ * Any active user may query comments and attachments; `filterToReadableParents` then drops the ones whose parent record
+ * the user cannot read. Enumerating the readable parents into the query instead would bind two variables per record,
+ * which D1 caps at 100 per statement.
+ */
+export const parentScopedRead: Access = async ({ req }) => (await activeActor(req)) !== undefined
 export const parentScopedCreate: Access = async ({ req, data }) => {
   if (!(await activeActor(req))) return false
   return parentAllowed(req, data)

@@ -11,7 +11,7 @@ import {
   DisabledMailSender,
   payloadEmailAdapter,
 } from '@ops/adapter-cloudflare'
-import { COLLECTIONS, settingsGlobal, spikeCollections } from '@ops/adapter-payload'
+import { COLLECTIONS, installPagedFind, settingsGlobal, spikeCollections } from '@ops/adapter-payload'
 import { buildConfig } from 'payload'
 import type { Config } from 'payload'
 import type { GetPlatformProxyOptions } from 'wrangler'
@@ -95,6 +95,8 @@ export default buildConfig({
   collections: [...spikeCollections],
   globals: [settingsGlobal],
   secret: process.env.PAYLOAD_SECRET,
+  // Reads that return many rows run in chunks, because D1 allows 100 bound variables per statement.
+  onInit: installPagedFind,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   graphQL: { disable: true },
   defaultDepth: 0,

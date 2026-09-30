@@ -9,6 +9,7 @@ import {
   ATTACHMENT_MIME_TYPES,
 } from './fields'
 import { ADMIN_GROUPS } from '../fields'
+import { filterToReadableParents } from './parent-read-hooks'
 
 /** R2-backed record files. The upload route enforces the size and MIME limits before writing the object. */
 export const collaborationAttachmentsCollection = collaborationCollection({
@@ -30,6 +31,7 @@ export const collaborationAttachmentsCollection = collaborationCollection({
   upload: { mimeTypes: [...ATTACHMENT_MIME_TYPES], crop: false, focalPoint: false },
   access: { read: parentScopedRead, create: parentScopedCreate, update: () => false, delete: attachmentDelete },
   hooks: {
+    afterOperation: [filterToReadableParents],
     beforeChange: [
       async ({ data, operation, req }) => {
         if (operation !== 'create') return data

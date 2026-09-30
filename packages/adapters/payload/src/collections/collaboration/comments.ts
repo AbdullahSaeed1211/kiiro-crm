@@ -11,6 +11,7 @@ import {
 } from './fields'
 import { parseMentions } from '../../collaboration/mentions'
 import { ADMIN_GROUPS } from '../fields'
+import { filterToReadableParents } from './parent-read-hooks'
 
 function valueOf(value: object, key: string): unknown {
   return (value as Record<string, unknown>)[key]
@@ -107,6 +108,7 @@ export const commentsCollection = collaborationCollection({
   indexes: [{ fields: ['recordType', 'recordId', 'createdAt'] }],
   access: { read: parentScopedRead, create: parentScopedCreate, update: commentUpdate, delete: commentDelete },
   hooks: {
+    afterOperation: [filterToReadableParents],
     beforeChange: [validateCommentChange],
     beforeDelete: [
       () => {
