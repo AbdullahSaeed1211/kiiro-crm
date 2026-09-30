@@ -3,6 +3,7 @@
 import { ActivityFeed, RecordPageLayout, StageSelect, type ActivityEntry } from '@ops/ui'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, type ReactNode } from 'react'
 import { moveLead, updateLead } from '../../../server/crm/leads/actions'
@@ -35,6 +36,14 @@ function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
     return (
       <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
         Converted {formatDate(lead.convertedAt)}
+        {lead.convertedDealId === null ? null : (
+          <>
+            {' · '}
+            <Link href={`/deals/${lead.convertedDealId}`} className="underline underline-offset-2">
+              Open deal
+            </Link>
+          </>
+        )}
       </p>
     )
   if (data.item.stage.category === 'done_failure')

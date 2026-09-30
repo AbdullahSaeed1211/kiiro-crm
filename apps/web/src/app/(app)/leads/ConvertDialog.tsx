@@ -49,9 +49,9 @@ interface DialogState {
   error: string | undefined
 }
 
-const initialState = (dealTitle: string): DialogState => ({
-  orgSelection: 'create',
-  orgName: '',
+const initialState = (dealTitle: string, companyName: string | null): DialogState => ({
+  orgSelection: companyName === null ? 'none' : 'create',
+  orgName: companyName ?? '',
   selectedOrgId: undefined,
   orgOptions: [],
   suggestedOrgId: undefined,
@@ -70,9 +70,9 @@ function buildOrgInput(state: DialogState): OrgInput {
   if (orgSelection === 'none') {
     return null
   }
-  return orgSelection === 'existing' && selectedOrgId
-    ? { existingId: selectedOrgId }
-    : { create: { name: orgName.trim() } }
+  if (orgSelection === 'existing' && selectedOrgId) return { existingId: selectedOrgId }
+  const name = orgName.trim()
+  return name === '' ? null : { create: { name } }
 }
 
 function buildContactInput(state: DialogState): ContactInput {
@@ -176,7 +176,7 @@ function DialogContent_(
 export function ConvertDialog(props: DialogProps) {
   const router = useRouter()
   const lead = props.data.item.lead
-  const [state, setState] = useState<DialogState>(initialState(lead.title))
+  const [state, setState] = useState<DialogState>(initialState(lead.title, lead.companyName))
 
   useEffect(() => {
     const load = async () => {

@@ -9,6 +9,7 @@ import { getOutboundEmailEnabled } from '../../../../server/capabilities'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { recordTabs } from '../../record-view-primitives'
 import { RecordCustomFields } from '../../record-custom-fields'
+import { DealOriginLinks } from '../DealOriginLinks'
 import { DealRecordClient } from './DealRecordClient'
 
 export const dynamic = 'force-dynamic'
@@ -53,6 +54,12 @@ export default async function DealRecordPage({ params }: Readonly<{ params: Prom
     <>
       <AppHeader breadcrumbs={[{ label: 'Deals', href: '/deals' }, { label: data.deal.title }]} />
       <PageContent>
+        <DealOriginLinks
+          sourceLeadId={data.deal.sourceLeadId}
+          projectId={
+            typeof data.deal.customData.playbookProjectId === 'string' ? data.deal.customData.playbookProjectId : null
+          }
+        />
         <DealRecordClient
           data={data}
           outboundEmailEnabled={outboundEmailEnabled}
