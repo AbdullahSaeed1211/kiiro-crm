@@ -90,6 +90,9 @@ importers:
       '@ops/module-identity':
         specifier: workspace:*
         version: link:../../packages/modules/identity
+      '@ops/module-mail':
+        specifier: workspace:*
+        version: link:../../packages/modules/mail
       '@ops/module-work':
         specifier: workspace:*
         version: link:../../packages/modules/work

@@ -118,8 +118,8 @@
         "APP_ORIGIN": "https://crm.mirchmedia.com",
         "INBOUND_DOMAIN": "in.mirchmedia.com",
         "TURNSTILE_HOSTNAMES": "www.mirchmedia.com,web.mirchmedia.com",
-        "MAIL_TRANSPORT": "disabled",
-        "MAIL_FROM_ADDRESS": "no-reply@notify.mirchmedia.com",
+        "MAIL_TRANSPORT": "cloudflare",
+        "MAIL_FROM_ADDRESS": "no-reply@notify.mirchtravel.com",
         "MAIL_FROM_NAME": "Mirch Media"
       },
       "triggers": {

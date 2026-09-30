@@ -41,6 +41,7 @@ const GROUPS: readonly SettingsGroup[] = [
     [
       ['notifications', '/settings/notifications', Bell, ['owner', 'manager', 'staff']],
       ['email', '/settings/email', Mail, ['owner']],
+      ['newsletter', '/settings/newsletter', Mail, ['owner', 'manager']],
       ['intake', '/settings/intake', Mail, ['owner', 'manager']],
     ],
   ],
