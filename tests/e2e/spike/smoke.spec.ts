@@ -94,7 +94,7 @@ async function verifyMobileSidebar(page: Page): Promise<void> {
 
 async function verifyDesktopSidebarCollapse(page: Page): Promise<void> {
   const groupLabels = page.locator('[data-slot="sidebar"] [data-sidebar="group-label"]')
-  const toggle = page.locator('[data-slot="sidebar-trigger"]')
+  const toggle = page.locator('[data-slot="sidebar-trigger"]:visible')
   await expect(groupLabels).toHaveCount(2)
   await toggle.click()
   await expect(groupLabels.first()).toBeHidden()

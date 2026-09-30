@@ -399,7 +399,7 @@ async function verifyWorkspaceProfileAndBranding(page: Page) {
 async function verifySearchableTimezone(page: Page) {
   await page.goto('/settings/general')
   await expect(page.getByLabel('Workspace name')).toHaveValue(APP_SETTINGS.appName)
-  const timeZone = page.getByRole('combobox', { name: 'Time zone' })
+  const timeZone = page.getByRole('combobox', { name: 'Time zone', exact: true })
   await timeZone.click()
   await timeZone.fill('Kolkata')
   const timeZoneOption = page.getByRole('option', { name: 'Asia/Kolkata' })
