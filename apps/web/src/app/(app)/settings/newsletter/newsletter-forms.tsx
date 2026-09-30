@@ -30,8 +30,9 @@ function EnableNewsletter() {
   return (
     <div className="grid gap-3 text-sm">
       <p>
-        Turn this on to add a "Newsletter subscriber" checkbox to every contact. Contacts who are ticked receive the
-        newsletter.
+        Turn this on to add a "Newsletter subscriber" checkbox to every contact and a "Newsletter opt-in" checkbox to
+        every lead. Contacts who are ticked receive the newsletter; when a lead who opted in is converted, its contact
+        is ticked. Map a website form question to the lead's opt-in under Settings, Intake.
       </p>
       <Button
         className="w-fit"

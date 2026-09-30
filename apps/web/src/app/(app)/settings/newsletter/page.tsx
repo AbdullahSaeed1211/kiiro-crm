@@ -14,8 +14,8 @@ export default async function NewsletterSettingsPage() {
   const [fields, outboundEnabled, subscribers] = await Promise.all([
     context.payload.find({
       collection: 'fieldDefinitions',
-      where: { and: [{ recordType: { equals: 'contact' } }, { key: { equals: NEWSLETTER_FIELD_KEY } }] },
-      limit: 1,
+      where: { and: [{ recordType: { in: ['contact', 'lead'] } }, { key: { equals: NEWSLETTER_FIELD_KEY } }] },
+      limit: 2,
       depth: 0,
       overrideAccess: false,
       req: context.req,
@@ -31,7 +31,7 @@ export default async function NewsletterSettingsPage() {
     >
       <SettingsForm>
         <NewsletterForms
-          enabled={fields.docs.length > 0}
+          enabled={fields.docs.length === 2}
           outboundEnabled={outboundEnabled}
           subscribers={subscribers.map(({ id, email, name }) => ({ id, email, name }))}
         />

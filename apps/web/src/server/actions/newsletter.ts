@@ -20,25 +20,31 @@ const sendSchema = z
   })
   .strict()
 
-/** Adds the opt-in checkbox to contacts, which is what makes a contact a subscriber. */
+const OPT_IN_FIELDS = [
+  { recordType: 'contact', label: 'Newsletter subscriber' },
+  { recordType: 'lead', label: 'Newsletter opt-in' },
+] as const
+
+/** Adds the opt-in checkbox to contacts (who receive the newsletter) and to leads (so a website form can collect it). */
 export async function enableNewsletter(): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
   try {
-    const existing = await context.payload.find({
-      collection: 'fieldDefinitions',
-      where: { and: [{ recordType: { equals: 'contact' } }, { key: { equals: NEWSLETTER_FIELD_KEY } }] },
-      limit: 1,
-      depth: 0,
-      overrideAccess: false,
-      req: context.req,
-    })
-    if (existing.docs.length === 0)
+    for (const { recordType, label } of OPT_IN_FIELDS) {
+      const existing = await context.payload.find({
+        collection: 'fieldDefinitions',
+        where: { and: [{ recordType: { equals: recordType } }, { key: { equals: NEWSLETTER_FIELD_KEY } }] },
+        limit: 1,
+        depth: 0,
+        overrideAccess: false,
+        req: context.req,
+      })
+      if (existing.docs.length > 0) continue
       await context.payload.create({
         collection: 'fieldDefinitions',
         data: {
-          recordType: 'contact',
+          recordType,
           key: NEWSLETTER_FIELD_KEY,
-          label: 'Newsletter subscriber',
+          label,
           type: 'checkbox',
           required: false,
           options: [],
@@ -50,6 +56,7 @@ export async function enableNewsletter(): Promise<ActionResult> {
         overrideAccess: false,
         req: context.req,
       })
+    }
     revalidatePath(NEWSLETTER_PATH)
     return actionOk()
   } catch (error) {

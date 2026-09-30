@@ -110,6 +110,10 @@ async function resolveOrganization(
   return createdResult.ok ? ok(createdResult.value.id) : createdResult
 }
 
+/** A lead that ticked the newsletter opt-in passes that consent on to its contact. */
+const newsletterConsent = (lead: LeadRecord): Record<string, unknown> =>
+  lead.customData['newsletter'] === true ? { newsletter: true } : {}
+
 async function resolveContact(input: {
   readonly deps: CrmDeps
   readonly lead: LeadRecord
@@ -131,7 +135,7 @@ async function resolveContact(input: {
     phone: cleanNullable(lead.phone),
     organizationId,
     ownerId: lead.ownerId,
-    customData: {},
+    customData: newsletterConsent(lead),
   })
   return contactResult.ok ? ok(contactResult.value) : contactResult
 }

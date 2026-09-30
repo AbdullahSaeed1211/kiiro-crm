@@ -64,3 +64,15 @@ describe('CRM conversion recovery', () => {
     expect(await repository.list('deal')).toHaveLength(1)
   })
 })
+
+describe('CRM conversion newsletter consent', () => {
+  it('gives the new contact the newsletter opt-in the lead ticked, and only then', async () => {
+    const opted = makeDeps()
+    opted.repo.records.lead.set(seedLead.id, { ...seedLead, customData: { newsletter: true } })
+    expect((await convertLead(opted, convertInput)).ok).toBe(true)
+    expect((await opted.repo.list('contact'))[0]?.customData).toEqual({ newsletter: true })
+    const plain = makeDeps()
+    expect((await convertLead(plain, convertInput)).ok).toBe(true)
+    expect((await plain.repo.list('contact'))[0]?.customData).toEqual({})
+  })
+})
