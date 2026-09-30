@@ -5,9 +5,11 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { REPORT_COPY } from '../../../i18n/config'
+import { loadPipelineSummary } from '../../../server/queries/pipeline-insights'
 import { loadReportFigures } from '../../../server/queries/reports'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
+import { PipelineCharts } from './pipeline-charts'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Figures' }
@@ -53,6 +55,7 @@ export default async function ReportsPage({
     context,
   )
   const copy = REPORT_COPY[figures.locale]
+  const pipeline = await loadPipelineSummary(context)
   const locale = figures.locale === 'es' ? 'es-ES' : 'en-US'
   const range = figures.range
   const options = [
@@ -134,6 +137,24 @@ export default async function ReportsPage({
           <Metric label={copy.deals} value={number(figures.totals.deals, locale)} />
           <Metric label={copy.wonDeals} value={number(figures.totals.wonDeals, locale)} />
         </div>
+        <PipelineCharts
+          summary={pipeline}
+          format={{
+            money: (minor) =>
+              minor === 0
+                ? '—'
+                : new Intl.NumberFormat(locale, {
+                    style: 'currency',
+                    currency: pipeline.currency ?? 'USD',
+                    maximumFractionDigits: 0,
+                  }).format(minor / 100),
+            count: (value) => number(value, locale),
+            month: (key) =>
+              new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(
+                new Date(`${key}-01T00:00:00Z`),
+              ),
+          }}
+        />
         <section className="ops-surface-card overflow-hidden rounded-lg border bg-card">
           <header className="border-b px-4 py-3">
             <h2 className="text-sm font-semibold">{copy.ownerBreakdown}</h2>

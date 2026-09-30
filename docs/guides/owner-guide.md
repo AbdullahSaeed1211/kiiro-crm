@@ -67,6 +67,10 @@ Settings, Newsletter.
 
 Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database.
 
+## Read the pipeline
+
+Figures shows the team's work for a date range, then the whole pipeline in charts: open pipeline value, revenue won over the last six months, win rate, deals and leads by stage, and where leads come from. The charts cover every deal and lead you can see, not only the date range.
+
 ## Routines that keep it honest
 
 - **Daily.** Open Leads and clear the overdue markers. Every lead needs a next-action date.
