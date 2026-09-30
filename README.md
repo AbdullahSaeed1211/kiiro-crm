@@ -26,17 +26,17 @@ The first tenant, Mirch Media, runs in production. The authoritative product spe
 
 ## What it does
 
-| Area                | Capabilities                                                                                                                                                                                                                                   |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a lead-assignment rule that hands new leads to people in turn.                                 |
-| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                      |
-| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal. |
-| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                |
-| **Work**            | Tasks with a table, board, calendar and timeline; projects with members and progress; subtasks; a mobile layout throughout.                                                                                                                    |
-| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                      |
-| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                         |
-| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                 |
-| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                   |
+| Area                | Capabilities                                                                                                                                                                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a hosted form builder with a public page and embed code; a lead-assignment rule that hands new leads to people in turn. |
+| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                                               |
+| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal.                          |
+| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                                         |
+| **Work**            | Tasks with a table, board, calendar and a timeline coloured by stage; projects with members and progress; subtasks; a mobile layout throughout.                                                                                                                         |
+| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                                               |
+| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                                                  |
+| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                                          |
+| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                            |
 
 ## Architecture
 
@@ -104,7 +104,7 @@ pnpm dev              # http://localhost:3000
 
 `.dev.vars` holds local secrets; the example values work for development. Both database scripts refuse to run against a remote environment.
 
-The seed creates four local users that share one development password, defined in `scripts/seed/data.ts`. **It is for local databases only; never reuse it anywhere else.** Sign in at `/login`; the Payload admin panel lives at `/admin` and is not part of customer navigation.
+The seed creates a neutral "Demo Agency" workspace with four local users (`owner@example.test` and three staff) that share one development password, defined in `scripts/seed/data.ts`. **It is for local databases only; never reuse it anywhere else.** Sign in at `/login`; the Payload admin panel lives at `/admin` and is not part of customer navigation.
 
 ## Everyday commands
 
@@ -143,16 +143,18 @@ Pushing a `v*` tag also starts the GitHub Deploy workflow, which needs each tena
 
 ## Documentation
 
-| Read                                                               | For                                                  |
-| ------------------------------------------------------------------ | ---------------------------------------------------- |
-| [`docs/spec.md`](docs/spec.md)                                     | authoritative product behavior                       |
-| [`docs/architecture.md`](docs/architecture.md)                     | the short map and the conventions every change keeps |
-| [`docs/roadmap.md`](docs/roadmap.md)                               | the order in which open work ships                   |
-| [`docs/backlog/`](docs/backlog/)                                   | open code-health and UX findings                     |
-| [`docs/adr/`](docs/adr/)                                           | architecture decisions                               |
-| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md) | the proposal for self-serve signup and provisioning  |
-| [`docs/runbooks/`](docs/runbooks/)                                 | deploy, rollback, incident and onboarding procedures |
-| [`AGENTS.md`](AGENTS.md)                                           | where code lives, golden examples and working rules  |
+| Read                                                                 | For                                                  |
+| -------------------------------------------------------------------- | ---------------------------------------------------- |
+| [`docs/guides/owner-guide.md`](docs/guides/owner-guide.md)           | setting up and running a workspace as its owner      |
+| [`docs/guides/staff-quickstart.md`](docs/guides/staff-quickstart.md) | working leads, clients and tasks day to day          |
+| [`docs/spec.md`](docs/spec.md)                                       | authoritative product behavior                       |
+| [`docs/architecture.md`](docs/architecture.md)                       | the short map and the conventions every change keeps |
+| [`docs/roadmap.md`](docs/roadmap.md)                                 | the order in which open work ships                   |
+| [`docs/backlog/`](docs/backlog/)                                     | open code-health and UX findings                     |
+| [`docs/adr/`](docs/adr/)                                             | architecture decisions                               |
+| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md)   | the proposal for self-serve signup and provisioning  |
+| [`docs/runbooks/`](docs/runbooks/)                                   | deploy, rollback, incident and onboarding procedures |
+| [`AGENTS.md`](AGENTS.md)                                             | where code lives, golden examples and working rules  |
 
 ## Contributing
 
