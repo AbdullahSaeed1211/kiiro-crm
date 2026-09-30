@@ -1,6 +1,6 @@
-/** Password of every seeded user. */
+/** Password of every seeded local user; set SEED_PASSWORD to override. Local databases only, never a real account's. */
 // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- local development password fixed by spec §6.9
-export const DEV_PASSWORD = 'mirchads@123'
+export const DEV_PASSWORD = process.env['SEED_PASSWORD'] ?? 'local-dev-password'
 
 /** Settings global values the seed ensures. */
 export const APP_SETTINGS = {
