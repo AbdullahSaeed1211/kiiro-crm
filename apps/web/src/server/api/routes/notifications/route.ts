@@ -1,15 +1,8 @@
 import config from '@payload-config'
-import { getPayload, type PayloadRequest } from 'payload'
+import { getPayload } from 'payload'
 import type { Where } from 'payload'
-import { authenticate, type AuthContext } from '../../../collaboration/auth'
+import { authenticate, type AuthContext, requestForUser } from '../../../collaboration/auth'
 import { unauthorized } from '../../../collaboration/responses'
-
-function requestForUser(
-  payload: Awaited<ReturnType<typeof getPayload>>,
-  user: Record<string, unknown>,
-): PayloadRequest {
-  return { payload, user } as unknown as PayloadRequest
-}
 
 /** Lists the signed-in user's notifications, with read and newest-first filters applied in the database. */
 export async function GET(request: Request): Promise<Response> {

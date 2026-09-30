@@ -1,12 +1,5 @@
-import { markLost } from '@ops/module-crm'
-import { contractBody } from '../../../../../../server/api/contracts'
-import { apiRoute } from '../../../../../../server/api/http'
-import { crmDeps } from '@/server/container'
+import { lostRoute } from '../../../../../../server/api/crm-record-routes'
 
 export const dynamic = 'force-dynamic'
 
-/** `deals.lost` */
-export const POST = apiRoute<{ id: string }>(async ({ request, params, context }) => {
-  const body = await contractBody(request, 'deals.lost')
-  return body.ok ? markLost(await crmDeps(context), { ...body.value, id: params.id }) : body
-})
+export const POST = lostRoute('deals')

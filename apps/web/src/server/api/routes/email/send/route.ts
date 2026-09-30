@@ -1,8 +1,8 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { isOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../../../../capabilities'
-import { getPayload, type Payload, type PayloadRequest } from 'payload'
-import { authenticate } from '../../../../collaboration/auth'
+import { getPayload, type Payload } from 'payload'
+import { authenticate, requestForUser } from '../../../../collaboration/auth'
 import { canReadParent } from '../../../../collaboration/parents'
 import { badRequest, forbidden, payloadNotFoundOrDenied, unauthorized } from '../../../../collaboration/responses'
 
@@ -112,10 +112,6 @@ function base64(bytes: ArrayBuffer): string {
   for (let index = 0; index < data.length; index += 0x8000)
     binary += String.fromCharCode(...data.subarray(index, Math.min(index + 0x8000, data.length)))
   return btoa(binary)
-}
-
-function requestForUser(payload: Payload, user: Record<string, unknown>): PayloadRequest {
-  return { payload, user } as unknown as PayloadRequest
 }
 
 /** Sends an authenticated, record-scoped message and persists queued/sent/failed state for retry visibility. */

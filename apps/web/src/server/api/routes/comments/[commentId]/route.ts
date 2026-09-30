@@ -1,18 +1,11 @@
 import config from '@payload-config'
-import { getPayload, type PayloadRequest } from 'payload'
+import { getPayload } from 'payload'
 import { softDeleteComment } from '../../../../../../../../packages/adapters/payload/src/collaboration/comments'
-import { authenticate } from '../../../../collaboration/auth'
+import { authenticate, requestForUser } from '../../../../collaboration/auth'
 import { badRequest, payloadNotFoundOrDenied, unauthorized } from '../../../../collaboration/responses'
 
 interface Params {
   readonly params: Promise<{ commentId: string }>
-}
-
-function requestForUser(
-  payload: Awaited<ReturnType<typeof getPayload>>,
-  user: Record<string, unknown>,
-): PayloadRequest {
-  return { payload, user } as unknown as PayloadRequest
 }
 
 function deleteError(error: unknown): Response {

@@ -4,6 +4,7 @@ import { completeTask as completeTaskCommand } from '@ops/module-work'
 import { asId } from '@ops/kernel'
 import { revalidatePath } from 'next/cache'
 import { workCommandDeps } from '@/server/container'
+import { updatedAtResult } from '../updated-at-result'
 
 export async function completeTask(taskId: string, expectedUpdatedAt: number) {
   const result = await completeTaskCommand(await workCommandDeps(), asId(taskId), expectedUpdatedAt)
@@ -11,7 +12,5 @@ export async function completeTask(taskId: string, expectedUpdatedAt: number) {
     revalidatePath('/tasks')
     revalidatePath(`/tasks/${taskId}`)
   }
-  return result.ok
-    ? { ok: true as const, data: { updatedAt: result.value.updatedAt } }
-    : { ok: false as const, error: result.error }
+  return updatedAtResult(result)
 }

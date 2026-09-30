@@ -1,15 +1,8 @@
 import config from '@payload-config'
-import { getPayload, type PayloadRequest } from 'payload'
-import { authenticate } from '../../../../../collaboration/auth'
+import { getPayload } from 'payload'
+import { authenticate, requestForUser } from '../../../../../collaboration/auth'
 import { canReadParent } from '../../../../../collaboration/parents'
 import { payloadNotFoundOrDenied, unauthorized } from '../../../../../collaboration/responses'
-
-function requestForUser(
-  payload: Awaited<ReturnType<typeof getPayload>>,
-  user: Record<string, unknown>,
-): PayloadRequest {
-  return { payload, user } as unknown as PayloadRequest
-}
 
 interface Params {
   readonly params: Promise<{ messageId: string }>

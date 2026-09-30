@@ -1,4 +1,4 @@
-import type { Payload, TypedUser } from 'payload'
+import type { Payload, PayloadRequest, TypedUser } from 'payload'
 
 export interface AuthContext {
   readonly user: TypedUser & Record<string, unknown>
@@ -19,4 +19,9 @@ export async function authenticate(payload: Payload, request: Request): Promise<
   const roleValue = user.role
   const role = roleValue === 'owner' || roleValue === 'manager' ? roleValue : 'staff'
   return { user, id: user.id, role }
+}
+
+/** A Payload local request that carries the authenticated user, for reads and writes made on their behalf. */
+export function requestForUser(payload: Payload, user: Record<string, unknown>): PayloadRequest {
+  return { payload, user } as unknown as PayloadRequest
 }

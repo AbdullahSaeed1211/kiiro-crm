@@ -1,8 +1,8 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { getPayload, type PayloadRequest } from 'payload'
+import { getPayload } from 'payload'
 import { revalidatePath } from 'next/cache'
-import { authenticate } from '../collaboration/auth'
+import { authenticate, requestForUser } from '../collaboration/auth'
 import { badRequest, forbidden, unauthorized } from '../collaboration/responses'
 import { isBrandContentType, isBrandKey } from '../collaboration/brand'
 import { tenantBrandDefaults } from './tenant-defaults'
@@ -69,13 +69,6 @@ export async function getBrandAsset(_request: Request, { params }: Params): Prom
   const key = assetKey(asset, settings)
   if (key === undefined) return fallbackFor(settings)
   return streamBrandAsset(key)
-}
-
-function requestForUser(
-  payload: Awaited<ReturnType<typeof getPayload>>,
-  user: Record<string, unknown>,
-): PayloadRequest {
-  return { payload, user } as unknown as PayloadRequest
 }
 
 function extensionFor(file: File): string {
