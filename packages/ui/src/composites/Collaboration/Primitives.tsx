@@ -1,10 +1,10 @@
 'use client'
 
-import { Avatar, AvatarFallback } from '../../components/ui/avatar'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '../../components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
+import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
+import { Badge } from '@ops/ui/components/ui/badge'
+import { Button } from '@ops/ui/components/ui/button'
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@ops/ui/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@ops/ui/components/ui/popover'
 import { Check, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import { useState } from 'react'
 

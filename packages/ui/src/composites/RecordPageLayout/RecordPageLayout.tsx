@@ -1,5 +1,6 @@
 'use client'
 
+import { Check, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@ops/ui/components/ui/button'
@@ -88,10 +89,10 @@ function RecordTitle({
         }}
       />
       <Button type="submit" size="sm" aria-label={labels.saveTitle}>
-        ✓
+        <Check aria-hidden />
       </Button>
       <Button type="reset" variant="ghost" size="sm" aria-label={labels.cancelTitle}>
-        ×
+        <X aria-hidden />
       </Button>
     </form>
   )

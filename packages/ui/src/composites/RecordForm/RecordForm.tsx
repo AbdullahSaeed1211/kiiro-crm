@@ -3,6 +3,7 @@
 import { useRef, useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
 import { Label } from '@ops/ui/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@ops/ui/components/ui/native-select'
 import { Input } from '@ops/ui/components/ui/input'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { cn } from '@ops/ui/lib/utils'
@@ -53,14 +54,14 @@ function FieldControl({ field, common }: Readonly<{ field: RecordFieldConfig; co
   if (field.type === 'textarea') return <Textarea {...common} inputMode={field.inputMode} />
   if (field.type === 'select') {
     return (
-      <select {...common} className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">
-        <option value="">{field.placeholder ?? ''}</option>
+      <NativeSelect {...common} className="w-full">
+        <NativeSelectOption value="">{field.placeholder ?? ''}</NativeSelectOption>
         {(field.options ?? []).map((option) => (
-          <option key={option.value} value={option.value}>
+          <NativeSelectOption key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </NativeSelectOption>
         ))}
-      </select>
+      </NativeSelect>
     )
   }
   return <Input {...common} type={field.type ?? 'text'} inputMode={field.inputMode} />

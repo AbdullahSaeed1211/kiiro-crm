@@ -1,6 +1,6 @@
 # Code-health backlog
 
-28 findings are open: 0 high, 11 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+24 findings are open: 0 high, 10 medium and 14 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -142,14 +142,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Pass the bar's resolved `--stage-*` value through inline style or a `data-stage-color` attribute consumed by `gantt-theme.css`, reusing `stageDotClass`.
 - Effort: M
 
-### UI-17: Clean code side effects, medium severity
-
-- Location: `theme/ThemeProvider.tsx:12-18,24-29`
-- Evidence: `applyTheme` toggles a `theme-switching` class on/off synchronously in the same tick (add then immediately remove, `:15-17`) - its purpose (presumably disabling transitions during the swap) is defeated because no rAF/timeout separates the add from the remove. Separately, `ThemeChoice` includes `'system'`, and `setTheme('system')` clears storage, but the initial-load effect (`:24-29`) only ever resolves to `'dark'` or `'light'` from storage - `prefers-color-scheme` is never read, so "system" always renders as light on load.
-- Consequence: The `theme-switching` class can never have any CSS effect as written (classic no-op side effect); "system" theme silently behaves as "light," which is surprising given the exported type promises three real states.
-- Fix: Use `requestAnimationFrame`/a `transitionend`-based removal for `theme-switching`; read `window.matchMedia('(prefers-color-scheme: dark)')` when `choice === 'system'`.
-- Effort: M
-
 ### UI-07: ISP, low severity
 
 - Location: `DataTable.tsx:22-36`
@@ -158,36 +150,12 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Fix: Once is resolved, shrink `DataTableLabels` to only the fields actually rendered.
 - Effort: S
 
-### UI-12: LSP/consistency, low severity
-
-- Location: `RecordForm.tsx:53-64`
-- Evidence: `FieldControl` hand-rolls a raw `<select className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm">` instead of using the vendored `NativeSelect` primitive at `components/ui/native-select.tsx`, which already implements the same control with focus/invalid/disabled states and a chevron icon.
-- Consequence: The hand-rolled select misses `aria-invalid` ring styling, disabled cursor styling, and the dropdown chevron that `NativeSelect` provides - visual/a11y drift between two "the same control" implementations.
-- Fix: Replace with `<NativeSelect {...common}>` / `NativeSelectOption`.
-- Effort: S
-
 ### UI-13: DRY, low severity
 
 - Location: `styles/globals.css:56-89,91-123` vs `styles/product.css:2-34,63-96`
 - Evidence: Both files fully redefine `--background`, `--foreground`, `--muted-foreground`, `--border`, `--primary`, etc. for both `:root` and `.dark`. `product.css`'s header comment ("Loaded last so the entire customer UI can be reverted as one layer") explains this is intentional layering, but the two token sets can silently drift (e.g. `globals.css` defines no `--surface-sunken`/`--hairline`/`--shadow-*` tokens at all - those exist only in `product.css`, so any component using them breaks if `product.css` is ever "reverted" as the comment implies is a real scenario).
 - Consequence: The override mechanism is real but undocumented as a _contract_ - nothing enforces that `product.css` defines every token `globals.css` defines, so the described revert path is untested/unverified.
 - Fix: Add a lint/test asserting `product.css`'s `:root` is a superset of `globals.css`'s `:root` keys, or document which tokens are product.css-only and must not be relied on outside `product.css`-aware components.
-- Effort: S
-
-### UI-14: Clean code naming, low severity
-
-- Location: `Collaboration/Primitives.tsx:3-7`
-- Evidence: Imports use relative paths (`../../components/ui/avatar`) while every other composite in the package uses the `@ops/ui/components/ui/...` alias (see `StageSelect.tsx:1`, `RecordForm.tsx:4-7`, `ConfirmDialog.tsx:4-14`).
-- Consequence: Inconsistent import style across composites in the same package makes refactors (e.g. moving `Collaboration`) more error-prone and is an easy tell for copy-pasted/unreviewed code.
-- Fix: Switch to the `@ops/ui/components/ui/*` alias for consistency.
-- Effort: S
-
-### UI-21: OCP, low severity
-
-- Location: `RecordPageLayout.tsx:90,93`
-- Evidence: Save/cancel affordances in the inline title-edit form are raw glyphs `✓` and `×` rather than icon components (the rest of the package uses `lucide-react`, e.g. `EllipsisVertical`, `ChevronLeft/Right`, `TriangleAlert` elsewhere).
-- Consequence: Inconsistent icon strategy; glyphs render inconsistently across fonts/platforms and aren't `aria-hidden`-paired with the same rigor as the lucide icons used elsewhere (though `aria-label` is present here, mitigating the a11y risk).
-- Fix: Swap for `Check`/`X` from `lucide-react` to match the rest of the package's icon usage.
 - Effort: S
 
 ### UI-23: SRP, low severity

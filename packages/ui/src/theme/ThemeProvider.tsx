@@ -9,12 +9,18 @@ const ThemeContext = createContext<Readonly<{ theme: ThemeChoice; setTheme: (the
   null,
 )
 
+const prefersDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches
+
+// Colours change with transitions off for one frame, so the page does not animate between themes.
 function applyTheme(theme: ThemeChoice) {
-  const dark = theme === 'dark'
   const root = document.documentElement
   root.classList.add('theme-switching')
-  root.classList.toggle('dark', dark)
-  root.classList.remove('theme-switching')
+  root.classList.toggle('dark', theme === 'dark' || (theme === 'system' && prefersDark()))
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      root.classList.remove('theme-switching')
+    })
+  })
 }
 
 /** Persistent light and dark theme switching with a system default (decision D-19). */
