@@ -31,6 +31,8 @@
     "test:e2e": "playwright test",
     "size": "tsx scripts/check-size.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:purge": "tsx scripts/purge-demo.ts",
     "db:reset:local": "tsx scripts/reset-local-db.ts",
     "tenant:provision": "tsx scripts/provision-tenant.ts",
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",

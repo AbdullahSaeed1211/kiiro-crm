@@ -42,6 +42,7 @@ Copy these instead of inventing a new shape. The task skills walk through each o
 | ----------------------------------------------- | ---------------------------------------------------------------- |
 | `pnpm dev`                                      | local app on port 3000 (`PORT=3001 pnpm dev` if taken)           |
 | `pnpm db:reset:local && pnpm seed:dev`          | fresh local database                                             |
+| `pnpm seed:demo` / `pnpm seed:purge`            | add or remove the rich demo dataset (local database only)        |
 | `curl -s -b /tmp/ops.jar localhost:3001/api/v1` | every API endpoint with its body schema (sign in first, below)   |
 | `pnpm verify:fast`                              | while working: format check, typecheck, lint, changed unit tests |
 | `pnpm verify`                                   | before merging: every gate, tests, integration tests, build      |

@@ -98,13 +98,18 @@ Each package has a README with its purpose and public API.
 pnpm install
 cp apps/web/.dev.vars.example apps/web/.dev.vars
 pnpm db:reset:local   # recreates the local D1 database from the migrations
-pnpm seed:dev         # idempotent demo data
+pnpm seed:dev         # idempotent base data
+pnpm seed:demo        # optional: a rich demo workspace for pitching (see below)
 pnpm dev              # http://localhost:3000
 ```
 
 `.dev.vars` holds local secrets; the example values work for development. Both database scripts refuse to run against a remote environment.
 
 The seed creates a neutral "Demo Agency" workspace with four local users (`owner@example.test` and three staff) that share one development password, defined in `scripts/seed/data.ts`. **It is for local databases only; never reuse it anywhere else.** Sign in at `/login`; the Payload admin panel lives at `/admin` and is not part of customer navigation.
+
+### Demo data for pitches
+
+`pnpm seed:demo` adds a large, deterministic sample workspace on top of the base seed: 36 organizations across twelve industries, about 100 contacts, 130 leads, 90 deals with stage history, about 30 projects with 270 tasks, notes, email threads, sent newsletters, custom fields and email templates, spread over the last five months so the dashboard and Figures are full. `pnpm seed:purge` removes exactly what `seed:demo` created and nothing else. Both refuse to run against a remote database.
 
 ## Everyday commands
 
