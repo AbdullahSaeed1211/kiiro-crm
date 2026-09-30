@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { saveConfiguration } from '../../../../server/actions/settings'
+import { saveConfiguration } from '../../../../server/actions/settings/configuration'
 import { listSavedViews } from '../../../../server/queries/settings/listSavedViews'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'

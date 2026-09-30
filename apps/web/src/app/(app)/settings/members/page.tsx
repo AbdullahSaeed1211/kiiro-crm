@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { inviteMember, resendInvitation, revokeInvitation, saveMember } from '../../../../server/actions/settings'
+import {
+  inviteMember,
+  resendInvitation,
+  revokeInvitation,
+  saveMember,
+} from '../../../../server/actions/settings/members'
 import { InviteMemberForm, InvitationActions, MemberActions } from '../member-forms'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'

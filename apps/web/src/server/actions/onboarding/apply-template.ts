@@ -50,13 +50,21 @@ function nextStages(desired: readonly TemplateStage[], existing: ExistingStage[]
   })
 }
 
-// eslint-disable-next-line max-params -- the four inputs keep template, request, and record identity explicit.
-async function upsertWorkflow(
-  payload: UntypedPayload,
-  context: PayloadContext,
-  template: VerticalTemplate,
-  recordType: VerticalTemplate['workflows'][number]['recordType'],
-): Promise<void> {
+interface Target {
+  readonly payload: UntypedPayload
+  readonly context: PayloadContext
+}
+
+async function upsertWorkflow({
+  payload,
+  context,
+  template,
+  recordType,
+}: Target &
+  Readonly<{
+    template: VerticalTemplate
+    recordType: VerticalTemplate['workflows'][number]['recordType']
+  }>): Promise<void> {
   const definition = template.workflows.find((candidate) => candidate.recordType === recordType)
   if (definition === undefined) return
   const found = await payload.find({
@@ -76,13 +84,12 @@ async function upsertWorkflow(
   else await payload.update({ collection: 'workflows', id: current.id, data, req: context.req, overrideAccess: false })
 }
 
-// eslint-disable-next-line max-params -- field position is part of the persisted template contract.
-async function upsertField(
-  payload: UntypedPayload,
-  context: PayloadContext,
-  field: TemplateField,
-  position: number,
-): Promise<void> {
+async function upsertField({
+  payload,
+  context,
+  field,
+  position,
+}: Target & Readonly<{ field: TemplateField; position: number }>): Promise<void> {
   const found = await payload.find({
     collection: 'fieldDefinitions',
     where: { and: [{ recordType: { equals: field.recordType } }, { key: { equals: field.key } }] },
@@ -144,52 +151,58 @@ async function ensureView(payload: UntypedPayload, context: PayloadContext, view
   })
 }
 
+const REVALIDATED_PATHS = [
+  '/settings',
+  '/settings/fields',
+  '/settings/views',
+  '/settings/workflows',
+  '/tasks',
+  '/leads',
+  '/deals',
+] as const
+
+function appliedTemplates(value: unknown): { key: string; version: number }[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((entry): entry is { key: string; version: number } => {
+    const item = objectOf(entry)
+    return typeof item.key === 'string' && typeof item.version === 'number'
+  })
+}
+
+/** Creates or updates the template's workflows, fields and views without duplicating existing ones. */
+async function applyConfiguration(target: Target, template: VerticalTemplate): Promise<void> {
+  for (const workflow of template.workflows)
+    await upsertWorkflow({ ...target, template, recordType: workflow.recordType })
+  for (const [position, field] of template.fields.entries()) await upsertField({ ...target, field, position })
+  for (const view of template.views) await ensureView(target.payload, target.context, view)
+}
+
+/** Merges the template's modules and terminology into workspace settings and records that it was applied. */
+async function applySettings(context: PayloadContext, template: VerticalTemplate): Promise<void> {
+  const globalPayload = context.payload as GlobalPayload
+  const settings = objectOf(await globalPayload.findGlobal({ slug: 'settings', depth: 0, req: context.req }))
+  const applied = appliedTemplates(settings.appliedTemplates)
+  const alreadyApplied = applied.some((entry) => entry.key === template.key && entry.version === template.version)
+  await globalPayload.updateGlobal({
+    slug: 'settings',
+    data: {
+      modules: { ...objectOf(settings.modules), ...template.modules },
+      terminology: { ...objectOf(settings.terminology), ...template.terminology },
+      appliedTemplates: alreadyApplied ? applied : [...applied, { key: template.key, version: template.version }],
+    },
+    overrideAccess: true,
+    req: context.req,
+  })
+}
+
 /** Applies one declarative vertical template idempotently to a tenant's configuration collections. */
-// eslint-disable-next-line complexity, max-statements, max-lines-per-function -- template application is one atomic authorized workflow.
 export async function applyTemplate(context: PayloadContext, key: string): Promise<ActionResult<{ key: string }>> {
   const template = templateFor(key)
   if (template === undefined) return actionError('VALIDATION', 'Choose a supported business type.')
-  const payload = context.payload as UntypedPayload
   try {
-    for (const workflow of template.workflows) await upsertWorkflow(payload, context, template, workflow.recordType)
-    for (const [index, field] of template.fields.entries()) await upsertField(payload, context, field, index)
-    for (const view of template.views) await ensureView(payload, context, view)
-    const globalPayload = context.payload as GlobalPayload
-    const settings = (await globalPayload.findGlobal({ slug: 'settings', depth: 0, req: context.req })) as Record<
-      string,
-      unknown
-    >
-    const currentTerminology = objectOf(settings.terminology)
-    const currentModules = objectOf(settings.modules)
-    const applied = Array.isArray(settings.appliedTemplates)
-      ? settings.appliedTemplates.filter((entry): entry is { key: string; version: number } => {
-          const value = objectOf(entry)
-          return typeof value.key === 'string' && typeof value.version === 'number'
-        })
-      : []
-    const nextApplied = applied.some((entry) => entry.key === template.key && entry.version === template.version)
-      ? applied
-      : [...applied, { key: template.key, version: template.version }]
-    await globalPayload.updateGlobal({
-      slug: 'settings',
-      data: {
-        modules: { ...currentModules, ...template.modules },
-        terminology: { ...currentTerminology, ...template.terminology },
-        appliedTemplates: nextApplied,
-      },
-      overrideAccess: true,
-      req: context.req,
-    })
-    for (const path of [
-      '/settings',
-      '/settings/fields',
-      '/settings/views',
-      '/settings/workflows',
-      '/tasks',
-      '/leads',
-      '/deals',
-    ])
-      revalidatePath(path)
+    await applyConfiguration({ payload: context.payload as UntypedPayload, context }, template)
+    await applySettings(context, template)
+    for (const path of REVALIDATED_PATHS) revalidatePath(path)
     return actionOk({ key: template.key })
   } catch (error) {
     return actionFailure(error, 'applyTemplate', 'Unable to apply the business preset.')

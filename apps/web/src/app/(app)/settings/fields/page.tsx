@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { deleteConfiguration, saveConfiguration } from '../../../../server/actions/settings'
+import { deleteConfiguration, saveConfiguration } from '../../../../server/actions/settings/configuration'
 import { requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { FieldDefinitionEditor } from './field-definition-editor'

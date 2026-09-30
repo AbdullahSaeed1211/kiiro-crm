@@ -1,7 +1,11 @@
 'use client'
 /* eslint-disable complexity, max-lines-per-function -- one compact list owns rename, cancel, and delete feedback. */
 
-import { deleteConfiguration, saveConfiguration, setSavedViewState } from '../../../../server/actions/settings'
+import {
+  deleteConfiguration,
+  saveConfiguration,
+  setSavedViewState,
+} from '../../../../server/actions/settings/configuration'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 

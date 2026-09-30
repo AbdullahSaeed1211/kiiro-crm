@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { requireRole } from '../../../../server/auth/context'
-import { createIntakeForm, rotateIntakeServerKey, updateIntakeForm } from '../../../../server/actions/settings'
+import { createIntakeForm, rotateIntakeServerKey, updateIntakeForm } from '../../../../server/actions/settings/intake'
 import {
   IntakeCreateForm,
   IntakeFormEditor,

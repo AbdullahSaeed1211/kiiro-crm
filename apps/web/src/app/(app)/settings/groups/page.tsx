@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { deleteGroup, saveGroup } from '../../../../server/actions/settings'
+import { deleteGroup, saveGroup } from '../../../../server/actions/settings/members'
 import { GroupForm, GroupList } from '../member-forms'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'

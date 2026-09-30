@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { saveNotificationPreferences } from '../../../../server/actions/settings'
+import { saveNotificationPreferences } from '../../../../server/actions/settings/notifications'
 import { requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { NotificationSettingsForm } from './notification-settings-form'
