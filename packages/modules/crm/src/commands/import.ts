@@ -97,16 +97,13 @@ function validateCustom(state: RunState, cells: Cells): { data: Record<string, u
   }
 }
 
-/** Runs the create command, or only its schema in a dry run. */
+/** Checks the row against its create schema, then runs the create command unless this is a dry run. */
 async function submit(state: RunState, input: Record<string, unknown>): Promise<string | undefined> {
   const { type, deps, dryRun } = state
-  if (dryRun) {
-    const schema = { organization: createOrganizationSchema, contact: createContactSchema, lead: createLeadSchema }[
-      type
-    ]
-    const parsed = schema.safeParse(input)
-    return parsed.success ? undefined : (parsed.error.issues[0]?.message ?? 'The row is not valid')
-  }
+  const schema = { organization: createOrganizationSchema, contact: createContactSchema, lead: createLeadSchema }[type]
+  const parsed = schema.safeParse(input)
+  if (!parsed.success) return parsed.error.issues[0]?.message ?? 'The row is not valid'
+  if (dryRun) return undefined
   const command = { organization: createOrganization, contact: createContact, lead: createLead }[type]
   const result = await command(deps, input)
   return result.ok ? undefined : result.error.message

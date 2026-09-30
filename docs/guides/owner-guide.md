@@ -15,6 +15,7 @@ Do these once, in this order. Each lives under Settings.
 5. **Fields.** Add your own fields to organizations, contacts, leads and deals, for example "Budget range". A field can be required before a record may enter a stage.
 6. **Playbooks.** A playbook is a project with tasks and due dates. Mark one "run when a deal is won" and every won deal starts its own onboarding project.
 7. **Email.** Outbound email sends from the workspace address set for your tenant.
+8. **Import.** Bring your existing organizations, contacts and leads in from a spreadsheet (see below).
 
 ## Bring leads in
 
@@ -34,6 +35,16 @@ Settings, Sales has three controls.
 - **First-response target.** Hours a new lead may wait. Leads past it show an overdue marker in the list.
 - **Assignment rules.** New leads go to the people you pick in turn, per source.
 - **Email templates.** Saved messages staff can insert in the email box. Write `{{firstName}}` or `{{name}}` and the contact's name fills in.
+
+## Import from a spreadsheet
+
+Settings, Import takes organizations, contacts and leads as CSV (up to 5 MB and 500 rows per file).
+
+1. Download the template for what you are importing. Its columns include your own custom fields, by key.
+2. Fill it in and choose the file. Press **Check file**: nothing is saved, every row is validated, and problems are listed by row number.
+3. Press **Import** when the check looks right. An organization with the same name, or a contact or lead with the same email, is skipped. Contacts whose organization name is new get that organization created; leads need their organization to exist already. New leads follow your assignment rules.
+
+Deals, projects and tasks are not imported yet.
 
 ## Send the newsletter
 

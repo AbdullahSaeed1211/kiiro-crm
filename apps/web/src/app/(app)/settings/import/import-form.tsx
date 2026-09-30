@@ -1,0 +1,175 @@
+'use client'
+
+import { Button } from '@ops/ui/components/ui/button'
+import { NativeSelect, NativeSelectOption } from '@ops/ui/components/ui/native-select'
+import type { ImportReport } from '@ops/module-crm'
+import { useState, useTransition } from 'react'
+import { importCsvAction } from '../../../../server/crm/import'
+import { describeClientError } from '../../client-errors'
+
+const TYPES = [
+  ['organization', 'Organizations'],
+  ['contact', 'Contacts'],
+  ['lead', 'Leads'],
+] as const
+type ImportType = (typeof TYPES)[number][0]
+
+const MAX_BYTES = 5_000_000
+const SHOWN_ERRORS = 50
+
+interface Outcome {
+  readonly dryRun: boolean
+  readonly report: ImportReport
+}
+
+function summary({ dryRun, report }: Outcome): string {
+  const lead = dryRun ? 'Check complete, nothing was imported yet.' : 'Import complete.'
+  const created = dryRun ? 'can be created' : 'created'
+  const parts = [
+    `${lead} ${String(report.total)} rows read: ${String(report.created)} ${created}`,
+    `${String(report.skipped)} skipped as already existing`,
+    `${String(report.errors.length)} with problems.`,
+  ]
+  const added = report.organizationsCreated
+  const verb = dryRun ? 'would be' : 'were'
+  const organizations = added > 0 ? ` ${String(added)} new organizations ${verb} added.` : ''
+  return `${parts.join(', ')}${organizations}`
+}
+
+function Report({ outcome }: Readonly<{ outcome: Outcome }>) {
+  const { report } = outcome
+  return (
+    <div className="grid gap-2 rounded-lg border p-4 text-sm" role="status">
+      <p className="font-medium">{summary(outcome)}</p>
+      {report.ignoredColumns.length > 0 ? (
+        <p className="text-muted-foreground">
+          Columns not recognised and left out: {report.ignoredColumns.join(', ')}.
+        </p>
+      ) : null}
+      {report.errors.length > 0 ? (
+        <ul className="grid gap-1">
+          {report.errors.slice(0, SHOWN_ERRORS).map((error) => (
+            <li key={error.row}>
+              <span className="font-medium">Row {error.row}:</span> {error.message}
+            </li>
+          ))}
+          {report.errors.length > SHOWN_ERRORS ? <li>…and {report.errors.length - SHOWN_ERRORS} more.</li> : null}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
+/** The chosen file's text and name, read in the browser; files over the limit are refused with a message. */
+function useCsvFile() {
+  const [csv, setCsv] = useState<string | null>(null)
+  const [fileName, setFileName] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
+  const choose = async (file: File | undefined) => {
+    const tooBig = file !== undefined && file.size > MAX_BYTES
+    setProblem(tooBig ? 'The file is larger than 5 MB.' : null)
+    if (file === undefined || tooBig) {
+      setCsv(null)
+      return
+    }
+    setFileName(file.name)
+    setCsv(await file.text())
+  }
+  return { csv, fileName, problem, choose }
+}
+
+/** Runs the check or the import and keeps the latest report or error. */
+function useImportRun(input: { readonly type: ImportType; readonly csv: string | null }) {
+  const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+  const run = (dryRun: boolean) => {
+    if (input.csv === null) return
+    const { type, csv } = input
+    setError(null)
+    startTransition(async () => {
+      try {
+        const result = await importCsvAction({ type, csv, dryRun })
+        if (result.ok) setOutcome({ dryRun, report: result.data })
+        else setError(result.error.message)
+      } catch (caught) {
+        setError(describeClientError(caught, { context: 'csv import', fallback: 'Unable to import. Try again.' }))
+      }
+    })
+  }
+  const reset = () => {
+    setOutcome(null)
+  }
+  return { outcome, error, pending, run, reset }
+}
+
+/** Pick a record type and a CSV file, check it, then import it; every row is reported. */
+export function ImportForm() {
+  const [type, setType] = useState<ImportType>('contact')
+  const file = useCsvFile()
+  const job = useImportRun({ type, csv: file.csv })
+  const problem = job.error ?? file.problem
+  const canCheck = file.csv !== null && !job.pending
+  const canImport = canCheck && job.outcome?.dryRun === true
+  return (
+    <div className="grid gap-4 text-sm">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="grid gap-1">
+          <span className="font-medium">Import</span>
+          <NativeSelect
+            value={type}
+            onChange={(event) => {
+              setType(TYPES.find(([value]) => value === event.target.value)?.[0] ?? 'contact')
+              job.reset()
+            }}
+          >
+            {TYPES.map(([value, label]) => (
+              <NativeSelectOption key={value} value={value}>
+                {label}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </label>
+        <label className="grid gap-1">
+          <span className="font-medium">CSV file</span>
+          <input
+            accept=".csv,text/csv"
+            type="file"
+            onChange={(event) => {
+              job.reset()
+              void file.choose(event.target.files?.[0])
+            }}
+          />
+        </label>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!canCheck}
+          onClick={() => {
+            job.run(true)
+          }}
+        >
+          Check file
+        </Button>
+        <Button
+          size="sm"
+          disabled={!canImport}
+          onClick={() => {
+            job.run(false)
+          }}
+        >
+          Import
+        </Button>
+        {file.csv === null ? null : <span className="text-muted-foreground">{file.fileName}</span>}
+      </div>
+      {problem === null ? null : (
+        <p role="alert" className="text-destructive">
+          {problem}
+        </p>
+      )}
+      {job.outcome === null ? null : <Report outcome={job.outcome} />}
+    </div>
+  )
+}
