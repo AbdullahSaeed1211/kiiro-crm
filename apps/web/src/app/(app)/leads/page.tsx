@@ -8,8 +8,10 @@ import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
 import { getProductContext } from '../../../server/auth/context'
 import { formatDate } from '../../../i18n/format'
+import { listSavedViews } from '../../../server/queries/settings/listSavedViews'
 import { LeadBulkTable } from './LeadBulkTable'
 import { LeadListControls } from './LeadListControls'
+import { LeadViewControls, type LeadViewLink } from './LeadViewControls'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -88,6 +90,30 @@ function openStages(stages: Awaited<ReturnType<typeof listLeads>>['stages']) {
   return stages.filter((stage) => !['done_success', 'done_failure', 'cancelled'].includes(stage.category))
 }
 
+const SCALAR_FILTERS = ['q', 'source', 'owner'] as const
+
+/** Turns a saved view's stored filter back into the list's query string. */
+function filterQuery(filter: Record<string, unknown>): string {
+  const query = new URLSearchParams()
+  for (const key of SCALAR_FILTERS) {
+    const value = filter[key]
+    if (typeof value === 'string' && value !== '') query.set(key, value)
+  }
+  const stages = Array.isArray(filter.stages) ? filter.stages : []
+  for (const stage of stages) query.append('stage', String(stage))
+  return query.toString()
+}
+
+function viewLinks(views: Awaited<ReturnType<typeof listSavedViews>>): LeadViewLink[] {
+  return views.map((view) => ({
+    id: view.id,
+    label: view.name,
+    query: filterQuery(
+      typeof view.filter === 'object' && view.filter !== null ? (view.filter as Record<string, unknown>) : {},
+    ),
+  }))
+}
+
 function LeadTable({
   result,
   params,
@@ -131,6 +157,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
   const params = await searchParams
   const { actor } = await getProductContext()
   const canBulk = actor.role === 'owner' || actor.role === 'manager'
+  const views = viewLinks(await listSavedViews('lead'))
   const result = await listLeads({
     q: parseLeadSearch(params.q),
     stages: parseLeadStages(params.stage),
@@ -144,6 +171,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
       <PageContent>
         <PageHeader title="Leads" count={result.total} actions={<LeadCreateDialogClient />} />
         <LeadListControls stages={result.stages} sources={result.sources} />
+        <LeadViewControls views={[{ id: 'all', label: 'All open leads', query: '' }, ...views]} />
         <LeadTable result={result} params={params} canBulk={canBulk} />
       </PageContent>
     </>
