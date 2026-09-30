@@ -1,21 +1,11 @@
 import { escapeHtml } from '@ops/module-mail'
 import type { Payload } from 'payload'
 import { recordSend } from './history'
+import type { CampaignMessage, Subscriber } from './types'
 import { unsubscribeToken } from './token'
 
 /** Sends stop at this many recipients per click; larger lists send in several rounds. */
 export const MAX_RECIPIENTS_PER_SEND = 500
-
-export interface Subscriber {
-  readonly id: string
-  readonly email: string
-  readonly name: string
-}
-
-export interface CampaignMessage {
-  readonly subject: string
-  readonly body: string
-}
 
 function paragraphs(body: string): string {
   return body

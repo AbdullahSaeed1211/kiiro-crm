@@ -1,5 +1,5 @@
 import type { Payload } from 'payload'
-import type { CampaignMessage, Subscriber } from './campaign'
+import type { CampaignMessage, Subscriber } from './types'
 
 /** Newsletter emails are stored as outbound email rows whose message id starts with this tag. */
 const CAMPAIGN_TAG = 'newsletter:'

@@ -1,5 +1,5 @@
 import type { CrmDeps } from '@ops/module-crm'
-import type { Subscriber } from './campaign'
+import type { Subscriber } from './types'
 
 /** Contacts opt in through this checkbox custom field (Settings, Fields); the newsletter reads it and nothing else. */
 export const NEWSLETTER_FIELD_KEY = 'newsletter'
