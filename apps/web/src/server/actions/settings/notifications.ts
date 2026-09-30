@@ -56,6 +56,7 @@ export async function saveNotificationPreferences(input: unknown): Promise<Actio
       limit: 1,
       depth: 0,
       overrideAccess: false,
+      req: context.req,
     })
     const write = {
       collection: 'notificationPrefs',
@@ -64,7 +65,9 @@ export async function saveNotificationPreferences(input: unknown): Promise<Actio
       req: context.req,
     }
     const existing = found.docs.at(0)
-    if (existing === undefined) await dataPayload.create(write)
+    // Only the system may create a preferences row, so a user's first save creates their own row with system access;
+    // `user` is fixed to the signed-in user above, and every later save goes through the owner-only update rule.
+    if (existing === undefined) await dataPayload.create({ ...write, overrideAccess: true })
     else await dataPayload.update({ ...write, id: existing.id })
     revalidatePath('/settings/notifications')
     return actionOk()
