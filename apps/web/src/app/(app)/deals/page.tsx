@@ -1,11 +1,12 @@
+import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   DataTable,
   type DataTableColumn,
-  type DataTableLabels,
   type DataTablePaginationState,
   type DataTableRow,
+  paginationFor,
 } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageContent } from '@ops/ui/composites/AppShell'
@@ -24,16 +25,6 @@ import { StagePill, toStageColor } from '@ops/ui/composites/StagePill'
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deals' }
 export const dynamic = 'force-dynamic'
-
-const LABELS: DataTableLabels = {
-  selectAll: 'Select all',
-  selectRow: 'Select row',
-  columns: 'Columns',
-  previous: 'Previous',
-  next: 'Next',
-  range: '{from}–{to} of {total}',
-  selected: '{count} selected',
-}
 
 function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number]): DataTableRow {
   return {
@@ -67,20 +58,18 @@ function pagination(
   input: Readonly<{ page: number; total: number; query: string; stageId: string | undefined }>,
 ): DataTablePaginationState {
   const { page, total, query, stageId } = input
-  const href = (nextPage: number) => {
-    const params = new URLSearchParams()
-    if (query !== '') params.set('q', query)
-    if (stageId !== undefined) params.set('stage', stageId)
-    params.set('page', String(nextPage))
-    return `?${params.toString()}`
-  }
-  return {
+  return paginationFor({
     page,
     pageSize: 50,
     total,
-    ...(page > 1 ? { previousHref: href(page - 1) } : {}),
-    ...(page * 50 < total ? { nextHref: href(page + 1) } : {}),
-  }
+    href: (nextPage) => {
+      const params = new URLSearchParams()
+      if (query !== '') params.set('q', query)
+      if (stageId !== undefined) params.set('stage', stageId)
+      params.set('page', String(nextPage))
+      return `?${params.toString()}`
+    },
+  })
 }
 
 export default async function DealsPage({
@@ -142,7 +131,7 @@ export default async function DealsPage({
           columns={columns()}
           rows={data.items.map(rowOf)}
           pagination={pagination({ page, total: data.total, query: rawQuery, stageId })}
-          labels={LABELS}
+          labels={DATA_TABLE_LABELS}
           emptyState={
             <EmptyState
               icon={Handshake}

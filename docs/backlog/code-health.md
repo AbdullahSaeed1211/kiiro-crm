@@ -1,6 +1,6 @@
 # Code-health backlog
 
-40 findings are open: 4 high, 19 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+39 findings are open: 3 high, 19 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -11,16 +11,16 @@
 
 ## Root causes
 
-| Root cause                                                                                                                         | Severity | Open findings                                    |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------ |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                          |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                    |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-05 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-17 DOM-02                      |
-| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                            |
-| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20               |
-| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-07                                            |
-| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19               |
+| Root cause                                                                                                                         | Severity | Open findings                             |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------- |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                   |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                             |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-05 WEB-07 WEB-09 WEB-27 WEB-31 |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-17 DOM-02               |
+| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                     |
+| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20        |
+| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-07                                     |
+| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19        |
 
 ## Refactor order
 
@@ -93,14 +93,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Effort: M
 
 ## Web app (`apps/web`)
-
-### WEB-08: DRY, high severity
-
-- Location: `apps/web/src/app/(app)/leads/page.tsx:80-114`, `apps/web/src/app/(app)/deals/page.tsx:68-114`, `apps/web/src/app/(app)/tasks/page.tsx:88-217`
-- Evidence: Each list page reimplements its own `TABLE_LABELS`, stage pill/dot color maps (`STAGE_PILL`/`STAGE_DOT` copy-pasted verbatim in `deals/page.tsx:34-53` and `tasks/page.tsx:56-76`), `EmptyValue`, and pagination-href builder
-- Consequence: Same 8-color map hardcoded 2+ times; changing a stage color token means grepping every list page
-- Fix: Move `DataTableLabels` defaults, the stage color map, and a generic `paginationOf(params)` helper into `packages/ui`/a shared `list-page` lib; `directory-view.tsx` already shows the pattern for contacts/orgs - extend it
-- Effort: M
 
 ### WEB-12: SRP, high severity
 

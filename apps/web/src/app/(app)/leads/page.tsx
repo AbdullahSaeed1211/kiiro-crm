@@ -1,6 +1,7 @@
+import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import { type DataTableColumn, type DataTableLabels, type DataTableRow } from '@ops/ui/composites/DataTable'
+import { EmptyValue, paginationFor, type DataTableColumn, type DataTableRow } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { UserPlus } from 'lucide-react'
@@ -19,16 +20,6 @@ type SearchParams = Record<string, string | string[] | undefined>
 export const metadata: Metadata = { title: 'Leads' }
 export const dynamic = 'force-dynamic'
 
-const TABLE_LABELS: DataTableLabels = {
-  selectAll: 'Select all',
-  selectRow: 'Select row',
-  columns: 'Columns',
-  previous: 'Previous',
-  next: 'Next',
-  range: '{from}–{to} of {total}',
-  selected: '{count} selected',
-}
-
 const TABLE_COLUMNS: DataTableColumn[] = [
   { id: 'title', header: 'Title', hideable: false },
   { id: 'stage', header: 'Stage' },
@@ -41,9 +32,6 @@ const TABLE_COLUMNS: DataTableColumn[] = [
 
 function date(value: number): string {
   return formatDate(value, undefined, { dateStyle: 'medium' })
-}
-function empty(value: string | null | undefined) {
-  return value ? <span>{value}</span> : <span className="text-muted-foreground">—</span>
 }
 
 function row(item: Awaited<ReturnType<typeof listLeads>>['items'][number]): DataTableRow {
@@ -62,10 +50,10 @@ function row(item: Awaited<ReturnType<typeof listLeads>>['items'][number]): Data
           {item.stage.name}
         </span>
       ),
-      owner: empty(item.owner?.name),
-      source: empty(item.source?.name),
-      email: empty(lead.email),
-      phone: empty(lead.phone),
+      owner: item.owner?.name ?? <EmptyValue />,
+      source: item.source?.name ?? <EmptyValue />,
+      email: lead.email ?? <EmptyValue />,
+      phone: lead.phone ?? <EmptyValue />,
       created: <time dateTime={new Date(lead.createdAt).toISOString()}>{date(lead.createdAt)}</time>,
     },
   }
@@ -125,14 +113,8 @@ function LeadTable({
       key={`${String(result.page)}:${String(result.total)}`}
       columns={TABLE_COLUMNS}
       rows={result.items.map(row)}
-      pagination={{
-        page: result.page,
-        pageSize: result.pageSize,
-        total: result.total,
-        ...(result.page > 1 ? { previousHref: pageHref(params, result.page - 1) } : {}),
-        ...(result.page * result.pageSize < result.total ? { nextHref: pageHref(params, result.page + 1) } : {}),
-      }}
-      labels={TABLE_LABELS}
+      pagination={paginationFor({ ...result, href: (page) => pageHref(params, page) })}
+      labels={DATA_TABLE_LABELS}
       mobileCard={{ cells: ['title', 'stage', 'owner', 'created'] }}
       emptyState={
         <EmptyState

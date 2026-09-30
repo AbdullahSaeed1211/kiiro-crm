@@ -12,10 +12,6 @@ import { RecordEmailThread } from './record-email-thread'
 import { RecordFilesTab, RelatedTasksTab } from './record-related-tabs'
 import { formatDate } from '../../i18n/format'
 
-export function EmptyValue() {
-  return <span className="text-muted-foreground">—</span>
-}
-
 export function DateCell({ value }: Readonly<{ value: number }>) {
   return (
     <time dateTime={new Date(value).toISOString()} className="tabular-nums text-muted-foreground">

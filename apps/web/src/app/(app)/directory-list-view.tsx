@@ -1,11 +1,13 @@
+import { DATA_TABLE_LABELS } from '../../i18n/table-labels'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   DataTable,
   type DataTableColumn,
-  type DataTableLabels,
   type DataTablePaginationState,
   type DataTableRow,
+  EmptyValue,
+  paginationFor,
 } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { ArrowUpRight, Building2, Contact } from 'lucide-react'
@@ -23,18 +25,6 @@ import { formatDate } from '../../i18n/format'
 import { DirectoryFilters } from './directory-filters'
 import { initials } from '@ops/ui/lib/initials'
 
-const TABLE_LABELS: DataTableLabels = {
-  selectAll: 'Select all',
-  selectRow: 'Select row',
-  columns: 'Columns',
-  previous: 'Previous',
-  next: 'Next',
-  range: '{from}–{to} of {total}',
-  selected: '{count} selected',
-}
-function EmptyValue() {
-  return <span className="text-muted-foreground">—</span>
-}
 function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
   if (owner === null) return <span className="text-muted-foreground">Unassigned</span>
   return (
@@ -73,15 +63,7 @@ function pagination<T>(
   options: Omit<DirectoryUrlOptions, 'page'> & { readonly path: string },
 ): DataTablePaginationState {
   const { path, query, sort } = options
-  const pages = Math.max(1, Math.ceil(result.total / result.pageSize))
-  const href = (page: number) => `${path}?${paramsFor({ query, sort, page })}`
-  return {
-    page: result.page,
-    pageSize: result.pageSize,
-    total: result.total,
-    ...(result.page > 1 ? { previousHref: href(result.page - 1) } : {}),
-    ...(result.page < pages ? { nextHref: href(result.page + 1) } : {}),
-  }
+  return paginationFor({ ...result, href: (page) => `${path}?${paramsFor({ query, sort, page })}` })
 }
 const RECORD_LINK_CLASS = 'font-medium text-foreground hover:underline underline-offset-4'
 
@@ -146,7 +128,7 @@ export function OrganizationsTable({
       toolbarStart={<DirectoryFilters query={query} kind="organizations" sort={sort} />}
       sort={{ id: sort.endsWith('updatedAt') ? 'updated' : 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/organizations', query, sort })}
-      labels={TABLE_LABELS}
+      labels={DATA_TABLE_LABELS}
       emptyState={
         <EmptyState
           icon={Building2}
@@ -227,7 +209,7 @@ export function ContactsTable({
       toolbarStart={<DirectoryFilters query={query} kind="contacts" sort={sort} />}
       sort={{ id: 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/contacts', query, sort })}
-      labels={TABLE_LABELS}
+      labels={DATA_TABLE_LABELS}
       emptyState={
         <EmptyState
           icon={Contact}

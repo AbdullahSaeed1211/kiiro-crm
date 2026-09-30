@@ -1,3 +1,4 @@
+import { EmptyValue } from '@ops/ui/composites/DataTable'
 import type { MyTaskBuckets } from '@ops/module-work'
 import { StagePill } from '@ops/ui/composites/StagePill'
 import { toStageColor } from '@ops/ui/composites/StagePill/stage'
@@ -23,10 +24,6 @@ const PRIORITY_ICON: Record<string, LucideIcon> = {
   medium: SignalMedium,
   high: SignalHigh,
   urgent: CircleAlert,
-}
-
-function EmptyValue() {
-  return <span className="text-muted-foreground">—</span>
 }
 
 function PriorityCell({ priority, locale }: Readonly<{ priority: string; locale: Locale }>) {

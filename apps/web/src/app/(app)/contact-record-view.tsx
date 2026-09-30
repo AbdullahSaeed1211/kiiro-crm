@@ -1,3 +1,4 @@
+import { EmptyValue } from '@ops/ui/composites/DataTable'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { RecordNotesTab } from './record-notes-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
@@ -14,7 +15,7 @@ import type {
 } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
 import { RecordActionLinks } from './record-action-links'
-import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
+import { Activity, DetailCard, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordCustomFields } from './record-custom-fields'
 import { RecordDetails } from './record-details'
 

@@ -9,6 +9,8 @@ import {
   type DataTableLabels,
   type DataTablePaginationState,
   type DataTableRow,
+  EmptyValue,
+  paginationFor,
 } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -61,10 +63,6 @@ const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
   medium: SignalMedium,
   high: SignalHigh,
   urgent: CircleAlert,
-}
-
-function EmptyValue() {
-  return <span className="text-muted-foreground">—</span>
 }
 
 function PriorityCell({ priority, locale }: Readonly<{ priority: TaskPriority; locale: Locale }>) {
@@ -163,16 +161,10 @@ function paginationOf({
   sort,
   view,
 }: Readonly<{ result: TaskListResult; sort: TaskSort; view: string }>): DataTablePaginationState {
-  const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize))
-  const pageHref = (page: number): string =>
-    `?${new URLSearchParams({ sort: formatTaskSort(sort), page: String(page), view }).toString()}`
-  return {
-    page: result.page,
-    pageSize: result.pageSize,
-    total: result.total,
-    ...(result.page > 1 ? { previousHref: pageHref(result.page - 1) } : {}),
-    ...(result.page < pageCount ? { nextHref: pageHref(result.page + 1) } : {}),
-  }
+  return paginationFor({
+    ...result,
+    href: (page) => `?${new URLSearchParams({ sort: formatTaskSort(sort), page: String(page), view }).toString()}`,
+  })
 }
 
 function parseTaskView(value: string | undefined, savedViews: readonly SavedViewSummary[]): string {
