@@ -58,11 +58,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ## Minor
 
-### 20. Timeline is titled "Gantt"
-
-- Area: Design system. Effort: Quick. Codes: S-03.
-- The menu uses `copy.timeline` (`app-frame.tsx:44`), but the page and view id use `copy.gantt` (`timeline/page.tsx:18,43`). The Kanban breadcrumb reads "Table › Kanban", treating one view as nested inside another. Use one label source per view.
-
 ### 23. Gantt bars are one colour and clip inconsistently
 
 - Area: Boards and calendar. Effort: Quick. Codes: B-07 B-08 S-07.
