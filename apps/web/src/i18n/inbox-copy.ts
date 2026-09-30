@@ -33,14 +33,13 @@ export interface InboxCopy {
   readonly unlinked: string
   readonly composeTitle: string
   readonly composeUnavailable: string
-  readonly composeLinkedOnly: string
+  readonly composeHelp: string
+  readonly composeSearch: string
+  readonly composeSearching: string
+  readonly composeNoMatches: string
   readonly close: string
   readonly openFolders: string
   readonly closeFolders: string
-  readonly to: string
-  readonly subject: string
-  readonly messageBody: string
-  readonly send: string
   readonly unknownRecipient: string
 }
 
@@ -78,14 +77,13 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     unlinked: 'No linked record',
     composeTitle: 'New message',
     composeUnavailable: 'Outbound sending is not enabled yet. You can still review your inbox and linked records.',
-    composeLinkedOnly: 'Inbox-wide sending is not available. Open a linked record to compose a message.',
+    composeHelp: 'Choose who to write to. The message is sent from their record, so it stays in their history.',
+    composeSearch: 'Search contacts, leads, deals and organizations',
+    composeSearching: 'Searching…',
+    composeNoMatches: 'No matching records',
     close: 'Close',
     openFolders: 'Open mail folders',
     closeFolders: 'Close mail folders',
-    to: 'To',
-    subject: 'Subject',
-    messageBody: 'Message',
-    send: 'Send',
     unknownRecipient: 'Unknown recipient',
   },
   es: {
@@ -122,14 +120,13 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     composeTitle: 'Nuevo mensaje',
     composeUnavailable:
       'El envío de correo aún no está habilitado. Puedes revisar la bandeja y los registros vinculados.',
-    composeLinkedOnly: 'El envío desde la bandeja no está disponible. Abre un registro vinculado para redactar.',
+    composeHelp: 'Elige a quién escribir. El mensaje se envía desde su registro, así queda en su historial.',
+    composeSearch: 'Buscar contactos, leads, negocios y organizaciones',
+    composeSearching: 'Buscando…',
+    composeNoMatches: 'Sin registros coincidentes',
     close: 'Cerrar',
     openFolders: 'Abrir carpetas de correo',
     closeFolders: 'Cerrar carpetas de correo',
-    to: 'Para',
-    subject: 'Asunto',
-    messageBody: 'Mensaje',
-    send: 'Enviar',
     unknownRecipient: 'Destinatario desconocido',
   },
 }
