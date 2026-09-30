@@ -6,6 +6,7 @@ import { Textarea } from '@ops/ui/components/ui/textarea'
 import { MailWarning } from 'lucide-react'
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { EmailTemplatePicker } from './email-template-picker'
 
 interface Props {
   readonly recordType: string
@@ -122,7 +123,18 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
         void submit()
       }}
     >
-      <p className="text-sm font-medium">New message</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-medium">New message</p>
+        <EmailTemplatePicker
+          recordType={recordType}
+          recordId={recordId}
+          disabled={pending}
+          onPick={(filled) => {
+            setSubject(filled.subject)
+            setBody(filled.body)
+          }}
+        />
+      </div>
       <div className="mt-3 grid gap-2">
         <label className="sr-only" htmlFor="email-to">
           To

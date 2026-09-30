@@ -53,6 +53,12 @@ function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
         Lost{lead.lostNote ? `: ${lead.lostNote}` : ''}
       </p>
     )
+  if (data.item.responseOverdue)
+    return (
+      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+        Response overdue: this lead is still in its first stage past the first-response target.
+      </p>
+    )
   return null
 }
 

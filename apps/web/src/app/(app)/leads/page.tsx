@@ -34,6 +34,14 @@ function date(value: number): string {
   return formatDate(value, undefined, { dateStyle: 'medium' })
 }
 
+function ResponseOverdueBadge() {
+  return (
+    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+      Response overdue
+    </span>
+  )
+}
+
 function row(item: Awaited<ReturnType<typeof listLeads>>['items'][number]): DataTableRow {
   const lead = item.lead
   return {
@@ -48,6 +56,7 @@ function row(item: Awaited<ReturnType<typeof listLeads>>['items'][number]): Data
         <span className="inline-flex items-center gap-1.5">
           <span className={`size-2 rounded-full bg-stage-${item.stage.color}`} />
           {item.stage.name}
+          {item.responseOverdue ? <ResponseOverdueBadge /> : null}
         </span>
       ),
       owner: item.owner?.name ?? <EmptyValue />,

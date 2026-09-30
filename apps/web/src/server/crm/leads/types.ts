@@ -14,6 +14,8 @@ export interface LeadListItem {
   readonly stage: KanbanStage
   readonly source: LookupRecord | null
   readonly owner: LeadPerson | null
+  /** Still in the first stage past the workspace's first-response target. */
+  readonly responseOverdue: boolean
 }
 
 export interface LeadActivityItem {

@@ -5,69 +5,19 @@ import type { Workflow } from '@ops/platform'
 import { getRequestContext } from '@/server/container'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
-import type { Activity, User } from '../../../payload-types'
-import { type LeadActivityItem, type LeadListItem, type LeadPageData, type LeadPerson } from './types'
 
-import { initials } from '@ops/ui/lib/initials'
+import { activityItem } from './lead-activity'
+import { lookupMap, makeListItem, personMap, responseCheck, toStages } from './list-items'
+import { type LeadListItem, type LeadPageData, type LeadPerson } from './types'
+
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import type { Where } from 'payload'
-
-function stageFor(stages: readonly KanbanStage[], stageId: string): KanbanStage {
-  return (
-    stages.find((stage) => stage.id === stageId) ?? {
-      id: stageId,
-      name: 'Unknown stage',
-      category: 'open',
-      color: 'gray',
-    }
-  )
-}
 
 const PAGE_SIZE = 50
 type SearchParam = string | string[] | undefined
 
 function pageValue(value: SearchParam): string | undefined {
   return Array.isArray(value) ? value[0] : value
-}
-
-function toStages(workflow: {
-  readonly stages: readonly {
-    id: string
-    name: string
-    category: KanbanStage['category']
-    color: KanbanStage['color']
-  }[]
-}): KanbanStage[] {
-  return workflow.stages.map(({ id, name, category, color }) => ({ id, name, category, color }))
-}
-
-function lookupMap(rows: readonly LookupRecord[]): Map<string, LookupRecord> {
-  return new Map(rows.map((row) => [row.id, row]))
-}
-
-function personMap(users: readonly User[]): Map<string, LeadPerson> {
-  return new Map(users.map((user) => [user.id, { id: user.id, name: user.name, email: user.email }]))
-}
-
-function ownerOf(lead: LeadRecord, people: ReadonlyMap<string, LeadPerson>): LeadPerson | null {
-  return lead.ownerId === null ? null : (people.get(lead.ownerId) ?? null)
-}
-
-function makeListItem(
-  input: Readonly<{
-    lead: LeadRecord
-    stages: readonly KanbanStage[]
-    sources: ReadonlyMap<string, LookupRecord>
-    people: ReadonlyMap<string, LeadPerson>
-  }>,
-): LeadListItem {
-  const { lead, stages, sources, people } = input
-  return {
-    lead,
-    stage: stageFor(stages, lead.stageId),
-    source: lead.sourceId === null ? null : (sources.get(lead.sourceId) ?? null),
-    owner: ownerOf(lead, people),
-  }
 }
 
 export type LeadListResult = Readonly<{
@@ -178,7 +128,8 @@ export async function listLeads(
   const stages = toStages(workflow)
   const sourceMap = lookupMap(sources)
   const people = await loadLeadPeople(context, pageResult.records)
-  const items = pageResult.records.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people }))
+  const overdue = await responseCheck(workflow)
+  const items = pageResult.records.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people, overdue }))
   return {
     items,
     total: pageResult.total,
@@ -190,24 +141,6 @@ export async function listLeads(
     people: [...people.values()],
     owners: await loadOwnerOptions(context),
   }
-}
-
-function activityActor(row: Activity, people: ReadonlyMap<string, LeadPerson>): LeadPerson | null {
-  if (typeof row.actor !== 'string') return null
-  return people.get(row.actor) ?? null
-}
-
-function activityData(value: Activity['data']): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
-  return value
-}
-
-function activityItem(row: Activity, people: ReadonlyMap<string, LeadPerson>): LeadActivityItem {
-  const actor = activityActor(row, people)
-  const data = activityData(row.data)
-  const actorName = actor?.name ?? null
-  const actorInitials = actor === null ? null : initials(actor.name)
-  return { id: row.id, occurredAt: row.occurredAt, actorName, actorInitials, verb: row.verb, data }
 }
 
 /** Reads one authorized lead and its supporting details/activity. */
@@ -244,7 +177,13 @@ export async function getLeadPage(id: string): Promise<LeadPageData | null> {
     req: context.req,
   })
   const people = personMap(users.docs)
-  const item = makeListItem({ lead, stages, sources: lookupMap(sources), people })
+  const item = makeListItem({
+    lead,
+    stages,
+    sources: lookupMap(sources),
+    people,
+    overdue: await responseCheck(workflow),
+  })
   return {
     item,
     stages,
