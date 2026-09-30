@@ -3,9 +3,9 @@
 import { KanbanBoard, type KanbanBoardLabels, type KanbanCard, type KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { moveDealAction } from '../../../server/crm/deals/actions'
-import { DealLostDialog, type LostMove } from './DealLostDialog'
-import { deferredLostMoveResult } from './deal-board-model'
+import { markDealLostAction, moveDealAction } from '../../../server/crm/deals/actions'
+import { deferredLostMoveResult } from '../board-model'
+import { LostReasonDialog } from '../LostReasonDialog'
 
 export function DealBoard({
   stages,
@@ -19,7 +19,7 @@ export function DealBoard({
   lostReasons: readonly Readonly<{ id: string; name: string }>[]
 }>) {
   const router = useRouter()
-  const [lostMove, setLostMove] = useState<LostMove | null>(null)
+  const [lostMove, setLostMove] = useState<Readonly<{ cardId: string; expectedUpdatedAt: number }> | null>(null)
   const stageByCard = useRef(new Map(cards.map((card) => [card.id, card.stageId])))
   useEffect(() => {
     for (const card of cards) stageByCard.current.set(card.id, card.stageId)
@@ -46,13 +46,19 @@ export function DealBoard({
           router.refresh()
         }}
       />
-      <DealLostDialog
-        move={lostMove}
-        reasons={lostReasons}
-        onClose={() => {
-          setLostMove(null)
-        }}
-      />
+      {lostMove === null ? null : (
+        <LostReasonDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setLostMove(null)
+          }}
+          recordId={lostMove.cardId}
+          noun="deal"
+          markLost={markDealLostAction}
+          expectedUpdatedAt={lostMove.expectedUpdatedAt}
+          lostReasons={lostReasons}
+        />
+      )}
     </>
   )
 }

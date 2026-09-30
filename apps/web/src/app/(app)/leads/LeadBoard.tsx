@@ -14,7 +14,7 @@ import { LostReasonDialog } from '../LostReasonDialog'
 import { moveLead } from '../../../server/crm/leads/actions'
 import { leadMoveDestinationError } from '@ops/module-crm'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
-import { deferredLostMoveResult } from './lead-board-model'
+import { deferredLostMoveResult } from '../board-model'
 
 type LostMove = Readonly<{ leadId: string; expectedUpdatedAt: number }>
 
