@@ -14,6 +14,12 @@ const RULES_URL = new URL('../tooling/eslint/rules.js', import.meta.url)
 const DIRECTIVE =
   /\/\*\s*eslint-disable(?:-next-line|-line)?\b([\s\S]*?)\*\/|\/\/\s*eslint-disable(?:-next-line|-line)?\b(.*)/g
 
+/**
+ * The most gated-rule waivers the repository may carry. It only goes down: when a waiver is removed, lower this to the
+ * new count so the next one cannot slip in.
+ */
+export const WAIVER_BUDGET = 88
+
 /** A directive that disables a gated rule. */
 export interface GatedDisable {
   readonly line: number
@@ -64,6 +70,14 @@ export function disableFiles(root: string): string[] {
   return [...topLevel.map((entry) => entry.name), ...nested].filter((file) => CODE_FILE.test(file))
 }
 
+/** Counts the directives in `text` that disable a gated rule, whether or not they give a reason. */
+export function countWaivers(text: string, gated: ReadonlySet<string>): number {
+  return [...text.matchAll(DIRECTIVE)].reduce(
+    (total, match) => total + (ruleNames(match[1] ?? match[2] ?? '').some((rule) => gated.has(rule)) ? 1 : 0),
+    0,
+  )
+}
+
 /** Returns `file:line rule` findings for directives below `root` that disable a rule in `gated`. */
 export function checkDisables(root: string, gated: ReadonlySet<string>): string[] {
   return disableFiles(root).flatMap((file) =>
@@ -73,5 +87,14 @@ export function checkDisables(root: string, gated: ReadonlySet<string>): string[
 
 if (isMain(import.meta.url)) {
   const { values } = parseArgs({ options: { root: { type: 'string', default: process.cwd() } } })
-  report('check:disables', checkDisables(values.root, await loadGatedRules()))
+  const gated = await loadGatedRules()
+  const waivers = disableFiles(values.root).reduce(
+    (total, file) => total + countWaivers(readText(join(values.root, file)) ?? '', gated),
+    0,
+  )
+  const overBudget =
+    waivers > WAIVER_BUDGET
+      ? [`${String(waivers)} waivers exceed the budget of ${String(WAIVER_BUDGET)}; remove one`]
+      : []
+  report('check:disables', [...checkDisables(values.root, gated), ...overBudget])
 }

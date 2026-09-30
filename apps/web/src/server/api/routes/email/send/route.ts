@@ -1,8 +1,9 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { isOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../../../../capabilities'
 import { getPayload, type Payload } from 'payload'
-import { authenticate, requestForUser } from '../../../../collaboration/auth'
+import { z } from 'zod'
+import { isOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../../../../capabilities'
+import { authenticate, requestForUser, type AuthContext } from '../../../../collaboration/auth'
 import { canReadParent } from '../../../../collaboration/parents'
 import { badRequest, forbidden, payloadNotFoundOrDenied, unauthorized } from '../../../../collaboration/responses'
 
@@ -10,64 +11,53 @@ const MAX_RECIPIENTS = 50
 const MAX_SUBJECT = 998
 const MAX_BODY = 200_000
 const MAX_TOTAL_ATTACHMENT_BYTES = 5 * 1024 * 1024 - 128 * 1024
-type RecordType = 'organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal'
+const RECIPIENT_MESSAGE = `recordType, recordId and 1-${String(MAX_RECIPIENTS)} recipients are required.`
 
 function isEmail(value: string): boolean {
   const at = value.indexOf('@')
   return at > 0 && at === value.lastIndexOf('@') && value.lastIndexOf('.') > at + 1 && at < value.length - 1
 }
 
-interface SendInput {
-  readonly recordType: RecordType
-  readonly recordId: string
-  readonly to: readonly string[]
-  readonly subject: string
-  readonly textBody: string
-  readonly attachmentIds: readonly string[]
-  readonly inReplyTo?: string
-}
+const sendSchema = z.object({
+  recordType: z.enum(['organization', 'project', 'task', 'contact', 'lead', 'deal'], RECIPIENT_MESSAGE),
+  recordId: z.string(RECIPIENT_MESSAGE).trim().min(1, RECIPIENT_MESSAGE),
+  to: z
+    .array(z.string().trim().toLowerCase().refine(isEmail, 'Enter valid recipient email addresses.'))
+    .min(1, RECIPIENT_MESSAGE)
+    .max(MAX_RECIPIENTS, RECIPIENT_MESSAGE)
+    .transform((addresses) => [...new Set(addresses)]),
+  subject: z
+    .string('Subject is required and must be shorter.')
+    .trim()
+    .min(1, 'Subject is required and must be shorter.')
+    .max(MAX_SUBJECT, 'Subject is required and must be shorter.'),
+  textBody: z
+    .string('Message is required and must be shorter.')
+    .trim()
+    .min(1, 'Message is required and must be shorter.')
+    .max(MAX_BODY, 'Message is required and must be shorter.'),
+  attachmentIds: z
+    .array(z.string().trim().min(1, 'Attachment ids must not be empty.'))
+    .default([])
+    .transform((ids) => [...new Set(ids)]),
+  inReplyTo: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+})
 
-// eslint-disable-next-line complexity, max-statements, sonarjs/cognitive-complexity -- request parsing is the single validation boundary.
-function parseInput(value: unknown): SendInput | Response {
-  if (typeof value !== 'object' || value === null) return badRequest('A JSON body is required.')
-  const input = value as Record<string, unknown>
-  const recordTypeValue = typeof input.recordType === 'string' ? input.recordType.trim() : ''
-  const recordType = ['organization', 'project', 'task', 'contact', 'lead', 'deal'].includes(recordTypeValue)
-    ? (recordTypeValue as RecordType)
-    : null
-  const recordId = typeof input.recordId === 'string' ? input.recordId.trim() : ''
-  const subject = typeof input.subject === 'string' ? input.subject.trim() : ''
-  const textBody = typeof input.textBody === 'string' ? input.textBody.trim() : ''
-  const to = Array.isArray(input.to) ? input.to.filter((item): item is string => typeof item === 'string') : []
-  const attachmentIds = Array.isArray(input.attachmentIds)
-    ? input.attachmentIds.filter((item): item is string => typeof item === 'string')
-    : []
-  const inReplyTo =
-    typeof input.inReplyTo === 'string' && input.inReplyTo.trim() !== '' ? input.inReplyTo.trim() : undefined
-  if (recordType === null || recordId === '' || to.length === 0 || to.length > MAX_RECIPIENTS)
-    return badRequest(`recordType, recordId and 1-${String(MAX_RECIPIENTS)} recipients are required.`)
-  if (to.some((address) => !isEmail(address.trim()))) return badRequest('Enter valid recipient email addresses.')
-  if (subject === '' || subject.length > MAX_SUBJECT) return badRequest('Subject is required and must be shorter.')
-  if (textBody === '' || textBody.length > MAX_BODY) return badRequest('Message is required and must be shorter.')
-  if (attachmentIds.some((id) => id.trim() === '')) return badRequest('Attachment ids must not be empty.')
-  return {
-    recordType,
-    recordId,
-    to: [...new Set(to.map((address) => address.trim().toLowerCase()))],
-    subject,
-    textBody,
-    attachmentIds: [...new Set(attachmentIds)],
-    ...(inReplyTo === undefined ? {} : { inReplyTo }),
-  }
-}
+type SendInput = z.infer<typeof sendSchema>
 
-interface AuthorizedAttachment {
-  readonly id: string
-  readonly fileKey: string
-  readonly fileName: string
-  readonly mime: string
-  readonly sizeBytes: number
-}
+const attachmentSchema = z.object({
+  id: z.string(),
+  fileKey: z.string(),
+  fileName: z.string(),
+  mime: z.string(),
+  sizeBytes: z.number(),
+})
+
+type AuthorizedAttachment = z.infer<typeof attachmentSchema>
 
 async function loadAttachments(
   payload: Payload,
@@ -90,18 +80,9 @@ async function loadAttachments(
     overrideAccess: false,
     user,
   })
-  if (result.docs.length !== input.attachmentIds.length) return null
-  // eslint-disable-next-line complexity -- malformed attachment records are rejected at one normalization boundary.
   const attachments = result.docs.flatMap((doc) => {
-    const value = doc as unknown as Record<string, unknown>
-    const id = typeof value.id === 'string' ? value.id : null
-    const fileKey = typeof value.fileKey === 'string' ? value.fileKey : null
-    const fileName = typeof value.fileName === 'string' ? value.fileName : null
-    const mime = typeof value.mime === 'string' ? value.mime : null
-    const sizeBytes = typeof value.sizeBytes === 'number' ? value.sizeBytes : null
-    return id === null || fileKey === null || fileName === null || mime === null || sizeBytes === null
-      ? []
-      : [{ id, fileKey, fileName, mime, sizeBytes }]
+    const parsed = attachmentSchema.safeParse(doc)
+    return parsed.success ? [parsed.data] : []
   })
   return attachments.length === input.attachmentIds.length ? attachments : null
 }
@@ -114,8 +95,137 @@ function base64(bytes: ArrayBuffer): string {
   return btoa(binary)
 }
 
+type Env = Awaited<ReturnType<typeof getCloudflareContext>>['env']
+
+/** Reads each attachment from storage into a mail attachment, or a 409 when one is gone. */
+async function readAttachmentContent(env: Env, attachments: readonly AuthorizedAttachment[]) {
+  const content = []
+  for (const attachment of attachments) {
+    const object = await env.R2.get(attachment.fileKey)
+    if (object === null) return Response.json({ error: 'Attachment is no longer available.' }, { status: 409 })
+    content.push({
+      filename: attachment.fileName,
+      contentType: attachment.mime,
+      content: base64(await object.arrayBuffer()),
+    })
+  }
+  return content
+}
+
+const escapeHtml = (text: string): string =>
+  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br />')
+
+interface Delivery {
+  readonly payload: Payload
+  readonly context: AuthContext
+  readonly input: SendInput
+  readonly attachments: readonly { filename: string; contentType: string; content: string }[]
+}
+
+/** Records the message as queued before sending, so a crash mid-send leaves a visible row. */
+async function queueMessage({ payload, context, input }: Delivery, provisionalId: string): Promise<string> {
+  const created = await payload.create({
+    collection: 'emailMessages',
+    data: {
+      direction: 'outbound',
+      recordType: input.recordType,
+      recordId: input.recordId,
+      messageId: provisionalId,
+      ...(input.inReplyTo === undefined ? {} : { inReplyTo: input.inReplyTo }),
+      from: context.user.email,
+      to: [...input.to],
+      cc: [],
+      subject: input.subject,
+      textBody: input.textBody,
+      attachments: [...input.attachmentIds],
+      status: 'queued',
+      occurredAt: Date.now(),
+    },
+    depth: 0,
+    // The collection is system-write-only; the parent and attachment checks are the user-facing boundary.
+    overrideAccess: true,
+    user: context.user,
+    req: requestForUser(payload, context.user),
+  })
+  return created.id
+}
+
+function markMessage(delivery: Delivery, id: string, data: Record<string, unknown>) {
+  const { payload, context } = delivery
+  return payload.update({
+    collection: 'emailMessages',
+    id,
+    data,
+    depth: 0,
+    overrideAccess: true,
+    user: context.user,
+    req: requestForUser(payload, context.user),
+  })
+}
+
+/** Sends the queued message and records the outcome; the response says which. */
+async function deliver(delivery: Delivery, id: string, provisionalId: string): Promise<Response> {
+  const { payload, input, attachments } = delivery
+  try {
+    const result = await payload.sendEmail({
+      to: [...input.to],
+      subject: input.subject,
+      text: input.textBody,
+      html: `<p>${escapeHtml(input.textBody)}</p>`,
+      ...(attachments.length === 0 ? {} : { attachments }),
+    })
+    const providerId =
+      typeof result === 'object' && result !== null && 'messageId' in result ? result.messageId : undefined
+    await markMessage(delivery, id, {
+      messageId: typeof providerId === 'string' ? providerId : provisionalId,
+      status: 'sent',
+    })
+    return Response.json({ status: 'sent', id }, { status: 201 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message.slice(0, 2000) : 'Unable to send the message.'
+    await markMessage(delivery, id, { status: 'failed', error: message }).catch(() => undefined)
+    return Response.json({ error: 'Unable to send the message.', status: 'failed', id }, { status: 502 })
+  }
+}
+
+/** Queues the message, then sends it; a queueing failure answers with the mapped error. */
+async function queueAndDeliver(delivery: Delivery): Promise<Response> {
+  const provisionalId = `queued-${crypto.randomUUID()}`
+  let queuedId: string
+  try {
+    queuedId = await queueMessage(delivery, provisionalId)
+  } catch (error) {
+    return payloadNotFoundOrDenied(error) ?? Response.json({ error: 'Unable to queue the message.' }, { status: 500 })
+  }
+  return deliver(delivery, queuedId, provisionalId)
+}
+
+/** Validates the JSON body, or answers 400. */
+async function readInput(request: Request): Promise<SendInput | Response> {
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return badRequest('A JSON body is required.')
+  }
+  const parsed = sendSchema.safeParse(body)
+  return parsed.success ? parsed.data : badRequest(parsed.error.issues[0]?.message ?? 'The request is invalid.')
+}
+
+/** Checks the caller may read the record and every attachment, and that the attachments fit in one message. */
+async function authorizeAttachments(
+  payload: Payload,
+  context: AuthContext,
+  input: SendInput,
+): Promise<readonly AuthorizedAttachment[] | Response> {
+  if (!(await canReadParent(payload, context, input))) return forbidden()
+  const attachments = await loadAttachments(payload, input, context.user)
+  if (attachments === null) return forbidden()
+  const total = attachments.reduce((sum, attachment) => sum + attachment.sizeBytes, 0)
+  return total > MAX_TOTAL_ATTACHMENT_BYTES ? badRequest('Attachments exceed the 5 MiB message limit.') : attachments
+}
+
 /** Sends an authenticated, record-scoped message and persists queued/sent/failed state for retry visibility. */
-// eslint-disable-next-line complexity, max-lines-per-function, max-statements, sonarjs/cognitive-complexity -- queue/send/update must remain atomic at this HTTP boundary.
 export async function POST(request: Request): Promise<Response> {
   const payload = await getPayload({ config })
   const context = await authenticate(payload, request)
@@ -123,96 +233,11 @@ export async function POST(request: Request): Promise<Response> {
   const { env } = await getCloudflareContext({ async: true })
   if (!isOutboundEmailEnabled(env.MAIL_TRANSPORT))
     return Response.json({ error: OUTBOUND_EMAIL_DISABLED_MESSAGE, code: 'EMAIL_DISABLED' }, { status: 503 })
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return badRequest('A JSON body is required.')
-  }
-  const parsed = parseInput(body)
-  if (parsed instanceof Response) return parsed
-  if (!(await canReadParent(payload, context, parsed))) return forbidden()
-  const attachments = await loadAttachments(payload, parsed, context.user)
-  if (attachments === null) return forbidden()
-  if (attachments.reduce((total, attachment) => total + attachment.sizeBytes, 0) > MAX_TOTAL_ATTACHMENT_BYTES)
-    return badRequest('Attachments exceed the 5 MiB message limit.')
-  const mailAttachments = []
-  for (const attachment of attachments) {
-    const object = await env.R2.get(attachment.fileKey)
-    if (object === null) return Response.json({ error: 'Attachment is no longer available.' }, { status: 409 })
-    mailAttachments.push({
-      filename: attachment.fileName,
-      contentType: attachment.mime,
-      content: base64(await object.arrayBuffer()),
-    })
-  }
-
-  const requestPayload = requestForUser(payload, context.user)
-  const provisionalId = `queued-${crypto.randomUUID()}`
-  let queued: { id: string }
-  try {
-    const created = await payload.create({
-      collection: 'emailMessages',
-      data: {
-        direction: 'outbound',
-        recordType: parsed.recordType,
-        recordId: parsed.recordId,
-        messageId: provisionalId,
-        ...(parsed.inReplyTo === undefined ? {} : { inReplyTo: parsed.inReplyTo }),
-        from: context.user.email,
-        to: [...parsed.to],
-        cc: [],
-        subject: parsed.subject,
-        textBody: parsed.textBody,
-        attachments: [...parsed.attachmentIds],
-        status: 'queued',
-        occurredAt: Date.now(),
-      },
-      depth: 0,
-      // The collection is system-write-only; the parent and attachment checks above are the user-facing boundary.
-      overrideAccess: true,
-      user: context.user,
-      req: requestPayload,
-    })
-    queued = { id: created.id }
-  } catch (error) {
-    const expected = payloadNotFoundOrDenied(error)
-    return expected ?? Response.json({ error: 'Unable to queue the message.' }, { status: 500 })
-  }
-
-  try {
-    const result = await payload.sendEmail({
-      to: [...parsed.to],
-      subject: parsed.subject,
-      text: parsed.textBody,
-      html: `<p>${parsed.textBody.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br />')}</p>`,
-      ...(mailAttachments.length === 0 ? {} : { attachments: mailAttachments }),
-    })
-    const providerId =
-      typeof result === 'object' && result !== null && 'messageId' in result ? result.messageId : undefined
-    await payload.update({
-      collection: 'emailMessages',
-      id: queued.id,
-      data: { messageId: typeof providerId === 'string' ? providerId : provisionalId, status: 'sent' },
-      depth: 0,
-      overrideAccess: true,
-      user: context.user,
-      req: requestPayload,
-    })
-    return Response.json({ status: 'sent', id: queued.id }, { status: 201 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message.slice(0, 2000) : 'Unable to send the message.'
-    await payload
-      .update({
-        collection: 'emailMessages',
-        id: queued.id,
-        data: { status: 'failed', error: message },
-        depth: 0,
-        overrideAccess: true,
-        user: context.user,
-        req: requestPayload,
-      })
-      .catch(() => undefined)
-    return Response.json({ error: 'Unable to send the message.', status: 'failed', id: queued.id }, { status: 502 })
-  }
+  const input = await readInput(request)
+  if (input instanceof Response) return input
+  const authorized = await authorizeAttachments(payload, context, input)
+  if (authorized instanceof Response) return authorized
+  const attachments = await readAttachmentContent(env, authorized)
+  if (attachments instanceof Response) return attachments
+  return queueAndDeliver({ payload, context, input, attachments })
 }
