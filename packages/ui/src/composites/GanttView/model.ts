@@ -10,7 +10,16 @@ export interface GanttBar {
   readonly title: string
   readonly start: number | null
   readonly end: number | null
+  /** Stage colour name from the `--stage-*` scale; bars without one use the primary colour. */
+  readonly tone?: GanttTone
 }
+
+/** Stage colour names a bar can take. */
+export const GANTT_TONES = ['gray', 'blue', 'green', 'amber', 'red', 'violet', 'teal', 'pink'] as const
+export type GanttTone = (typeof GANTT_TONES)[number]
+
+/** Task types the library needs declared: the default and one per stage colour. */
+export const GANTT_TASK_TYPES = [{ id: 'task', label: 'Task' }, ...GANTT_TONES.map((id) => ({ id, label: id }))]
 
 /** Timeline zoom level. */
 export type GanttZoom = 'week' | 'month'
@@ -61,7 +70,7 @@ export function toLibraryTasks(bars: readonly GanttBar[]): ITask[] {
     const span = barSpan(bar)
     if (span === undefined) return []
     const dates = { start: toLibraryDate(span.start), end: toLibraryDate(span.end) }
-    return [{ id: bar.id, text: bar.title, type: 'task', progress: 0, ...dates }]
+    return [{ id: bar.id, text: bar.title, type: bar.tone ?? 'task', progress: 0, ...dates }]
   })
 }
 
@@ -77,7 +86,7 @@ export function spanMap(bars: readonly GanttBar[]): Map<string, BarSpan> {
 
 /** Content key of the bars, so an unchanged server re-render does not reset the chart. */
 export function barsSignature(bars: readonly GanttBar[]): string {
-  return JSON.stringify(bars.map((bar) => [bar.id, bar.title, bar.start, bar.end]))
+  return JSON.stringify(bars.map((bar) => [bar.id, bar.title, bar.start, bar.end, bar.tone]))
 }
 
 /** True for the library `update-task` that ends a drag or resize; progress edits and rollbacks carry no `diff`. */

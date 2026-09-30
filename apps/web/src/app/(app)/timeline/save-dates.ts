@@ -1,4 +1,4 @@
-import type { GanttDatesChange } from '@ops/ui/composites/GanttView'
+import type { GanttDatesChange, GanttTone } from '@ops/ui/composites/GanttView'
 import { setTaskDates } from '../../../server/actions/work/tasks/setTaskDates'
 
 /** A dated task as the timeline page hands it to the chart. */
@@ -8,6 +8,7 @@ export interface TimelineTask {
   readonly startAt: number | null
   readonly dueAt: number | null
   readonly updatedAt: number
+  readonly tone: GanttTone
 }
 
 /** Hooks the saver uses to track task versions and react to conflicts. */

@@ -12,6 +12,7 @@ import {
   rollbackUpdate,
   scaleSetup,
   spanMap,
+  GANTT_TASK_TYPES,
   todayClass,
   toLibraryTasks,
   type BarSpan,
@@ -196,6 +197,7 @@ export function GanttView({ bars, zoom, compact, displayMode, onDatesChange, lab
           <Willow fonts={false}>
             <Gantt
               tasks={tasks}
+              taskTypes={GANTT_TASK_TYPES}
               scales={setup.scales}
               cellWidth={setup.cellWidth}
               lengthUnit="day"

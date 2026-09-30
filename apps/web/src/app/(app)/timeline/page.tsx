@@ -5,9 +5,7 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { ChartGantt } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY } from '../../../i18n/config'
-import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
-import { getRequestContext, workDeps } from '@/server/container'
-import type { TaskRecord } from '../../../server/work/task-repository'
+import { loadWorkReadModel } from '../../../server/queries/work/read-models'
 import type { TimelineTask } from './save-dates'
 import { TimelineChart } from './TimelineChart'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
@@ -17,20 +15,23 @@ const PAGE_TITLE = 'Timeline'
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: PAGE_TITLE }
 
-/** Reads the task repository on every request. */
+/** Reads the scoped tasks on every request. */
 export const dynamic = 'force-dynamic'
 
-function toTimelineTask({ id, title, startAt, dueAt, updatedAt }: TaskRecord): TimelineTask {
-  return { id, title, startAt, dueAt, updatedAt }
-}
-
-// The repository reads with the user's access, so the staff scope is already applied.
-/** Timeline (spec §17.9). */
+/** Dated tasks the signed-in user can see, coloured by their stage. */
 export default async function TimelinePage() {
-  const context = await getRequestContext()
-  const { tasks: repository } = await workDeps(context)
-  const [records, locale] = await Promise.all([repository.listTasks(), loadWorkspaceLocale()])
-  const tasks = records.filter((task) => task.startAt !== null || task.dueAt !== null).map(toTimelineTask)
+  const { tasks: records, stages, locale } = await loadWorkReadModel()
+  const tone = new Map(stages.map((stage) => [stage.id, stage.color]))
+  const tasks: TimelineTask[] = records
+    .filter((task) => task.startAt !== null || task.dueAt !== null)
+    .map(({ id, title, startAt, dueAt, updatedAt, stageId }) => ({
+      id,
+      title,
+      startAt,
+      dueAt,
+      updatedAt,
+      tone: tone.get(stageId) ?? 'gray',
+    }))
   const copy = TASK_COPY[locale]
   return (
     <>

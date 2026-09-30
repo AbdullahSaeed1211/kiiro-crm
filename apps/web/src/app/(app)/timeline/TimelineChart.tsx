@@ -20,6 +20,10 @@ function labelsFor(locale: Locale): GanttViewLabels {
   }
 }
 
+function toBar({ id, title, startAt, dueAt, tone }: TimelineTask): GanttBar {
+  return { id, title, start: startAt, end: dueAt, tone }
+}
+
 function isZoom(value: unknown): value is GanttZoom {
   return value === 'week' || value === 'month'
 }
@@ -116,10 +120,7 @@ export function TimelineChart({
   useEffect(() => {
     latestTasks.current = tasks
   }, [tasks])
-  const bars = useMemo<GanttBar[]>(
-    () => tasks.map(({ id, title: text, startAt, dueAt }) => ({ id, title: text, start: startAt, end: dueAt })),
-    [tasks],
-  )
+  const bars = useMemo(() => tasks.map(toBar), [tasks])
   const onDatesChange = useMemo(
     () =>
       createDatesSaver({

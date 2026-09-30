@@ -48,3 +48,40 @@
 .ops-gantt .wx-progress-marker {
   display: none;
 }
+
+/* Bars take their stage's colour; the library adds the type name as a plain class. */
+.ops-gantt .wx-bar.gray,
+.ops-gantt .wx-bar.blue,
+.ops-gantt .wx-bar.green,
+.ops-gantt .wx-bar.amber,
+.ops-gantt .wx-bar.red,
+.ops-gantt .wx-bar.violet,
+.ops-gantt .wx-bar.teal,
+.ops-gantt .wx-bar.pink {
+  background-color: var(--bar);
+  border-color: var(--bar);
+}
+.ops-gantt .wx-bar.gray {
+  --bar: var(--stage-gray);
+}
+.ops-gantt .wx-bar.blue {
+  --bar: var(--stage-blue);
+}
+.ops-gantt .wx-bar.green {
+  --bar: var(--stage-green);
+}
+.ops-gantt .wx-bar.amber {
+  --bar: var(--stage-amber);
+}
+.ops-gantt .wx-bar.red {
+  --bar: var(--stage-red);
+}
+.ops-gantt .wx-bar.violet {
+  --bar: var(--stage-violet);
+}
+.ops-gantt .wx-bar.teal {
+  --bar: var(--stage-teal);
+}
+.ops-gantt .wx-bar.pink {
+  --bar: var(--stage-pink);
+}

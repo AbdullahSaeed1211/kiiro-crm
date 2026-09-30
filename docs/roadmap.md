@@ -57,7 +57,7 @@ Depends on: wave 3 for the error model and composition root. Done when: leads, d
 - Done: no native `<select>` remains outside `packages/ui`; multi-selects are checkbox lists.
 - One view bar with search, filter and sort on every list; `@ops/ui` date inputs; one view switcher; bulk actions through `DataTable` selection.
 - Kanban column sizing and add-to-column; calendar drag to reschedule; Gantt bars coloured by stage; one token set across the stylesheets.
-- Findings: UX 8, 12, 13, 15, 16, 23, 30, 33, 34, 35; code-health UI-05, UI-07, UI-12, UI-13, UI-14, UI-17, UI-21, UI-23.
+- Findings: UX 8, 12, 13, 15, 16, 30, 33, 34, 35; code-health UI-05, UI-07, UI-12, UI-13, UI-14, UI-17, UI-21, UI-23.
 
 Depends on: wave 5 for the generic record lists. Done when: no native `<select>` remains outside `packages/ui`, and every list page has the same bar.
 
