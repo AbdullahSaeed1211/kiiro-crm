@@ -22,7 +22,7 @@ import type {
 import { displayName, formatDirectorySort } from '../../server/crm/directory/data'
 import { safeExternalHref } from '../../server/crm/directory/utils'
 import { formatDate } from '../../i18n/format'
-import { DirectoryFilters } from './directory-filters'
+import { ListViewBar, type ListSort } from './list-view-bar'
 import { initials } from '@ops/ui/lib/initials'
 
 function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
@@ -65,6 +65,15 @@ function pagination<T>(
   const { path, query, sort } = options
   return paginationFor({ ...result, href: (page) => `${path}?${paramsFor({ query, sort, page })}` })
 }
+const SORT_OPTIONS = [
+  { value: 'name', label: 'Name: A to Z' },
+  { value: '-name', label: 'Name: Z to A' },
+  { value: '-updatedAt', label: 'Recently updated' },
+  { value: 'updatedAt', label: 'Least recently updated' },
+] as const
+
+const sortMenu = (value: DirectorySort): ListSort => ({ value, options: SORT_OPTIONS })
+
 const RECORD_LINK_CLASS = 'font-medium text-foreground hover:underline underline-offset-4'
 
 function organizationColumns(query: string, sort: DirectorySort): DataTableColumn[] {
@@ -125,7 +134,7 @@ export function OrganizationsTable({
       className="ops-directory-table"
       columns={organizationColumns(query, sort)}
       rows={organizationRows(result.items)}
-      toolbarStart={<DirectoryFilters query={query} kind="organizations" sort={sort} />}
+      toolbarStart={<ListViewBar searchLabel="Search organizations" query={query} sort={sortMenu(sort)} />}
       sort={{ id: sort.endsWith('updatedAt') ? 'updated' : 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/organizations', query, sort })}
       labels={DATA_TABLE_LABELS}
@@ -206,7 +215,7 @@ export function ContactsTable({
       className="ops-directory-table"
       columns={contactColumns(query, sort)}
       rows={contactRows(result.items)}
-      toolbarStart={<DirectoryFilters query={query} kind="contacts" sort={sort} />}
+      toolbarStart={<ListViewBar searchLabel="Search contacts" query={query} sort={sortMenu(sort)} />}
       sort={{ id: 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/contacts', query, sort })}
       labels={DATA_TABLE_LABELS}

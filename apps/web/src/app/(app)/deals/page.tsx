@@ -19,7 +19,7 @@ import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
 import { getWorkspaceSettings } from '../../../server/auth/context'
 import { firstParam } from '../search-params'
-import { ListSearchForm, type ListFilter } from '../list-search-form'
+import { ListViewBar, type ListFilter } from '../list-view-bar'
 import { StagePill, toStageColor } from '@ops/ui/composites/StagePill'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -122,11 +122,10 @@ export default async function DealsPage({
             </div>
           }
         />
-        <ListSearchForm
-          action="/deals"
-          label="Search deals"
+        <ListViewBar
+          searchLabel="Search deals"
           query={firstParam(params.q) ?? ''}
-          filter={stageFilter(data.workflow.stages, stageId)}
+          filters={[stageFilter(data.workflow.stages, stageId)]}
         />
         <DataTable
           key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}

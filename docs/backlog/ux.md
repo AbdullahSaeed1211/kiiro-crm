@@ -19,12 +19,12 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Status (2026-09-27, local dev server): four `route-health.spec.ts` runs fail at `v0.2.0` before any change: "workspace settings reopen" (desktop; two `Time zone` comboboxes match), "settings IA and command palette" (mobile; no `Workspace` heading in the settings navigation), and UX 34 and 35. The suite stops at the first failure per project, so later tests only run with `--grep-invert`.
 
-### 8. Lists have no shared sort bar
+### 8. Two lists still have their own search row
 
-- Area: Design system. Effort: Structural. Codes: T-04 R-06.
-- Now: Leads, deals, projects, contacts and organizations have a search box and a filter; leads also filter by owner and source and save views. The search-and-filter row is built three ways (`ListSearchForm`, `LeadListControls`, `DirectoryFilters`) and sort is only a column-header link on some lists. `/tasks` has its own view menu.
+- Area: Design system. Effort: Moderate. Codes: T-04 R-06.
+- Now: Contacts, organizations, deals and projects share `ListViewBar` (search, filters, sort; the state lives in the URL). Leads keep `LeadListControls` because they filter by several stages at once, owner and source and save views; tasks keep their view menu. Deals have no sort because the deals query does not sort yet.
 - Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
-- Fix: Fold the three search rows into one `ViewBar` with search, filter and sort, and use it on every list.
+- Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads and tasks onto it, and add a sort to the deals query.
 
 ### 10. The seed has no pipeline, so the CRM is never tested end to end
 

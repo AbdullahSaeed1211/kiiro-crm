@@ -16,7 +16,7 @@ import type { Metadata } from 'next'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { formatDate } from '../../../i18n/format'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
-import { ListSearchForm } from '../list-search-form'
+import { ListViewBar, type ListSort } from '../list-view-bar'
 import { firstParam } from '../search-params'
 
 export const metadata: Metadata = { title: 'Projects' }
@@ -80,14 +80,33 @@ function rowOf(project: Project, model: Model): DataTableRow {
   }
 }
 
+const SORT_OPTIONS = [
+  { value: 'name', label: 'Name: A to Z' },
+  { value: '-name', label: 'Name: Z to A' },
+  { value: 'target', label: 'Target end: soonest' },
+] as const
+
+const sortMenu = (value: string): ListSort => ({ value, options: SORT_OPTIONS })
+
+const NO_TARGET = Number.POSITIVE_INFINITY
+
+/** Compares two projects for the chosen sort; projects without a target end sort last. */
+function compareProjects(sort: string): (left: Project, right: Project) => number {
+  if (sort === '-name') return (left, right) => right.name.localeCompare(left.name)
+  if (sort === 'target')
+    return (left, right) =>
+      (left.targetEndAt ?? NO_TARGET) - (right.targetEndAt ?? NO_TARGET) || left.name.localeCompare(right.name)
+  return (left, right) => left.name.localeCompare(right.name)
+}
+
 function matching(
   projects: readonly Project[],
-  { query, stage }: Readonly<{ query: string; stage: string }>,
+  { query, stage, sort }: Readonly<{ query: string; stage: string; sort: string }>,
 ): Project[] {
   const needle = query.toLowerCase()
-  return projects.filter(
-    (project) => project.name.toLowerCase().includes(needle) && (stage === '' || project.stage === stage),
-  )
+  return projects
+    .filter((project) => project.name.toLowerCase().includes(needle) && (stage === '' || project.stage === stage))
+    .toSorted(compareProjects(sort))
 }
 
 /** Projects list with progress from the same scoped read model, searchable by name and filterable by stage. */
@@ -97,8 +116,9 @@ export default async function ProjectsPage({
   const params = await searchParams
   const query = firstParam(params.q)?.trim() ?? ''
   const stage = firstParam(params.stage) ?? ''
+  const sort = firstParam(params.sort) ?? 'name'
   const model = await loadWorkReadModel(undefined, 'projects')
-  const shown = matching(model.projects, { query, stage })
+  const shown = matching(model.projects, { query, stage, sort })
   const stages = [...new Set(model.projects.map((project) => project.stage))]
   return (
     <>
@@ -116,17 +136,19 @@ export default async function ProjectsPage({
             </a>
           }
         />
-        <ListSearchForm
-          action="/projects"
-          label="Search projects"
+        <ListViewBar
+          searchLabel="Search projects"
           query={query}
-          filter={{
-            name: 'stage',
-            label: 'Filter by stage',
-            allLabel: 'All stages',
-            value: stage,
-            options: stages.map((name) => ({ value: name, label: name })),
-          }}
+          filters={[
+            {
+              name: 'stage',
+              label: 'Filter by stage',
+              allLabel: 'All stages',
+              value: stage,
+              options: stages.map((name) => ({ value: name, label: name })),
+            },
+          ]}
+          sort={sortMenu(sort)}
         />
         <DataTable
           columns={COLUMNS}
