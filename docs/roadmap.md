@@ -48,7 +48,7 @@ Code-health refactor steps 3 and 4: rules move out of the web layer, and leads, 
 - Done: a form builder and hosted renderer for lead intake (§10.3). Under Settings, Intake, add questions to a form and it gets a public page at `/forms/<key>` and an embed snippet; answers go through the same intake endpoint and field mapping. The hosted page shows the tenant's Turnstile widget (`intake.turnstileSiteKey`); without a key it returns 404 in production. Open: file uploads and conditional questions.
 - Done (v0.6.0–v0.8.0): configurable client onboarding — custom fields on organization, contact, lead and deal pages; stage requirements that name missing fields; playbooks that create a project from a won deal; intake answers mapped to lead fields and custom fields in Settings, Intake. Also done: CRM use cases on `/api/v1`.
 - Done (v0.9.0): editable details on every record, deals on the shared record parts, conversion that attaches to existing records, notes on records, and one quick-create dialog for leads, contacts and organizations.
-- Findings: code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-04, WEB-10, WEB-12, WEB-14, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28, WEB-31.
+- Findings: code-health ARCH-03, ARCH-05, DOM-02, DOM-15, DOM-18, WEB-04, WEB-10, WEB-12, WEB-14, WEB-18, WEB-20, WEB-21, WEB-26, WEB-27, WEB-28.
 
 Depends on: wave 3 for the error model and composition root. Done when: leads, deals and tasks render through the shared components and the CRM endpoints pass their gates.
 

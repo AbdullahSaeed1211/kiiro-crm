@@ -2,7 +2,8 @@ import { workflowOrThrow } from '../../workflow-result'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
-import { getRequestContext } from '@/server/container'
+import { getRequestContext, type RequestContext } from '@/server/container'
+import { loadPeople } from '../../people'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
 
@@ -72,23 +73,11 @@ function leadWhere(
   return filters.length === 1 ? (filters[0] ?? {}) : { and: filters }
 }
 
-async function loadLeadPeople(
-  context: Awaited<ReturnType<typeof getRequestContext>>,
-  leads: readonly LeadRecord[],
-): Promise<Map<string, LeadPerson>> {
-  const ids = [
-    ...new Set(leads.flatMap((lead) => [lead.ownerId, ...lead.assigneeIds].filter((id) => id !== null))),
-  ] as string[]
-  if (ids.length === 0) return new Map()
-  const users = await context.payload.find({
-    collection: 'users',
-    where: { id: { in: ids } },
-    depth: 0,
-    limit: ids.length,
-    overrideAccess: false,
-    req: context.req,
-  })
-  return personMap(users.docs)
+async function loadLeadPeople(context: RequestContext, leads: readonly LeadRecord[]) {
+  return loadPeople(
+    context,
+    leads.flatMap((lead) => [lead.ownerId, ...lead.assigneeIds].filter((id) => id !== null)),
+  )
 }
 
 async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestContext>>): Promise<LeadPerson[]> {

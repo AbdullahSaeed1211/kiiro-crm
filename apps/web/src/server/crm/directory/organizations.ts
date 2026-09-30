@@ -2,7 +2,8 @@ import { createCrmRepository } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
 import { getRequestContext } from '@/server/container'
 import { listActivities } from './activities'
-import { listEmailMessages, listProjects, listRecordAttachments, listRelatedTasks, loadPeople } from './helpers'
+import { listEmailMessages, listProjects, listRecordAttachments, listRelatedTasks } from './helpers'
+import { loadPeople } from '../../people'
 import type {
   ActivityItem,
   EmailThreadMessage,

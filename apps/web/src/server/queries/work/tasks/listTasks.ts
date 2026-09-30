@@ -2,7 +2,8 @@ import { createTaskRepository, listTaskPage } from '@ops/adapter-payload'
 import type { TaskRecord } from '@ops/module-work'
 import type { Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
-import { toTaskListItem, type PeopleById } from './task-items'
+import { loadPeople } from '@/server/people'
+import { toTaskListItem } from './task-items'
 import { loadTaskContexts } from './task-contexts'
 import type { TaskListItem, TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'
 import type { Where } from 'payload'
@@ -42,21 +43,6 @@ export function formatTaskSort(sort: TaskSort): string {
 export function parseTaskPage(value: string | undefined): number {
   const page = Number(value)
   return Number.isInteger(page) && page > 0 ? page : 1
-}
-
-// Names come through the users collection's access, so staff only see names they may read.
-async function loadPeople({ payload, req }: RequestContext, ids: readonly string[]): Promise<PeopleById> {
-  if (ids.length === 0) return new Map()
-  const where = { id: { in: ids } }
-  const { docs } = await payload.find({
-    collection: 'users',
-    where,
-    depth: 0,
-    limit: ids.length,
-    overrideAccess: false,
-    req,
-  })
-  return new Map(docs.map((user) => [user.id, { name: user.name, email: user.email }]))
 }
 
 function taskWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {

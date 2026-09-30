@@ -1,10 +1,8 @@
 import type { ContactRecord, OrganizationRecord } from '@ops/module-crm'
 
-export interface PersonSummary {
-  readonly id: string
-  readonly name: string
-  readonly email: string
-}
+import type { PersonSummary } from '../../people'
+
+export type { PersonSummary }
 
 export interface ActivityItem {
   readonly id: string

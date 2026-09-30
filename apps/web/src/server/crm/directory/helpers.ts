@@ -1,30 +1,11 @@
 import type { RequestContext } from '../../container'
 import type { Where } from 'payload'
 import { emailMessage, text } from './normalize'
-import type { EmailThreadMessage, InboxEmailMessage, PersonSummary, RecordAttachment, RelatedTask } from './types'
+import type { EmailThreadMessage, InboxEmailMessage, RecordAttachment, RelatedTask } from './types'
 
 /** Reads run as the user unless the parent record was already authorized, then they see its whole history. */
 export function activityReadOptions(parentAuthorized: boolean): { readonly overrideAccess: boolean } {
   return { overrideAccess: parentAuthorized }
-}
-
-export async function loadPeople(
-  context: RequestContext,
-  ids: readonly string[],
-): Promise<ReadonlyMap<string, PersonSummary>> {
-  const unique = [...new Set(ids.filter(Boolean))]
-  if (unique.length === 0) return new Map()
-  const result = await context.payload.find({
-    collection: 'users',
-    where: { id: { in: unique } },
-    limit: unique.length,
-    pagination: false,
-    depth: 0,
-    overrideAccess: false,
-    user: context.req.user,
-    req: context.req,
-  })
-  return new Map(result.docs.map((user) => [user.id, { id: user.id, name: user.name, email: user.email }]))
 }
 
 export async function listProjects(

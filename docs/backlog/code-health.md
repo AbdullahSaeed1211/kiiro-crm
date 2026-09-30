@@ -1,6 +1,6 @@
 # Code-health backlog
 
-35 findings are open: 3 high, 15 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+33 findings are open: 2 high, 14 medium and 17 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -15,7 +15,7 @@
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                            |
 | Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14                             |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-27 WEB-31               |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-04 WEB-27                      |
 | Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 DOM-02               |
 | One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                              |
 | Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20 |
@@ -149,14 +149,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: A reader can't tell from the component's shape that a failed save can trigger a full route refresh; conflict-specific refresh logic is a domain rule (optimistic concurrency) hidden in a leaf UI component
 - Fix: Centralize the "on CONFLICT, refresh" policy in whatever shared mutation hook eventually wraps `expectedUpdatedAt` actions (see WEB-27)
 - Effort: M
-
-### WEB-31: DRY, medium severity
-
-- Location: `apps/web/src/server/crm/deals/queries.ts:47-60` (`loadOwnerNames`) vs `apps/web/src/server/crm/leads/queries.ts:101-118` (`loadLeadPeople`)
-- Evidence: Both hand-write a `payload.find({collection:'users', where:{id:{in:ids}}, ...})` + `Map` construction, with slightly different option sets (`pagination:false` vs omitted, `overrideAccess:false` both)
-- Consequence: Two near-identical direct Payload queries for "look up users by id" bypass whatever port/repository abstraction is meant to own this; if the users collection or access rule changes, both need updating
-- Fix: One `loadPeopleByIds(context, ids)` helper (directory/helpers.ts already has `loadPeople` - reuse it here instead of two more copies)
-- Effort: S
 
 ### WEB-10: DRY, low severity
 

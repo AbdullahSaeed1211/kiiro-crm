@@ -4,6 +4,7 @@ import { createCrmRepository, createUnitOfWork, listCrmPage } from '@ops/adapter
 import type { ContactRecord, CrmDeps, DealRecord, OrganizationRecord } from '@ops/module-crm'
 import { can, type Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
+import { loadPeople } from '../../people'
 import { loadActivity, type ActivityItem } from './activity'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import type { EmailThreadMessage, RecordAttachment, RelatedTask } from '../directory/types'
@@ -41,21 +42,6 @@ function dealDeps(context: RequestContext): CrmDeps {
     uow: createUnitOfWork(context.req),
     clock: systemClock,
   }
-}
-
-async function loadOwnerNames(context: Pick<RequestContext, 'payload' | 'req'>, ids: readonly string[]) {
-  if (ids.length === 0) return new Map<string, string>()
-  const { docs } = await context.payload.find({
-    collection: 'users',
-    where: { id: { in: ids } },
-    limit: ids.length,
-    pagination: false,
-    depth: 0,
-    overrideAccess: false,
-    user: context.req.user,
-    req: context.req,
-  })
-  return new Map(docs.map((owner) => [owner.id, owner.name]))
 }
 
 // eslint-disable-next-line complexity -- stage and text filters must be combined before the paginated read.
@@ -98,13 +84,13 @@ export async function getDealListData(
     limit: 50,
   })
   const ownerIds = dealsPage.records.flatMap((deal) => (deal.ownerId === null ? [] : [deal.ownerId]))
-  const ownerNames = await loadOwnerNames(context, ownerIds)
+  const owners = await loadPeople(context, ownerIds)
   const items = dealsPage.records.map((deal) => ({
     deal,
     stage: stageForDeal(deal, workflow),
     organizationName: organizationName(deal, organizations),
     primaryContactName: displayName(contacts.find((contact) => contact.id === deal.primaryContactId)),
-    ownerName: deal.ownerId === null ? null : (ownerNames.get(deal.ownerId) ?? null),
+    ownerName: deal.ownerId === null ? null : (owners.get(deal.ownerId)?.name ?? null),
   }))
   return { items, organizations, contacts, workflow, total: dealsPage.total, lostReasons }
 }

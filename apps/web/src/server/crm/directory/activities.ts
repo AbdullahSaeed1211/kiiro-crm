@@ -1,6 +1,6 @@
 import type { Where } from 'payload'
 import type { RequestContext } from '../../container'
-import { loadPeople } from './helpers'
+import { loadPeople } from '../../people'
 import { refId, text } from './normalize'
 import type { ActivityItem } from './types'
 

@@ -3,7 +3,7 @@ import type { Workflow } from '@ops/platform'
 import type { TaskListItem } from './types'
 
 /** Name and email of users, keyed by id. */
-export type PeopleById = ReadonlyMap<string, { readonly name: string; readonly email: string }>
+type PeopleById = ReadonlyMap<string, { readonly name: string; readonly email: string }>
 
 const UNKNOWN_STAGE = { name: 'Unknown stage', color: 'gray', position: Number.MAX_SAFE_INTEGER } as const
 
