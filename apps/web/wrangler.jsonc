@@ -120,7 +120,8 @@
         "TURNSTILE_HOSTNAMES": "www.mirchmedia.com,web.mirchmedia.com",
         "MAIL_TRANSPORT": "cloudflare",
         "MAIL_FROM_ADDRESS": "no-reply@notify.mirchtravel.com",
-        "MAIL_FROM_NAME": "Mirch Media"
+        "MAIL_FROM_NAME": "Mirch Media",
+        "MAIL_PROBE_RECIPIENT": "abdullah.saeed1724@gmail.com"
       },
       "triggers": {
         "crons": [

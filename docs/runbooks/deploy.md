@@ -48,6 +48,8 @@ same unavailable state, while inbound inbox history remains readable. The smoke 
 `disabled by tenant configuration` and does not call the provider. When it is `true`, the email probe remains required and
 any failed probe still fails the deployment and triggers the code-only rollback.
 
+The deploy's email probe sends one message to `email.probeRecipient` in the tenant file. When that is unset the probe sends nothing and passes, so no customer receives test mail; set it to an address the operator owns.
+
 Re-enabling a tenant is the forward path: set `email.enabled` to `true`, onboard and verify the configured sender domain
 with Cloudflare Email Sending, refresh the operator token with the `email_sending` scope, regenerate Wrangler config, and
 rerun the tagged deployment. Never bypass the smoke gate by treating an enabled-but-unavailable sender as disabled.

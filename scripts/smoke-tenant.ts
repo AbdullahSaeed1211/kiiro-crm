@@ -65,7 +65,7 @@ export async function smokeTenant(tenant: Tenant, deps: SmokeDependencies): Prom
           name: 'email',
           forcedFailure: deps.failCheck === 'email',
           probe: deps.emailProbe,
-          dryRunDetail: `test email to ${tenant.owner.email} (dry run)`,
+          dryRunDetail: `test email to ${tenant.email.probeRecipient ?? 'no one (no probe recipient)'} (dry run)`,
           successDetail: 'accepted',
           ...probeMode,
         }),

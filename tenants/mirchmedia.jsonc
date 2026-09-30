@@ -13,6 +13,7 @@
     "enabled": true,
     "fromName": "Mirch Media",
     "fromAddress": "no-reply@notify.mirchtravel.com",
+    "probeRecipient": "abdullah.saeed1724@gmail.com",
     "inboundDomain": "in.mirchmedia.com",
     "inboundLocalPrefix": "mirchmedia--",
   },

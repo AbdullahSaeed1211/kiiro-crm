@@ -16,6 +16,7 @@ interface __BaseEnv_CloudflareEnv {
 	MAIL_TRANSPORT: string;
 	MAIL_FROM_ADDRESS: string;
 	MAIL_FROM_NAME: string;
+	MAIL_PROBE_RECIPIENT: string;
 	APP_ORIGIN: string;
 	TENANT_SLUG: string;
 	TENANT_DISPLAY_NAME: string;
@@ -41,6 +42,7 @@ declare namespace Cloudflare {
 		MAIL_TRANSPORT: string;
 		MAIL_FROM_ADDRESS: string;
 		MAIL_FROM_NAME: string;
+	MAIL_PROBE_RECIPIENT: string;
 		APP_ORIGIN: string;
 		TENANT_SLUG: string;
 		TENANT_DISPLAY_NAME: string;
@@ -54,7 +56,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PAYLOAD_SECRET" | "INTERNAL_SECRET" | "TENANT_SECRET" | "TURNSTILE_SECRET" | "TURNSTILE_HOSTNAMES" | "MAIL_TRANSPORT" | "MAIL_FROM_ADDRESS" | "MAIL_FROM_NAME" | "APP_ORIGIN" | "TENANT_SLUG" | "TENANT_DISPLAY_NAME" | "INBOUND_DOMAIN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PAYLOAD_SECRET" | "INTERNAL_SECRET" | "TENANT_SECRET" | "TURNSTILE_SECRET" | "TURNSTILE_HOSTNAMES" | "MAIL_TRANSPORT" | "MAIL_FROM_ADDRESS" | "MAIL_FROM_NAME" | "MAIL_PROBE_RECIPIENT" | "APP_ORIGIN" | "TENANT_SLUG" | "TENANT_DISPLAY_NAME" | "INBOUND_DOMAIN">> {}
 }
 
 // Begin runtime types

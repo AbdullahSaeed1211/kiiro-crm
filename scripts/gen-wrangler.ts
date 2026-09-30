@@ -70,6 +70,7 @@ function vars(tenant: Tenant): Record<string, string> {
     MAIL_TRANSPORT: tenant.email.enabled ? 'cloudflare' : 'disabled',
     MAIL_FROM_ADDRESS: tenant.email.fromAddress,
     MAIL_FROM_NAME: tenant.email.fromName,
+    MAIL_PROBE_RECIPIENT: tenant.email.probeRecipient ?? '',
   }
 }
 

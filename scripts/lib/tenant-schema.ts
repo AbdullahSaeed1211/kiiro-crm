@@ -23,6 +23,8 @@ export const tenantSchema = z
       enabled: z.boolean().default(true),
       fromName: text,
       fromAddress: z.email(),
+      /** Where the deploy's email delivery check is sent; when unset the check sends nothing, so no customer gets test mail. */
+      probeRecipient: z.email().optional(),
       inboundDomain: hostname,
       inboundLocalPrefix: text.optional(),
     }),
