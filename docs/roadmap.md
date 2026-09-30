@@ -83,10 +83,11 @@ Taken whenever a wave leaves slack.
 Plan: [wave 10 plan](plans/wave-10-sales.md). Owner priority: the lead pipeline from first contact to an onboarded client, and a newsletter.
 
 - Done (v0.9.0–v0.9.3, verified signed in on production): quick create, notes, editable details, filters by owner and source, saved views, bulk owner assign and bulk stage move, phone cards, add-to-column on the board, duplicate warning, next-action date with an overdue marker, convert that works without a company, and links between lead, deal and onboarding project.
-- Open: outbound email from `notify.mirchtravel.com` (the tenant config edit is held until the sender domain verifies), then the newsletter on top of it.
+- Done (v0.9.4–v0.9.5): outbound email from `notify.mirchtravel.com`, and the newsletter: opt-in checkbox on contacts, a test send and a send to all subscribers, and a signed unsubscribe link, verified signed in on production.
+- Open: a public subscribe form (website sign-ups) and campaign history; both need a decision on where sign-ups come from.
 - Findings: none.
 
-Depends on: wave 5. Done when: the newsletter plan task ships.
+Depends on: wave 5. Done when: the public subscribe form ships.
 
 ## 9. Reference feature gaps
 

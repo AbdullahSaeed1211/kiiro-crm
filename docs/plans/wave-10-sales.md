@@ -10,10 +10,10 @@ The owner scope added on 2026-09-30: lead management is the most polished part o
 4. **Lead notes.** Notes with author and time, edit and delete by the author, pinned note, mentions of staff.
 5. **Lead status.** Move lead-move legality into the CRM module (W5-1); status changes write activity and can require fields through stage requirements.
 6. **Lead to onboarding.** Convert to contact, organization and deal attaching to existing records; a won deal starts the tenant's onboarding playbook (project and tasks) and records the link on the lead.
-7. **Newsletter.** A subscriber list with per-contact consent and source, subscribe from intake forms, unsubscribe link, and a campaign send. Blocked on the outbound email decision (`email.enabled` is false for the first tenant); until then, subscribers and consent are stored and exportable.
+7. **Newsletter.** Done: opt-in checkbox custom field on contacts, test send, send to all subscribers, signed unsubscribe link and one-click headers. Open: a public subscribe form and campaign history.
 
 ## Order
 
-Tasks 1 to 6 shipped in v0.9.0–v0.9.3. Task 7 needs outbound email: the sending domain is `notify.mirchtravel.com` on the Mirch Media tenant, blocked on an operator login that carries the `email_sending` scope. Consent can start as tenant custom fields on contacts before a dedicated subscriber table exists.
+Tasks 1 to 6 shipped in v0.9.0–v0.9.3 and the core of task 7 in v0.9.4–v0.9.5, with email sent from `notify.mirchtravel.com`.
 
 Done when: every task is verified in the running app on a phone width and on desktop, and released to the production tenant.
