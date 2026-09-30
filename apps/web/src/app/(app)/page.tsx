@@ -25,21 +25,45 @@ function day(value: number | null, timeZone: string, locale: string): string {
 function WorkCard({
   title,
   count,
-  action,
+  viewAll,
   children,
-}: Readonly<{ title: string; count: number; action?: ReactNode; children: ReactNode }>) {
+}: Readonly<{ title: string; count: number; viewAll: { href: string; label: string }; children: ReactNode }>) {
   return (
     <section className="ops-dashboard-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium">{title}</h2>
         <div className="flex items-center gap-2">
-          {action}
+          <a className="text-xs text-muted-foreground hover:text-foreground hover:underline" href={viewAll.href}>
+            {viewAll.label}
+          </a>
           <span className="text-xs text-muted-foreground">{count}</span>
         </div>
       </div>
       {children}
     </section>
   )
+}
+
+function TaskLinks({
+  tasks,
+  timeZone,
+  locale,
+}: Readonly<{
+  tasks: readonly { id: string; title: string; dueAt: number | null }[]
+  timeZone: string
+  locale: string
+}>) {
+  return tasks.map((task) => (
+    <Link
+      className="block border-t py-2 text-sm hover:text-primary"
+      key={task.id}
+      href={taskHref(task.id, '/')}
+      data-task-link-id={task.id}
+    >
+      {task.title}
+      <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt, timeZone, locale)}</span>
+    </Link>
+  ))
 }
 
 function StatCard({
@@ -129,54 +153,14 @@ export default async function DashboardPage() {
           </a>
         ) : null}
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          <WorkCard
-            title={copy.myOverdue}
-            count={overdue.length}
-            action={
-              <a className="text-xs text-muted-foreground hover:text-foreground hover:underline" href="/my-tasks">
-                {copy.viewAll}
-              </a>
-            }
-          >
-            {overdue.slice(0, 5).map((task) => (
-              <Link
-                className="block border-t py-2 text-sm hover:text-primary"
-                key={task.id}
-                href={taskHref(task.id, '/')}
-                data-task-link-id={task.id}
-              >
-                {task.title}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {day(task.dueAt, model.timeZone, model.locale)}
-                </span>
-              </Link>
-            ))}
+          <WorkCard title={copy.myOverdue} count={overdue.length} viewAll={{ href: '/my-tasks', label: copy.viewAll }}>
+            <TaskLinks tasks={overdue.slice(0, 5)} timeZone={model.timeZone} locale={model.locale} />
             {overdue.length === 0 ? (
               <EmptyState icon={CircleCheckBig} title={copy.nothingOverdue} description={copy.onTrack} />
             ) : null}
           </WorkCard>
-          <WorkCard
-            title={copy.dueThisWeek}
-            count={dueWeek.length}
-            action={
-              <a className="text-xs text-muted-foreground hover:text-foreground hover:underline" href="/tasks">
-                {copy.viewAll}
-              </a>
-            }
-          >
-            {dueWeek.slice(0, 5).map((task) => (
-              <Link
-                className="block border-t py-2 text-sm hover:text-primary"
-                key={task.id}
-                href={taskHref(task.id, '/')}
-                data-task-link-id={task.id}
-              >
-                {task.title}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {day(task.dueAt, model.timeZone, model.locale)}
-                </span>
-              </Link>
-            ))}
+          <WorkCard title={copy.dueThisWeek} count={dueWeek.length} viewAll={{ href: '/tasks', label: copy.viewAll }}>
+            <TaskLinks tasks={dueWeek.slice(0, 5)} timeZone={model.timeZone} locale={model.locale} />
             {dueWeek.length === 0 ? (
               <EmptyState title={copy.noTasksDue} description={copy.noTasksDueDescription} />
             ) : null}
@@ -184,11 +168,7 @@ export default async function DashboardPage() {
           <WorkCard
             title={copy.activeProjects}
             count={activeProjects.length}
-            action={
-              <a className="text-xs text-muted-foreground hover:text-foreground hover:underline" href="/projects">
-                {copy.viewAll}
-              </a>
-            }
+            viewAll={{ href: '/projects', label: copy.viewAll }}
           >
             {activeProjects.slice(0, 5).map((project) => (
               <a

@@ -18,7 +18,13 @@ export {
 } from './utils'
 
 export type { DirectoryPage, OrganizationRelations } from './organizations'
-export { getOrganization, getOrganizationLabel, listOrganizationOptions, listOrganizations } from './organizations'
+export {
+  getOrganization,
+  getOrganizationLabel,
+  listOrganizationOptions,
+  listOrganizations,
+  organizationChoice,
+} from './organizations'
 
 export type { ContactRelations } from './contacts'
 export { getContact, listContacts } from './contacts'

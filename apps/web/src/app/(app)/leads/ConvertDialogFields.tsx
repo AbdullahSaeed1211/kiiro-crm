@@ -11,43 +11,107 @@ import type { ConversionOption } from '../../../server/actions/crm/conversion-op
 export type OrgSelection = 'create' | 'existing' | 'none'
 export type ContactSelection = 'create' | 'existing'
 
-export function OrganizationField(
+type Choice<T extends string> = Readonly<{ value: T; label: string }>
+
+function ChoiceToggle<T extends string>({
+  value,
+  choices,
+  onChange,
+}: Readonly<{ value: T; choices: readonly Choice<T>[]; onChange: (value: T) => void }>) {
+  return (
+    <ToggleGroup
+      value={[value]}
+      onValueChange={(values) => {
+        const next = choices.find((choice) => choice.value === values[0])
+        if (next !== undefined) onChange(next.value)
+      }}
+    >
+      {choices.map((choice) => (
+        <ToggleGroupItem key={choice.value} value={choice.value} size="sm">
+          {choice.label}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  )
+}
+
+/** Search and pick one existing record, and point out the record the lead most likely matches. */
+function ExistingPicker(
   props: Readonly<{
-    selection: OrgSelection
-    onSelection: (value: OrgSelection) => void
-    name: string
-    onName: (value: string) => void
-    selectedId: string | undefined
-    onSelectedId: (id: string) => void
+    noun: string
     options: readonly ConversionOption[]
-    onSearch: (query: string) => void
+    selectedId: string | undefined
     suggestedId: string | undefined
+    onSelectedId: (id: string) => void
+    onSearch: (query: string) => void
   }>,
 ) {
-  const selected = props.options.find((o) => o.id === props.selectedId)
-  const suggested = props.options.find((o) => o.id === props.suggestedId)
+  const selected = props.options.find((option) => option.id === props.selectedId)
+  const suggested = props.options.find((option) => option.id === props.suggestedId)
+  return (
+    <div className="grid gap-2">
+      <Popover>
+        <PopoverTrigger render={<Button variant="outline" className="justify-start" />}>
+          {selected?.name ?? `Select ${props.noun}`}
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-1">
+          <Command>
+            <CommandInput placeholder={`Search ${props.noun}s`} onValueChange={props.onSearch} />
+            <CommandList>
+              {props.options.map((option) => (
+                <CommandItem
+                  key={option.id}
+                  value={option.name}
+                  onSelect={() => {
+                    props.onSelectedId(option.id)
+                  }}
+                >
+                  {option.name}
+                </CommandItem>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {suggested !== undefined && props.selectedId === undefined && (
+        <p className="text-xs text-amber-600">Possible match: {suggested.name}</p>
+      )}
+    </div>
+  )
+}
 
+type PickerProps = Readonly<{
+  options: readonly ConversionOption[]
+  selectedId: string | undefined
+  suggestedId: string | undefined
+  onSelectedId: (id: string) => void
+  onSearch: (query: string) => void
+}>
+
+const ORG_CHOICES: readonly Choice<OrgSelection>[] = [
+  { value: 'create', label: 'Create new' },
+  { value: 'existing', label: 'Use existing' },
+  { value: 'none', label: 'Skip' },
+]
+
+const CONTACT_CHOICES: readonly Choice<ContactSelection>[] = [
+  { value: 'create', label: 'Create new' },
+  { value: 'existing', label: 'Use existing' },
+]
+
+export function OrganizationField(
+  props: PickerProps &
+    Readonly<{
+      selection: OrgSelection
+      onSelection: (value: OrgSelection) => void
+      name: string
+      onName: (value: string) => void
+    }>,
+) {
   return (
     <div className="grid gap-2">
       <Label>Organization</Label>
-      <ToggleGroup
-        value={[props.selection]}
-        onValueChange={(values) => {
-          if (values.length > 0) {
-            props.onSelection(values[0] as OrgSelection)
-          }
-        }}
-      >
-        <ToggleGroupItem value="create" size="sm">
-          Create new
-        </ToggleGroupItem>
-        <ToggleGroupItem value="existing" size="sm">
-          Use existing
-        </ToggleGroupItem>
-        <ToggleGroupItem value="none" size="sm">
-          Skip
-        </ToggleGroupItem>
-      </ToggleGroup>
+      <ChoiceToggle value={props.selection} choices={ORG_CHOICES} onChange={props.onSelection} />
       {props.selection === 'create' && (
         <Input
           value={props.name}
@@ -57,102 +121,19 @@ export function OrganizationField(
           placeholder="Organization name"
         />
       )}
-      {props.selection === 'existing' && (
-        <div className="grid gap-2">
-          <Popover>
-            <PopoverTrigger render={<Button variant="outline" className="justify-start" />}>
-              {selected?.name ?? 'Select organization'}
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-1">
-              <Command>
-                <CommandInput placeholder="Search organizations" onValueChange={props.onSearch} />
-                <CommandList>
-                  {props.options.map((org) => (
-                    <CommandItem
-                      key={org.id}
-                      value={org.name}
-                      onSelect={() => {
-                        props.onSelectedId(org.id)
-                      }}
-                    >
-                      {org.name}
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {suggested !== undefined && props.selectedId === undefined && (
-            <p className="text-xs text-amber-600">Possible match: {suggested.name}</p>
-          )}
-        </div>
-      )}
+      {props.selection === 'existing' && <ExistingPicker noun="organization" {...props} />}
     </div>
   )
 }
 
 export function ContactField(
-  props: Readonly<{
-    selection: ContactSelection
-    onSelection: (value: ContactSelection) => void
-    selectedId: string | undefined
-    onSelectedId: (id: string) => void
-    options: readonly ConversionOption[]
-    onSearch: (query: string) => void
-    suggestedId: string | undefined
-  }>,
+  props: PickerProps & Readonly<{ selection: ContactSelection; onSelection: (value: ContactSelection) => void }>,
 ) {
-  const selected = props.options.find((c) => c.id === props.selectedId)
-  const suggested = props.options.find((c) => c.id === props.suggestedId)
-
   return (
     <div className="grid gap-2">
       <Label>Contact</Label>
-      <ToggleGroup
-        value={[props.selection]}
-        onValueChange={(values) => {
-          if (values.length > 0) {
-            props.onSelection(values[0] as ContactSelection)
-          }
-        }}
-      >
-        <ToggleGroupItem value="create" size="sm">
-          Create new
-        </ToggleGroupItem>
-        <ToggleGroupItem value="existing" size="sm">
-          Use existing
-        </ToggleGroupItem>
-      </ToggleGroup>
-      {props.selection === 'existing' && (
-        <div className="grid gap-2">
-          <Popover>
-            <PopoverTrigger render={<Button variant="outline" className="justify-start" />}>
-              {selected?.name ?? 'Select contact'}
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-1">
-              <Command>
-                <CommandInput placeholder="Search contacts" onValueChange={props.onSearch} />
-                <CommandList>
-                  {props.options.map((contact) => (
-                    <CommandItem
-                      key={contact.id}
-                      value={contact.name}
-                      onSelect={() => {
-                        props.onSelectedId(contact.id)
-                      }}
-                    >
-                      {contact.name}
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {suggested !== undefined && props.selectedId === undefined && (
-            <p className="text-xs text-amber-600">Possible match: {suggested.name}</p>
-          )}
-        </div>
-      )}
+      <ChoiceToggle value={props.selection} choices={CONTACT_CHOICES} onChange={props.onSelection} />
+      {props.selection === 'existing' && <ExistingPicker noun="contact" {...props} />}
     </div>
   )
 }

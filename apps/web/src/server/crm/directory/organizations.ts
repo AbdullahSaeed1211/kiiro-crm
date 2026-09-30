@@ -86,6 +86,15 @@ export async function listOrganizationOptions(): Promise<readonly OrganizationOp
     .map((record) => ({ value: record.id, label: record.name }))
 }
 
+/** The organizations to choose from, and the one a `?organizationId=` link asks for when the actor can see it. */
+export async function organizationChoice(
+  searchParams: Promise<{ organizationId?: string | string[] }>,
+): Promise<{ organizations: readonly OrganizationOption[]; organizationId: string }> {
+  const [organizations, { organizationId: requested }] = await Promise.all([listOrganizationOptions(), searchParams])
+  const known = typeof requested === 'string' && organizations.some((option) => option.value === requested)
+  return { organizations, organizationId: known ? requested : '' }
+}
+
 export async function getOrganizationLabel(id: string): Promise<string | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
