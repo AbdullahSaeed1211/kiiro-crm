@@ -1,6 +1,7 @@
 /* eslint-disable complexity, max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, sonarjs/no-nested-functions -- creation and card composition remain a single settings workflow surface. */
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
@@ -99,8 +100,7 @@ function WorkflowCard({
         </label>
         <label className="grid gap-1 text-sm">
           <span className="font-medium">Record type</span>
-          <select
-            className="h-10 rounded-md border bg-background px-3"
+          <NativeSelect
             value={draft.recordType}
             onChange={(event) => {
               setDraft({ ...draft, recordType: event.target.value })
@@ -111,7 +111,7 @@ function WorkflowCard({
                 {title(type)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <div className="space-y-2">
@@ -164,8 +164,7 @@ function WorkflowCard({
       <div className="flex flex-wrap items-end justify-between gap-3 border-t pt-3">
         <label className="grid min-w-52 gap-1 text-sm">
           <span className="font-medium">Default stage</span>
-          <select
-            className="h-10 rounded-md border bg-background px-3"
+          <NativeSelect
             value={draft.defaultStageId}
             onChange={(event) => {
               setDraft({ ...draft, defaultStageId: event.target.value })
@@ -178,7 +177,7 @@ function WorkflowCard({
                   {stage.name || 'Unnamed stage'}
                 </option>
               ))}
-          </select>
+          </NativeSelect>
         </label>
         <div className="flex items-center gap-3">
           <button
@@ -293,8 +292,7 @@ export function WorkflowEditor({
               </label>
               <label className="grid gap-1 text-sm">
                 <span className="font-medium">Record type</span>
-                <select
-                  className="h-10 rounded-md border bg-background px-3"
+                <NativeSelect
                   value={recordType}
                   onChange={(event) => {
                     setRecordType(event.target.value)
@@ -305,7 +303,7 @@ export function WorkflowEditor({
                       {title(type)}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
             </div>
             <label className="grid gap-1 text-sm">

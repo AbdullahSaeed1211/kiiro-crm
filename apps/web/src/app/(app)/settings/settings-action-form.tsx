@@ -1,6 +1,7 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
@@ -35,18 +36,13 @@ function FieldControl({
     )
   if (field.type === 'select')
     return (
-      <select
-        className="h-10 rounded-md border bg-background px-3 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-        name={field.name}
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      >
+      <NativeSelect name={field.name} onChange={(event) => onChange(event.target.value)} value={value}>
         {(field.options ?? []).map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     )
   return (
     <input

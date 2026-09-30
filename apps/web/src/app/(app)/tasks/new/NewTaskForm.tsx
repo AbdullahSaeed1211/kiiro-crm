@@ -1,5 +1,6 @@
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Textarea } from '@ops/ui/components/ui/textarea'
@@ -36,19 +37,14 @@ function TaskCoreFields({ projects, projectId, initialTitle }: FormProps) {
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-project">
         Project
-        <select
-          id="task-project"
-          name="projectId"
-          defaultValue={projectId}
-          className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
-        >
+        <NativeSelect id="task-project" name="projectId" defaultValue={projectId} className="font-normal">
           <option value="">No project</option>
           {projects.map((project) => (
             <option key={project.value} value={project.value}>
               {project.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
     </>
   )
@@ -59,18 +55,13 @@ function TaskScheduleFields() {
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-priority">
         Priority
-        <select
-          id="task-priority"
-          name="priority"
-          defaultValue="none"
-          className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
-        >
+        <NativeSelect id="task-priority" name="priority" defaultValue="none" className="font-normal">
           <option value="none">No priority</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
           <option value="urgent">Urgent</option>
-        </select>
+        </NativeSelect>
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-due-date">
         Due date

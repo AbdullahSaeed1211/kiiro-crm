@@ -1,6 +1,7 @@
 /* eslint-disable complexity, max-lines-per-function, no-nested-ternary, sonarjs/no-nested-conditional, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unnecessary-condition -- the wizard intentionally keeps seven small steps in one resumable client surface. */
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useState } from 'react'
 import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
@@ -146,14 +147,10 @@ export function OnboardingWizard({
             </div>
             <label className="grid gap-1 text-sm">
               Locale
-              <select
-                className="h-9 border px-3"
-                value={values.locale}
-                onChange={(event) => update('locale', event.target.value)}
-              >
+              <NativeSelect value={values.locale} onChange={(event) => update('locale', event.target.value)}>
                 <option value="en">English</option>
                 <option value="es">Español</option>
-              </select>
+              </NativeSelect>
             </label>
           </div>
         ) : null}
@@ -170,10 +167,10 @@ export function OnboardingWizard({
             <p className="text-xs text-muted-foreground" id="business-type-help">
               Choose a starting preset for terminology and workflows. You can refine fields and stages later.
             </p>
-            <select
+            <NativeSelect
               aria-describedby="business-type-help"
               id="business-type"
-              className="h-9 border px-3"
+
               value={values.template}
               onChange={(event) => update('template', event.target.value)}
             >
@@ -182,7 +179,7 @@ export function OnboardingWizard({
                   {TEMPLATE_LABELS[value]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         ) : null}
         {current[0] === 'team' ? (

@@ -54,7 +54,8 @@ Depends on: wave 3 for the error model and composition root. Done when: leads, d
 
 ## 6. Design system and lists
 
-- One view bar with search, filter and sort on every list; `@ops/ui` components instead of native selects and date inputs; one view switcher; bulk actions through `DataTable` selection.
+- Done: no native `<select>` remains outside `packages/ui`; multi-selects are checkbox lists.
+- One view bar with search, filter and sort on every list; `@ops/ui` date inputs; one view switcher; bulk actions through `DataTable` selection.
 - Kanban column sizing and add-to-column; calendar drag to reschedule; Gantt bars coloured by stage; one token set across the stylesheets.
 - Findings: UX 8, 12, 13, 15, 16, 19, 20, 22, 23, 24, 26, 30, 32, 33, 34, 35; code-health UI-05, UI-06, UI-07, UI-12, UI-13, UI-14, UI-17, UI-21, UI-23.
 

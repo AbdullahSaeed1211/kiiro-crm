@@ -1,5 +1,6 @@
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   Dialog,
@@ -56,9 +57,9 @@ function LostReasonDialogView(
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label htmlFor="lost-reason">Lost reason</Label>
-            <select
+            <NativeSelect
               id="lost-reason"
-              className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm"
+
               value={props.reason}
               onChange={(event) => {
                 props.onReason(event.target.value)
@@ -69,7 +70,7 @@ function LostReasonDialogView(
                   {item.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lost-note">Note (optional)</Label>

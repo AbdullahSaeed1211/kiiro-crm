@@ -1,3 +1,4 @@
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   DataTable,
@@ -127,19 +128,14 @@ export default async function DealsPage({
             placeholder="Search deals…"
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />
-          <select
-            name="stage"
-            defaultValue={stageId ?? ''}
-            aria-label="Filter by stage"
-            className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
-          >
+          <NativeSelect name="stage" defaultValue={stageId ?? ''} aria-label="Filter by stage">
             <option value="">All stages</option>
             {data.workflow.stages.map((stage) => (
               <option key={stage.id} value={stage.id}>
                 {stage.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </form>
         <DataTable
           key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}

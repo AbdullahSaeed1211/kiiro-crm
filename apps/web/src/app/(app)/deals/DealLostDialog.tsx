@@ -1,5 +1,6 @@
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   Dialog,
@@ -75,7 +76,7 @@ function LostDealDialogContent({
       <div className="grid gap-3">
         <div className="grid gap-2">
           <Label htmlFor="board-lost-reason">Lost reason</Label>
-          <select
+          <NativeSelect
             id="board-lost-reason"
             value={reason}
             onChange={(event) => {
@@ -89,7 +90,7 @@ function LostDealDialogContent({
                 {item.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <Input
           value={note}

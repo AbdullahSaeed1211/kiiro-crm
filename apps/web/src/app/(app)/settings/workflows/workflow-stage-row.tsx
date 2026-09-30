@@ -1,6 +1,7 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-confusing-void-expression, @typescript-eslint/restrict-template-expressions, sonarjs/no-nested-template-literals -- compact row handlers and accessible labels are intentionally colocated. */
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import type { RequirementOption, Stage } from './workflow-model'
 import { StageRequirements } from './workflow-stage-requirements'
 
@@ -66,31 +67,23 @@ export function StageRow({
       </label>
       <label className="grid gap-1 text-xs">
         <span className="font-medium">Category</span>
-        <select
-          className="h-9 rounded-md border bg-background px-2"
-          value={stage.category}
-          onChange={(event) => onChange({ category: event.target.value })}
-        >
+        <NativeSelect value={stage.category} onChange={(event) => onChange({ category: event.target.value })}>
           {CATEGORIES.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="grid gap-1 text-xs">
         <span className="font-medium">Colour</span>
-        <select
-          className="h-9 rounded-md border bg-background px-2"
-          value={stage.color}
-          onChange={(event) => onChange({ color: event.target.value })}
-        >
+        <NativeSelect value={stage.color} onChange={(event) => onChange({ color: event.target.value })}>
           {COLORS.map((value) => (
             <option key={value} value={value}>
               {title(value)}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <ProbabilityInput stage={stage} onChange={onChange} />
       <button

@@ -1,5 +1,6 @@
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import type { Role } from '@ops/platform'
 import { Bell, BriefcaseBusiness, Database, Mail, Palette, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -65,7 +66,7 @@ export function SettingsNav({ role, locale }: Readonly<{ role: Role; locale: Loc
     >
       <label className={styles.picker}>
         <span className="sr-only">{locale === 'es' ? 'Sección de configuración' : 'Settings section'}</span>
-        <select
+        <NativeSelect
           aria-label={locale === 'es' ? 'Sección de configuración' : 'Settings section'}
           className={styles.select}
           onChange={(event) => {
@@ -82,7 +83,7 @@ export function SettingsNav({ role, locale }: Readonly<{ role: Role; locale: Loc
               ))}
             </optgroup>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       {visibleGroups.map(([groupKey, visible]) => (
         <div key={groupKey} className="space-y-1">

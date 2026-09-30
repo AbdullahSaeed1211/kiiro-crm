@@ -1,6 +1,7 @@
 /* eslint-disable max-lines, max-lines-per-function, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/consistent-type-definitions, no-nested-ternary, sonarjs/no-nested-conditional -- editor keeps field draft, validation, and persistence in one focused settings surface. */
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ActionResult } from '../../../../server/actions/settings'
@@ -102,8 +103,7 @@ function FieldForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm">
           <span className="font-medium">Record type</span>
-          <select
-            className="h-10 rounded-md border bg-background px-3"
+          <NativeSelect
             value={draft.recordType}
             onChange={(event) => setDraft({ ...draft, recordType: event.target.value })}
           >
@@ -112,21 +112,17 @@ function FieldForm({
                 {title(type)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="grid gap-1 text-sm">
           <span className="font-medium">Field type</span>
-          <select
-            className="h-10 rounded-md border bg-background px-3"
-            value={draft.type}
-            onChange={(event) => setDraft({ ...draft, type: event.target.value })}
-          >
+          <NativeSelect value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value })}>
             {TYPES.map((type) => (
               <option key={type} value={type}>
                 {title(type)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -197,14 +193,13 @@ function FieldForm({
         </label>
         <label className="inline-flex items-center gap-2">
           Visibility
-          <select
-            className="h-8 rounded-md border bg-background px-2"
+          <NativeSelect
             value={draft.visibility}
             onChange={(event) => setDraft({ ...draft, visibility: event.target.value })}
           >
             <option value="all">Everyone</option>
             <option value="manager_up">Managers and owners</option>
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <div className="flex flex-wrap gap-2">

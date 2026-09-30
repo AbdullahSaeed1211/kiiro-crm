@@ -1,3 +1,4 @@
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -80,17 +81,13 @@ export default async function ReportsPage({
         <form method="get" className="ops-surface-card flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
           <label className="grid gap-1 text-xs font-medium">
             <span>{copy.range}</span>
-            <select
-              name="range"
-              defaultValue={range.key}
-              className="h-9 min-w-40 rounded-md border bg-background px-2 text-sm"
-            >
+            <NativeSelect name="range" defaultValue={range.key} className="min-w-40">
               {options.map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="grid gap-1 text-xs font-medium">
             <span>{copy.from}</span>

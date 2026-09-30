@@ -1,6 +1,8 @@
 /* eslint-disable max-lines, max-lines-per-function -- compact settings forms keep validation, pending state, and feedback together. */
 'use client'
 
+import { CheckboxGroup } from './checkbox-group'
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useState, type SyntheticEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '@ops/ui/composites/ConfirmDialog'
@@ -165,11 +167,11 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
       <label className="sr-only" htmlFor="invite-member-role">
         Member role
       </label>
-      <select
+      <NativeSelect
         id="invite-member-role"
         name="role"
         autoComplete="off"
-        className="h-10 rounded-md border px-3"
+
         onChange={(event) => {
           setRole(event.target.value)
         }}
@@ -179,7 +181,7 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
         <option value="staff">Staff</option>
         <option value="manager">Manager</option>
         <option value="owner">Owner</option>
-      </select>
+      </NativeSelect>
       <button
         className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
         type="submit"
@@ -241,8 +243,7 @@ export function MemberActions({
       <div className="mt-3 grid gap-3 rounded-md border bg-muted/20 p-3 text-xs">
         <label className="grid gap-1">
           <span className="font-medium">Role</span>
-          <select
-            className="h-9 rounded-md border bg-background px-2 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          <NativeSelect
             value={role}
             onChange={(event) => {
               setRole(event.target.value)
@@ -252,7 +253,7 @@ export function MemberActions({
             <option value="staff">Staff</option>
             <option value="manager">Manager</option>
             <option value="owner">Owner</option>
-          </select>
+          </NativeSelect>
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -265,29 +266,17 @@ export function MemberActions({
           />
           <span className="font-medium">Account active</span>
         </label>
-        <label className="grid gap-1">
-          <span className="font-medium">Groups</span>
-          <select
-            className="min-h-20 rounded-md border bg-background px-2 py-1 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            multiple
-            value={selectedGroups}
-            onChange={(event) => {
-              setSelectedGroups(Array.from(event.target.selectedOptions, (option) => option.value))
-            }}
-            disabled={pending}
-          >
-            {groups.length === 0 ? <option disabled>No groups created yet</option> : null}
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <CheckboxGroup
+          label="Groups"
+          options={groups}
+          values={selectedGroups}
+          disabled={pending}
+          emptyText="No groups created yet"
+          onChange={setSelectedGroups}
+        />
         <label className="grid gap-1">
           <span className="font-medium">Reports to</span>
-          <select
-            className="h-9 rounded-md border bg-background px-2 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          <NativeSelect
             value={reportsTo}
             onChange={(event) => {
               setReportsTo(event.target.value)
@@ -300,7 +289,7 @@ export function MemberActions({
                 {report.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         {message === undefined ? null : (
           <span className="text-muted-foreground" role="status" aria-live="polite">

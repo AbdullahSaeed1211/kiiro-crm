@@ -1,6 +1,7 @@
 /* eslint-disable max-lines-per-function, complexity -- this compact action cluster owns two async mutations and their feedback state. */
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import { ConfirmDialog } from '@ops/ui/composites/ConfirmDialog'
 import { addProjectMember } from '../../../../server/actions/work/projects/addProjectMember'
@@ -47,8 +48,8 @@ export default function ProjectActions({
   return (
     <div className="ops-project-actions grid w-full gap-2 sm:w-auto sm:grid-cols-2">
       <div className="flex min-w-0 gap-2">
-        <select
-          className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm"
+        <NativeSelect
+          className="min-w-0 flex-1"
           value={member}
           onChange={(event) => {
             setMember(event.target.value)
@@ -62,14 +63,14 @@ export default function ProjectActions({
               {name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <Button type="button" size="sm" disabled={member === '' || busy !== null} onClick={() => void submit('add')}>
           {busy === 'add' ? 'Adding…' : 'Add'}
         </Button>
       </div>
       <div className="flex min-w-0 gap-2">
-        <select
-          className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm"
+        <NativeSelect
+          className="min-w-0 flex-1"
           value={remove}
           onChange={(event) => {
             setRemove(event.target.value)
@@ -83,7 +84,7 @@ export default function ProjectActions({
               {people.find(([personId]) => personId === id)?.[1] ?? 'Unavailable member'}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <ConfirmDialog
           title="Remove project member?"
           description="They will lose access to this project, but remain in the workspace."

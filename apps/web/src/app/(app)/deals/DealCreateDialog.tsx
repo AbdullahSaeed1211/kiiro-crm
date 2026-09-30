@@ -1,5 +1,6 @@
 'use client'
 
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   Dialog,
@@ -56,33 +57,25 @@ function DealFields({
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-organization">Organization</Label>
-        <select
-          id="deal-organization"
-          name="organizationId"
-          className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
-        >
+        <NativeSelect id="deal-organization" name="organizationId">
           <option value="">No organization</option>
           {organizations.map((item) => (
             <option key={item.id} value={item.id}>
               {item.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-contact">Primary contact</Label>
-        <select
-          id="deal-contact"
-          name="primaryContactId"
-          className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
-        >
+        <NativeSelect id="deal-contact" name="primaryContactId">
           <option value="">No contact</option>
           {contacts.map((item) => (
             <option key={item.id} value={item.id}>
               {item.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
