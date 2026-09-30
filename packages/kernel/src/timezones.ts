@@ -1,4 +1,4 @@
-/** Client-safe IANA timezone options for onboarding controls. */
+/** IANA time zones a workspace can choose, so an invalid abbreviation cannot be saved; safe to import in the browser. */
 const FALLBACK_TIMEZONE_VALUES = [
   'UTC',
   'America/Los_Angeles',

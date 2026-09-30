@@ -1,17 +1,7 @@
-type ErrorCode =
-  'VALIDATION' | 'NOT_FOUND' | 'FORBIDDEN' | 'CONFLICT' | 'ALREADY_DONE' | 'RATE_LIMITED' | 'UNAVAILABLE' | 'INTERNAL'
-export interface DomainError {
-  readonly code: ErrorCode
-  readonly message: string
-  readonly details?: Readonly<Record<string, unknown>>
-}
-export type Result<T, E = never> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E }
-/** Builds a stable domain error. */
-export const domainError = (code: ErrorCode, message: string): DomainError => ({ code, message })
-/** Wraps a successful operation. */
-export const ok = <T>(value: T): Result<T> => ({ ok: true, value })
-/** Wraps a failed operation. */
-export const err = <E>(error: E): Result<never, E> => ({ ok: false, error })
+import type { DomainError, Result } from '@ops/kernel'
+
+export { domainError, err, ok } from '@ops/kernel'
+export type { DomainError }
 
 /** A configured public form that creates leads. */
 export interface IntakeForm {
@@ -56,7 +46,7 @@ export interface IntakeSubmission {
 /** Persistence and side effects required by `submitIntake`. */
 export interface IntakeStore {
   findByDedupeKey(dedupeKey: string): Promise<IntakeSubmission | undefined>
-  insertSubmission(submission: Omit<IntakeSubmission, 'id'>): Promise<Result<IntakeSubmission, DomainError>>
+  insertSubmission(submission: Omit<IntakeSubmission, 'id'>): Promise<Result<IntakeSubmission>>
   markDuplicate(dedupeKey: string, recordRef?: IntakeSubmission['recordRef']): Promise<void>
   createLead(input: Readonly<Record<string, unknown>>): Promise<{ readonly id: string }>
   addComment(input: {
@@ -108,4 +98,4 @@ export interface IntakeAccepted {
   readonly recordRef?: IntakeSubmission['recordRef']
 }
 /** Result returned by the submit command. */
-export type IntakeResult = Result<IntakeAccepted, DomainError>
+export type IntakeResult = Result<IntakeAccepted>

@@ -1,17 +1,7 @@
-type Result<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E }
-type ErrorCode =
-  'VALIDATION' | 'NOT_FOUND' | 'FORBIDDEN' | 'CONFLICT' | 'ALREADY_DONE' | 'RATE_LIMITED' | 'UNAVAILABLE' | 'INTERNAL'
-export interface DomainError {
-  readonly code: ErrorCode
-  readonly message: string
-  readonly details?: Readonly<Record<string, unknown>>
-}
-/** Wraps a successful operation. */
-export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value })
-/** Wraps a failed operation. */
-export const err = <E>(error: E): Result<never, E> => ({ ok: false, error })
-/** Builds a stable domain error. */
-export const domainError = (code: ErrorCode, message: string): DomainError => ({ code, message })
+import type { DomainError, Result } from '@ops/kernel'
+
+export { domainError, err, ok } from '@ops/kernel'
+export type { DomainError }
 export interface MailTransportMessage {
   readonly from: string
   readonly to: readonly string[]
@@ -21,7 +11,7 @@ export interface MailTransportMessage {
   readonly replyTo?: string
 }
 export interface MailTransport {
-  send(message: MailTransportMessage): Promise<Result<{ readonly messageId: string }, DomainError>>
+  send(message: MailTransportMessage): Promise<Result<{ readonly messageId: string }>>
 }
 export interface MailRecordRef {
   readonly type: string
@@ -92,7 +82,7 @@ export interface MailStore {
     readonly type: 'email_received'
     readonly messageId: string
   }): Promise<'created' | 'duplicate'>
-  releaseMessage(messageId: string, record: MailRecordRef): Promise<Result<undefined, DomainError>>
+  releaseMessage(messageId: string, record: MailRecordRef): Promise<Result<undefined>>
 }
 /** Explicit bridge from inbound intake aliases to the intake module's validation/dedupe command. */
 export interface InboundIntakePort {
@@ -100,7 +90,7 @@ export interface InboundIntakePort {
     readonly formId: string
     readonly payload: Readonly<Record<string, string>>
     readonly receivedAt: number
-  }): Promise<Result<{ readonly status: 'accepted' | 'duplicate'; readonly recordRef?: MailRecordRef }, DomainError>>
+  }): Promise<Result<{ readonly status: 'accepted' | 'duplicate'; readonly recordRef?: MailRecordRef }>>
 }
 export interface ReceiveInboundDeps {
   readonly store: MailStore

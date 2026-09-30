@@ -1,4 +1,4 @@
-import { TIMEZONE_VALUES } from '@ops/adapter-payload'
+import { TIMEZONE_VALUES } from '@ops/kernel'
 
 export interface ProvisionBody {
   readonly displayName: string

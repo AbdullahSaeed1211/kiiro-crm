@@ -2,7 +2,8 @@ import type { GlobalConfig } from 'payload'
 import { SETTINGS_ACCESS } from '../access/spike-access'
 import { SETTINGS_GLOBAL } from '../contracts/names'
 import { ADMIN_GROUPS, currencyField, epochMs, selectOf, textField } from './fields'
-import { LOCALE_VALUES, RADIUS_VALUES, SENDER_STATUS_VALUES, TIMEZONE_VALUES } from './values'
+import { TIMEZONE_VALUES } from '@ops/kernel'
+import { LOCALE_VALUES, RADIUS_VALUES, SENDER_STATUS_VALUES } from './values'
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
 

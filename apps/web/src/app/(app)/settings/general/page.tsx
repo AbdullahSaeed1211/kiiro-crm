@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { TIMEZONE_VALUES } from '../../../../server/queries/settings/timezones'
+import { TIMEZONE_VALUES } from '@ops/kernel'
 import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { updateSettings } from '../../../../server/actions/settings'
 import { SettingsActionForm } from '../settings-action-form'

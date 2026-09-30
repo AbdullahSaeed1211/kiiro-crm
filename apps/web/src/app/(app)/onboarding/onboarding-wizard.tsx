@@ -5,7 +5,7 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useState } from 'react'
 import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
-import { TIMEZONE_VALUES } from '../../../i18n/timezones'
+import { TIMEZONE_VALUES } from '@ops/kernel'
 import { SearchableSelect } from '../settings/searchable-select'
 import { CURRENCY_OPTIONS } from '../../../i18n/currencies'
 

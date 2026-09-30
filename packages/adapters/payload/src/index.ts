@@ -11,7 +11,6 @@ export { loadReportIds, resolveActor, toActor } from './access/actor'
 export { allow, anyActive, managerUp, ownedBy, ownerOnly, scoped, SPIKE_SCOPES, systemOnly } from './access/rules'
 export { canUseAdmin, SETTINGS_ACCESS, SPIKE_ACCESS, type CollectionAccess } from './access/spike-access'
 export { ADMIN_GROUPS, settingsGlobal, spikeCollections } from './collections'
-export { TIMEZONE_VALUES } from './collections/values'
 export * from './collections/collaboration'
 export {
   configAccess,

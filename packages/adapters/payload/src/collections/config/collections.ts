@@ -2,7 +2,7 @@ import type { CollectionConfig, Field, GlobalConfig } from 'payload'
 import { ADMIN_GROUPS } from '../fields'
 import { configAccess, sharedViewAccess } from './access'
 import { configEpoch, configJson, configRelation, configText } from './fields'
-import { TIMEZONE_VALUES } from '../values'
+import { TIMEZONE_VALUES } from '@ops/kernel'
 
 const RECORD_TYPES = ['organization', 'contact', 'lead', 'deal', 'project', 'task'] as const
 const VIEW_KINDS = ['table', 'board', 'calendar', 'timeline'] as const
