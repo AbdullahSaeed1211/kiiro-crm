@@ -441,59 +441,6 @@ select:focus {
   align-self: start;
 }
 
-.ops-organization-record .ops-record-aside {
-  border-left: 1px solid var(--hairline);
-  padding-left: 1.25rem;
-}
-
-.ops-organization-record .ops-record-aside [data-slot='card'] {
-  gap: 0.45rem;
-  padding-block: 1rem;
-  border: 0;
-  border-bottom: 1px solid var(--hairline);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  --tw-ring-shadow: 0 0 #0000;
-}
-
-.ops-organization-record .ops-record-aside [data-slot='card']:first-child {
-  padding-top: 0;
-}
-
-.ops-organization-record .ops-record-aside [data-slot='card-header'],
-.ops-organization-record .ops-record-aside [data-slot='card-content'] {
-  padding-inline: 0;
-}
-
-.ops-organization-record .ops-record-aside [data-slot='card-title'] {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--muted-foreground);
-}
-
-.ops-organization-record .ops-record-aside [data-slot='card-content'] > .divide-y {
-  border: 0;
-  border-radius: 0;
-}
-
-.ops-organization-overview-metrics > :not(:last-child) {
-  border-right: 1px solid var(--hairline);
-}
-
-.ops-organization-overview section > .divide-y {
-  border: 0;
-  border-radius: 0;
-}
-
-.ops-organization-overview section > .divide-y > p {
-  padding: 0.65rem 0;
-}
-
-.ops-organization-overview section > .divide-y > a {
-  padding-inline: 0;
-}
-
 .ops-kanban-board {
   gap: 0;
   border: 1px solid var(--border);
@@ -705,13 +652,6 @@ select:focus {
 
   .ops-directory-table [data-slot='table-row'] > :last-child {
     padding-right: 0.75rem;
-  }
-
-  .ops-organization-record .ops-record-aside {
-    border-top: 1px solid var(--hairline);
-    border-left: 0;
-    padding-top: 1rem;
-    padding-left: 0;
   }
 
   .ops-kanban-column {

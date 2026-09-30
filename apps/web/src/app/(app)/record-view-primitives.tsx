@@ -46,9 +46,14 @@ export function Activity({
   )
 }
 
-export function RelationList({ items, empty }: Readonly<{ items: readonly ReactNode[]; empty: string }>) {
+/** Rows that link to related records; `bare` drops the outer border for lists that already sit in a card. */
+export function RelationList({
+  items,
+  empty,
+  bare = false,
+}: Readonly<{ items: readonly ReactNode[]; empty: string; bare?: boolean }>) {
   return (
-    <div className="divide-y rounded-lg border">
+    <div className={bare ? 'divide-y' : 'divide-y rounded-lg border'}>
       {hasRelationItems(items) ? items : <p className="p-4 text-sm text-muted-foreground">{empty}</p>}
     </div>
   )

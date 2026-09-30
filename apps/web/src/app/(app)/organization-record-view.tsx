@@ -14,6 +14,7 @@ import type {
   RelatedTask,
 } from '../../server/crm/directory/data'
 import { personLabel } from '../../server/crm/directory/data'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
 import { Activity, DetailCard, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { ArchiveRecordControl } from './archive-record-control'
 import { RecordActionLinks } from './record-action-links'
@@ -22,19 +23,17 @@ import { RecordDetails } from './record-details'
 
 function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null }>) {
   return (
-    <div className="space-y-0">
-      <DetailCard title="Details">
-        <dl className="grid gap-3 text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">Owner</dt>
-            <dd className="mt-0.5">{personLabel(owner)}</dd>
-          </div>
-        </dl>
-      </DetailCard>
-      <DetailCard title="Meta">
+    <DetailCard title="Record">
+      <dl className="grid gap-3 text-sm">
+        <div>
+          <dt className="text-xs text-muted-foreground">Owner</dt>
+          <dd className="mt-0.5">{personLabel(owner)}</dd>
+        </div>
+      </dl>
+      <div className="mt-3">
         <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} />
-      </DetailCard>
-    </div>
+      </div>
+    </DetailCard>
   )
 }
 
@@ -99,24 +98,20 @@ function OrganizationOverview({
     },
   ] as const
   return (
-    <div className="ops-organization-overview">
-      <div className="ops-organization-overview-metrics grid grid-cols-3 border-b">
+    <div className="grid gap-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sections.map((section) => (
-          <div key={section.label} className="flex flex-col gap-1 px-4 py-3 first:pl-0 last:pr-0">
-            <span className="text-xs text-muted-foreground">{section.label}</span>
-            <span className="text-xl font-semibold tabular-nums">{section.count}</span>
-          </div>
-        ))}
-      </div>
-      <div className="grid gap-x-6 md:grid-cols-2">
-        {sections.map((section) => (
-          <section key={section.label} className="min-w-0 border-b py-4">
-            <div className="mb-1 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold">{section.label}</h2>
-              {section.action}
-            </div>
-            <RelationList items={section.items} empty={section.empty} />
-          </section>
+          <Card key={section.label} size="sm" className="min-w-0">
+            <CardHeader>
+              <CardTitle>
+                {section.label} <span className="font-normal text-muted-foreground tabular-nums">{section.count}</span>
+              </CardTitle>
+              {section.action === null ? null : <CardAction>{section.action}</CardAction>}
+            </CardHeader>
+            <CardContent>
+              <RelationList bare items={section.items} empty={section.empty} />
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
