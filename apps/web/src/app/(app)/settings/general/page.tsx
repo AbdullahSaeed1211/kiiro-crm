@@ -14,12 +14,13 @@ export default async function GeneralSettingsPage() {
   const context = await requireRole('owner', 'manager')
   const settings = await getWorkspaceSettings()
   const editable = context.actor.role === 'owner'
-  const values = Object.fromEntries(
-    ['appName', 'timezone', 'locale', 'currency', 'weekStartsOn', 'stalledDays'].map((key) => [
+  const fields = Object.fromEntries(
+    ['appName', 'timezone', 'locale', 'currency', 'stalledDays'].map((key) => [
       key,
       typeof settings[key] === 'string' || typeof settings[key] === 'number' ? settings[key] : '',
     ]),
   )
+  const values = { ...fields, weekStartsOn: settings.weekStartsOn === 0 ? '0' : '1' }
   return (
     <SettingsPage
       title="General"
@@ -55,7 +56,15 @@ export default async function GeneralSettingsPage() {
                 searchable: true,
                 options: CURRENCY_OPTIONS,
               },
-              { name: 'weekStartsOn', label: 'Week starts on', type: 'number' },
+              {
+                name: 'weekStartsOn',
+                label: 'Week starts on',
+                type: 'select',
+                options: [
+                  { value: '1', label: 'Monday' },
+                  { value: '0', label: 'Sunday' },
+                ],
+              },
               { name: 'stalledDays', label: 'Stalled after (days)', type: 'number' },
             ]}
             initialValues={values}
@@ -66,7 +75,7 @@ export default async function GeneralSettingsPage() {
             {Object.entries(values).map(([key, value]) => (
               <div className="flex justify-between gap-4 border-b pb-2" key={key}>
                 <dt className="text-muted-foreground">{key}</dt>
-                <dd>{String(value)}</dd>
+                <dd>{value}</dd>
               </div>
             ))}
           </dl>

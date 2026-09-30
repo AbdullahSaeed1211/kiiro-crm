@@ -58,20 +58,10 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ## Minor
 
-### 19. Two kinds of view switcher
-
-- Area: Design system. Effort: Quick. Codes: S-04 R-05.
-- `TaskWorkspaceViews.tsx:22-40` is a real segmented control with `aria-current`. Leads uses two loose `<a>` tags (`LeadListControls.tsx:57-68`), and Deals uses a Button with an icon. Extract a shared `ViewSwitcher`.
-
 ### 20. Timeline is titled "Gantt"
 
 - Area: Design system. Effort: Quick. Codes: S-03.
 - The menu uses `copy.timeline` (`app-frame.tsx:44`), but the page and view id use `copy.gantt` (`timeline/page.tsx:18,43`). The Kanban breadcrumb reads "Table › Kanban", treating one view as nested inside another. Use one label source per view.
-
-### 22. Settings rail reuses icons, and "Week starts on" is a number field
-
-- Area: Design system. Effort: Quick. Codes: S-05 S-01.
-- `BriefcaseBusiness` is used five times in `settings-nav.tsx:16,18,19,32,34`. `settings/general/page.tsx:58` uses `type: 'number'` for the week start, which shows `0`. Give each section its own icon and use a weekday `Select`.
 
 ### 23. Gantt bars are one colour and clip inconsistently
 
@@ -92,11 +82,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Design system. Effort: Quick. Codes: S-08 R-10.
 - `product.css:14` overrides shadcn's `--muted-foreground` with a darker `oklch(0.48 …)`, and example values like "Jane" and "Acme Inc." look like real data. Keep one definition of the token, lighten placeholders, and use example-style hints.
-
-### 32. The time zone list is duplicated and force-adds one zone
-
-- Area: Platform. Effort: Quick.
-- The same block is in `apps/web/src/i18n/timezones.ts` and `packages/adapters/payload/src/collections/values.ts`, and both append `'Asia/Kolkata'` to `Intl.supportedValuesOf`. Keep one copy in `@ops/kernel`, and don't special-case a zone unless a runtime is known to lack it.
 
 ### 33. Duplicate React key on mobile timeline
 

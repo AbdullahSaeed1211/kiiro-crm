@@ -2,7 +2,24 @@
 
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import type { Role } from '@ops/platform'
-import { Bell, BriefcaseBusiness, Database, Mail, Palette, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
+import {
+  Bell,
+  Building2,
+  Database,
+  FileInput,
+  Languages,
+  LayoutGrid,
+  ListChecks,
+  Mail,
+  Megaphone,
+  Palette,
+  Puzzle,
+  TrendingUp,
+  UserRound,
+  UsersRound,
+  Workflow,
+  type LucideIcon,
+} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { SETTINGS_COPY, SETTINGS_ITEM_COPY, type Locale } from '../../../i18n/config'
@@ -14,10 +31,10 @@ const GROUPS: readonly SettingsGroup[] = [
   [
     'workspace',
     [
-      ['general', '/settings/general', BriefcaseBusiness, ['owner', 'manager']],
+      ['general', '/settings/general', Building2, ['owner', 'manager']],
       ['branding', '/settings/branding', Palette, ['owner']],
-      ['modules', '/settings/modules', BriefcaseBusiness, ['owner']],
-      ['terminology', '/settings/terminology', BriefcaseBusiness, ['owner', 'manager']],
+      ['modules', '/settings/modules', Puzzle, ['owner']],
+      ['terminology', '/settings/terminology', Languages, ['owner', 'manager']],
     ],
   ],
   [
@@ -30,10 +47,10 @@ const GROUPS: readonly SettingsGroup[] = [
   [
     'work',
     [
-      ['workflows', '/settings/workflows', BriefcaseBusiness, ['owner', 'manager']],
+      ['workflows', '/settings/workflows', Workflow, ['owner', 'manager']],
       ['fields', '/settings/fields', Database, ['owner', 'manager']],
-      ['playbooks', '/settings/playbooks', BriefcaseBusiness, ['owner', 'manager']],
-      ['views', '/settings/views', BriefcaseBusiness, ['owner', 'manager']],
+      ['playbooks', '/settings/playbooks', ListChecks, ['owner', 'manager']],
+      ['views', '/settings/views', LayoutGrid, ['owner', 'manager']],
     ],
   ],
   [
@@ -41,9 +58,9 @@ const GROUPS: readonly SettingsGroup[] = [
     [
       ['notifications', '/settings/notifications', Bell, ['owner', 'manager', 'staff']],
       ['email', '/settings/email', Mail, ['owner']],
-      ['newsletter', '/settings/newsletter', Mail, ['owner', 'manager']],
-      ['sales', '/settings/sales', BriefcaseBusiness, ['owner', 'manager']],
-      ['intake', '/settings/intake', Mail, ['owner', 'manager']],
+      ['newsletter', '/settings/newsletter', Megaphone, ['owner', 'manager']],
+      ['sales', '/settings/sales', TrendingUp, ['owner', 'manager']],
+      ['intake', '/settings/intake', FileInput, ['owner', 'manager']],
     ],
   ],
   ['data', [['import', '/settings/import', Database, ['owner', 'manager']]]],
