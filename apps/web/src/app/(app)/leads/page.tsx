@@ -107,6 +107,7 @@ function LeadTable({
         ...(result.page * result.pageSize < result.total ? { nextHref: pageHref(params, result.page + 1) } : {}),
       }}
       labels={TABLE_LABELS}
+      mobileCard={{ cells: ['title', 'stage', 'owner', 'created'] }}
       emptyState={
         <EmptyState
           icon={UserPlus}
