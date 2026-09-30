@@ -20,7 +20,7 @@ The drill must print the rollback command for the first tenant and must not run 
 
 ## Tagged release
 
-The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs the complete `pnpm verify` gate, builds the OpenNext artifact once with the web workspace executable, verifies `apps/web/.open-next/worker.js` and its assets, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard.
+The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs the complete `pnpm verify` gate, builds the OpenNext artifact once with the web workspace executable, verifies `apps/web/.open-next/worker.js` and its assets, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard. It invokes the loop only when the `production` environment has `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and a current `INTERNAL_SECRET_<SLUG>` for every tenant; without them it verifies and builds, prints a notice and skips the deploy, so an operator-run release is not repeated by CI.
 
 For an operator-run release, use the same sequence after reviewing the build. The shell needs Cloudflare credentials for Wrangler and, for every tenant, `INTERNAL_SECRET_<SLUG>` (the slug upper-cased with `-` as `_`, for example `INTERNAL_SECRET_ACME_CO`), taken from operator custody. Without it the authenticated R2 and email smoke probes cannot run, smoke fails with `authenticated probe not run: set INTERNAL_SECRET_<SLUG>`, and the loop rolls the tenant back.
 
