@@ -63,16 +63,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Boards and calendar. Effort: Quick. Codes: B-07 B-08 S-07.
 - `gantt-theme.css:24-28` sets every bar to `var(--primary)`, while an 8-colour `--stage-*` scale already exists in `tokens.css:3-17`. Plane colours each bar by state (`gantt/blocks.tsx:53`). Add `stageColor` to `GanttBar` and apply one ellipsis rule to labels.
 
-### 24. Kanban cards spell out assignees
-
-- Area: Boards and calendar. Effort: Quick. Codes: B-06.
-- `tasks/board/page.tsx:74-79` prints "Assignees: Web Development Lead" on its own line. Twenty's `RecordBoardCardBody` shows an avatar chip inline with the other card details.
-
-### 26. Projects list repeats "Progress" in every row
-
-- Area: CRM records. Effort: Quick. Codes: R-06.
-- The column header says Progress (`projects/page.tsx:118`), and the cell prints it again (lines 26-27). Project members are managed with two native selects. There's no search. Remove the repeated label and add the shared `ViewBar` and a member picker.
-
 ### 30. Placeholders read as entered values
 
 - Area: Design system. Effort: Quick. Codes: S-08 R-10.

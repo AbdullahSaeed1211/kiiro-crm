@@ -3,7 +3,16 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import type { KanbanBoardLabels, KanbanCard, KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Workflow } from '@ops/platform'
-import { CalendarDays, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
+import {
+  CalendarDays,
+  CircleAlert,
+  Minus,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY, type Locale } from '../../../../i18n/config'
 import { workDeps } from '@/server/container'
@@ -68,15 +77,10 @@ function TaskMeta({
           </time>
         </span>
       )}
-      {assignees.length === 0 ? (
-        <span>
-          {copy.assignees}: {copy.unassigned}
-        </span>
-      ) : (
-        <span>
-          {copy.assignees}: {assignees.join(', ')}
-        </span>
-      )}
+      <span className="inline-flex items-center gap-1" title={copy.assignees}>
+        <Users aria-hidden className="size-3.5" />
+        {assignees.length === 0 ? copy.unassigned : assignees.join(', ')}
+      </span>
     </>
   )
 }
