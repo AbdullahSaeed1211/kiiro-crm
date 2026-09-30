@@ -1,157 +1,161 @@
+<div align="center">
+
 # ops-platform
 
-A white-label CRM and project and task operations platform for service businesses. One brand-agnostic codebase is deployed as an isolated instance per customer tenant: one Cloudflare Worker, one D1 database and one R2 bucket each, with no shared rows. A neutral platform operator owns the platform and its infrastructure; customers are tenants, described by files under `tenants/`.
+**A white-label CRM and project operations platform for service businesses.**
+One codebase. One isolated Worker, database and file store per customer.
 
-The authoritative specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
+[![CI](https://github.com/AbdullahSaeed1211/kiiro-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdullahSaeed1211/kiiro-crm/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%C2%B7%20D1%20%C2%B7%20R2-f38020?logo=cloudflare&logoColor=white)
+![Payload](https://img.shields.io/badge/Payload-3.89-1c1c1c)
+![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-## Status
+</div>
 
-M0 to M3 are built; [`docs/history.md`](docs/history.md) summarizes each milestone and lists the open items.
+---
 
-## Stack
+## Overview
 
-| Component                        | Version                    |
-| -------------------------------- | -------------------------- |
-| Node.js                          | 22 (`.nvmrc`)              |
-| pnpm                             | 10.34.5 (`packageManager`) |
-| Payload (core, Next, UI, D1, R2) | 3.89.0                     |
-| Next.js                          | 16.3.5                     |
-| React                            | 19.3.0                     |
-| @opennextjs/cloudflare           | 1.20.6                     |
-| Wrangler                         | 4.131.1                    |
-| TypeScript                       | 6.0.3                      |
-| Tailwind CSS                     | 4.3.3                      |
-| zod                              | 4.6.2                      |
-| Vitest                           | 4.1.11                     |
-| Playwright                       | 1.63.0                     |
-| ESLint                           | 10.10.0                    |
-| Prettier                         | 3.9.6                      |
+ops-platform gives an agency or service team one place to win work and deliver it: leads come in, move through a pipeline, become clients, and start projects with their tasks already laid out.
 
-UI libraries (shadcn with Base UI, TanStack Table, pragmatic drag and drop, SVAR Gantt) are pinned in `packages/ui/package.json`. The dependency allowlist is spec §4.3; a new runtime dependency needs an ADR.
+It is **white-label by construction**. No tenant is the product: names, domains, colours and people live in one file per customer (`tenants/<slug>.jsonc`) and in that customer's own settings. Every tenant runs as its own Cloudflare Worker with its own D1 database and R2 bucket, so there are no shared rows and no cross-tenant queries.
+
+The first tenant, Mirch Media, runs in production. The authoritative product specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
+
+## What it does
+
+| Area                | Capabilities                                                                                                                                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a lead-assignment rule that hands new leads to people in turn.                                 |
+| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                      |
+| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal. |
+| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                |
+| **Work**            | Tasks with a table, board, calendar and timeline; projects with members and progress; subtasks; a mobile layout throughout.                                                                                                                    |
+| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                      |
+| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                         |
+| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                 |
+| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                   |
+
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph tenant["One per customer"]
+    W["Cloudflare Worker<br/>Next.js + Payload"]
+    D[("D1 database")]
+    R[("R2 bucket")]
+    W --- D
+    W --- R
+  end
+  Site["Customer website<br/>(intake forms)"] -->|"POST /api/v1/intake/…"| W
+  Staff["Staff (desktop, phone)"] --> W
+  W -->|"Email Service"| Mail["Outbound email"]
+  Mail -.->|"inbound routing"| W
+```
+
+The code is layered, and the layers are enforced by ESLint boundaries and dependency-cruiser, not by convention:
+
+```mermaid
+flowchart LR
+  kernel --> platform --> modules["modules<br/>crm · work · intake · mail · identity"]
+  platform --> adapters["adapters<br/>payload · cloudflare"]
+  modules --> web["apps/web<br/>composition root"]
+  adapters --> web
+  ui["ui<br/>components, no data fetching"] --> web
+```
+
+- `kernel` imports nothing from the workspace; `platform` imports only `kernel`.
+- `modules/*` hold business rules and use cases; they never import another module, an adapter, the UI, or Payload, Next, React or Cloudflare APIs.
+- Only `adapters/payload` imports Payload. `ui` never fetches data. `apps/web` is the only place everything meets.
 
 ## Repository layout
 
 ```text
 apps/
-  web/            composition root: Next.js, Payload, OpenNext and the Worker entry (worker.ts)
-  mail-router/    platform-domain inbound email router Worker (not built yet)
+  web/            composition root: Next.js, Payload, OpenNext, the Worker entry
+  mail-router/    platform-domain inbound email router Worker
 packages/
-  kernel/         @ops/kernel: domain-agnostic primitives (Result, errors, clock, logger)
-  platform/       @ops/platform: domain-agnostic building blocks (permissions, workflows, ports)
-  modules/        @ops/module-crm, -work, -intake, -mail: domain modules, depending on ports only
-  adapters/       @ops/adapter-payload (collections, access, repositories), @ops/adapter-cloudflare (mail, cron, inbound)
-  ui/             @ops/ui: vendored shadcn components and composites, no data fetching
-  templates/      @ops/templates: vertical templates as typed data
-scripts/          quality checks, gen-wrangler, local seed and reset, tenant provisioning and deploy
-tenants/          one <slug>.jsonc per tenant
-docs/             spec, architecture, roadmap, design proposals, ADRs, decisions, backlog, runbooks, UX, history
-tooling/          shared tsconfig, ESLint rules, dependency-cruiser, knip and jscpd configs
+  kernel/         Result, errors, clock, logger
+  platform/       permissions, workflows, ports
+  modules/        crm, work, intake, mail, identity
+  adapters/       payload (collections, access, repositories), cloudflare (mail, cron, intake)
+  ui/             vendored shadcn components and composites
+  templates/      vertical templates as typed data
+scripts/          quality checks, config generation, seed, provisioning and deploy
+tenants/          one <slug>.jsonc per customer
+docs/             spec, architecture, roadmap, plans, ADRs, backlogs, runbooks
 ```
 
-Each package has a README with its Purpose and Public API. Layer rules (spec §5.2), enforced by `eslint-plugin-boundaries` and dependency-cruiser:
-
-- `kernel` imports nothing from the workspace; `platform` imports only `kernel`.
-- `modules/*` import `kernel` and `platform`, never another module, an adapter, the UI, or Payload, Next, React or Cloudflare APIs.
-- `adapters/*` implement platform and module ports; only `adapters/payload` imports Payload.
-- `ui` imports `kernel` types only; `apps/web` may import every package. Circular dependencies fail.
+Each package has a README with its purpose and public API.
 
 ## Getting started
 
-Prerequisites: Node.js 22 and pnpm 10.34.5. With `manage-package-manager-versions=true` in `.npmrc`, any pnpm 10 switches to the pinned version.
+**Prerequisites:** Node.js 22 and pnpm 10.34.5. With `manage-package-manager-versions=true` in `.npmrc`, any pnpm 10 switches to the pinned version.
 
 ```sh
 pnpm install
 cp apps/web/.dev.vars.example apps/web/.dev.vars
-```
-
-`.dev.vars` holds the local secrets and variables; the example values work for local development. The root `pnpm dev` launcher loads `.dev.vars`, falls back to `.dev.vars.example` when the local file is absent, and keeps explicit process-environment values as overrides. If neither file exists or `PAYLOAD_SECRET` is missing, it prints an actionable error without printing secret values. No manual export is needed.
-
-Create the local database and seed it:
-
-```sh
-pnpm db:reset:local   # deletes the local D1 state under apps/web/.wrangler and runs the migrations
-pnpm seed:dev         # idempotent; safe to run again
+pnpm db:reset:local   # recreates the local D1 database from the migrations
+pnpm seed:dev         # idempotent demo data
 pnpm dev              # http://localhost:3000
 ```
 
-Both scripts refuse to run when `NODE_ENV=production`, `CLOUDFLARE_ENV` or `PAYLOAD_REMOTE_BINDINGS` is set.
+`.dev.vars` holds local secrets; the example values work for development. Both database scripts refuse to run against a remote environment.
 
-The seed creates four users, all with the password `mirchads@123`:
-
-| Email                  | Role                      |
-| ---------------------- | ------------------------- |
-| `mirchads@gmail.com`   | owner                     |
-| `manager@example.test` | manager                   |
-| `staff1@example.test`  | staff (Design group)      |
-| `staff2@example.test`  | staff (Development group) |
-
-Sign in at `/login`; protected product pages redirect there without a session. The administrative Payload panel remains at `/admin` and is not part of customer navigation. Pages:
-
-| Path             | Content                                             |
-| ---------------- | --------------------------------------------------- |
-| `/tasks`         | task table                                          |
-| `/tasks/board`   | task board with drag and drop                       |
-| `/timeline`      | Gantt timeline with date drag                       |
-| `/admin`         | Payload admin                                       |
-| `/api/v1/health` | `{ status, version, migration }`, no sign-in needed |
+The seed creates four local users that share one development password, defined in `scripts/seed/data.ts`. **It is for local databases only; never reuse it anywhere else.** Sign in at `/login`; the Payload admin panel lives at `/admin` and is not part of customer navigation.
 
 ## Everyday commands
 
-Run from the repository root.
-
-| Command                 | What it does                                                                 |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `pnpm dev`              | Next.js dev server with locally emulated Cloudflare bindings                 |
-| `pnpm build`            | Next.js production build of `apps/web`                                       |
-| `pnpm preview`          | OpenNext build, then the Worker in the local workerd runtime                 |
-| `pnpm verify`           | every quality gate, tests, build and bundle size (see below)                 |
-| `pnpm verify:fast`      | format check, typecheck, lint and tests for changed files                    |
-| `pnpm test`             | Vitest unit tests with coverage                                              |
-| `pnpm test:integration` | Payload on a local D1 copy: scope, conflicts, duplicates (no network)        |
-| `pnpm test:e2e`         | Playwright tests under `tests/e2e`                                           |
-| `pnpm typecheck`        | `tsc --noEmit` in every workspace package                                    |
-| `pnpm lint`             | ESLint with zero warnings allowed                                            |
-| `pnpm format`           | Prettier over the repository                                                 |
-| `pnpm check:brand`      | fails on brand or customer names in `apps/` and `packages/`                  |
-| `pnpm check:vocab`      | fails on vertical vocabulary (lead, task, project...) in kernel and platform |
-| `pnpm check:disables`   | fails on `eslint-disable` comments for gated rules                           |
-| `pnpm check:docs`       | package READMEs and TSDoc on exports                                         |
-| `pnpm gen:wrangler`     | regenerates `apps/web/wrangler.jsonc` from `tenants/*.jsonc`                 |
-| `pnpm db:reset:local`   | recreates the local D1 database from migrations                              |
-| `pnpm seed:dev`         | seeds local development data                                                 |
+| Command                 | What it does                                                      |
+| ----------------------- | ----------------------------------------------------------------- |
+| `pnpm dev`              | Next.js dev server with locally emulated Cloudflare bindings      |
+| `pnpm verify:fast`      | format check, typecheck, lint and tests for changed files         |
+| `pnpm verify`           | every quality gate, tests, build and bundle size                  |
+| `pnpm test`             | Vitest unit tests with coverage                                   |
+| `pnpm test:integration` | Payload on a local D1 copy: scope, conflicts, duplicates          |
+| `pnpm test:e2e`         | Playwright tests against a running app                            |
+| `pnpm gen:wrangler`     | regenerates `apps/web/wrangler.jsonc` from `tenants/*.jsonc`      |
+| `pnpm tenants:deploy`   | releases to every tenant, with migrations, smoke checks, rollback |
 
 ## Quality gates
 
-`pnpm verify` runs, in order: `format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:brand`, `check:vocab`, `check:disables`, `check:docs`, `test`, `test:integration`, `build` and `size`. CI runs it on every pull request and push to `main`.
+`pnpm verify` runs, in order: format, typecheck, lint, dependency rules, unused code, duplication, brand and vocabulary checks, lint-waiver budget, docs, unit and integration tests, build and bundle size. CI runs it on every pull request and push to `main`.
 
-Key limits (spec §6):
+- TypeScript strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`; no `any`, non-null assertions or enums.
+- Cyclomatic complexity 8, at most 80 lines per function and 250 per file, at most two positional parameters.
+- Lint waivers are scoped, must give a reason, and are capped by a budget that only goes down.
+- No brand or customer names in `apps/` and `packages/`; duplication kept under 2%.
 
-- TypeScript strict with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`; no `any`, non-null assertions or enums.
-- Cyclomatic complexity 8, cognitive complexity 10, nesting depth 3.
-- Function length 40 lines in `.ts` and 80 in `.tsx`; file length 250 lines.
-- Gated rules are never disabled inline (`check:disables`).
-- No brand or customer names in code (`check:brand`); no vertical vocabulary in kernel and platform (`check:vocab`).
-- `knip` reports zero unused files, exports or dependencies; `jscpd` duplication at most 2%.
+## Releasing
 
-## Tenants and deployment
+A release builds once and rolls out tenant by tenant. For each tenant the loop takes a database restore point, runs migrations, deploys, and runs smoke checks (health, sign-in, file storage, and an email delivery check); any failure rolls the tenant's code back.
 
-A tenant is one zod-validated file, `tenants/<slug>.jsonc` (spec §19.1): host, template, timezone, locale, currency, owner, email settings, D1 database, R2 bucket, rate-limit namespaces and deploy order. The spike tenants are `staging-a` and `staging-b`.
+```sh
+pnpm verify
+pnpm --filter web exec opennextjs-cloudflare build
+OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag vX.Y.Z --execute
+git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
+```
 
-`pnpm gen:wrangler` writes `apps/web/wrangler.jsonc`. Do not edit that file. Its top level is the local development Worker (`ops-dev`) with local-only bindings, and it holds one `env.<slug>` per tenant with that tenant's own D1, R2, rate limiters, variables and cron trigger. The generator fails when two tenants share a database, bucket or namespace.
+Pushing a `v*` tag also starts the GitHub Deploy workflow, which needs each tenant's `INTERNAL_SECRET_<SLUG>` secret to be current. See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md), plus the runbooks for rollback, incidents, tenant provisioning and customer onboarding.
 
-Builds and local runs never contact Cloudflare (E-006). Remote operations need Cloudflare credentials and are run only by the lead or the platform operator:
+## Documentation
 
-- remote migrations: `PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=<slug>` with the Payload CLI in `apps/web`;
-- deploys: `opennextjs-cloudflare deploy --env <slug>` from an existing build;
-- secrets: `wrangler secret bulk <file> --env <slug>`.
+| Read                                                               | For                                                  |
+| ------------------------------------------------------------------ | ---------------------------------------------------- |
+| [`docs/spec.md`](docs/spec.md)                                     | authoritative product behavior                       |
+| [`docs/architecture.md`](docs/architecture.md)                     | the short map and the conventions every change keeps |
+| [`docs/roadmap.md`](docs/roadmap.md)                               | the order in which open work ships                   |
+| [`docs/backlog/`](docs/backlog/)                                   | open code-health and UX findings                     |
+| [`docs/adr/`](docs/adr/)                                           | architecture decisions                               |
+| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md) | the proposal for self-serve signup and provisioning  |
+| [`docs/runbooks/`](docs/runbooks/)                                 | deploy, rollback, incident and onboarding procedures |
+| [`AGENTS.md`](AGENTS.md)                                           | where code lives, golden examples and working rules  |
 
-The one-command provisioning, deploy loop and runbooks are milestone M7 (spec §19.3, §19.4).
+## Contributing
 
-## Working on this repository
+Use Conventional Commits (`feat(crm): …`, `fix(web): …`). A commit that changes behavior lists what it was verified with under `Verified:`. Findings go in `docs/backlog/`; decisions in `docs/adr/`. Documentation describes current behavior only; link to the owning document instead of repeating it.
 
-Agents and engineers start from [`AGENTS.md`](AGENTS.md): where code lives, golden examples, commands, pitfalls and how parallel work is split. Task skills for common changes are in `.claude/skills/`. Spec §0 covers roles, ownership and escalation. The order of open work is in [`docs/roadmap.md`](docs/roadmap.md), with task lists in [`docs/plans/`](docs/plans/), the items in [`docs/backlog/`](docs/backlog/), and the self-serve SaaS proposal in [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md); and the product API describes itself at `GET /api/v1` (spec §12.3).
-
-- Execution decisions are recorded in `docs/decisions/decision-register.md` (E-nnn), open questions in `docs/decisions/open-questions.md`, and architecture decisions in `docs/adr/`.
-- Conventional Commits, for example `feat(crm): ...` or `docs: ...`. A commit that changes behavior lists the checks it was verified with under `Verified:`; a `fix(...)` commit adds a failing test only for a defect no response or type can show (see `AGENTS.md`).
-- Comments stay short: a one-line TSDoc on exported symbols, inline comments only to explain why. No commented-out code.
-- Documentation describes current behavior only; link to the owning document instead of duplicating it.
+This is a proprietary codebase (`UNLICENSED`). Third-party code keeps its licence notice under [`third_party/`](third_party/).

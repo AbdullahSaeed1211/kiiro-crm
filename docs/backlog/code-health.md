@@ -353,9 +353,3 @@ Findings about the delivery tooling rather than the product code. IDs continue f
 - Evidence: formatting and lint failures reach CI; the agent format hook in `.claude/hooks/` covers only agent edits.
 - Fix: decide in an ADR whether to add a hook dependency (for example lefthook) running `pnpm verify:fast` on staged files; a new dependency needs that decision.
 - Effort: S
-
-### OPS-05: Eight merged branches remain on the remote
-
-- Location: `origin`: `codex/agentic-inbox-ui`, `codex/pilot-improvements-20260924`, `m2-crm`, `wp/M3-W1` to `wp/M3-W5`.
-- Fix: `git push origin --delete` for each; every one is merged into `main`.
-- Effort: S
