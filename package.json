@@ -25,7 +25,7 @@
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "check:isolation": "tsx scripts/check-isolation.ts",
-    "gen:wrangler": "tsx scripts/gen-wrangler.ts",
+    "gen:wrangler": "tsx scripts/gen-wrangler.ts && prettier --write apps/web/wrangler.jsonc apps/mail-router/wrangler.jsonc",
     "test": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
