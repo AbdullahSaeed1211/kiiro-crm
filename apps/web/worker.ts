@@ -9,8 +9,8 @@ const worker: ExportedHandler<InternalForwardEnv> = {
     if (isBlockedPayloadRoute(request.method, new URL(request.url).pathname)) {
       return withSecurityHeaders(new Response('Not Found', { status: 404 }))
     }
-    // `.open-next/worker.js` is untyped JavaScript once built, so its response type is asserted here.
-    const response = (await openNext.fetch(request, env, ctx)) as Response
+    // `.open-next/worker.js` is untyped JavaScript once built, so its response type is declared here.
+    const response: Response = await openNext.fetch(request, env, ctx)
     return withSecurityHeaders(response, new URL(request.url).pathname)
   },
   scheduled: (controller, env, ctx) => {
