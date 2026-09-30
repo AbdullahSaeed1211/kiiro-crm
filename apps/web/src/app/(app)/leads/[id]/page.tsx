@@ -5,6 +5,7 @@ import { LeadRecordClient } from '../LeadRecordClient'
 import { getOutboundEmailEnabled } from '../../../../server/capabilities'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { RecordDetails } from '../../record-details'
+import { LeadDuplicateNotice } from '../LeadDuplicateNotice'
 import { RecordCustomFields } from '../../record-custom-fields'
 import { RecordNotesTab } from '../../record-notes-tab'
 
@@ -23,6 +24,7 @@ export default async function LeadPage({ params }: Readonly<{ params: Promise<{ 
   if (data === null) notFound()
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+      <LeadDuplicateNotice leadId={data.item.lead.id} email={data.item.lead.email} phone={data.item.lead.phone} />
       <LeadRecordClient
         data={data}
         outboundEmailEnabled={outboundEmailEnabled}
