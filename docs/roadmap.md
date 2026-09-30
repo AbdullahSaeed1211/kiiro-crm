@@ -86,7 +86,7 @@ Plan: [wave 10 plan](plans/wave-10-sales.md). Owner priority: the lead pipeline 
 - Done (v0.9.4–v0.9.5): outbound email from `notify.mirchtravel.com`, and the newsletter: opt-in checkbox on contacts, a test send and a send to all subscribers, and a signed unsubscribe link, verified signed in on production.
 - Website sign-ups: a form question mapped to the lead's "Newsletter opt-in" (Settings, Intake) lands as a lead, and converting that lead ticks the contact. A person reviews every subscriber before anything is sent.
 - Campaign history: each newsletter email is recorded on its contact (Email tab) and the newsletter page lists the last ten campaigns.
-- Wave 9 picks built from this: automation rules (new leads are assigned to people in turn, per source), email templates (insertable in the email box) and a first-response target (leads waiting past it are marked). Set them under Settings, Sales. Deferred: outgoing webhooks, call logs, Gmail and calendar sync, custom record types.
+- Wave 9 picks built from this: automation rules (new leads are assigned to people in turn, per source), email templates (insertable in the email box) and a first-response target (leads waiting past it are marked). Set them under Settings, Sales. Deferred: outgoing webhooks, call logs, Gmail and calendar sync, custom record types. Next for campaigns: a durable outbox with retries, pause and quiet hours, then SMS ([design](design/campaign-outbox.md)).
 - Findings: none.
 
 Depends on: wave 5. Audiences: name lists on the newsletter page, tick them on contacts, and pick one (or everyone) when sending. Done when: v0.9.13 is verified on production.
