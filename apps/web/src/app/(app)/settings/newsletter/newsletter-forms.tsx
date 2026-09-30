@@ -2,10 +2,14 @@
 
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
+import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { enableNewsletter, sendNewsletter } from '../../../../server/actions/newsletter'
+import { AudienceEditor } from './audience-editor'
+
+type Audience = Readonly<{ name: string; count: number }>
 
 type Subscriber = Readonly<{ id: string; email: string; name: string }>
 type Campaign = Readonly<{ id: string; subject: string; sentAt: number; recipients: number }>
@@ -73,19 +77,65 @@ function EnableNewsletter() {
   )
 }
 
-function Composer({ outboundEnabled, count }: Readonly<{ outboundEnabled: boolean; count: number }>) {
+/** Chooses who a campaign goes to: everyone subscribed, or one audience; hidden until audiences exist. */
+function AudienceSelect({
+  audiences,
+  total,
+  value,
+  onChange,
+}: Readonly<{ audiences: readonly Audience[]; total: number; value: string; onChange: (value: string) => void }>) {
+  if (audiences.length === 0) return null
+  return (
+    <label className="grid gap-1">
+      <span className="font-medium">Send to</span>
+      <NativeSelect
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value)
+        }}
+      >
+        <option value="">Everyone subscribed ({total})</option>
+        {audiences.map((entry) => (
+          <option key={entry.name} value={entry.name}>
+            {entry.name} ({entry.count})
+          </option>
+        ))}
+      </NativeSelect>
+    </label>
+  )
+}
+
+/** How many subscribers a send to this audience reaches; an empty audience means everyone. */
+const audienceCount = ({
+  audiences,
+  total,
+  audience,
+}: Readonly<{ audiences: readonly Audience[]; total: number; audience: string }>): number =>
+  audience === '' ? total : (audiences.find((entry) => entry.name === audience)?.count ?? 0)
+
+const confirmText = (count: number, audience: string): string =>
+  audience === '' ? `Send to ${String(count)} subscribers?` : `Send to ${String(count)} subscribers in ${audience}?`
+
+function Composer({
+  outboundEnabled,
+  total,
+  audiences,
+}: Readonly<{ outboundEnabled: boolean; total: number; audiences: readonly Audience[] }>) {
   const { run, message, pending } = useTask()
+  const [audience, setAudience] = useState('')
+  const count = audienceCount({ audiences, total, audience })
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const incomplete = subject.trim() === '' || body.trim() === ''
   const send = (testOnly: boolean) => {
     run(async () => {
-      const result = await sendNewsletter({ subject, body, testOnly })
+      const result = await sendNewsletter({ subject, body, testOnly, ...(audience === '' ? {} : { audience }) })
       return result.ok ? `${String(result.data.sent)} sent, ${String(result.data.failed)} failed` : result.error.message
     })
   }
   return (
     <div className="grid gap-4 text-sm">
+      <AudienceSelect audiences={audiences} total={total} value={audience} onChange={setAudience} />
       <label className="grid gap-1">
         <span className="font-medium">Subject</span>
         <Input
@@ -119,7 +169,7 @@ function Composer({ outboundEnabled, count }: Readonly<{ outboundEnabled: boolea
         <Button
           disabled={pending || !outboundEnabled || count === 0 || incomplete}
           onClick={() => {
-            if (window.confirm(`Send to ${String(count)} subscribers?`)) send(false)
+            if (window.confirm(confirmText(count, audience))) send(false)
           }}
         >
           Send to {count}
@@ -140,11 +190,13 @@ export function NewsletterForms({
   outboundEnabled,
   subscribers,
   campaigns,
+  audiences,
 }: Readonly<{
   enabled: boolean
   outboundEnabled: boolean
   subscribers: readonly Subscriber[]
   campaigns: readonly Campaign[]
+  audiences: readonly Audience[]
 }>) {
   if (!enabled) return <EnableNewsletter />
   return (
@@ -154,7 +206,8 @@ export function NewsletterForms({
         subscriber" on a contact to add them.
       </p>
       {outboundEnabled ? null : <p role="status">Email sending is not available for this workspace.</p>}
-      <Composer outboundEnabled={outboundEnabled} count={subscribers.length} />
+      <AudienceEditor names={audiences.map((audience) => audience.name)} />
+      <Composer outboundEnabled={outboundEnabled} total={subscribers.length} audiences={audiences} />
       <CampaignHistory campaigns={campaigns} />
     </div>
   )

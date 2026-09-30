@@ -9,7 +9,7 @@ import { requireRole } from '../auth/context'
 import { getOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../capabilities'
 import { crmDeps } from '../container'
 import { sendCampaign, MAX_RECIPIENTS_PER_SEND } from '../newsletter/campaign'
-import { listSubscribers, NEWSLETTER_FIELD_KEY } from '../newsletter/subscribers'
+import { AUDIENCES_FIELD_KEY, inAudience, listSubscribers, NEWSLETTER_FIELD_KEY } from '../newsletter/subscribers'
 
 const NEWSLETTER_PATH = '/settings/newsletter'
 
@@ -18,22 +18,31 @@ const sendSchema = z
     subject: z.string().trim().min(1).max(200),
     body: z.string().trim().min(1).max(20_000),
     testOnly: z.boolean(),
+    audience: z.string().trim().max(60).optional(),
   })
   .strict()
 
-const OPT_IN_FIELDS = [
-  { recordType: 'contact', label: 'Newsletter subscriber' },
-  { recordType: 'lead', label: 'Newsletter opt-in' },
-] as const
+interface NewsletterField {
+  readonly recordType: 'contact' | 'lead'
+  readonly key: string
+  readonly label: string
+  readonly type: 'checkbox' | 'multiSelect'
+}
 
-/** Adds the opt-in checkbox to contacts (who receive the newsletter) and to leads (so a website form can collect it). */
+const NEWSLETTER_FIELDS: readonly NewsletterField[] = [
+  { recordType: 'contact', key: NEWSLETTER_FIELD_KEY, label: 'Newsletter subscriber', type: 'checkbox' },
+  { recordType: 'lead', key: NEWSLETTER_FIELD_KEY, label: 'Newsletter opt-in', type: 'checkbox' },
+  { recordType: 'contact', key: AUDIENCES_FIELD_KEY, label: 'Newsletter audiences', type: 'multiSelect' },
+]
+
+/** Adds the newsletter's custom fields: the opt-in on contacts and leads, and the audiences on contacts. */
 export async function enableNewsletter(): Promise<ActionResult> {
   const context = await requireRole('owner', 'manager')
   try {
-    for (const { recordType, label } of OPT_IN_FIELDS) {
+    for (const { recordType, key, label, type } of NEWSLETTER_FIELDS) {
       const existing = await context.payload.find({
         collection: 'fieldDefinitions',
-        where: { and: [{ recordType: { equals: recordType } }, { key: { equals: NEWSLETTER_FIELD_KEY } }] },
+        where: { and: [{ recordType: { equals: recordType } }, { key: { equals: key } }] },
         limit: 1,
         depth: 0,
         overrideAccess: false,
@@ -44,9 +53,9 @@ export async function enableNewsletter(): Promise<ActionResult> {
         collection: 'fieldDefinitions',
         data: {
           recordType,
-          key: NEWSLETTER_FIELD_KEY,
+          key,
           label,
-          type: 'checkbox',
+          type,
           required: false,
           options: [],
           visibility: 'all',
@@ -65,6 +74,38 @@ export async function enableNewsletter(): Promise<ActionResult> {
   }
 }
 
+const audiencesSchema = z.array(z.string().trim().min(1).max(60)).max(30)
+
+/** Replaces the list of audience names offered on contacts; duplicates are dropped. */
+export async function saveAudiences(input: unknown): Promise<ActionResult> {
+  const context = await requireRole('owner', 'manager')
+  const parsed = audiencesSchema.safeParse(input)
+  if (!parsed.success) return actionError('VALIDATION', 'Give each audience a short name.')
+  try {
+    const found = await context.payload.find({
+      collection: 'fieldDefinitions',
+      where: { and: [{ recordType: { equals: 'contact' } }, { key: { equals: AUDIENCES_FIELD_KEY } }] },
+      limit: 1,
+      depth: 0,
+      overrideAccess: false,
+      req: context.req,
+    })
+    const field = found.docs.at(0)
+    if (field === undefined) return actionError('NOT_FOUND', 'Turn on the newsletter first.')
+    await context.payload.update({
+      collection: 'fieldDefinitions',
+      id: field.id,
+      data: { options: [...new Set(parsed.data)] },
+      overrideAccess: false,
+      req: context.req,
+    })
+    revalidatePath(NEWSLETTER_PATH)
+    return actionOk()
+  } catch (error) {
+    return actionFailure(error, 'saveAudiences', 'Unable to save the audiences.')
+  }
+}
+
 async function siteOrigin(): Promise<string> {
   const list = await headers()
   const host = list.get('x-forwarded-host') ?? list.get('host') ?? ''
@@ -80,8 +121,8 @@ export async function sendNewsletter(input: unknown): Promise<ActionResult<{ sen
   try {
     const own = await context.payload.findByID({ collection: 'users', id: String(context.actor.id), depth: 0 })
     const recipients = parsed.data.testOnly
-      ? [{ id: String(context.actor.id), email: own.email, name: own.name }]
-      : await listSubscribers(await crmDeps())
+      ? [{ id: String(context.actor.id), email: own.email, name: own.name, audiences: [] }]
+      : inAudience(await listSubscribers(await crmDeps()), parsed.data.audience)
     const { env } = await getCloudflareContext({ async: true })
     const result = await sendCampaign({
       payload: context.payload,

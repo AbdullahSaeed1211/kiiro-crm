@@ -89,7 +89,7 @@ Plan: [wave 10 plan](plans/wave-10-sales.md). Owner priority: the lead pipeline 
 - Wave 9 picks built from this: automation rules (new leads are assigned to people in turn, per source), email templates (insertable in the email box) and a first-response target (leads waiting past it are marked). Set them under Settings, Sales. Deferred: outgoing webhooks, call logs, Gmail and calendar sync, custom record types.
 - Findings: none.
 
-Depends on: wave 5. Done when: v0.9.10 is verified on production.
+Depends on: wave 5. Audiences: name lists on the newsletter page, tick them on contacts, and pick one (or everyone) when sending. Done when: v0.9.13 is verified on production.
 
 ## 9. Reference feature gaps
 
