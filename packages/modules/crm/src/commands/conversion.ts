@@ -243,13 +243,7 @@ async function convertLeadWork(deps: CrmDeps, value: ConvertLeadInput): Promise<
 async function convertInputWork(deps: CrmDeps, input: unknown): Promise<CrmResult<LeadRecord>> {
   const parsed = parse(convertLeadSchema, input)
   if (!parsed.ok) return parsed
-  const idempotent = deps.uow as CrmDeps['uow'] & {
-    runIdempotent?: <T>(key: string, work: () => Promise<T>) => Promise<T>
-  }
-  const work = () => convertLeadWork(deps, parsed.value)
-  return idempotent.runIdempotent === undefined
-    ? deps.uow.run(work)
-    : idempotent.runIdempotent(`convert:${parsed.value.leadId}`, work)
+  return deps.uow.run(() => convertLeadWork(deps, parsed.value))
 }
 
 /** Converts a lead into linked CRM records and supports retry after an interrupted ordered write. */
