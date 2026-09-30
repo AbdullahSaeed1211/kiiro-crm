@@ -11,16 +11,16 @@
 
 ## Root causes
 
-| Root cause                                                                                                                         | Severity | Open findings                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
-| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                                        |
-| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                                  |
-| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-06 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
-| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                             |
-| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                          |
-| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                             |
-| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                                    |
-| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                             |
+| Root cause                                                                                                                         | Severity | Open findings                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------- |
+| Two maturity levels: identity, settings, comments and auth call Payload directly, with no use case, transaction or activity record | High     | ARCH-05                                                 |
+| Large files carry permanent `max-lines` and `complexity` waivers instead of being split                                            | High     | WEB-14 SCR-14                                           |
+| Each record type copies the list, board, lost dialog, activity card, stage picker and conflict handling                            | High     | WEB-03 WEB-04 WEB-05 WEB-07 WEB-08 WEB-09 WEB-27 WEB-31 |
+| Domain rules live in the web layer: lead move legality, display names, saved-view parsing, currency defaults                       | High     | WEB-10 WEB-14 WEB-16 WEB-17 DOM-02                      |
+| One concept, several implementations: time zone list, theme tokens, date formatting                                                | Medium   | UI-13                                                   |
+| Record-type lists are synced by hand across maps and if-chains                                                                     | Medium   | DOM-18 WEB-18 WEB-28 SCR-07 SCR-20                      |
+| UI composites break their own rules: inline English copy, unused row selection, ignored locale props                               | Medium   | UI-06 UI-07                                             |
+| Provisioning state has no owner: a nine-field optional dependency bag and `process.cwd()` read deep in helpers                     | Medium   | SCR-06 SCR-08 SCR-13 SCR-16 SCR-19                      |
 
 ## Refactor order
 
@@ -149,14 +149,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: Adding a new view (e.g. calendar) to leads/deals means writing bespoke markup again instead of reusing one composite
 - Fix: Extract a shared `ViewSwitcher` composite (in `packages/ui`) parameterized by `{id,label,href}[]` and `active`
 - Effort: M
-
-### WEB-06: DRY, medium severity
-
-- Location: `apps/web/src/app/(app)/deals/DealLostReasonDialog.tsx` vs `apps/web/src/app/(app)/leads/LostReasonDialog.tsx`
-- Evidence: Deals and leads each carry a lost-reason dialog with the same reasons, note field and submit flow. The deal stage picker already uses the shared `StageSelect`.
-- Consequence: A change to the reasons or the dialog copy has to be made twice
-- Fix: Move one `LostReasonDialog` into the record parts and give it the submit action as a prop
-- Effort: S
 
 ### WEB-07: DRY, medium severity
 

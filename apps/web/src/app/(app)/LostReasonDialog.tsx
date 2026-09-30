@@ -13,12 +13,21 @@ import { Label } from '@ops/ui/components/ui/label'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { markLost } from '../../../server/crm/leads/actions'
+
+type LostResult = Readonly<{ ok: true }> | Readonly<{ ok: false; error: Readonly<{ code: string; message: string }> }>
 
 export type LostReasonDialogProps = Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
-  leadId: string
+  recordId: string
+  /** Singular record name used in the title, such as "lead" or "deal". */
+  noun: string
+  markLost: (input: {
+    id: string
+    expectedUpdatedAt: number
+    lostReasonId: string
+    lostNote: string
+  }) => Promise<LostResult>
   expectedUpdatedAt: number
   lostReasons: readonly { id: string; name: string }[]
 }>
@@ -41,7 +50,7 @@ function LostReasonDialogView(
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Mark lead as lost</DialogTitle>
+          <DialogTitle>Mark {props.noun} as lost</DialogTitle>
           <DialogDescription>Choose a reason so the pipeline stays useful.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
@@ -107,8 +116,8 @@ export function LostReasonDialog(props: LostReasonDialogProps) {
     if (!reason) return
     setError(undefined)
     setPending(true)
-    const result = await markLost({
-      id: props.leadId,
+    const result = await props.markLost({
+      id: props.recordId,
       expectedUpdatedAt: props.expectedUpdatedAt,
       lostReasonId: reason,
       lostNote: note,

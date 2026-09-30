@@ -9,7 +9,8 @@ import {
 } from '@ops/ui/composites/KanbanBoard'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { LostReasonDialog } from './LeadDialogs'
+import { markLost } from '../../../server/crm/leads/actions'
+import { LostReasonDialog } from '../LostReasonDialog'
 import { moveLead } from '../../../server/crm/leads/actions'
 import { leadStageMoveError } from '../../../server/crm/leads/types'
 import { deferredLostMoveResult } from './lead-board-model'
@@ -64,7 +65,9 @@ export function LeadBoard({
           onOpenChange={(open) => {
             if (!open) setLostMove(null)
           }}
-          leadId={lostMove.leadId}
+          recordId={lostMove.leadId}
+          noun="lead"
+          markLost={markLost}
           expectedUpdatedAt={lostMove.expectedUpdatedAt}
           lostReasons={lostReasons}
         />

@@ -8,7 +8,8 @@ import { DealControls } from '../DealControls'
 import type { DealDetailData } from '../../../../server/crm/deals/queries'
 import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
 import { RecordActionLinks } from '../../record-action-links'
-import { DealLostReasonDialog } from '../DealLostReasonDialog'
+import { markDealLostAction } from '../../../../server/crm/deals/actions'
+import { LostReasonDialog } from '../../LostReasonDialog'
 
 function DetailsCard({ data }: Readonly<{ data: DealDetailData }>) {
   const { deal, organization } = data
@@ -109,10 +110,12 @@ export function DealRecordClient({
           </div>
         }
       />
-      <DealLostReasonDialog
+      <LostReasonDialog
         open={lostOpen}
         onOpenChange={setLostOpen}
-        dealId={data.deal.id}
+        recordId={data.deal.id}
+        noun="deal"
+        markLost={markDealLostAction}
         expectedUpdatedAt={data.deal.updatedAt}
         lostReasons={data.lostReasons}
       />

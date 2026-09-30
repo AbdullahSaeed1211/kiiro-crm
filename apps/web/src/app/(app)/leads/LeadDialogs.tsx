@@ -1,10 +1,10 @@
 'use client'
 
 import type { LeadPageData } from '../../../server/crm/leads/types'
-import { LostReasonDialog } from './LostReasonDialog'
+import { markLost } from '../../../server/crm/leads/actions'
+import { LostReasonDialog } from '../LostReasonDialog'
 
 export { ConvertDialog } from './ConvertDialog'
-export { LostReasonDialog } from './LostReasonDialog'
 
 type DialogProps = Readonly<{ data: LeadPageData; open: boolean; onOpenChange: (open: boolean) => void }>
 
@@ -14,7 +14,9 @@ export function LostDialog(props: DialogProps) {
     <LostReasonDialog
       open={props.open}
       onOpenChange={props.onOpenChange}
-      leadId={lead.id}
+      recordId={lead.id}
+      noun="lead"
+      markLost={markLost}
       expectedUpdatedAt={lead.updatedAt}
       lostReasons={props.data.lostReasons}
     />
