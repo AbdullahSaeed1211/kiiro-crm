@@ -65,7 +65,7 @@ Depends on: wave 5 for the generic record lists. Done when: no native `<select>`
 
 Sign up, then automatic provisioning, as proposed in [the self-serve design](design/self-serve-saas.md). Its five phases are sub-waves: registry and API-driven provisioning, dispatch namespace and releases, public signup, custom domains, then plans and billing.
 
-- Before phase 1: a neutral demo tenant with example.test identities and a real pipeline, used by `seed:dev` and the end-to-end suite instead of the Mirch Media data; resolve the design's open questions with spikes, then record ADR-0005.
+- Done: a neutral demo workspace (Demo Agency, example.test identities, fictional clients) seeds `seed:dev` and the tests. Before phase 1: resolve the design's open questions with spikes, then record ADR-0005.
 - Phase 1 replaces the operator CLI, so the provisioning-script findings are closed by deleting or rewriting that code rather than refactoring it.
 - Findings: UX 10, 11; code-health ARCH-07, SCR-07, SCR-08, SCR-10, SCR-13, SCR-14, SCR-16, SCR-17, SCR-19, SCR-21.
 
