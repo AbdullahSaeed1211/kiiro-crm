@@ -34,7 +34,12 @@ export const tenantSchema = z
     d1: z.object({ name: cloudflareName, id: z.uuid().optional() }),
     r2: z.object({ bucket: cloudflareName }),
     rateLimitNamespaces: z.object({ intake: namespaceId, auth: namespaceId }),
-    intake: z.object({ allowedOrigins: z.array(z.url()), turnstileHostnames: z.array(text) }),
+    intake: z.object({
+      allowedOrigins: z.array(z.url()),
+      turnstileHostnames: z.array(text),
+      /** The public key of the Turnstile widget that hosted forms show; hosted forms are off in production without it. */
+      turnstileSiteKey: text.optional(),
+    }),
     deployOrder: z.number().int().min(0),
   })
   .superRefine((tenant, context) => {

@@ -13,6 +13,7 @@ interface __BaseEnv_CloudflareEnv {
 	TENANT_SECRET: string;
 	TURNSTILE_SECRET: string;
 	TURNSTILE_HOSTNAMES: string;
+	TURNSTILE_SITE_KEY: string;
 	MAIL_TRANSPORT: string;
 	MAIL_FROM_ADDRESS: string;
 	MAIL_FROM_NAME: string;
@@ -39,6 +40,7 @@ declare namespace Cloudflare {
 		TENANT_SECRET: string;
 		TURNSTILE_SECRET: string;
 		TURNSTILE_HOSTNAMES: string;
+	TURNSTILE_SITE_KEY: string;
 		MAIL_TRANSPORT: string;
 		MAIL_FROM_ADDRESS: string;
 		MAIL_FROM_NAME: string;
@@ -56,7 +58,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PAYLOAD_SECRET" | "INTERNAL_SECRET" | "TENANT_SECRET" | "TURNSTILE_SECRET" | "TURNSTILE_HOSTNAMES" | "MAIL_TRANSPORT" | "MAIL_FROM_ADDRESS" | "MAIL_FROM_NAME" | "MAIL_PROBE_RECIPIENT" | "APP_ORIGIN" | "TENANT_SLUG" | "TENANT_DISPLAY_NAME" | "INBOUND_DOMAIN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PAYLOAD_SECRET" | "INTERNAL_SECRET" | "TENANT_SECRET" | "TURNSTILE_SECRET" | "TURNSTILE_HOSTNAMES" | "TURNSTILE_SITE_KEY" | "MAIL_TRANSPORT" | "MAIL_FROM_ADDRESS" | "MAIL_FROM_NAME" | "MAIL_PROBE_RECIPIENT" | "APP_ORIGIN" | "TENANT_SLUG" | "TENANT_DISPLAY_NAME" | "INBOUND_DOMAIN">> {}
 }
 
 // Begin runtime types

@@ -26,7 +26,7 @@
   "rateLimitNamespaces": { "intake": "1001", "auth": "1002" },
   "intake": {
     "allowedOrigins": ["https://www.mirchmedia.com", "https://web.mirchmedia.com"],
-    "turnstileHostnames": ["www.mirchmedia.com", "web.mirchmedia.com"],
+    "turnstileHostnames": ["www.mirchmedia.com", "web.mirchmedia.com", "crm.mirchmedia.com"],
   },
   "deployOrder": 0,
 }

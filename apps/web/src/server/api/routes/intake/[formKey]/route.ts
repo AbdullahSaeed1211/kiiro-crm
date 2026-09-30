@@ -11,8 +11,8 @@ interface RouteContext {
 
 /**
  * A form with questions is also hosted by this app, and its page posts from the app's own origin. That origin is
- * allowed for such a form without being listed, and it is protected by the intake rate limit instead of a Turnstile
- * widget, which the hosted page does not render.
+ * allowed for such a form without being listed. In production the page shows a Turnstile widget and the token is
+ * verified like any other submission; outside production the check is skipped so the form can be tried locally.
  */
 async function withHostedOrigin(
   request: Request,
@@ -30,7 +30,11 @@ async function withHostedOrigin(
   })
   const questions = formFieldsSchema.safeParse(found.docs.at(0)?.formFields ?? [])
   const hosted = questions.success && questions.data.length > 0
-  return hosted ? { ...form, allowedOrigins: [...form.allowedOrigins, appOrigin], requireTurnstile: false } : form
+  if (!hosted) return form
+  const allowedOrigins = [...form.allowedOrigins, appOrigin]
+  return process.env.NODE_ENV === 'production'
+    ? { ...form, allowedOrigins }
+    : { ...form, allowedOrigins, requireTurnstile: false }
 }
 
 async function handle(request: Request, context: RouteContext): Promise<Response> {

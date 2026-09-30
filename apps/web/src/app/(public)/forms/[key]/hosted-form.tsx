@@ -5,6 +5,7 @@ import { Input } from '@ops/ui/components/ui/input'
 import { Label } from '@ops/ui/components/ui/label'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Textarea } from '@ops/ui/components/ui/textarea'
+import Script from 'next/script'
 import { useState, type SyntheticEvent } from 'react'
 
 type Field = Readonly<{
@@ -65,12 +66,14 @@ function Question({ field }: Readonly<{ field: Field }>) {
 /** Reads the answers by question key; a ticked checkbox sends "yes". */
 function answersOf(form: HTMLFormElement, fields: readonly Field[]): Record<string, string> {
   const data = new FormData(form)
+  const token = data.get('cf-turnstile-response')
+  const answers = fields.flatMap((field): [string, string][] => {
+    const value = data.get(field.key)
+    if (field.type === 'checkbox') return value === null ? [] : [[field.key, 'yes']]
+    return typeof value === 'string' && value.trim() !== '' ? [[field.key, value.trim()]] : []
+  })
   return Object.fromEntries(
-    fields.flatMap((field) => {
-      const value = data.get(field.key)
-      if (field.type === 'checkbox') return value === null ? [] : [[field.key, 'yes']]
-      return typeof value === 'string' && value.trim() !== '' ? [[field.key, value.trim()]] : []
-    }),
+    typeof token === 'string' && token !== '' ? [...answers, ['cf-turnstile-response', token]] : answers,
   )
 }
 
@@ -80,7 +83,14 @@ export function HostedForm({
   title,
   fields,
   successMessage,
-}: Readonly<{ formKey: string; title: string; fields: readonly Field[]; successMessage: string }>) {
+  siteKey,
+}: Readonly<{
+  formKey: string
+  title: string
+  fields: readonly Field[]
+  successMessage: string
+  siteKey: string
+}>) {
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle')
   const [error, setError] = useState<string | null>(null)
   const submit = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -118,6 +128,12 @@ export function HostedForm({
       {fields.map((field) => (
         <Question key={field.key} field={field} />
       ))}
+      {siteKey === '' ? null : (
+        <>
+          <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
+          <div className="cf-turnstile" data-sitekey={siteKey} />
+        </>
+      )}
       {error === null ? null : (
         <p role="alert" className="text-sm text-destructive">
           {error}
