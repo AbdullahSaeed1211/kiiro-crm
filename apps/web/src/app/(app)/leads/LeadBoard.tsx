@@ -37,14 +37,19 @@ export function LeadBoard({
   }, [cards])
   const handleMove = async ({ cardId, toStageId, expectedUpdatedAt }: KanbanMove) => {
     const destination = stages.find((stage) => stage.id === toStageId)
-    if (destination?.category === 'done_failure') {
+    const category = destination?.category
+    const source = stageByCard.current.get(cardId) ?? toStageId
+    if (category === 'done_failure') {
       setLostMove({ leadId: cardId, expectedUpdatedAt })
-      return deferredLostMoveResult(stageByCard.current.get(cardId) ?? toStageId, expectedUpdatedAt)
+      return deferredLostMoveResult(source, expectedUpdatedAt)
     }
-    if (destination !== undefined) {
-      const error = leadMoveDestinationError(destination)
-      if (error !== null) return { ok: false as const, error: { code: 'VALIDATION', message: error } }
+    if (category === 'done_success') {
+      // Converting needs the organization, contact and deal choices, so the lead's page opens with that form.
+      router.push(`/leads/${cardId}?convert=1`)
+      return deferredLostMoveResult(source, expectedUpdatedAt)
     }
+    const blocked = destination === undefined ? null : leadMoveDestinationError(destination)
+    if (blocked !== null) return { ok: false as const, error: { code: 'VALIDATION', message: blocked } }
     const result = await moveLead({ leadId: cardId, toStageId, expectedUpdatedAt })
     if (result.ok) stageByCard.current.set(cardId, toStageId)
     return result

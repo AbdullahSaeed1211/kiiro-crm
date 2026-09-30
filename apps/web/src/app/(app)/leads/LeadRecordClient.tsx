@@ -4,6 +4,7 @@ import { ActivityFeed, RecordPageLayout, StageSelect, type ActivityEntry } from 
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { Button } from '@ops/ui/components/ui/button'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, type ReactNode } from 'react'
 import { moveLead, updateLead } from '../../../server/crm/leads/actions'
 import type { LeadPageData } from '../../../server/crm/leads/types'
@@ -252,7 +253,8 @@ export function LeadRecordClient({
   currency: string
   slots: LeadSlots
 }>) {
-  const [convertOpen, setConvertOpen] = useState(false)
+  // The board sends a card dropped on the converted column here with ?convert=1, so the dialog opens ready.
+  const [convertOpen, setConvertOpen] = useState(useSearchParams().get('convert') === '1')
   const [lostOpen, setLostOpen] = useState(false)
   const { run, error: actionError } = useVersionedAction({ refreshOnSuccess: true })
   const lead = data.item.lead
