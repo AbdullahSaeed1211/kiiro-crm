@@ -2,12 +2,22 @@
 
 import { revalidatePath } from 'next/cache'
 import { asId } from '@ops/kernel'
-import { assignLeads, runConvertLead, runCreateLead, runMarkLost, runMoveLead, runUpdateLead } from '@ops/module-crm'
+import {
+  assignLeads,
+  moveLeads,
+  runConvertLead,
+  runCreateLead,
+  runMarkLost,
+  runMoveLead,
+  runUpdateLead,
+} from '@ops/module-crm'
 import { crmDeps } from '../../container'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
 import { leadStageMoveError } from './types'
 import { actionError, toActionResult, type ActionResult } from '../../action-result'
+
+const BOARD_PATH = '/leads/board'
 
 function moveInput(input: unknown): { leadId: string; toStageId: string } | null {
   if (typeof input !== 'object' || input === null) return null
@@ -48,6 +58,16 @@ export async function assignLeadsAction(input: unknown): Promise<ActionResult<{ 
   return toActionResult(result)
 }
 
+/** Moves the selected leads to one open stage and reports how many changed. */
+export async function moveLeadsAction(input: unknown): Promise<ActionResult<{ updated: number; skipped: number }>> {
+  const result = await moveLeads(await crmDeps(), input)
+  if (result.ok) {
+    revalidatePath('/leads')
+    revalidatePath(BOARD_PATH)
+  }
+  return toActionResult(result)
+}
+
 /** Moves a lead between workflow stages for board interactions. */
 export async function moveLead(input: unknown): Promise<ActionResult<{ stageId: string; updatedAt: number }>> {
   const invalid = await validateLeadMoveDestination(input)
@@ -55,7 +75,7 @@ export async function moveLead(input: unknown): Promise<ActionResult<{ stageId: 
   const result = await runMoveLead(await crmDeps(), input)
   if (result.ok) {
     revalidatePath('/leads')
-    revalidatePath('/leads/board')
+    revalidatePath(BOARD_PATH)
     return { ok: true, data: { stageId: result.value.stageId, updatedAt: result.value.updatedAt } }
   }
   return { ok: false, error: { code: result.error.code, message: result.error.message } }
@@ -68,7 +88,7 @@ export async function convertLead(input: unknown): Promise<ActionResult<unknown>
   const result = await runConvertLead(deps, applyWorkspaceCurrency(input, currency, true))
   if (result.ok) {
     revalidatePath('/leads')
-    revalidatePath('/leads/board')
+    revalidatePath(BOARD_PATH)
     revalidatePath(`/leads/${result.value.id}`)
   }
   return toActionResult(result)
@@ -79,7 +99,7 @@ export async function markLost(input: unknown): Promise<ActionResult<unknown>> {
   const result = await runMarkLost(await crmDeps(), input)
   if (result.ok) {
     revalidatePath('/leads')
-    revalidatePath('/leads/board')
+    revalidatePath(BOARD_PATH)
     revalidatePath(`/leads/${result.value.id}`)
   }
   return toActionResult(result)

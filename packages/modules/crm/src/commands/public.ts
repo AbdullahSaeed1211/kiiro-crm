@@ -2,7 +2,7 @@ export { createContact, createOrganization, updateContact, updateOrganization } 
 export { createDeal, createLead, moveDeal, moveLead, updateDeal, updateLead } from './pipeline'
 export { convertLead, markLost } from './conversion'
 export { setCustomFields } from './custom-fields'
-export { assignLeads } from './bulk'
+export { assignLeads, moveLeads } from './bulk'
 
 export {
   createContact as runCreateContact,

@@ -84,6 +84,10 @@ function pageHref(params: SearchParams, page: number): string {
   return `/leads?${next.toString()}`
 }
 
+function openStages(stages: Awaited<ReturnType<typeof listLeads>>['stages']) {
+  return stages.filter((stage) => !['done_success', 'done_failure', 'cancelled'].includes(stage.category))
+}
+
 function LeadTable({
   result,
   params,
@@ -91,7 +95,7 @@ function LeadTable({
 }: Readonly<{ result: Awaited<ReturnType<typeof listLeads>>; params: SearchParams; canBulk: boolean }>) {
   return (
     <LeadBulkTable
-      owners={canBulk ? result.owners : null}
+      bulk={canBulk ? { owners: result.owners, stages: openStages(result.stages) } : null}
       key={`${String(result.page)}:${String(result.total)}`}
       columns={TABLE_COLUMNS}
       rows={result.items.map(row)}
