@@ -34,7 +34,7 @@ export function LeadCreateDialogClient({ stageId, compact }: Readonly<{ stageId?
           id: 'lead-first-name',
           name: 'firstName',
           label: copy.leadFieldFirstName,
-          placeholder: 'Jane',
+          placeholder: 'e.g. Jane',
           maxLength: 200,
         },
         { id: 'lead-email', name: 'email', label: copy.leadFieldEmail, placeholder: 'jane@acme.test', type: 'email' },
@@ -43,7 +43,7 @@ export function LeadCreateDialogClient({ stageId, compact }: Readonly<{ stageId?
           id: 'lead-company',
           name: 'companyName',
           label: copy.leadFieldCompany,
-          placeholder: 'Acme Inc.',
+          placeholder: 'e.g. Acme Inc.',
           maxLength: 10000,
         },
       ]}

@@ -7,9 +7,9 @@ import { createLead } from '../../../server/crm/leads/actions'
 
 const fields = (sources: readonly { id: string; name: string }[]): readonly RecordFieldConfig[] => [
   { name: 'title', label: 'Title', placeholder: 'e.g. Website redesign inquiry', required: true },
-  { name: 'firstName', label: 'First name', placeholder: 'Jane' },
+  { name: 'firstName', label: 'First name', placeholder: 'e.g. Jane' },
   { name: 'lastName', label: 'Last name', placeholder: 'Doe' },
-  { name: 'companyName', label: 'Company', placeholder: 'Acme Inc.' },
+  { name: 'companyName', label: 'Company', placeholder: 'e.g. Acme Inc.' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'jane@acme.test' },
   { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 000 0000' },
   {

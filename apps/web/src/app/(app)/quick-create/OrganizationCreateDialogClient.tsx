@@ -24,7 +24,7 @@ export function OrganizationCreateDialogClient() {
           id: 'org-name',
           name: 'name',
           label: copy.organizationFieldName,
-          placeholder: 'Acme Inc.',
+          placeholder: 'e.g. Acme Inc.',
           maxLength: 300,
           required: true,
         },

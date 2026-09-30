@@ -46,22 +46,12 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Tasks. Effort: Quick. Codes: T-10.
 - `DataTable` supports selection (`selectable`, `getSelectedRowIds`), but no page passes it. Frappe connects `ListSelectBanner` and `ListBulkActions` to its list (`TasksListView.vue:158-184`). Turn it on for tasks, and later for leads and deals, with bulk stage, assignee and delete actions.
 
-### 15. Kanban hides columns and can't add to a column
-
-- Area: Boards and calendar. Effort: Quick. Codes: B-05 B-09.
-- Columns are a fixed `w-72` (`KanbanColumn.tsx:95`). At 1440px, Done is fully off-screen with no fade or peek. No column has a "+" button, although Plane and Twenty put one in the column header. Add an edge fade when the board overflows, and a stage-scoped quick-add in `KanbanColumn`'s header.
-
 ### 16. Tasks can't be rescheduled on the calendar
 
 - Area: Boards and calendar. Effort: Structural. Codes: B-04.
 - Plane's `day-tile.tsx:88-129` makes each day a drop target. Reuse the optimistic-update and rollback logic already in `KanbanBoard/board-state.ts` for `CalendarMonth`.
 
 ## Minor
-
-### 30. Placeholders read as entered values
-
-- Area: Design system. Effort: Quick. Codes: S-08 R-10.
-- `product.css:14` overrides shadcn's `--muted-foreground` with a darker `oklch(0.48 …)`, and example values like "Jane" and "Acme Inc." look like real data. Keep one definition of the token, lighten placeholders, and use example-style hints.
 
 ### 33. Duplicate React key on mobile timeline
 

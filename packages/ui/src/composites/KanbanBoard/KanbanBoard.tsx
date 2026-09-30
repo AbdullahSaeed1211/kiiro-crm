@@ -16,6 +16,7 @@ import {
   toggleCollapsed,
 } from './board-state'
 import { KanbanColumn } from './KanbanColumn'
+import { useMoreToScroll } from './use-more-to-scroll'
 import type { KanbanBoardLabels, KanbanCard, KanbanMove, KanbanMoveResult, KanbanStage } from './types'
 
 /** Props of {@link KanbanBoard}. */
@@ -84,6 +85,7 @@ function useCardMoves({ cards, labels, onMove, onConflict }: Omit<KanbanBoardPro
 export function KanbanBoard({ stages, cards, labels, onMove, onConflict, columnAction }: KanbanBoardProps) {
   const { current, moveCard } = useCardMoves({ cards, labels, onMove, ...(onConflict ? { onConflict } : {}) })
   const [collapsed, setCollapsed] = useState(() => initialCollapsed(stages))
+  const [boardRef, moreToScroll] = useMoreToScroll()
   const dragEnabled = useSyncExternalStore(subscribeDragQuery, dragQueryMatches, dragDisabledOnServer)
   const groups = useMemo(() => groupCards(stages, current), [stages, current])
 
@@ -105,7 +107,11 @@ export function KanbanBoard({ stages, cards, labels, onMove, onConflict, columnA
   )
 
   return (
-    <div className="ops-kanban-board flex min-h-96 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:snap-none">
+    <div
+      ref={boardRef}
+      data-more={moreToScroll}
+      className="ops-kanban-board flex min-h-96 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:snap-none data-[more=true]:[mask-image:linear-gradient(to_right,black_calc(100%-3rem),transparent)]"
+    >
       {stages.map((stage) => (
         <KanbanColumn
           key={stage.id}

@@ -806,3 +806,9 @@ select:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Hints read as examples, not entered values. */
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+}

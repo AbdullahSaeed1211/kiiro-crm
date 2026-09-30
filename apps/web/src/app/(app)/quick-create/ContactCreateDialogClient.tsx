@@ -24,7 +24,7 @@ export function ContactCreateDialogClient() {
           id: 'contact-first-name',
           name: 'firstName',
           label: copy.contactFieldFirstName,
-          placeholder: 'Jane',
+          placeholder: 'e.g. Jane',
           maxLength: 200,
           required: true,
         },
