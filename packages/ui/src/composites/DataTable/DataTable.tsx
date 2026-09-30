@@ -40,6 +40,8 @@ export type DataTableProps = Readonly<{
   emptyState?: ReactNode
   /** Enables row selection only when the caller also provides a meaningful bulk action surface. */
   selectable?: boolean
+  /** Rendered in the toolbar while rows are selected, with the selected row ids. */
+  bulkActions?: (selectedIds: readonly string[]) => ReactNode
   /** Optional controls placed before the column picker in the view toolbar. */
   toolbarStart?: ReactNode
   className?: string
@@ -180,6 +182,7 @@ export function DataTable({
   emptyState,
   selectable = false,
   toolbarStart,
+  bulkActions,
   className,
   mobileCard,
 }: DataTableProps) {
@@ -204,10 +207,12 @@ export function DataTable({
     },
     [router],
   )
+  const selectedIds = table.getSelectedRowIds()
   return (
     <div className={cn('ops-data-table flex flex-col gap-2', className)}>
       <div className="ops-data-table-toolbar flex flex-wrap items-center justify-end gap-2">
         {toolbarStart === undefined ? null : <div className="min-w-0 flex-1">{toolbarStart}</div>}
+        {bulkActions === undefined || selectedIds.length === 0 ? null : bulkActions(selectedIds)}
         <DataTableViewOptions table={table} label={labels.columns} />
       </div>
       {/* The vendored table wrapper scrolls on its own; making this wrapper the scroller lets the header stick. */}
@@ -239,7 +244,7 @@ export function DataTable({
         ) : (
           <div className="md:hidden">{emptyState}</div>
         ))}
-      <DataTableFooter pagination={pagination} labels={labels} selectedCount={table.getSelectedRowIds().length} />
+      <DataTableFooter pagination={pagination} labels={labels} selectedCount={selectedIds.length} />
     </div>
   )
 }

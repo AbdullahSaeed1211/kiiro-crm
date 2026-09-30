@@ -67,6 +67,8 @@ export type LeadListResult = Readonly<{
   readonly sources: readonly LookupRecord[]
   readonly lostReasons: readonly LookupRecord[]
   readonly people: readonly LeadPerson[]
+  /** Active users the actor can assign a lead to. */
+  readonly owners: readonly LeadPerson[]
 }>
 
 type LeadFacets = Readonly<{ source?: string; owner?: string }>
@@ -127,6 +129,18 @@ async function loadLeadPeople(
   return personMap(users.docs)
 }
 
+async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestContext>>): Promise<LeadPerson[]> {
+  const users = await context.payload.find({
+    collection: 'users',
+    where: { active: { equals: true } },
+    depth: 0,
+    limit: 100,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return [...personMap(users.docs).values()]
+}
+
 /** Reads visible leads and supporting lookup data for the table/board. */
 export async function listLeads(
   params: Readonly<{ q?: string; stages?: readonly string[]; page?: number }> & LeadFacets,
@@ -162,6 +176,7 @@ export async function listLeads(
     sources,
     lostReasons,
     people: [...people.values()],
+    owners: await loadOwnerOptions(context),
   }
 }
 

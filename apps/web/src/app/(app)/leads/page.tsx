@@ -1,12 +1,14 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import { DataTable, type DataTableColumn, type DataTableLabels, type DataTableRow } from '@ops/ui/composites/DataTable'
+import { type DataTableColumn, type DataTableLabels, type DataTableRow } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { UserPlus } from 'lucide-react'
 import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
+import { getProductContext } from '../../../server/auth/context'
 import { formatDate } from '../../../i18n/format'
+import { LeadBulkTable } from './LeadBulkTable'
 import { LeadListControls } from './LeadListControls'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
 
@@ -85,9 +87,11 @@ function pageHref(params: SearchParams, page: number): string {
 function LeadTable({
   result,
   params,
-}: Readonly<{ result: Awaited<ReturnType<typeof listLeads>>; params: SearchParams }>) {
+  canBulk,
+}: Readonly<{ result: Awaited<ReturnType<typeof listLeads>>; params: SearchParams; canBulk: boolean }>) {
   return (
-    <DataTable
+    <LeadBulkTable
+      owners={canBulk ? result.owners : null}
       key={`${String(result.page)}:${String(result.total)}`}
       columns={TABLE_COLUMNS}
       rows={result.items.map(row)}
@@ -120,6 +124,8 @@ function LeadTable({
 
 export default async function LeadsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
   const params = await searchParams
+  const { actor } = await getProductContext()
+  const canBulk = actor.role === 'owner' || actor.role === 'manager'
   const result = await listLeads({
     q: parseLeadSearch(params.q),
     stages: parseLeadStages(params.stage),
@@ -133,7 +139,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
       <PageContent>
         <PageHeader title="Leads" count={result.total} actions={<LeadCreateDialogClient />} />
         <LeadListControls stages={result.stages} sources={result.sources} />
-        <LeadTable result={result} params={params} />
+        <LeadTable result={result} params={params} canBulk={canBulk} />
       </PageContent>
     </>
   )

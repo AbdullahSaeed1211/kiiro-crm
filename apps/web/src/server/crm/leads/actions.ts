@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asId } from '@ops/kernel'
-import { runConvertLead, runCreateLead, runMarkLost, runMoveLead, runUpdateLead } from '@ops/module-crm'
+import { assignLeads, runConvertLead, runCreateLead, runMarkLost, runMoveLead, runUpdateLead } from '@ops/module-crm'
 import { crmDeps } from '../../container'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
@@ -37,6 +37,13 @@ export async function createLead(input: unknown): Promise<ActionResult<unknown>>
 /** Updates a lead using its expected version. */
 export async function updateLead(input: unknown): Promise<ActionResult<unknown>> {
   const result = await runUpdateLead(await crmDeps(), input)
+  if (result.ok) revalidatePath('/leads')
+  return toActionResult(result)
+}
+
+/** Sets one owner on the selected leads and reports how many changed. */
+export async function assignLeadsAction(input: unknown): Promise<ActionResult<{ updated: number; skipped: number }>> {
+  const result = await assignLeads(await crmDeps(), input)
   if (result.ok) revalidatePath('/leads')
   return toActionResult(result)
 }
