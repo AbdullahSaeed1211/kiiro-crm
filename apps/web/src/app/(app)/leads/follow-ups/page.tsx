@@ -69,9 +69,8 @@ export default async function LeadFollowUpsPage({
               <Link
                 href={mine ? '/leads/follow-ups' : '/leads/follow-ups?owner=me'}
                 className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
-                aria-pressed={mine}
               >
-                {mine ? 'Showing my leads' : 'Only my leads'}
+                {mine ? 'Show everyone’s leads' : 'Only my leads'}
               </Link>
               <ViewSwitcher
                 label="Lead views"

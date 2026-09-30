@@ -6,9 +6,9 @@ export const metadata: Metadata = { title: 'Import' }
 export const dynamic = 'force-dynamic'
 
 const TEMPLATES = [
-  ['organization', 'Organizations'],
-  ['contact', 'Contacts'],
-  ['lead', 'Leads'],
+  ['organization', 'Organization'],
+  ['contact', 'Contact'],
+  ['lead', 'Lead'],
 ] as const
 
 const EXPORTS = [

@@ -93,7 +93,8 @@ async function firstDetailHref(page: Page, prefix: string): Promise<string | und
     .evaluateAll((links) =>
       links.map((link) => link.getAttribute('href')).filter((href): href is string => href !== null),
     )
-  const detail = hrefs.find((href) => !href.endsWith('/new') && !href.includes('/board'))
+  const views = ['/new', '/board', '/follow-ups']
+  const detail = hrefs.find((href) => !views.some((view) => href.includes(view)))
   return detail
 }
 
@@ -661,7 +662,7 @@ test('configuration surfaces expose real controls and import starters', async ({
   await expect(page.getByRole('checkbox', { name: 'CRM module' })).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Mail module' })).toBeVisible()
   await page.goto('/settings/import')
-  await expect(page.getByRole('heading', { name: 'Import', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Import & export', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Lead template' })).toHaveAttribute(
     'href',
     '/api/v1/import/template/lead',
