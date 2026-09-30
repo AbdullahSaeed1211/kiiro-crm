@@ -4,7 +4,9 @@ import { getLeadPage } from '../../../../server/crm/leads/queries'
 import { LeadRecordClient } from '../LeadRecordClient'
 import { getOutboundEmailEnabled } from '../../../../server/capabilities'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
+import { RecordDetails } from '../../record-details'
 import { RecordCustomFields } from '../../record-custom-fields'
+import { RecordNotesTab } from '../../record-notes-tab'
 
 export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ id: string }> }>): Promise<Metadata> {
@@ -25,7 +27,11 @@ export default async function LeadPage({ params }: Readonly<{ params: Promise<{ 
         data={data}
         outboundEmailEnabled={outboundEmailEnabled}
         currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
-        customFields={<RecordCustomFields type="lead" id={data.item.lead.id} />}
+        slots={{
+          details: <RecordDetails type="lead" id={data.item.lead.id} />,
+          customFields: <RecordCustomFields type="lead" id={data.item.lead.id} />,
+          notes: <RecordNotesTab recordType="lead" recordId={data.item.lead.id} />,
+        }}
       />
     </main>
   )

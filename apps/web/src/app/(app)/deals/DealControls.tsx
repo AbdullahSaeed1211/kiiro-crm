@@ -3,13 +3,14 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Label } from '@ops/ui/components/ui/label'
+import { StageSelect } from '@ops/ui'
+import type { StageOption } from '@ops/ui/composites/StagePill'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import type { DealActionResult } from '../../../server/crm/deals/actions'
 import { moveDealAction, updateDealAction } from '../../../server/crm/deals/actions'
 import { ClosingControls } from './DealClosingControls'
 
-type Stage = Readonly<{ id: string; name: string; category: string }>
 type Contact = Readonly<{ id: string; name: string }>
 type Deal = Readonly<{
   id: string
@@ -47,40 +48,35 @@ type ActionProps = Readonly<{
   run: (task: () => Promise<DealActionResult>, onFailure?: () => void) => void
 }>
 
-function StagePicker({ deal, stages, pending, setError, run }: ActionProps & Readonly<{ stages: readonly Stage[] }>) {
-  const [selectedStage, setSelectedStage] = useState(deal.stageId)
+function StagePicker({
+  deal,
+  stages,
+  pending,
+  setError,
+  run,
+}: ActionProps & Readonly<{ stages: readonly StageOption[] }>) {
   function changeStage(stageId: string) {
     const destination = stages.find((stage) => stage.id === stageId)
     if (destination?.category === 'done_failure') {
       setError('Choose a lost reason and use Mark lost to close this deal.')
       return
     }
-    setSelectedStage(stageId)
     run(
       () => moveDealAction({ dealId: deal.id, toStageId: stageId, expectedUpdatedAt: deal.updatedAt }),
       () => {
-        setSelectedStage(deal.stageId)
+        // rollback handled by parent
       },
     )
   }
   return (
     <div className="grid gap-2">
-      <Label htmlFor="deal-stage">Stage</Label>
-      <select
-        id="deal-stage"
-        value={selectedStage}
-        onChange={(event) => {
-          changeStage(event.target.value)
-        }}
+      <StageSelect
+        stages={stages}
+        value={deal.stageId}
+        onChange={changeStage}
+        labels={{ label: 'Stage', terminalGroup: 'Closed', placeholder: 'Select stage' }}
         disabled={pending}
-        className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
-      >
-        {stages.map((stage) => (
-          <option key={stage.id} value={stage.id}>
-            {stage.name}
-          </option>
-        ))}
-      </select>
+      />
     </div>
   )
 }
@@ -202,17 +198,17 @@ function ContactPicker({ deal, contacts, pending, run }: ActionProps & Readonly<
 export function DealControls({
   deal,
   stages,
-  lostReasons,
   contacts,
   stageCategory,
   currency,
+  onMarkLost,
 }: Readonly<{
   deal: Deal
-  stages: readonly Stage[]
-  lostReasons: readonly Readonly<{ id: string; name: string }>[]
+  stages: readonly StageOption[]
   contacts: readonly Contact[]
   stageCategory: string
   currency: string
+  onMarkLost: () => void
 }>) {
   const { pending, error, setError, run } = useDealAction()
   return (
@@ -223,11 +219,10 @@ export function DealControls({
       <ClosingControls
         deal={deal}
         stages={stages}
-        lostReasons={lostReasons}
         stageCategory={stageCategory}
         pending={pending}
-        setError={setError}
         run={run}
+        onMarkLost={onMarkLost}
       />
       {error === null ? null : (
         <p role="alert" className="text-sm text-destructive">

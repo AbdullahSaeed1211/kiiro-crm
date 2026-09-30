@@ -674,6 +674,12 @@ Port `UnitOfWork.run(fn)`; implementation per D-36. In-process `EventBus`, dispa
 
 ## 10. Domain modules
 
+An agency tenant owns one workspace for its staff, sales and work. The tenant is the isolation boundary; the agency is the business operating inside it, not another tenant. For Mirch Media, ETCPA, Austin Optics and the other managed accounts may be CRM organizations with one or more linked projects. Client work does not require a separate tenant.
+
+The agency also owns internal work. A project may have no client organization, and a task may have no project. Mirch Media can therefore run internal projects and personal follow-up tasks alongside client projects. Staff belong to the tenant and can be assigned to client or internal projects and tasks under the scope rules in §9.10. Client names, project names and assignments are data, not application constants.
+
+Sales belongs to the agency, not to a client project. Leads and deals have configurable, separate stage pipelines (§9.4). A lead pipeline needs intermediate stages and terminal success and closed or lost outcomes; the tenant chooses the stage names. Lead conversion marks the lead's success stage and creates a deal (§10.1). A deal's won stage records the completed sale; its lost stage records failure. Follow-up tasks may relate directly to a lead or deal without a project. A won-deal playbook may create a linked client project, but lead capture and sales follow-up do not require one.
+
 ### 10.1 CRM (`@ops/module-crm`)
 Record types `organization`, `contact`, `lead`, `deal`; lookups `source`, `lostReason`.
 | Type | Core fields | Tracked fields |
@@ -702,6 +708,10 @@ Commands: `createProject`, `updateProject`, `addProjectMember`, `removeProjectMe
 Query `myTasksBuckets(actor, timeZone, now)` → `{ overdue, today, next7Days, later, noDueDate }` (non-terminal stages only).
 
 ### 10.3 Intake (`@ops/module-intake`)
+Custom forms are tenant-owned input surfaces for the agency's own sales and for managed-client intake. Owners and managers must be able to create, preview, publish, disable and edit forms without a code change. A form definition must control its questions, labels, field types, required flags, display order and validation. Each answer maps to a built-in lead field, a tenant-defined lead field, or a retained submission answer. Form settings choose the lead source, owner, assignees and notification recipients from tenant data. Every accepted submission retains its original answers and the created lead reference, even after the form definition changes. Published browser forms keep the origin, Turnstile, size and deduplication protections below.
+
+Lead creation is the defined submission destination. The existing `IntakeForm` field map configures answer routing but does not provide the custom form builder or renderer. Creating project or task records from a form requires a separate destination contract and authorization rules before implementation; those destinations are not part of the lead intake contract below.
+
 `IntakeForm { id; key (slug, unique); name; active; targetRecordType: 'lead'; fieldMap: Record<incomingKey, targetField | 'custom:<key>' | 'ignore'>; allowedOrigins: string[];
 requireTurnstile: boolean (forced true in production for browser submissions); serverKeyHashes: string[] (SHA-256 of per-site server keys); defaultOwnerId?; defaultAssigneeIds: Id[];
 defaultSourceId?; notifyUserIds: Id[]; notifyGroupIds: Id[]; successMessage; redirectUrl?; emailAlias? (e.g. 'leads') }`.

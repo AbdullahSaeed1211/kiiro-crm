@@ -152,10 +152,10 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 
 ### WEB-06: DRY, medium severity
 
-- Location: `apps/web/src/app/(app)/deals/DealControls.tsx:69-83` vs `apps/web/src/app/(app)/leads/LeadRecordClient.tsx:175` (`StageSelect` from `@ops/ui`)
-- Evidence: Deal stage editing uses a native `<select>` with manual `useState`; leads use the shared `StageSelect` composite
-- Consequence: Deal stage picker won't get accessibility/styling fixes made to `StageSelect`; two code paths to test
-- Fix: Replace the native select in `DealControls.tsx` with `StageSelect`
+- Location: `apps/web/src/app/(app)/deals/DealLostReasonDialog.tsx` vs `apps/web/src/app/(app)/leads/LostReasonDialog.tsx`
+- Evidence: Deals and leads each carry a lost-reason dialog with the same reasons, note field and submit flow. The deal stage picker already uses the shared `StageSelect`.
+- Consequence: A change to the reasons or the dialog copy has to be made twice
+- Fix: Move one `LostReasonDialog` into the record parts and give it the submit action as a prop
 - Effort: S
 
 ### WEB-07: DRY, medium severity

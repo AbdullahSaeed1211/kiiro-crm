@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { DirectoryListHeader, ContactsTable } from '../directory-view'
 import { listContacts, parseDirectoryPage, parseDirectorySort, queryValue } from '../../../server/crm/directory/data'
+import { ContactCreateDialogClient } from '../quick-create/ContactCreateDialogClient'
 
 export const metadata: Metadata = { title: 'Contacts' }
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,7 @@ export default async function ContactsPage({
   const sort = parseDirectorySort(queryValue(params.sort))
   const result = await listContacts({ query, sort, page: parseDirectoryPage(queryValue(params.page)) })
   return (
-    <DirectoryListHeader kind="contacts" total={result.total}>
+    <DirectoryListHeader kind="contacts" total={result.total} actions={<ContactCreateDialogClient />}>
       <ContactsTable result={result} query={query} sort={sort} />
     </DirectoryListHeader>
   )

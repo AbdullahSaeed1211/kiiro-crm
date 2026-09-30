@@ -48,12 +48,7 @@ function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
 
 function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
   const lead = data.item.lead
-  const details = [
-    ['Email', optionalValue(lead.email)],
-    ['Phone', optionalValue(lead.phone)],
-    ['Company', optionalValue(lead.companyName)],
-    ['Source', optionalValue(data.item.source?.name ?? null)],
-  ] as const
+  const details = [['Source', optionalValue(data.item.source?.name ?? null)]] as const
   const meta = [
     ['Created', formatDate(lead.createdAt)],
     ['Updated', formatDate(lead.updatedAt)],
@@ -101,7 +96,12 @@ function LeadActions({
 }
 
 // eslint-disable-next-line max-params -- tab content needs the record data, activity projection and capability flag.
-function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[], outboundEmailEnabled: boolean) {
+function leadTabs(
+  data: LeadPageData,
+  activity: readonly ActivityEntry[],
+  outboundEmailEnabled: boolean,
+  notes: ReactNode,
+) {
   return recordTabs(
     <ActivityFeed
       entries={activity}
@@ -112,6 +112,7 @@ function leadTabs(data: LeadPageData, activity: readonly ActivityEntry[], outbou
     {
       recordType: 'lead',
       recordId: data.item.lead.id,
+      notes,
       recipient: data.item.lead.email,
       outboundEmailEnabled,
       tasks: data.relatedTasks,
@@ -131,6 +132,9 @@ function leadOwner(owner: LeadPageData['item']['owner']) {
   )
 }
 
+/** Server-rendered sections the page passes in, because they load data with server-only code. */
+export type LeadSlots = Readonly<{ details: ReactNode; customFields: ReactNode; notes: ReactNode }>
+
 function LeadRecordLayout({
   data,
   isConverted,
@@ -142,10 +146,10 @@ function LeadRecordLayout({
   onSaveTitle,
   onChangeStage,
   outboundEmailEnabled,
-  customFields,
+  slots,
 }: Readonly<{
   data: LeadPageData
-  customFields: ReactNode
+  slots: LeadSlots
   isConverted: boolean
   isTerminal: boolean
   error: string | undefined
@@ -196,11 +200,12 @@ function LeadRecordLayout({
             <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
           </div>
         }
-        tabs={leadTabs(data, activity, outboundEmailEnabled)}
+        tabs={leadTabs(data, activity, outboundEmailEnabled, slots.notes)}
         aside={
           <div className="grid gap-4">
+            {slots.details}
             <LeadAside data={data} />
-            {customFields}
+            {slots.customFields}
           </div>
         }
       />
@@ -212,8 +217,13 @@ export function LeadRecordClient({
   data,
   outboundEmailEnabled,
   currency,
-  customFields,
-}: Readonly<{ data: LeadPageData; outboundEmailEnabled: boolean; currency: string; customFields: ReactNode }>) {
+  slots,
+}: Readonly<{
+  data: LeadPageData
+  outboundEmailEnabled: boolean
+  currency: string
+  slots: LeadSlots
+}>) {
   const router = useRouter()
   const [convertOpen, setConvertOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
@@ -265,7 +275,7 @@ export function LeadRecordClient({
           void changeStage(stageId)
         }}
         outboundEmailEnabled={outboundEmailEnabled}
-        customFields={customFields}
+        slots={slots}
         onConvert={() => {
           setConvertOpen(true)
         }}

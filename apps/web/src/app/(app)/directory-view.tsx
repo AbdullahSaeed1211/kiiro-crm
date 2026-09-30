@@ -1,9 +1,7 @@
-import { Button } from '@ops/ui/components/ui/button'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { ReactNode } from 'react'
-import Link from 'next/link'
 
 export { ContactsTable, OrganizationsTable } from './directory-list-view'
 export { ContactRecordView, OrganizationRecordView } from './directory-record-view'
@@ -12,23 +10,15 @@ export function DirectoryListHeader({
   kind,
   total,
   children,
-}: Readonly<{ kind: 'organizations' | 'contacts'; total: number; children: ReactNode }>) {
+  actions,
+}: Readonly<{ kind: 'organizations' | 'contacts'; total: number; children: ReactNode; actions: ReactNode }>) {
   const isOrganizations = kind === 'organizations'
   const title = isOrganizations ? 'Organizations' : 'Contacts'
-  const action = isOrganizations ? 'New organization' : 'New contact'
   return (
     <>
       <AppHeader breadcrumbs={[{ label: title }]} />
       <PageContent>
-        <PageHeader
-          title={title}
-          count={total}
-          actions={
-            <Button nativeButton={false} render={<Link href={`/${kind}/new`}>{action}</Link>}>
-              {action}
-            </Button>
-          }
-        />
+        <PageHeader title={title} count={total} actions={actions} />
         {children}
       </PageContent>
     </>

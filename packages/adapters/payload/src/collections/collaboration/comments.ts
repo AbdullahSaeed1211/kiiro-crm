@@ -41,9 +41,14 @@ function assertAuthor(operation: string, input: Record<string, unknown>, actorId
     throw new Error('Comments must be authored by the current user.')
 }
 
-function assertImmutableReferences(operation: string, input: Record<string, unknown>): void {
-  if (operation === 'update' && ['author', 'recordType', 'recordId'].some((key) => key in input))
-    throw new Error('Comment author and parent references cannot be changed.')
+/** Payload hands update hooks the merged document, so a reference key is only a change when its value differs. */
+function assertImmutableReferences(operation: string, input: Record<string, unknown>, originalDoc?: unknown): void {
+  if (operation !== 'update') return
+  const original = typeof originalDoc === 'object' && originalDoc !== null ? originalDoc : {}
+  const changed = ['author', 'recordType', 'recordId'].some(
+    (key) => key in input && relationId(input[key]) !== relationId(valueOf(original, key)),
+  )
+  if (changed) throw new Error('Comment author and parent references cannot be changed.')
 }
 
 function normalizeCommentFields({
@@ -79,7 +84,7 @@ async function validateCommentChange({
   const input = recordOf(data)
   const body = input['body']
   assertAuthor(operation, input, String(actor.id))
-  assertImmutableReferences(operation, input)
+  assertImmutableReferences(operation, input, originalDoc)
   assertBody(body)
   const mentions = input['mentions']
   assertMentions(mentions)

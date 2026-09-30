@@ -1,7 +1,8 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { RecordNotesTab } from './record-notes-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
-import { Globe2, UsersRound } from 'lucide-react'
+import { UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import type { OrganizationRecord } from '@ops/module-crm'
 import type {
@@ -12,53 +13,17 @@ import type {
   RecordAttachment,
   RelatedTask,
 } from '../../server/crm/directory/data'
-import { displayName, personLabel } from '../../server/crm/directory/data'
-import { safeExternalHref } from '../../server/crm/directory/utils'
-import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
+import { personLabel } from '../../server/crm/directory/data'
+import { Activity, DetailCard, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordActionLinks } from './record-action-links'
 import { RecordCustomFields } from './record-custom-fields'
+import { RecordDetails } from './record-details'
 
 function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null }>) {
-  const website = record.website === null ? null : safeExternalHref(record.website)
-  const phone = record.phone?.trim()
   return (
     <div className="space-y-0">
       <DetailCard title="Details">
         <dl className="grid gap-3 text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">Website</dt>
-            <dd className="mt-0.5">
-              {website === null ? (
-                <EmptyValue />
-              ) : (
-                <a
-                  href={website}
-                  className="inline-flex items-center gap-1 ops-brand-text hover:underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Globe2 aria-hidden className="size-3.5" />
-                  {website.replace(/^https?:\/\//, '')}
-                </a>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Email</dt>
-            <dd className="mt-0.5">
-              {record.email === null || record.email.trim() === '' ? (
-                <EmptyValue />
-              ) : (
-                <a href={`mailto:${record.email}`} className="ops-brand-text hover:underline">
-                  {record.email}
-                </a>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Phone</dt>
-            <dd className="mt-0.5">{phone === undefined || phone === '' ? <EmptyValue /> : phone}</dd>
-          </div>
           <div>
             <dt className="text-xs text-muted-foreground">Owner</dt>
             <dd className="mt-0.5">{personLabel(owner)}</dd>
@@ -83,6 +48,19 @@ function RelatedCreateAction({ href, label }: Readonly<{ href: string; label: st
   )
 }
 
+function getContactTitle(contact: { firstName: string; lastName: string | null }): string {
+  const lastName = contact.lastName ? ` ${contact.lastName}` : ''
+  return `${contact.firstName}${lastName}`
+}
+
+function getAddProjectHref(organizationId: string): string {
+  return `/projects/new?organizationId=${encodeURIComponent(organizationId)}`
+}
+
+function getAddContactHref(organizationId: string): string {
+  return `/contacts/new?organizationId=${encodeURIComponent(organizationId)}`
+}
+
 function OrganizationOverview({
   organizationId,
   relations,
@@ -92,12 +70,7 @@ function OrganizationOverview({
       label: 'Projects',
       count: relations.projects.length,
       empty: 'No projects linked yet.',
-      action: (
-        <RelatedCreateAction
-          href={`/projects/new?organizationId=${encodeURIComponent(organizationId)}`}
-          label="Add project"
-        />
-      ),
+      action: <RelatedCreateAction href={getAddProjectHref(organizationId)} label="Add project" />,
       items: relations.projects.map((project) => (
         <RelationRow key={project.id} href={`/projects/${project.id}`} title={project.name} />
       )),
@@ -106,17 +79,12 @@ function OrganizationOverview({
       label: 'Contacts',
       count: relations.contacts.length,
       empty: 'No contacts linked yet.',
-      action: (
-        <RelatedCreateAction
-          href={`/contacts/new?organizationId=${encodeURIComponent(organizationId)}`}
-          label="Add contact"
-        />
-      ),
+      action: <RelatedCreateAction href={getAddContactHref(organizationId)} label="Add contact" />,
       items: relations.contacts.map((contact) => (
         <RelationRow
           key={contact.id}
           href={`/contacts/${contact.id}`}
-          title={displayName(contact)}
+          title={getContactTitle(contact)}
           detail={contact.email ?? undefined}
         />
       )),
@@ -170,6 +138,19 @@ export function OrganizationRecordView({
   outboundEmailEnabled: boolean
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
+  const tabs = recordTabs(
+    <Activity entries={activity} recordType="organization" recordId={record.id} />,
+    emailMessages,
+    {
+      recordType: 'organization',
+      recordId: record.id,
+      notes: <RecordNotesTab recordType="organization" recordId={record.id} />,
+      recipient: record.email,
+      outboundEmailEnabled,
+      tasks: relatedTasks,
+      attachments,
+    },
+  )
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }]} />
@@ -201,21 +182,11 @@ export function OrganizationRecordView({
               label: 'Overview',
               content: <OrganizationOverview organizationId={record.id} relations={relations} />,
             },
-            ...recordTabs(
-              <Activity entries={activity} recordType="organization" recordId={record.id} />,
-              emailMessages,
-              {
-                recordType: 'organization',
-                recordId: record.id,
-                recipient: record.email,
-                outboundEmailEnabled,
-                tasks: relatedTasks,
-                attachments,
-              },
-            ),
+            ...tabs,
           ]}
           aside={
             <div className="grid gap-4">
+              <RecordDetails type="organization" id={record.id} />
               <OrganizationAside record={record} owner={owner} />
               <RecordCustomFields type="organization" id={record.id} />
             </div>

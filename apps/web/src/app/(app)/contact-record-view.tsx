@@ -1,4 +1,5 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { RecordNotesTab } from './record-notes-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
@@ -12,10 +13,10 @@ import type {
   RelatedTask,
 } from '../../server/crm/directory/data'
 import { displayName, personLabel } from '../../server/crm/directory/data'
-import { CopyButton } from './copy-button'
 import { RecordActionLinks } from './record-action-links'
 import { Activity, DetailCard, EmptyValue, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordCustomFields } from './record-custom-fields'
+import { RecordDetails } from './record-details'
 
 function ContactAside({
   record,
@@ -32,36 +33,6 @@ function ContactAside({
     <div className="space-y-4">
       <DetailCard title="Details">
         <dl className="grid gap-3 text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">Email</dt>
-            <dd className="mt-0.5 flex items-center justify-between gap-2">
-              {record.email === null || record.email.trim() === '' ? (
-                <EmptyValue />
-              ) : (
-                <>
-                  <a href={`mailto:${record.email}`} className="truncate ops-brand-text hover:underline">
-                    {record.email}
-                  </a>
-                  <CopyButton value={record.email} label="email" />
-                </>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Phone</dt>
-            <dd className="mt-0.5 flex items-center justify-between gap-2">
-              {record.phone === null ? (
-                <EmptyValue />
-              ) : (
-                <>
-                  <a href={`tel:${record.phone}`} className="truncate ops-brand-text hover:underline">
-                    {record.phone}
-                  </a>
-                  <CopyButton value={record.phone} label="phone number" />
-                </>
-              )}
-            </dd>
-          </div>
           <div>
             <dt className="text-xs text-muted-foreground">Organization</dt>
             <dd className="mt-0.5">
@@ -110,6 +81,15 @@ export function ContactRecordView({
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
   const title = displayName(record)
+  const tabs = recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages, {
+    recordType: 'contact',
+    recordId: record.id,
+    notes: <RecordNotesTab recordType="contact" recordId={record.id} />,
+    recipient: record.email,
+    outboundEmailEnabled,
+    tasks: relatedTasks,
+    attachments,
+  })
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Contacts', href: '/contacts' }, { label: title }]} />
@@ -134,16 +114,10 @@ export function ContactRecordView({
               outboundEmailEnabled={outboundEmailEnabled}
             />
           }
-          tabs={recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages, {
-            recordType: 'contact',
-            recordId: record.id,
-            recipient: record.email,
-            outboundEmailEnabled,
-            tasks: relatedTasks,
-            attachments,
-          })}
+          tabs={tabs}
           aside={
             <div className="grid gap-4">
+              <RecordDetails type="contact" id={record.id} />
               <ContactAside record={record} owner={owner} relations={relations} />
               <RecordCustomFields type="contact" id={record.id} />
             </div>

@@ -33,8 +33,6 @@ export interface DealDetailData {
   readonly attachments: readonly RecordAttachment[]
 }
 
-export type { ActivityItem } from './activity'
-
 function dealDeps(context: RequestContext): CrmDeps {
   return {
     actor: context.actor,

@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
 import { formatDate } from '../../../i18n/format'
 import { LeadListControls } from './LeadListControls'
+import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
 
 type SearchParams = Record<string, string | string[] | undefined>
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -124,18 +125,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
     <>
       <AppHeader breadcrumbs={[{ label: 'Leads' }]} />
       <PageContent>
-        <PageHeader
-          title="Leads"
-          count={result.total}
-          actions={
-            <a
-              className="inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground"
-              href="/leads/new"
-            >
-              New lead
-            </a>
-          }
-        />
+        <PageHeader title="Leads" count={result.total} actions={<LeadCreateDialogClient />} />
         <LeadListControls stages={result.stages} />
         <LeadTable result={result} params={params} />
       </PageContent>

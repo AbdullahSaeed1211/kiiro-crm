@@ -111,13 +111,22 @@ export function recordTabs(
   related?: Readonly<{
     recordType: string
     recordId: string
+    notes: ReactNode
     recipient?: string | null
     outboundEmailEnabled?: boolean
     tasks: readonly RelatedTask[]
     attachments: readonly RecordAttachment[]
   }>,
 ): readonly RecordPageTab[] {
-  const tabs: RecordPageTab[] = [{ id: 'activity', label: 'Activity', content: activity }]
+  const tabs: RecordPageTab[] = []
+  if (related !== undefined) {
+    tabs.push({
+      id: 'notes',
+      label: 'Notes',
+      content: related.notes,
+    })
+  }
+  tabs.push({ id: 'activity', label: 'Activity', content: activity })
   if (related !== undefined) {
     tabs.push(
       {

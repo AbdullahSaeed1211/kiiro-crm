@@ -1,6 +1,6 @@
 # UX backlog
 
-24 findings are open: 2 critical, 11 major and 11 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+19 findings are open: 2 critical, 7 major and 10 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -18,20 +18,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ## Major
 
 - Status (2026-09-27, local dev server): four `route-health.spec.ts` runs fail at `v0.2.0` before any change: "workspace settings reopen" (desktop; two `Time zone` comboboxes match), "settings IA and command palette" (mobile; no `Workspace` heading in the settings navigation), and UX 34 and 35. The suite stops at the first failure per project, so later tests only run with `--grep-invert`.
-
-### 6. Only the record title can be edited in place
-
-- Area: CRM records. Effort: Structural. Codes: R-03.
-- Now: `RecordPageLayout.tsx:51` makes only the title editable. Lead fields are static text (`LeadRecordClient.tsx:49-83`). Changing one field on a contact or organization means going to `/edit`.
-- Reference: Twenty's `record-field` and Frappe's `Field.vue`: every field is click-to-edit with an optimistic save.
-- Fix: Generalise the per-field save in `DealControls.tsx` into a shared `PropertyField` component, then reuse it for task properties (T-01).
-
-### 7. Converting a lead always creates new records
-
-- Area: CRM records. Effort: Structural. Codes: R-01 R-02.
-- Now: `ConvertDialog.tsx:105-106` sends `contact: { create: true }` and can only create an organization. The domain layer does de-duplicate contacts by email (test `T-CRM-3`), but the user never sees a match. Create forms give no duplicate warning.
-- Reference: Frappe `ConvertToDealModal.vue:30-69`: a "Choose existing" toggle for both organization and contact.
-- Fix: Add existing-record pickers to the dialog, and a "possible duplicate" banner on create when the email, phone or domain matches.
 
 ### 8. Lists have no search, filter or sort bar
 
@@ -60,11 +46,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Tasks. Effort: Quick. Codes: T-10.
 - `DataTable` supports selection (`selectable`, `getSelectedRowIds`), but no page passes it. Frappe connects `ListSelectBanner` and `ListBulkActions` to its list (`TasksListView.vue:158-184`). Turn it on for tasks, and later for leads and deals, with bulk stage, assignee and delete actions.
 
-### 14. No notes or comment threads
-
-- Area: CRM records. Effort: Structural.
-- `recordTabs()` (`record-view-primitives.tsx:108-155`) yields Activity, Tasks, Files and Email. There's no written note or @mention thread on records or tasks, although mentions notifications already exist (`collaboration/mentions.ts`). Frappe's activity tabs and Twenty's notes both have one.
-
 ### 15. Kanban hides columns and can't add to a column
 
 - Area: Boards and calendar. Effort: Quick. Codes: B-05 B-09.
@@ -74,11 +55,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Boards and calendar. Effort: Structural. Codes: B-04.
 - Plane's `day-tile.tsx:88-129` makes each day a drop target. Reuse the optimistic-update and rollback logic already in `KanbanBoard/board-state.ts` for `CalendarMonth`.
-
-### 17. Each record type is created differently
-
-- Area: CRM records. Effort: Quick. Codes: T-05 R-08.
-- Tasks have both a New task page and an inline title-only input. Deals get a quick-create dialog (`DealCreateDialog.tsx`). Leads, contacts and organizations only have full-page forms. Frappe's `QuickEntryModal.vue` is one creation surface for everything. Choose one pattern: a quick-entry dialog everywhere, with "more fields" linking to the full page.
 
 ## Minor
 
@@ -106,11 +82,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Boards and calendar. Effort: Quick. Codes: B-06.
 - `tasks/board/page.tsx:74-79` prints "Assignees: Web Development Lead" on its own line. Twenty's `RecordBoardCardBody` shows an avatar chip inline with the other card details.
-
-### 25. Deals are built differently from leads
-
-- Area: CRM records. Effort: Quick. Codes: R-04 R-07 R-09.
-- The deal stage picker is a native select (`DealControls.tsx:66-85`), while leads use `StageSelect`. Mark lost is a form inside the side card (`DealClosingControls.tsx:78-121`), while leads use `LostReasonDialog`. Deal activity is a separate `ActivityCard` (`deals/[id]/page.tsx:20-46`) that prints raw verbs and has no load-more. Move deals onto the shared components.
 
 ### 26. Projects list repeats "Progress" in every row
 
