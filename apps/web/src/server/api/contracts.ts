@@ -19,7 +19,12 @@ import { CRM_CONTRACTS } from './contracts-crm'
 
 /** The product API, keyed by a stable contract id. */
 const API_CONTRACTS = {
-  'tasks.list': { method: 'GET', path: '/api/v1/tasks', summary: 'Tasks you can see, in rank order.', success: 200 },
+  'tasks.list': {
+    method: 'GET',
+    path: '/api/v1/tasks',
+    summary: 'Tasks you can see, in rank order; ?page=&limit= (max 100).',
+    success: 200,
+  },
   'tasks.get': { method: 'GET', path: '/api/v1/tasks/:id', summary: 'One task.', success: 200 },
   'tasks.create': {
     method: 'POST',
@@ -63,7 +68,12 @@ const API_CONTRACTS = {
     body: taskDatesSchema,
     success: 200,
   },
-  'projects.list': { method: 'GET', path: '/api/v1/projects', summary: 'Projects you can see.', success: 200 },
+  'projects.list': {
+    method: 'GET',
+    path: '/api/v1/projects',
+    summary: 'Projects you can see, by name; ?page=&limit= (max 100).',
+    success: 200,
+  },
   'projects.get': { method: 'GET', path: '/api/v1/projects/:id', summary: 'One project.', success: 200 },
   'projects.create': {
     method: 'POST',

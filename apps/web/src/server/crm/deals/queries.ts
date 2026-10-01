@@ -22,9 +22,8 @@ export interface DealDetailData {
   readonly workflow: Workflow
   readonly stage: Workflow['stages'][number]
   readonly organization: OrganizationRecord | null
+  /** The deal's own contacts; the pick list for adding more is searched, not loaded. */
   readonly contacts: readonly ContactRecord[]
-  readonly organizations: readonly OrganizationRecord[]
-  readonly allContacts: readonly ContactRecord[]
   readonly lostReasons: readonly { readonly id: string; readonly name: string }[]
   readonly activity: readonly ActivityItem[]
   readonly emailMessages: readonly EmailThreadMessage[]
@@ -128,6 +127,18 @@ export async function getDealListData(
   return { items, workflow, total: dealsPage.total, lostReasons }
 }
 
+/** Just the contacts attached to the deal, by id. */
+async function loadDealContacts(context: RequestContext, deal: DealRecord): Promise<readonly ContactRecord[]> {
+  if (deal.contactIds.length === 0) return []
+  const found = await listCrmPage(context.req, {
+    type: 'contact',
+    where: { id: { in: [...deal.contactIds] } },
+    page: 1,
+    limit: deal.contactIds.length,
+  })
+  return found.records
+}
+
 async function loadDealDetailParts({
   context,
   deps,
@@ -137,8 +148,7 @@ async function loadDealDetailParts({
   return Promise.all([
     deps.repo.loadWorkflow(deal.workflowId),
     deal.organizationId === null ? Promise.resolve(undefined) : deps.repo.get('organization', deal.organizationId),
-    deps.repo.list('organization'),
-    deps.repo.list('contact'),
+    loadDealContacts(context, deal),
     deps.repo.listLookups('lostReason'),
     loadActivity(context, id, true),
     listEmailMessages(context, { recordType: 'deal', recordId: id, parentAuthorized: true }),
@@ -152,26 +162,15 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
   const deps = dealDeps(context)
   const deal = await deps.repo.get('deal', asId(id))
   if (deal === undefined) return null
-  const [
-    workflow,
-    organization,
-    organizations,
-    allContacts,
-    lostReasons,
-    activity,
-    emailMessages,
-    relatedTasks,
-    attachments,
-  ] = await loadDealDetailParts({ context, deps, deal, id })
+  const [workflow, organization, contacts, lostReasons, activity, emailMessages, relatedTasks, attachments] =
+    await loadDealDetailParts({ context, deps, deal, id })
   if (workflow === undefined) return null
   return {
     deal,
     workflow,
     stage: stageForDeal(deal, workflow),
     organization: organization ?? null,
-    contacts: allContacts.filter((contact) => deal.contactIds.includes(contact.id)),
-    organizations,
-    allContacts,
+    contacts,
     lostReasons,
     activity,
     emailMessages,

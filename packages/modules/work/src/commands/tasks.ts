@@ -23,12 +23,25 @@ async function relatedAllowed(deps: WorkDeps, type: string | null, id: Id | null
     (type !== null && id !== null && (await deps.readRecord?.(type, id)) === true)
   )
 }
+/** The task and the chain of its parents, read one at a time; the depth limit and a cycle both stop the walk early. */
+async function ancestorsOf(deps: WorkDeps, task: WorkTaskRecord): Promise<Map<Id, WorkTaskRecord>> {
+  const chain = new Map<Id, WorkTaskRecord>([[task.id, task]])
+  let next = task.parentTaskId
+  while (next !== null && !chain.has(next) && chain.size <= MAX_SUBTASK_DEPTH + 1) {
+    const parent = await deps.repo.getTask(next)
+    if (parent === undefined) break
+    chain.set(parent.id, parent)
+    next = parent.parentTaskId
+  }
+  return chain
+}
+
 async function parentFor(deps: WorkDeps, id: Id | null): Promise<WorkResult<WorkTaskRecord | null>> {
   if (id === null) return ok(null)
   const parent = await deps.repo.getTask(id)
   if (parent === undefined) return fail('NOT_FOUND', 'parent task not found')
   if (!deps.can(deps.actor, 'read', resource(parent))) return fail('FORBIDDEN', 'parent task is outside your scope')
-  const records = new Map((await deps.repo.listTasks()).map((task) => [task.id, task]))
+  const records = await ancestorsOf(deps, parent)
   if (hasAncestorCycle(parent, records)) return fail('VALIDATION', 'task hierarchy contains a cycle')
   return subtaskDepth(parent, records) >= MAX_SUBTASK_DEPTH
     ? fail('VALIDATION', 'subtasks may be nested only two levels deep')

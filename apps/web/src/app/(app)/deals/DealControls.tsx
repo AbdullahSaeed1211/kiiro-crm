@@ -10,6 +10,7 @@ import { useState, useTransition } from 'react'
 import type { DealActionResult } from '../../../server/crm/deals/actions'
 import { moveDealAction, updateDealAction } from '../../../server/crm/deals/actions'
 import { ClosingControls } from './DealClosingControls'
+import { ContactPicker } from './DealContactPicker'
 
 type Contact = Readonly<{ id: string; name: string }>
 type Deal = Readonly<{
@@ -128,73 +129,6 @@ function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & R
   )
 }
 
-function ContactPicker({ deal, contacts, pending, run }: ActionProps & Readonly<{ contacts: readonly Contact[] }>) {
-  const [selected, setSelected] = useState<readonly string[]>(deal.contactIds)
-  const [primary, setPrimary] = useState<string | null>(deal.primaryContactId)
-  function toggle(id: string) {
-    const next = selected.includes(id) ? selected.filter((contactId) => contactId !== id) : [...selected, id]
-    setSelected(next)
-    const nextPrimary = next.includes(primary ?? '') ? primary : (next[0] ?? null)
-    setPrimary(nextPrimary)
-    run(
-      () =>
-        updateDealAction({
-          id: deal.id,
-          expectedUpdatedAt: deal.updatedAt,
-          patch: { contactIds: next, primaryContactId: nextPrimary },
-        }),
-      () => {
-        setSelected(deal.contactIds)
-        setPrimary(deal.primaryContactId)
-      },
-    )
-  }
-  function makePrimary(id: string) {
-    const previous = primary
-    setPrimary(id)
-    run(
-      () => updateDealAction({ id: deal.id, expectedUpdatedAt: deal.updatedAt, patch: { primaryContactId: id } }),
-      () => {
-        setPrimary(previous)
-      },
-    )
-  }
-  return (
-    <div className="grid gap-2">
-      <Label>Contacts</Label>
-      <div className="grid gap-2 rounded-lg border border-border p-3">
-        {contacts.length === 0 ? (
-          <span className="text-sm text-muted-foreground">No contacts available.</span>
-        ) : (
-          contacts.map((contact) => (
-            <label key={contact.id} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={selected.includes(contact.id)}
-                onChange={() => {
-                  toggle(contact.id)
-                }}
-                disabled={pending}
-              />
-              {contact.name}
-              <input
-                aria-label={`Primary contact: ${contact.name}`}
-                type="radio"
-                name="primary-contact"
-                checked={primary === contact.id}
-                onChange={() => {
-                  makePrimary(contact.id)
-                }}
-                disabled={pending || !selected.includes(contact.id)}
-              />
-            </label>
-          ))
-        )}
-      </div>
-    </div>
-  )
-}
-
 export function DealControls({
   deal,
   stages,
@@ -215,7 +149,7 @@ export function DealControls({
     <div className="grid gap-5">
       <StagePicker key={deal.stageId} deal={deal} stages={stages} pending={pending} setError={setError} run={run} />
       <ValueEditor deal={deal} currency={currency} pending={pending} setError={setError} run={run} />
-      <ContactPicker deal={deal} contacts={contacts} pending={pending} setError={setError} run={run} />
+      <ContactPicker deal={deal} contacts={contacts} pending={pending} run={run} />
       <ClosingControls
         deal={deal}
         stages={stages}

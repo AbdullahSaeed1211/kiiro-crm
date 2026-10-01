@@ -56,7 +56,7 @@ function ControlsCard({
           stages={data.workflow.stages}
           stageCategory={data.stage.category}
           currency={currency}
-          contacts={data.allContacts.map((contact) => ({
+          contacts={data.contacts.map((contact) => ({
             id: contact.id,
             name: [contact.firstName, contact.lastName].filter(Boolean).join(' '),
           }))}

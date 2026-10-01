@@ -3,7 +3,7 @@ import type { StageStore, Workflow } from '@ops/platform'
 import type { CollectionSlug, PayloadRequest, Sort, Where } from 'payload'
 import { domainError, err, ok, type Result } from '@ops/kernel'
 import { COLLECTIONS, RECORD_TYPES } from '../contracts/names'
-import { createAsSystem, findAsUser, updateIfUnchanged, updateAndMap } from './local-api'
+import { createAsSystem, findAsUser, pageAsUser, updateIfUnchanged, updateAndMap } from './local-api'
 import { toStageRecord, toTaskRecord } from './task-mapping'
 import { workArchiveAccess } from './work-archive'
 import { createUnitOfWork } from '../uow/unit-of-work'
@@ -163,7 +163,7 @@ function taskWriteMethods(
 
 function projectMethods(
   req: PayloadRequest,
-): Pick<Repository, 'getProject' | 'listProjects' | 'createProject' | 'updateProject'> {
+): Pick<Repository, 'getProject' | 'listProjects' | 'listProjectsPage' | 'createProject' | 'updateProject'> {
   return {
     getProject: async (id) => {
       const [doc] = await findAsUser(req, { collection: COLLECTIONS.projects, where: byId(id), limit: 1 })
@@ -174,6 +174,15 @@ function projectMethods(
       return (await Promise.all(docs.map((doc) => mapProject(req, doc)))).flatMap((doc) =>
         doc === undefined ? [] : [doc],
       )
+    },
+    listProjectsPage: async (page, limit) => {
+      const found = await pageAsUser(
+        req,
+        { collection: COLLECTIONS.projects, where: {}, sort: ['name', 'id'], page, limit },
+        (doc) => doc,
+      )
+      const mapped = await Promise.all(found.records.map((doc) => mapProject(req, doc)))
+      return { records: mapped.flatMap((project) => (project === undefined ? [] : [project])), total: found.total }
     },
     createProject: async (draft) => {
       const doc = await createAsSystem(req, COLLECTIONS.projects, projectData(draft))

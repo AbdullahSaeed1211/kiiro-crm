@@ -112,6 +112,11 @@ export interface ArchivedWork {
 export interface WorkRepository extends StageStore {
   getProject(id: Id): Promise<ProjectRecord | undefined>
   listProjects(): Promise<readonly ProjectRecord[]>
+  /** One page of projects by name, with the total number of projects. */
+  listProjectsPage(
+    page: number,
+    limit: number,
+  ): Promise<{ readonly records: readonly ProjectRecord[]; readonly total: number }>
   createProject(draft: ProjectDraft): Promise<Result<ProjectRecord>>
   updateProject(id: Id, patch: ProjectPatch, expectedUpdatedAt: number): Promise<ProjectRecord | undefined>
   getTask(id: Id): Promise<WorkTaskRecord | undefined>

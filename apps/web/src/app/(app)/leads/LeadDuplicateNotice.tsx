@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { crmDeps } from '../../../server/container'
+import { findDuplicateLeads } from '../../../server/crm/duplicate-leads'
 
 /** Warns when another lead shares this lead's email or phone, so the team merges work instead of repeating it. */
 export async function LeadDuplicateNotice({
@@ -7,15 +7,8 @@ export async function LeadDuplicateNotice({
   email,
   phone,
 }: Readonly<{ leadId: string; email: string | null; phone: string | null }>) {
-  if (email === null && phone === null) return null
-  const deps = await crmDeps()
-  const leads = await deps.repo.list('lead')
-  const matches = leads.filter(
-    (other) =>
-      other.id !== leadId &&
-      ((email !== null && other.email?.toLowerCase() === email.toLowerCase()) ||
-        (phone !== null && other.phone === phone)),
-  )
+  const found = await findDuplicateLeads({ leadId, email, phone })
+  const matches = found.leads
   if (matches.length === 0) return null
   return (
     <div role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
@@ -28,7 +21,7 @@ export async function LeadDuplicateNotice({
           </Link>
         </span>
       ))}
-      {matches.length > 3 ? ` and ${String(matches.length - 3)} more` : null}
+      {found.total > 3 ? ` and ${String(found.total - 3)} more` : null}
     </div>
   )
 }

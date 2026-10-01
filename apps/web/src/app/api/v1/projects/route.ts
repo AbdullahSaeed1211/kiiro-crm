@@ -1,13 +1,13 @@
-import { ok } from '@ops/kernel'
 import { createProject } from '@ops/module-work'
 import { contractBody } from '../../../../server/api/contracts'
 import { apiRoute } from '../../../../server/api/http'
+import { listProjectRecords } from '../../../../server/api/work-lists'
 import { workCommandDeps } from '@/server/container'
 
 export const dynamic = 'force-dynamic'
 
 /** `projects.list` */
-export const GET = apiRoute(async ({ context }) => ok(await (await workCommandDeps(context)).repo.listProjects()))
+export const GET = apiRoute(async ({ request, context }) => listProjectRecords(context, new URL(request.url)))
 
 /** `projects.create` */
 export const POST = apiRoute(async ({ request, context }) => {
