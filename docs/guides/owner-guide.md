@@ -72,6 +72,8 @@ On Leads and Deals, owners and managers tick several rows and choose either a ne
 
 Anyone can turn on two-step sign-in under Settings, Profile: add the setup key to an authenticator app (1Password, Google Authenticator, Authy), enter the first 6-digit code, and save the eight recovery codes shown once. From then on, signing in asks for a code after the password; a recovery code works once in place of a code. Five wrong codes in a row lock the second step for ten minutes. Owners are encouraged to turn it on first.
 
+A new password must be 12 to 128 characters, use at least five different characters, not be a well-known password, and not contain the name from the person's email address. Existing passwords are not re-checked, so change an old one under Settings, Profile.
+
 If a teammate loses their phone and their recovery codes, an owner opens Settings, Members and presses **Reset two-step** on their row; they sign in with their password and can set it up again. The app does not draw a QR code yet, so the key is typed or opened as a link on a phone.
 
 ## Calendar feed

@@ -1,4 +1,5 @@
 // Error and request parsing helpers stay dependency-light so route boundary tests do not boot Payload.
+import { passwordProblem } from '@ops/module-identity'
 // eslint-disable-next-line complexity -- status extraction intentionally handles the complete external error shape.
 export function errorResponse(error: unknown, fallback = 'Unable to complete the request.'): Response {
   const candidate =
@@ -32,10 +33,6 @@ export async function bodyOf(request: Request): Promise<Record<string, unknown> 
 }
 
 export function passwordPolicyResponse(password: string, email?: string): Response | undefined {
-  if (password.length < 12 || password.length > 128 || password.toLowerCase() === email?.toLowerCase())
-    return Response.json(
-      { error: 'Password must be 12 to 128 characters and must not equal the email address.' },
-      { status: 400 },
-    )
-  return undefined
+  const problem = passwordProblem(password, email)
+  return problem === undefined ? undefined : Response.json({ error: problem }, { status: 400 })
 }

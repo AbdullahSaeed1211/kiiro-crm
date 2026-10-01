@@ -8,6 +8,7 @@ import {
   type PayloadRequest,
   type TypeWithID,
 } from 'payload'
+import { passwordProblem } from '@ops/module-identity'
 import { resolveActor } from '../../access/actor'
 
 interface UserRecord extends TypeWithID {
@@ -57,11 +58,8 @@ function trustedCreate(req: PayloadRequest): boolean {
 }
 
 export function passwordPolicy(password: unknown, email: unknown): true | string {
-  if (typeof password !== 'string' || password.length < 12 || password.length > 128)
-    return 'Password must be 12 to 128 characters.'
-  if (typeof email === 'string' && password.toLowerCase() === email.toLowerCase())
-    return 'Password must not equal the email address.'
-  return true
+  if (typeof password !== 'string') return 'Password must be 12 to 128 characters.'
+  return passwordProblem(password, typeof email === 'string' ? email : undefined) ?? true
 }
 
 function valueOf(record: UserRecord | undefined, key: keyof UserRecord): unknown {
