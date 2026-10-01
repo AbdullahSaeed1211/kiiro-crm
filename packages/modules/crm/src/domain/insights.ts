@@ -48,7 +48,13 @@ function stageTotals(input: {
     })
 }
 
-function dominantCurrency(deals: readonly DealRecord[]): string | null {
+/** The parts of a deal the pipeline figures read, so a caller can fetch just those. */
+export type PipelineDeal = Pick<DealRecord, 'stageId' | 'value' | 'closedAt'>
+
+/** The parts of a lead the pipeline figures read. */
+export type PipelineLead = Pick<LeadRecord, 'stageId' | 'sourceId'>
+
+function dominantCurrency(deals: readonly PipelineDeal[]): string | null {
   const counts = new Map<string, number>()
   for (const deal of deals)
     if (deal.value !== null) counts.set(deal.value.currency, (counts.get(deal.value.currency) ?? 0) + 1)
@@ -64,7 +70,7 @@ function recentMonths(now: number, months: number): string[] {
 }
 
 function wonMonths(input: {
-  readonly won: readonly DealRecord[]
+  readonly won: readonly PipelineDeal[]
   readonly months: readonly string[]
   readonly currency: string | null
 }): MonthTotal[] {
@@ -81,8 +87,8 @@ function wonMonths(input: {
 
 /** Counts and values for the pipeline screens: stages, revenue won per month, lead sources and win rate. */
 export function pipelineSummary(input: {
-  readonly leads: readonly LeadRecord[]
-  readonly deals: readonly DealRecord[]
+  readonly leads: readonly PipelineLead[]
+  readonly deals: readonly PipelineDeal[]
   readonly leadStages: readonly Stage[]
   readonly dealStages: readonly Stage[]
   readonly sources: ReadonlyMap<string, string>

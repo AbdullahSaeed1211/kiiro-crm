@@ -18,7 +18,14 @@ export { STANDARD_STAGE_FIELDS } from './domain/stage-requirements'
 export { leadMoveDestinationError } from './domain/lead-moves'
 export { formatCsv } from './domain/csv'
 export { exportTable, type ExportLookups } from './domain/export'
-export { pipelineSummary, type MonthTotal, type PipelineSummary, type StageTotal } from './domain/insights'
+export {
+  pipelineSummary,
+  type MonthTotal,
+  type PipelineDeal,
+  type PipelineLead,
+  type PipelineSummary,
+  type StageTotal,
+} from './domain/insights'
 export { FOLLOW_UP_BUCKETS, groupFollowUps, type FollowUpBucket } from './domain/follow-ups'
 export { leadRulesSchema, nextOwner, responseOverdue, ruleFor, type LeadRule } from './domain/lead-rules'
 export {

@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { DASHBOARD_COPY } from '../../i18n/config'
 import { loadDashboardStats } from '../../server/queries/dashboard'
-import { loadWorkReadModel } from '../../server/queries/work/read-models'
+import { loadDashboardWork } from '../../server/queries/work/dashboard-work'
 import { getRequestContext } from '@/server/container'
 import { DashboardPipeline } from './dashboard-pipeline'
 import { taskHref } from './task-navigation'
@@ -94,23 +94,15 @@ function StatCard({
 // eslint-disable-next-line max-lines-per-function -- the dashboard keeps its stat strip and three action queues together.
 export default async function DashboardPage() {
   const context = await getRequestContext()
-  const [model, stats] = await Promise.all([loadWorkReadModel(context, 'dashboard'), loadDashboardStats(context)])
-  const copy = DASHBOARD_COPY[model.locale]
-  const open = model.tasks.filter((task) => !['done_success', 'done_failure', 'cancelled'].includes(task.stageCategory))
-  const mine = open.filter((task) => task.assigneeIds.includes(model.actorId))
-  const now = Date.now()
-  const overdue = mine.filter((task) => task.dueAt !== null && task.dueAt < now)
-  const dueWeek = open.filter((task) => task.dueAt !== null && task.dueAt >= now && task.dueAt <= now + 7 * 86_400_000)
-  const activeProjects = model.projects.filter(
-    (project) => !['done_success', 'done_failure', 'cancelled'].includes(project.stageCategory),
-  )
+  const [work, stats] = await Promise.all([loadDashboardWork(context), loadDashboardStats(context)])
+  const copy = DASHBOARD_COPY[work.locale]
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.title }]} />
       <PageContent>
         <PageHeader
           title={copy.title}
-          description={copy.description.replace('{mine}', String(mine.length)).replace('{open}', String(open.length))}
+          description={copy.description.replace('{mine}', String(work.mine)).replace('{open}', String(work.open))}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <a
@@ -129,7 +121,7 @@ export default async function DashboardPage() {
           }
         />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label={copy.myOpenTasks} value={mine.length} detail={copy.assignedToYou} href="/my-tasks" />
+          <StatCard label={copy.myOpenTasks} value={work.mine} detail={copy.assignedToYou} href="/my-tasks" />
           <StatCard label={copy.openLeads} value={stats.openLeads} detail={copy.needsFollowUp} href="/leads" />
           <StatCard label={copy.openDeals} value={stats.openDeals} detail={copy.activePipeline} href="/deals" />
           <StatCard
@@ -140,27 +132,35 @@ export default async function DashboardPage() {
           />
         </div>
         {context.actor.role === 'owner' || context.actor.role === 'manager' ? (
-          <DashboardPipeline context={context} locale={model.locale} />
+          <DashboardPipeline context={context} locale={work.locale} />
         ) : null}
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          <WorkCard title={copy.myOverdue} count={overdue.length} viewAll={{ href: '/my-tasks', label: copy.viewAll }}>
-            <TaskLinks tasks={overdue.slice(0, 5)} timeZone={model.timeZone} locale={model.locale} />
-            {overdue.length === 0 ? (
+          <WorkCard
+            title={copy.myOverdue}
+            count={work.overdue.count}
+            viewAll={{ href: '/my-tasks', label: copy.viewAll }}
+          >
+            <TaskLinks tasks={work.overdue.items} timeZone={work.timeZone} locale={work.locale} />
+            {work.overdue.count === 0 ? (
               <EmptyState icon={CircleCheckBig} title={copy.nothingOverdue} description={copy.onTrack} />
             ) : null}
           </WorkCard>
-          <WorkCard title={copy.dueThisWeek} count={dueWeek.length} viewAll={{ href: '/tasks', label: copy.viewAll }}>
-            <TaskLinks tasks={dueWeek.slice(0, 5)} timeZone={model.timeZone} locale={model.locale} />
-            {dueWeek.length === 0 ? (
+          <WorkCard
+            title={copy.dueThisWeek}
+            count={work.dueWeek.count}
+            viewAll={{ href: '/tasks', label: copy.viewAll }}
+          >
+            <TaskLinks tasks={work.dueWeek.items} timeZone={work.timeZone} locale={work.locale} />
+            {work.dueWeek.count === 0 ? (
               <EmptyState title={copy.noTasksDue} description={copy.noTasksDueDescription} />
             ) : null}
           </WorkCard>
           <WorkCard
             title={copy.activeProjects}
-            count={activeProjects.length}
+            count={work.projects.count}
             viewAll={{ href: '/projects', label: copy.viewAll }}
           >
-            {activeProjects.slice(0, 5).map((project) => (
+            {work.projects.items.map((project) => (
               <a
                 className="block border-t py-2 text-sm hover:text-primary"
                 key={project.id}
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                 <span className="ml-2 text-xs text-muted-foreground">{project.stage}</span>
               </a>
             ))}
-            {activeProjects.length === 0 ? (
+            {work.projects.count === 0 ? (
               <EmptyState title={copy.noActiveProjects} description={copy.noActiveProjectsDescription} />
             ) : null}
           </WorkCard>
