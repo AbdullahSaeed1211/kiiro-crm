@@ -17,6 +17,8 @@ const twoFactorFields: Field[] = [
   { name: 'totpLockedUntil', type: 'number', access: noAccess },
   // The secret in the user's private calendar feed address; blank when the feed is off.
   { name: 'calendarToken', type: 'text', index: true, access: noAccess },
+  // Personal API tokens: name, the SHA-256 of the secret, and when each was made and last used. The secret is never kept.
+  { name: 'apiTokens', type: 'json', defaultValue: [], access: noAccess },
 ]
 
 const relation = (name: string, relationTo: string, options: Record<string, unknown> = {}): RelationshipField =>

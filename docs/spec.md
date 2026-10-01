@@ -817,7 +817,7 @@ Legend: O owner · M manager · S staff · *scope* = §9.10 staff scope · *pare
 ---
 
 ## 12. API contracts
-Payload REST (`/api/<collection>`) serves the Payload admin only. The product UI uses Server Actions and RSC, and the same use cases are exposed as the product API (§12.3, ADR-0004). Custom route handlers:
+Payload REST (`/api/<collection>`) serves the Payload admin only. The product API accepts a session cookie or a personal API token (`Authorization: Bearer ops_<userId>.<secret>`, made by an owner or manager under Settings, Profile). The token acts as its user with that user's role and scope; only its SHA-256 is stored, in the user's private `apiTokens` field, and it stops working when it is revoked or the user is deactivated. Payload's own API keys stay off (`useAPIKey: false`). The product UI uses Server Actions and RSC, and the same use cases are exposed as the product API (§12.3, ADR-0004). Custom route handlers:
 | Method & path | Auth | Request | Response | Errors |
 |---|---|---|---|---|
 | GET `/api/v1/health` | none | — | `{ status: 'ok', version, migration }` | — |

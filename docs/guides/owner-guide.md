@@ -85,6 +85,8 @@ Owners and managers see an **Archive** button on each lead, deal, contact and or
 
 Settings, Webhooks (owners only) sends an event to another system whenever something happens to a record: a record is created, a lead or deal changes stage, a lead is converted, a note or email is added, and more. Zapier, Make, n8n and your own software can receive them.
 
+To make requests the other way (read leads, create tasks), owners and managers make a personal API token under Settings, Profile, API access. Send it as `Authorization: Bearer <token>`; it can do exactly what its owner can, `GET /api/v1` lists every endpoint with its body, and revoking it or deactivating the person stops it at once. The token is shown once when made.
+
 1. Add a webhook, give it a name and the public `https://` address the other system gave you, and choose the events.
 2. Save, then press **Send test**. It sends a `webhook.test` event and shows what the other system answered.
 

@@ -31,6 +31,7 @@ const PRIVATE_USER_FIELDS = new Set([
   'totpFailures',
   'totpLockedUntil',
   'calendarToken',
+  'apiTokens',
 ])
 
 /**

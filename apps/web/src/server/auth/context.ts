@@ -5,6 +5,9 @@ import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import { cache } from 'react'
+import { userForApiToken } from './api-tokens'
+
+type AuthedUser = NonNullable<PayloadRequest['user']>
 
 export interface ProductContext {
   readonly payload: Payload
@@ -13,11 +16,23 @@ export interface ProductContext {
   readonly user: Record<string, unknown>
 }
 
+/** The signed-in user: a session cookie, or a personal API token sent as `Authorization: Bearer ops_...`. */
+async function authenticate(payload: Payload, requestHeaders: Headers): Promise<{ user: AuthedUser } | null> {
+  const bearer = /^Bearer (ops_\S+)$/u.exec(requestHeaders.get('authorization') ?? '')?.[1]
+  if (bearer !== undefined) {
+    const user = await userForApiToken(payload, bearer)
+    return user === null ? null : { user: { ...user, collection: 'users' } }
+  }
+  const auth = await payload.auth({ headers: requestHeaders })
+  return auth.user === null ? null : { user: auth.user }
+}
+
 /** Request-scoped authentication and tenant context, or `null` without an active session. API routes use this. */
 export const findProductContext = cache(async (): Promise<ProductContext | null> => {
   const payload = await getPayload({ config })
-  const auth = await payload.auth({ headers: await headers() })
-  if (auth.user === null) return null
+  const requestHeaders = await headers()
+  const auth = await authenticate(payload, requestHeaders)
+  if (auth === null) return null
   const req = await createLocalReq({ user: auth.user }, payload)
   const actor = await resolveActor(req)
   if (actor?.active !== true) return null

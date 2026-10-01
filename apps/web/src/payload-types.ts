@@ -194,6 +194,15 @@ export interface User {
   totpFailures?: number | null;
   totpLockedUntil?: number | null;
   calendarToken?: string | null;
+  apiTokens?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1132,6 +1141,7 @@ export interface UsersSelect<T extends boolean = true> {
   totpFailures?: T;
   totpLockedUntil?: T;
   calendarToken?: T;
+  apiTokens?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

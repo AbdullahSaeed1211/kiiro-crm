@@ -14,6 +14,7 @@ import * as migration_20261001_120000_webhooks from './20261001_120000_webhooks'
 import * as migration_20261001_150000_two_factor from './20261001_150000_two_factor';
 import * as migration_20261001_170000_calendar_feed from './20261001_170000_calendar_feed';
 import * as migration_20261001_190000_task_repeat from './20261001_190000_task_repeat';
+import * as migration_20261001_210000_api_tokens from './20261001_210000_api_tokens';
 
 export const migrations = [
   {
@@ -95,5 +96,10 @@ export const migrations = [
     up: migration_20261001_190000_task_repeat.up,
     down: migration_20261001_190000_task_repeat.down,
     name: '20261001_190000_task_repeat'
+  },
+  {
+    up: migration_20261001_210000_api_tokens.up,
+    down: migration_20261001_210000_api_tokens.down,
+    name: '20261001_210000_api_tokens'
   },
 ];

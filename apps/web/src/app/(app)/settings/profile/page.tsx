@@ -4,8 +4,10 @@ import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'
 import { twoFactorEnabled } from '../../../../server/auth/two-factor'
+import { listApiTokens } from '../../../../server/auth/api-tokens'
 import { calendarTokenOf } from '../../../../server/calendar/feed'
 import { ChangePasswordForm } from '../change-password-form'
+import { ApiTokensCard } from './api-tokens-card'
 import { CalendarFeedCard } from './calendar-feed-card'
 import { TwoFactorCard } from './two-factor-card'
 
@@ -14,6 +16,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function ProfileSettingsPage() {
   const context = await requireRole('owner', 'manager', 'staff')
+  const canUseApi = context.actor.role !== 'staff'
+  const tokens = canUseApi ? await listApiTokens(context.payload, String(context.user.id)) : []
   const hasFeed = (await calendarTokenOf(context.payload, String(context.user.id))) !== null
   const enabled = await twoFactorEnabled({
     payload: context.payload,
@@ -52,6 +56,15 @@ export default async function ProfileSettingsPage() {
           </p>
           <CalendarFeedCard hasFeed={hasFeed} />
         </div>
+        {canUseApi ? (
+          <div className="border-t pt-4 text-sm">
+            <h2 className="font-medium">API access</h2>
+            <p className="mb-3 mt-1 text-muted-foreground">
+              Personal tokens let scripts and tools such as Zapier, Make or n8n use this workspace's API as you.
+            </p>
+            <ApiTokensCard tokens={tokens} />
+          </div>
+        ) : null}
       </SettingsForm>
     </SettingsPage>
   )
