@@ -128,22 +128,6 @@ export async function getDealListData(
   return { items, workflow, total: dealsPage.total, lostReasons }
 }
 
-/** Every organization and contact as a name to pick from, read when the new-deal form opens. */
-export async function getDealFormOptions(): Promise<{
-  organizations: { id: string; name: string }[]
-  contacts: { id: string; name: string }[]
-}> {
-  const deps = dealDeps(await getRequestContext())
-  const [organizations, contacts] = await Promise.all([deps.repo.list('organization'), deps.repo.list('contact')])
-  return {
-    organizations: organizations.map(({ id, name }) => ({ id, name })),
-    contacts: contacts.map((contact) => ({
-      id: contact.id,
-      name: [contact.firstName, contact.lastName].filter(Boolean).join(' '),
-    })),
-  }
-}
-
 async function loadDealDetailParts({
   context,
   deps,

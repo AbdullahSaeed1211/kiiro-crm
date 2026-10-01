@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache'
 import { crmDeps } from '../../container'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
-import { getDealFormOptions } from './queries'
 import { withDefaultOwner } from './view-model'
 import { actionError, actionOk, toActionResult, type ActionResult } from '../../action-result'
 
@@ -22,11 +21,6 @@ function resultOf(result: Result<{ readonly id: string; readonly updatedAt: numb
   return result.ok
     ? actionOk({ id: result.value.id, updatedAt: result.value.updatedAt })
     : actionError(result.error.code, result.error.message)
-}
-
-/** The organizations and contacts offered in the new-deal form, read only when it is opened. */
-export async function loadDealFormOptionsAction() {
-  return getDealFormOptions()
 }
 
 export async function createDealAction(input: unknown): Promise<DealActionResult> {

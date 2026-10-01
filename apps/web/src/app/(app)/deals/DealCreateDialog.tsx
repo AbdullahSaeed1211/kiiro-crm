@@ -1,6 +1,5 @@
 'use client'
 
-import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   Dialog,
@@ -14,9 +13,9 @@ import {
 import { Input } from '@ops/ui/components/ui/input'
 import { Label } from '@ops/ui/components/ui/label'
 import { useState, useTransition } from 'react'
-import { createDealAction, loadDealFormOptionsAction } from '../../../server/crm/deals/actions'
+import { RecordPicker } from '../RecordPicker'
+import { createDealAction } from '../../../server/crm/deals/actions'
 
-type Option = Readonly<{ id: string; name: string }>
 type CreateInput = Readonly<{
   title: string
   organizationId: string | null
@@ -44,11 +43,7 @@ function readForm(form: HTMLFormElement): CreateInput | { error: string } {
   }
 }
 
-function DealFields({
-  organizations,
-  contacts,
-  currency,
-}: Readonly<{ organizations: readonly Option[]; contacts: readonly Option[]; currency: string }>) {
+function DealFields({ currency }: Readonly<{ currency: string }>) {
   return (
     <>
       <div className="grid gap-2">
@@ -57,25 +52,11 @@ function DealFields({
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-organization">Organization</Label>
-        <NativeSelect id="deal-organization" name="organizationId">
-          <option value="">No organization</option>
-          {organizations.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <RecordPicker id="deal-organization" name="organizationId" type="organization" emptyLabel="No organization" />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-contact">Primary contact</Label>
-        <NativeSelect id="deal-contact" name="primaryContactId">
-          <option value="">No contact</option>
-          {contacts.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <RecordPicker id="deal-contact" name="primaryContactId" type="contact" emptyLabel="No contact" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
@@ -91,28 +72,7 @@ function DealFields({
   )
 }
 
-/** Reads the pick lists the first time the form opens, so the deal pages never carry the whole client book. */
-function useFormOptions(): {
-  options: { organizations: readonly Option[]; contacts: readonly Option[] }
-  load: () => void
-} {
-  const [options, setOptions] = useState<{ organizations: readonly Option[]; contacts: readonly Option[] }>({
-    organizations: [],
-    contacts: [],
-  })
-  const [loaded, setLoaded] = useState(false)
-  const load = () => {
-    if (loaded) return
-    setLoaded(true)
-    void loadDealFormOptionsAction().then(setOptions, () => {
-      setLoaded(false)
-    })
-  }
-  return { options, load }
-}
-
 export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
-  const { options, load } = useFormOptions()
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -144,13 +104,7 @@ export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
     })
   }
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (next) load()
-        setOpen(next)
-      }}
-    >
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button>New deal</Button>} />
       <DialogContent>
         <DialogHeader>
@@ -164,7 +118,7 @@ export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
             submit(event.currentTarget)
           }}
         >
-          <DealFields organizations={options.organizations} contacts={options.contacts} currency={currency} />
+          <DealFields currency={currency} />
           {error === null ? null : (
             <p role="alert" className="text-sm text-destructive">
               {error}
