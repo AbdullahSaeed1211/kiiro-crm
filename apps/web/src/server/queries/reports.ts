@@ -202,7 +202,7 @@ export async function loadReportFigures(
   const now = Date.now()
   const [taskFigures, { leads, deals }, dealWorkflow] = await Promise.all([
     loadTaskFigures(requestContext, { range, now }),
-    loadLeanRows(requestContext),
+    loadLeanRows(requestContext, range),
     repository.loadDefaultWorkflow('deal').then(
       (result) => (result.ok ? result.value : undefined),
       () => undefined,

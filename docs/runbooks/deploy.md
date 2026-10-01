@@ -93,3 +93,11 @@ The loop records the bookmark, marks the tenant failed, blocks later tenants, an
 ## Release evidence
 
 Record the tag, tenant status, restore bookmark, smoke check results, rollback result when applicable, and the command exit code. Keep credentials, cookies, intake payloads, and email bodies out of the evidence.
+
+## Capacity checks
+
+What was measured, so a change can be compared against it (2026-10-02).
+
+- **Production, concurrent users.** `crm.mirchmedia.com` with about 2,500 demo records: 10 signed-in users making 140 page and API requests took 14.8 s with no failures (median 0.86 s, 95th percentile 1.9 s); 30 users making 420 requests took 23.5 s with no failures (median 1.4 s, 95th percentile 2.9 s, slowest 3.8 s).
+- **Local, large data.** About 12,000 tasks, 4,100 leads, 2,900 deals, 2,300 contacts and 960 organizations on the dev server: Dashboard, My tasks, lists, Timeline and the settings screens load in under a second; the lead, deal and task boards and the Calendar take 2.6 to 4.5 s; Figures for 30 days takes about 3.6 s and for 90 days 7 to 10 s. These are dev-server times on a busy laptop, so a deployed Worker should be faster.
+- **Not measured.** Sustained load over hours, and more than about 50 concurrent users.

@@ -1,6 +1,8 @@
 import { asId } from '@ops/kernel'
 import type { DealRecord, LeadRecord } from '@ops/module-crm'
+import type { Where } from 'payload'
 import type { RequestContext } from '@/server/container'
+import type { ReportRange } from './report-range'
 
 /** The parts of a lead and a deal the figures read, so only those are fetched. */
 export type ReportLead = Pick<LeadRecord, 'createdAt' | 'ownerId'>
@@ -10,13 +12,40 @@ const dateOf = (value: unknown): number => (typeof value === 'string' ? Date.par
 const idOrNull = (value: unknown): ReportLead['ownerId'] =>
   typeof value === 'string' && value !== '' ? asId(value) : null
 
-/** Just the fields the figures use, so thousands of leads and deals are not read with all their other data. */
-export async function loadLeanRows(context: RequestContext): Promise<{ leads: ReportLead[]; deals: ReportDeal[] }> {
+const iso = (time: number): string => new Date(time).toISOString()
+
+/** Leads made in the range; the figures count nothing else. */
+const leadsInRange = (range: ReportRange): Where => ({
+  and: [{ createdAt: { greater_than_equal: iso(range.from) } }, { createdAt: { less_than: iso(range.to) } }],
+})
+
+/** Deals made or closed in the range; the figures count nothing else. */
+const dealsInRange = (range: ReportRange): Where => ({
+  or: [
+    { and: [{ createdAt: { greater_than_equal: iso(range.from) } }, { createdAt: { less_than: iso(range.to) } }] },
+    { and: [{ closedAt: { greater_than_equal: range.from } }, { closedAt: { less_than: range.to } }] },
+  ],
+})
+
+/**
+ * Just the leads and deals the figures count, with just the fields they use, so a workspace with many years of
+ * history reads only the period asked for.
+ */
+export async function loadLeanRows(
+  context: RequestContext,
+  range: ReportRange,
+): Promise<{ leads: ReportLead[]; deals: ReportDeal[] }> {
   const request = { depth: 0, limit: 0, pagination: false, overrideAccess: false as const, req: context.req }
   const [leads, deals] = await Promise.all([
-    context.payload.find({ collection: 'leads', select: { owner: true, createdAt: true }, ...request }),
+    context.payload.find({
+      collection: 'leads',
+      where: leadsInRange(range),
+      select: { owner: true, createdAt: true },
+      ...request,
+    }),
     context.payload.find({
       collection: 'deals',
+      where: dealsInRange(range),
       select: {
         owner: true,
         stageId: true,
