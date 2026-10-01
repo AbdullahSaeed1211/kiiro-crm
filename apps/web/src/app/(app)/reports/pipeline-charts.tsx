@@ -36,7 +36,7 @@ function ChartCard({ title, children }: Readonly<{ title: string; children: Reac
   )
 }
 
-function StageBars({
+export function StageBars({
   stages,
   detail,
 }: Readonly<{ stages: readonly StageTotal[]; detail: (stage: StageTotal) => string }>) {

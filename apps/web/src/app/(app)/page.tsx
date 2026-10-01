@@ -9,6 +9,7 @@ import { DASHBOARD_COPY } from '../../i18n/config'
 import { loadDashboardStats } from '../../server/queries/dashboard'
 import { loadWorkReadModel } from '../../server/queries/work/read-models'
 import { getRequestContext } from '@/server/container'
+import { DashboardPipeline } from './dashboard-pipeline'
 import { taskHref } from './task-navigation'
 import Link from 'next/link'
 
@@ -139,18 +140,7 @@ export default async function DashboardPage() {
           />
         </div>
         {context.actor.role === 'owner' || context.actor.role === 'manager' ? (
-          <a
-            className="ops-dashboard-card group flex items-center justify-between gap-4 p-4 transition-colors hover:border-primary/50 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            href="/reports"
-          >
-            <span>
-              <span className="block text-sm font-medium">{copy.figures}</span>
-              <span className="mt-1 block text-xs text-muted-foreground">{copy.figuresDescription}</span>
-            </span>
-            <span aria-hidden className="text-muted-foreground transition-transform group-hover:translate-x-0.5">
-              →
-            </span>
-          </a>
+          <DashboardPipeline context={context} locale={model.locale} />
         ) : null}
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
           <WorkCard title={copy.myOverdue} count={overdue.length} viewAll={{ href: '/my-tasks', label: copy.viewAll }}>

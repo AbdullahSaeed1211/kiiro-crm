@@ -188,6 +188,9 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
     noActiveProjects: 'No active projects',
     noActiveProjectsDescription: 'Create a project when work is ready to organize.',
     figures: 'Team figures',
+    salesPipeline: 'Sales pipeline',
+    openPipelineValue: 'Open pipeline',
+    winRate: 'Win rate',
     figuresDescription: 'Owner and manager reporting',
   },
   es: {
@@ -214,6 +217,9 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
     noActiveProjects: 'No hay proyectos activos',
     noActiveProjectsDescription: 'Crea un proyecto cuando el trabajo esté listo para organizarse.',
     figures: 'Indicadores del equipo',
+    salesPipeline: 'Embudo de ventas',
+    openPipelineValue: 'Embudo abierto',
+    winRate: 'Tasa de cierre',
     figuresDescription: 'Informes para propietarios y gerentes',
   },
 }
