@@ -7,7 +7,14 @@ import { RestoreButton } from './restore-button'
 export const metadata: Metadata = { title: 'Archive' }
 export const dynamic = 'force-dynamic'
 
-const NAMES = { lead: 'Lead', deal: 'Deal', contact: 'Contact', organization: 'Organization' } as const
+const NAMES = {
+  lead: 'Lead',
+  deal: 'Deal',
+  contact: 'Contact',
+  organization: 'Organization',
+  task: 'Task',
+  project: 'Project',
+} as const
 
 const archivedOn = (time: number): string =>
   new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeZone: 'UTC' }).format(time)
@@ -18,7 +25,7 @@ export default async function ArchiveSettingsPage() {
   return (
     <SettingsPage
       title="Archive"
-      description="Leads, deals, contacts and organizations that were archived. Restore one to put it back in its lists."
+      description="Leads, deals, contacts, organizations, projects and tasks that were archived. Restore one to put it back in its lists."
       roles={['owner', 'manager']}
     >
       <SettingsForm>

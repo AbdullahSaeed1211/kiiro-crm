@@ -19,6 +19,7 @@ import * as migration_20261001_230000_time_entries from './20261001_230000_time_
 import * as migration_20261001_235000_webhook_deliveries from './20261001_235000_webhook_deliveries';
 import * as migration_20261002_090000_demo_manifests from './20261002_090000_demo_manifests';
 import * as migration_20261002_150000_campaign_queue from './20261002_150000_campaign_queue';
+import * as migration_20261002_180000_work_archive from './20261002_180000_work_archive';
 
 export const migrations = [
   {
@@ -125,5 +126,10 @@ export const migrations = [
     up: migration_20261002_150000_campaign_queue.up,
     down: migration_20261002_150000_campaign_queue.down,
     name: '20261002_150000_campaign_queue'
+  },
+  {
+    up: migration_20261002_180000_work_archive.up,
+    down: migration_20261002_180000_work_archive.down,
+    name: '20261002_180000_work_archive'
   },
 ];

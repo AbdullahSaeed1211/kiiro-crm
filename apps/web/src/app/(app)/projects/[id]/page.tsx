@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation'
 import { getOrganizationLabel } from '../../../../server/crm/directory/data'
 import { loadWorkReadModel, type WorkListTask } from '../../../../server/queries/work/read-models'
 import ProjectBoard from './ProjectBoard'
+import { ArchiveWorkControl } from '../../archive-work-control'
 import ProjectActions from './ProjectActions'
 import { formatDate } from '../../../../i18n/format'
 
@@ -152,6 +153,7 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
               >
                 Create task
               </Link>
+              <ArchiveWorkControl type="project" id={project.id} label={project.name} />
               <ProjectActions
                 projectId={project.id}
                 updatedAt={project.updatedAt}

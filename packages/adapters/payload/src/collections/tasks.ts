@@ -18,6 +18,7 @@ const TASK_TITLE_MAX = 300
 
 /** Task records (spec §10.2); board order is `(rank, id)` within a project stage (decision D-29). */
 export const tasksCollection = spikeCollection({
+  trash: true,
   slug: COLLECTIONS.tasks,
   admin: {
     group: ADMIN_GROUPS.records,

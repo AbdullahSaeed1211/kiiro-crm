@@ -100,6 +100,15 @@ export interface TaskMoveWrite {
   readonly transition: StageTransition
 }
 
+/** A task or project that was archived, as the archive screen lists it. */
+export interface ArchivedWork {
+  readonly type: WorkRecordType
+  readonly id: Id
+  readonly label: string
+  readonly archivedAt: number
+  readonly updatedAt: number
+}
+
 export interface WorkRepository extends StageStore {
   getProject(id: Id): Promise<ProjectRecord | undefined>
   listProjects(): Promise<readonly ProjectRecord[]>
@@ -113,6 +122,12 @@ export interface WorkRepository extends StageStore {
   updateTask(id: Id, patch: TaskPatch | TaskDatePatch, expectedUpdatedAt: number): Promise<WorkTaskRecord | undefined>
   saveTaskMove(input: TaskMoveWrite): Promise<WorkTaskRecord | undefined>
   deleteTask(id: Id): Promise<boolean>
+  /** Hides the task or project from every list and search while it still has `expectedUpdatedAt`; false when it changed meanwhile. */
+  archive(type: WorkRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean>
+  /** Brings an archived task or project back while it still has `expectedUpdatedAt`; false when it changed meanwhile. */
+  restore(type: WorkRecordType, id: Id, expectedUpdatedAt: number): Promise<boolean>
+  /** Archived tasks or projects, newest first; owners and managers only see any. */
+  listArchived(type: WorkRecordType): Promise<readonly ArchivedWork[]>
   loadDefaultWorkflow(type: WorkRecordType): Promise<Result<Workflow>>
 }
 

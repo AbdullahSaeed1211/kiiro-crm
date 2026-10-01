@@ -5,6 +5,7 @@ import { domainError, err, ok, type Result } from '@ops/kernel'
 import { COLLECTIONS, RECORD_TYPES } from '../contracts/names'
 import { createAsSystem, findAsUser, updateIfUnchanged, updateAndMap } from './local-api'
 import { toStageRecord, toTaskRecord } from './task-mapping'
+import { workArchiveAccess } from './work-archive'
 import { createUnitOfWork } from '../uow/unit-of-work'
 import { projectData, taskData, projectPatchData, taskPatchData } from './task-write-data'
 import { activityData, transitionData } from './stage-codecs'
@@ -224,6 +225,7 @@ export function createTaskRepository(req: PayloadRequest): Repository {
     ...taskWriteMethods(req),
     ...projectMethods(req),
     ...moveMethods(req),
+    ...workArchiveAccess(req),
   }
 }
 

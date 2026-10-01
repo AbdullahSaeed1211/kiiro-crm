@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { loadTaskView } from '../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
+import { ArchiveWorkControl } from '../../archive-work-control'
 import { TimeLog } from './time-log'
 import { firstParam, safeReturnTo } from '../../search-params'
 
@@ -33,7 +34,12 @@ export default async function TaskPage({
           options={view.options}
           panel={panel}
           returnTo={returnTo}
-          extra={<TimeLog taskId={view.task.id} />}
+          extra={
+            <>
+              <TimeLog taskId={view.task.id} />
+              <ArchiveWorkControl type="task" id={view.task.id} label={view.task.title} />
+            </>
+          }
         />
       </PageContent>
     </>

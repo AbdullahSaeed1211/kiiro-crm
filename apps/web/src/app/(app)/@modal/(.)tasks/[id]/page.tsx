@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { loadTaskView } from '../../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from '../../../tasks/[id]/TaskDetailDrawer'
 import { firstParam, safeReturnTo } from '../../../search-params'
+import { ArchiveWorkControl } from '../../../archive-work-control'
 import { TimeLog } from '../../../tasks/[id]/time-log'
 
 export default async function InterceptedTaskPage({
@@ -20,7 +21,12 @@ export default async function InterceptedTaskPage({
       options={view.options}
       returnTo={safeReturnTo(firstParam(query.returnTo), '/tasks')}
       restoreFocus
-      extra={<TimeLog taskId={view.task.id} />}
+      extra={
+        <>
+          <TimeLog taskId={view.task.id} />
+          <ArchiveWorkControl type="task" id={view.task.id} label={view.task.title} />
+        </>
+      }
     />
   )
 }

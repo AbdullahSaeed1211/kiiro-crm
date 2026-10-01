@@ -15,6 +15,7 @@ export const PROJECT_DESCRIPTION_MAX = 20_000
 
 /** Project records (spec §10.2). */
 export const projectsCollection = spikeCollection({
+  trash: true,
   slug: COLLECTIONS.projects,
   admin: { group: ADMIN_GROUPS.records, useAsTitle: 'name', defaultColumns: ['name', FIELDS.owner, 'stageId'] },
   fields: [

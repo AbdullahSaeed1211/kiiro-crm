@@ -1,6 +1,7 @@
 /** Public API of @ops/module-work. */
 export type { TaskDatesInput, TaskPriority, TaskRecord, TaskRepository } from './ports/tasks'
 export type {
+  ArchivedWork,
   ProjectDraft,
   ProjectRecord,
   ProjectPatch,
@@ -14,6 +15,7 @@ export type {
   WorkRepository,
   WorkResult,
 } from './ports/work'
+export { archiveWork, restoreWork } from './commands/archive'
 export { createProject, updateProject, addProjectMember, removeProjectMember } from './commands/projects'
 export {
   canUpdateTask,

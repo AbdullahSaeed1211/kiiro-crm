@@ -98,7 +98,7 @@ curl -X DELETE https://<workspace>/api/v1/demo -H "Authorization: Bearer <your A
 
 ## Remove a record
 
-Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.
+Owners and managers see an **Archive** button on each lead, deal, contact, organization, project and task page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Archiving a project leaves its tasks as they are. Settings, Archive lists everything archived and restores it with one click.
 
 ## Connect other systems
 
