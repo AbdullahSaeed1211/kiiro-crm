@@ -2,6 +2,7 @@ import { Button } from '@ops/ui/components/ui/button'
 import { ClipboardPlus, Mail, MailWarning, Pencil, Phone } from 'lucide-react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { SendTextDialog } from './send-text-dialog'
 
 function actionLink({ href, label, icon }: Readonly<{ href: string; label: string; icon: ReactNode }>) {
   return (
@@ -89,6 +90,9 @@ export function RecordActionLinks({
       {phoneNumber === null
         ? null
         : actionLink({ href: `tel:${phoneNumber}`, label: 'Call', icon: <Phone aria-hidden /> })}
+      {phoneNumber === null || recordType === 'deal' ? null : (
+        <SendTextDialog recordType={recordType} recordId={recordId} recipient={phoneNumber} />
+      )}
       {actionLink({ href: taskHref, label: 'New task', icon: <ClipboardPlus aria-hidden /> })}
       {editHref === undefined ? null : actionLink({ href: editHref, label: 'Edit', icon: <Pencil aria-hidden /> })}
       {archive}

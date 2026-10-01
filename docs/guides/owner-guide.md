@@ -47,6 +47,10 @@ Settings, Import takes organizations, contacts, leads and deals as CSV (up to 5 
 
 A deal is skipped when a deal with the same title already exists at that organization. A deal row names its `organization` (created when new), a `value` in major units such as `12500.50`, a `currency` (your workspace currency when blank), a `stage` from the deal pipeline (the first stage when blank) and an `expectedClose` date. Projects and tasks are not imported yet.
 
+## Text messages
+
+When the workspace is connected to a Twilio account, contacts, leads and organizations that have a phone number show a **Text** button beside Email and Call. The message goes to the number on the record, never to one typed in elsewhere, and it is saved on the record's Email tab as "Text message". The number needs a country code, like +1 555 0100; a number without one is refused with a message saying so. A text is at most 480 characters. Twilio handles a recipient's STOP reply on its own numbers, so the person stops receiving texts from that number. Until the workspace is connected there is no Text button. An operator connects it with the three secrets in the deploy runbook.
+
 ## Send the newsletter
 
 Settings, Newsletter.
@@ -126,4 +130,4 @@ Settings, Activity (owners and managers) lists the last hundred changes anyone m
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
 - Archiving hides a lead, deal, contact or organization from every list and search; Settings, Archive lists them and restores any of them.
-- SMS is not available, and the calendar feed is read-only: changes in a calendar app do not come back. Webhooks are retried twice on connection failures and server errors, and a failed one is not queued again.
+- Text messages go one at a time from a record, not in bulk, and the app does not receive replies; the calendar feed is read-only: changes in a calendar app do not come back. Webhooks are retried twice on connection failures and server errors, and a failed one is not queued again.

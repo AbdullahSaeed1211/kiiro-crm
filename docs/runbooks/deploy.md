@@ -54,6 +54,19 @@ Re-enabling a tenant is the forward path: set `email.enabled` to `true`, onboard
 with Cloudflare Email Sending, refresh the operator token with the `email_sending` scope, regenerate Wrangler config, and
 rerun the tagged deployment. Never bypass the smoke gate by treating an enabled-but-unavailable sender as disabled.
 
+## Turning on text messages for a tenant
+
+Texting is on for a tenant when all three Worker secrets exist, and off otherwise; no manifest or redeploy setting is involved. With the customer's Twilio account SID, auth token and sending number (international form, like `+15550100`):
+
+```sh
+cd apps/web
+printf '%s' "$SID"   | npx wrangler secret put TWILIO_ACCOUNT_SID --env <slug>
+printf '%s' "$TOKEN" | npx wrangler secret put TWILIO_AUTH_TOKEN --env <slug>
+printf '%s' "$FROM"  | npx wrangler secret put TWILIO_FROM_NUMBER --env <slug>
+```
+
+Open any record with a phone number: the Text button should appear. To check without sending a real text, set the account SID to `console` in a local `.dev.vars`; texts are then logged, not sent. Removing any one of the three secrets turns texting off again.
+
 ## Rotating a tenant's internal secret
 
 Cloudflare stores Worker secrets write-only, so a lost `INTERNAL_SECRET` cannot be read back; rotate it instead. The Worker's cron and inbound-email bridges read the same binding, so a custom-host tenant needs nothing else. A platform-host tenant's copy in `ops-mail-router` (`INTERNAL_SECRET_<SLUG>`) must be updated too, and so must any CI secret of the same name.
