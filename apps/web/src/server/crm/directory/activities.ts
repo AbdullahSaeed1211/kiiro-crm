@@ -1,6 +1,7 @@
 import type { Where } from 'payload'
 import type { RequestContext } from '../../container'
 import { loadPeople } from '../../people'
+import { describeActivity } from '../activity-text'
 import { refId, text } from './normalize'
 import type { ActivityItem } from './types'
 
@@ -21,7 +22,6 @@ async function loadRows(context: RequestContext, { recordType, recordId, parentA
       where: { and: match },
       sort: '-occurredAt',
       limit: TIMELINE_LIMIT,
-      pagination: false,
       depth: 0,
       overrideAccess: parentAuthorized,
       user: context.req.user,
@@ -32,7 +32,6 @@ async function loadRows(context: RequestContext, { recordType, recordId, parentA
       where: { and: [...match, { deletedAt: { exists: false } }] },
       sort: '-createdAt',
       limit: TIMELINE_LIMIT,
-      pagination: false,
       depth: 0,
       overrideAccess: parentAuthorized,
       user: context.req.user,
@@ -59,7 +58,7 @@ export async function listActivities(context: RequestContext, target: Target): P
   const events = activities.docs.flatMap((entry) => {
     const occurredAt = typeof entry.occurredAt === 'number' ? entry.occurredAt : Date.parse(String(entry.occurredAt))
     if (!Number.isFinite(occurredAt)) return []
-    const summary = text(entry.verb) === 'record.created' ? 'Record created' : 'Record updated'
+    const summary = describeActivity(text(entry.verb))
     return [{ id: entry.id, occurredAt, actorName: nameOf(people, refId(entry.actor)), summary }]
   })
   const notes = comments.docs.flatMap((entry) => {

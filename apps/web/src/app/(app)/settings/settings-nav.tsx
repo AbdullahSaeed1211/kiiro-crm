@@ -3,6 +3,7 @@
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import type { Role } from '@ops/platform'
 import {
+  Activity,
   Archive,
   Bell,
   Building2,
@@ -70,6 +71,7 @@ const GROUPS: readonly SettingsGroup[] = [
     [
       ['import', '/settings/import', Database, ['owner', 'manager']],
       ['archive', '/settings/archive', Archive, ['owner', 'manager']],
+      ['activity', '/settings/activity', Activity, ['owner', 'manager']],
       ['webhooks', '/settings/webhooks', Webhook, ['owner']],
     ],
   ],

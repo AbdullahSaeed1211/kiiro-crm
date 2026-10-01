@@ -80,6 +80,10 @@ Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `r
 
 Figures shows the team's work for a date range, then the whole pipeline in charts: open pipeline value, revenue won over the last six months, win rate, deals and leads by stage, and where leads come from. The charts cover every deal and lead you can see, not only the date range.
 
+## See who changed what
+
+Settings, Activity (owners and managers) lists the last hundred changes anyone made to records: who did it, what happened (created, edited, moved to another stage, assigned, note added, email sent, archived, restored), when, and a link to the record. The same wording appears on each organization and contact page.
+
 ## Routines that keep it honest
 
 - **Daily.** Open Leads and clear the overdue markers. Every lead needs a next-action date.
