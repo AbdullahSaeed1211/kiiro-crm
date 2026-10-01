@@ -6,17 +6,6 @@ import { OnboardingWizard } from './onboarding-wizard'
 
 export const dynamic = 'force-dynamic'
 
-function defaultOrigins(): string {
-  const configured = Object.prototype.hasOwnProperty.call(process.env, 'TURNSTILE_HOSTNAMES')
-    ? process.env.TURNSTILE_HOSTNAMES
-    : ''
-  const hosts = configured
-    .split(',')
-    .map((host) => host.trim())
-    .filter(Boolean)
-  return hosts.length > 0 ? hosts.map((host) => `https://${host}`).join(', ') : 'http://localhost:3000'
-}
-
 function settingText({
   settings,
   key,
@@ -61,7 +50,6 @@ export default async function OnboardingPage() {
           locale={settingText({ settings, key: 'locale', fallback: 'en' })}
           completed={completed}
           savedValues={savedValues}
-          defaultOrigins={defaultOrigins()}
         />
       </PageContent>
     </>

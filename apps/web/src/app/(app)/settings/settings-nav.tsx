@@ -12,6 +12,7 @@ import {
   Languages,
   LayoutGrid,
   ListChecks,
+  ListOrdered,
   Mail,
   Megaphone,
   Palette,
@@ -54,6 +55,7 @@ const GROUPS: readonly SettingsGroup[] = [
       ['fields', '/settings/fields', Database, ['owner', 'manager']],
       ['playbooks', '/settings/playbooks', ListChecks, ['owner', 'manager']],
       ['views', '/settings/views', LayoutGrid, ['owner', 'manager']],
+      ['lists', '/settings/lists', ListOrdered, ['owner', 'manager']],
     ],
   ],
   [

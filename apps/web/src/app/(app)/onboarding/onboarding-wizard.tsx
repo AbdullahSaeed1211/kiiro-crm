@@ -8,6 +8,7 @@ import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../..
 import { TIMEZONE_VALUES } from '@ops/kernel'
 import { SearchableSelect } from '../settings/searchable-select'
 import { CURRENCY_OPTIONS } from '../../../i18n/currencies'
+import { TeamStep } from './team-step'
 
 const STEPS = [
   ['workspace', 'Workspace'],
@@ -27,7 +28,6 @@ export function OnboardingWizard({
   locale,
   completed,
   savedValues,
-  defaultOrigins,
 }: Readonly<{
   initialStep: number
   appName: string
@@ -36,7 +36,6 @@ export function OnboardingWizard({
   locale: string
   completed: Record<string, boolean>
   savedValues: Record<string, unknown>
-  defaultOrigins: string
 }>) {
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 0), 6))
   const [busy, setBusy] = useState(false)
@@ -55,8 +54,6 @@ export function OnboardingWizard({
     timezone,
     currency,
     locale,
-    teamEmail: saved('team').teamEmail || 'manager@example.test',
-    origins: saved('intake').origins || defaultOrigins,
     template: saved('template').template ?? 'blank',
   })
   const current = STEPS[step]
@@ -182,32 +179,27 @@ export function OnboardingWizard({
             </NativeSelect>
           </div>
         ) : null}
-        {current[0] === 'team' ? (
-          <label className="grid max-w-sm gap-1 text-sm">
-            Invite a teammate (optional)
-            <input
-              className="h-9 border px-3"
-              type="email"
-              placeholder="name@company.com"
-              value={values.teamEmail || 'manager@example.test'}
-              onChange={(event) => update('teamEmail', event.target.value)}
-            />
-          </label>
-        ) : null}
+        {current[0] === 'team' ? <TeamStep /> : null}
         {current[0] === 'intake' ? (
-          <label className="grid max-w-sm gap-1 text-sm">
-            Lead sources (optional)
-            <input
-              className="h-9 border px-3"
-              placeholder="Website, referral"
-              value={values.origins || defaultOrigins}
-              onChange={(event) => update('origins', event.target.value)}
-            />
-          </label>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Your website form is ready. Add your site's address and copy the embed code under{' '}
+            <a className="underline" href="/settings/intake">
+              Settings, Intake
+            </a>
+            , and manage where leads come from under{' '}
+            <a className="underline" href="/settings/lists">
+              Settings, Lists
+            </a>
+            .
+          </p>
         ) : null}
         {current[0] === 'import' ? (
-          <p className="text-sm text-muted-foreground">
-            You can import contacts and leads later. Continue when you are ready.
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Bring in organizations, contacts, leads and deals from a spreadsheet under{' '}
+            <a className="underline" href="/settings/import">
+              Settings, Import &amp; export
+            </a>
+            . Continue when you are ready.
           </p>
         ) : null}
         {current[0] === 'done' ? (

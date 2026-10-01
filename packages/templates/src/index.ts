@@ -345,3 +345,9 @@ export function templateFor(key: string): VerticalTemplate | undefined {
 export function allTemplates(): readonly VerticalTemplate[] {
   return TEMPLATES
 }
+
+/** Where leads come from, offered to every new workspace; owners and managers edit the list under Settings, Lists. */
+export const DEFAULT_LEAD_SOURCES = ['Website form', 'Referral', 'Ads', 'Social', 'Email', 'Phone or walk-in'] as const
+
+/** Why a deal or lead was lost, offered to every new workspace. */
+export const DEFAULT_LOST_REASONS = ['Budget', 'Timing', 'No response', 'Chose a competitor', 'Not a fit'] as const

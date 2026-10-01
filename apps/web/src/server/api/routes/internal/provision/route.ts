@@ -9,6 +9,7 @@ import {
   PEOPLE_COLLECTIONS,
   SETTINGS_GLOBAL,
 } from '@ops/adapter-payload'
+import { DEFAULT_LEAD_SOURCES, DEFAULT_LOST_REASONS } from '@ops/templates'
 import { getPayload } from 'payload'
 import type { Setting } from '../../../../../payload-types'
 import { mergeAppliedTemplates, provisionBody, type ProvisionBody } from './helpers'
@@ -163,6 +164,19 @@ async function ensureIntakeForm(payload: Awaited<ReturnType<typeof getPayload>>,
   })
 }
 
+/** Gives a new workspace the usual lead sources and lost reasons, once; a workspace that already has some is left alone. */
+async function ensureLookups(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  const lists = [
+    [COLLECTIONS.sources, DEFAULT_LEAD_SOURCES],
+    [COLLECTIONS.lostReasons, DEFAULT_LOST_REASONS],
+  ] as const
+  for (const [collection, names] of lists) {
+    const existing = await payload.count({ collection, overrideAccess: true })
+    if (existing.totalDocs > 0) continue
+    for (const name of names) await payload.create({ collection, data: { name }, depth: 0, overrideAccess: true })
+  }
+}
+
 async function seedSettings(payload: Awaited<ReturnType<typeof getPayload>>, body: ProvisionBody): Promise<void> {
   const settings = await payload.findGlobal({ slug: SETTINGS_GLOBAL, depth: 0, overrideAccess: true })
   await payload.updateGlobal({
@@ -193,5 +207,6 @@ export async function POST(request: Request): Promise<Response> {
   await installBrandAssets(payload, body.brandAssets)
   await seedSettings(payload, body)
   await ensureIntakeForm(payload, body)
+  await ensureLookups(payload)
   return Response.json({ status: created ? 'created' : 'existing' })
 }
