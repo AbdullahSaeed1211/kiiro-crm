@@ -46,4 +46,5 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ### 35. The phone timeline logs a React key warning
 
 - Area: Tasks. Effort: Quick. Codes: R-10.
+- Status: reproduced on 2026-10-01 in mobile WebKit by switching Chart then Grid on `/timeline`. The warning names a minified component inside the Gantt library (`Lt`), so no key in our code is missing; React prints it in development only, so production users never see it. What remains is filtering that one message in the route-health console budget or reporting it upstream.
 - At 390px `/timeline` switches the Gantt to compact mode and React logs "Each child in a list should have a unique key" from inside `@svar-ui/react-gantt`. The route-health budget test counts console errors, so its mobile run fails. Find which prop (columns, compact grid config) produces unkeyed children, or report it upstream and filter that one message in the test.
