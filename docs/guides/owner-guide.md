@@ -78,6 +78,18 @@ If a teammate loses their phone and their recovery codes, an owner opens Setting
 
 Settings, Profile, Calendar feed gives each person a private address for their calendar app. It lists the open tasks assigned to them that have a due date and the open leads they own that have a next action date, as all-day entries that link back to the record. In Google Calendar choose Other calendars, From URL; Apple Calendar and Outlook have a subscribe-by-address option too. Calendar apps refresh subscriptions on their own schedule, often every few hours. Anyone with the address can read those titles, so it is shown only when made; make a new one if it leaks (the old one stops working) or turn the feed off.
 
+## Demo data
+
+For a pitch or a training session, an operator can fill the workspace with a fictional dataset: about 36 clients, 100 contacts, 130 leads, 90 deals, 30 projects, 270 tasks with logged time, notes, emails and newsletters, plus demo teammates. It is added with `OPS_ALLOW_LIVE=1 pnpm seed:demo --remote <slug>`, and the records it makes are listed in the database so they can be told apart from real ones. The workspace's own owner stands in as the demo owner, settings are not changed, and the demo teammates have passwords nobody knows, so no one can sign in as them.
+
+One owner-only call removes all of it and nothing else:
+
+```sh
+curl -X DELETE https://<workspace>/api/v1/demo -H "Authorization: Bearer <your API token>"
+```
+
+`GET /api/v1/demo` says whether demo data is present and how many records of each kind. Real records made while the demo was in place are left alone. The call works with a session cookie or a personal API token (Settings, Profile, API access).
+
 ## Remove a record
 
 Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.

@@ -1,4 +1,4 @@
-import { DEV_PASSWORD, USERS } from '../data'
+import { USERS } from '../data'
 import { LOCAL, type Doc, type SeedPayload } from '../payload'
 import { COLLECTIONS, createDoc, idFor, type WriteContext } from './context'
 import { EMAIL_TEMPLATES } from './content'
@@ -90,7 +90,7 @@ export async function ensureTeam(context: WriteContext): Promise<void> {
         email: member.email,
         name: member.name,
         role: 'staff',
-        password: DEV_PASSWORD,
+        password: context.password,
         groups: groupId === undefined ? [] : [groupId],
         reportsTo: manager,
       },
@@ -197,4 +197,51 @@ export async function applySettings(payload: SeedPayload): Promise<void> {
       emailTemplates: EMAIL_TEMPLATES.map((template, index) => ({ id: `demo-template-${String(index)}`, ...template })),
     },
   })
+}
+
+type CastSeed = (typeof USERS)[number]
+
+/** Makes one demo user, or reuses the one with that email, and records its id and document. */
+async function ensureCastMember(context: WriteContext, seed: CastSeed, groups: ReadonlyMap<string, string>) {
+  let doc = await findOne(context.payload, COLLECTIONS.users, { email: equals(seed.email) })
+  if (doc === undefined) {
+    const group = seed.group === undefined ? undefined : groups.get(seed.group)
+    const manager = seed.reportsTo === undefined ? undefined : context.ids.get(seed.reportsTo)
+    await createDoc(context, {
+      collection: COLLECTIONS.users,
+      key: seed.key,
+      data: {
+        email: seed.email,
+        name: seed.name,
+        role: seed.role,
+        password: context.password,
+        groups: group === undefined ? [] : [group],
+        ...(manager === undefined ? {} : { reportsTo: manager }),
+      },
+    })
+    doc = await findOne(context.payload, COLLECTIONS.users, { email: equals(seed.email) })
+  }
+  if (doc === undefined) return
+  context.ids.set(seed.key, doc.id)
+  context.users.set(seed.key, doc)
+}
+
+/**
+ * For a workspace that is not the local one: the real owner stands in for the demo owner, and the manager and two staff
+ * leads are made as demo users, so the demo records have the same cast without touching anyone's real account.
+ */
+export async function ensureWorkspaceCast(context: WriteContext): Promise<void> {
+  const found = await context.payload.find({ ...LOCAL, collection: COLLECTIONS.groups, where: {}, limit: 50 })
+  const groups = new Map(found.docs.map((doc) => [String(doc['name']), doc.id]))
+  // The manager is made first because the staff leads report to them.
+  for (const seed of USERS.filter((user) => user.key !== 'owner')) await ensureCastMember(context, seed, groups)
+}
+
+/** The workspace's own owner account, who stands in as the demo owner. */
+export async function findWorkspaceOwner(payload: SeedPayload): Promise<Doc> {
+  const owner = await findOne(payload, COLLECTIONS.users, {
+    and: [{ role: equals('owner') }, { active: equals('true') }],
+  })
+  if (owner === undefined) throw new Error('the workspace has no active owner to act as the demo owner')
+  return owner
 }

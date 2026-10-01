@@ -1,6 +1,6 @@
 import { COLLECTIONS } from '../../../packages/adapters/payload/src/contracts/names'
 import { LOCAL, type Doc, type SeedPayload } from '../payload'
-import type { ManifestEntry } from './manifest'
+import type { DemoEntry } from '../../../packages/adapters/payload/src/demo-records'
 
 const DAY_MS = 86_400_000
 
@@ -10,11 +10,13 @@ export interface WriteContext {
   readonly now: number
   /** Ids of documents by demo key, for example `org3` or `staff1`. */
   readonly ids: Map<string, string>
-  readonly manifest: ManifestEntry[]
+  readonly manifest: DemoEntry[]
   /** The owner user document, used as the author of system-side history. */
   readonly owner: Doc
   /** User documents by key, for writes that run as that user. */
   readonly users: Map<string, Doc>
+  /** The password demo users are made with: the well-known local one, or a random one in a real workspace. */
+  readonly password: string
 }
 
 export const at = (context: WriteContext, day: number): number => context.now + day * DAY_MS

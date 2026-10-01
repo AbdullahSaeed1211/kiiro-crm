@@ -62,3 +62,11 @@ export { createUnitOfWork, probeTransactions, type TransactionProbe } from './uo
 export { toWhere, withScope } from './where/to-where'
 export { installPagedFind } from './paged-find'
 export { setWebhookScheduler } from './hooks/webhooks'
+export {
+  appendDemoEntries,
+  demoCounts,
+  purgeDemoRecords,
+  readDemoEntries,
+  type DemoEntry,
+  type DemoStore,
+} from './demo-records'

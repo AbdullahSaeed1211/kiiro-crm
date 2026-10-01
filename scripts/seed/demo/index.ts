@@ -1,7 +1,14 @@
+import { randomBytes } from 'node:crypto'
+import {
+  appendDemoEntries,
+  purgeDemoRecords,
+  readDemoEntries,
+  type DemoStore,
+} from '../../../packages/adapters/payload/src/demo-records'
+import { DEV_PASSWORD } from '../data'
 import { LOCAL, type SeedPayload } from '../payload'
 import { seedAll } from '../steps'
 import type { WriteContext } from './context'
-import { readManifest, removeManifest, writeManifest } from './manifest'
 import { buildDemoDataset } from './model'
 import { need } from './need'
 import { writeActivityAll } from './write-all'
@@ -9,6 +16,8 @@ import {
   applySettings,
   ensureFieldDefinitions,
   ensureTeam,
+  ensureWorkspaceCast,
+  findWorkspaceOwner,
   loadBaseUsers,
   loadLookups,
   loadWorkflows,
@@ -21,14 +30,45 @@ const SENDER = 'no-reply@demo.example.test'
 /** Summary of what a run did, one count per kind of record. */
 export type DemoCounts = Readonly<Record<string, number>>
 
+/** How the demo is added: onto the local seed, or onto a real workspace without touching its settings or accounts. */
+export interface DemoOptions {
+  readonly workspace?: boolean
+}
+
+const store = (payload: SeedPayload): DemoStore => payload as unknown as DemoStore
+
 /** The four base users as a write context, ready to add records to. */
 async function startContext(payload: SeedPayload, now: number): Promise<WriteContext> {
   const users = await loadBaseUsers(payload)
   const ids = new Map([...users].map(([key, doc]) => [key, doc.id]))
-  return { payload, now, ids, manifest: [], owner: need(users.get('owner'), 'the owner user'), users }
+  return {
+    payload,
+    now,
+    ids,
+    manifest: [],
+    owner: need(users.get('owner'), 'the owner user'),
+    users,
+    password: DEV_PASSWORD,
+  }
 }
 
-async function writeAll(context: WriteContext): Promise<void> {
+/** A write context for a real workspace: its own owner, and demo users with passwords nobody knows. */
+async function workspaceContext(payload: SeedPayload, now: number): Promise<WriteContext> {
+  const owner = await findWorkspaceOwner(payload)
+  const context: WriteContext = {
+    payload,
+    now,
+    ids: new Map([['owner', owner.id]]),
+    manifest: [],
+    owner,
+    users: new Map([['owner', owner]]),
+    password: randomBytes(24).toString('hex'),
+  }
+  await ensureWorkspaceCast(context)
+  return context
+}
+
+async function writeAll(context: WriteContext, options: DemoOptions): Promise<void> {
   const { payload } = context
   await ensureTeam(context)
   await ensureFieldDefinitions(context)
@@ -43,53 +83,27 @@ async function writeAll(context: WriteContext): Promise<void> {
   await writeProjects(context, { data, workflows })
   await writeTasks(context, { data, workflows })
   await writeActivityAll(context, { data, workflows, sender: SENDER })
-  await applySettings(payload)
+  if (options.workspace !== true) await applySettings(payload)
 }
 
-/** Adds the rich demo workspace on top of the base seed. Refuses to run twice so the data is not doubled. */
-export async function seedDemo(payload: SeedPayload, now: number): Promise<DemoCounts> {
-  if (readManifest().length > 0) throw new Error('Demo data is already present. Run `pnpm seed:purge` first.')
-  await seedAll(payload, now)
-  const context = await startContext(payload, now)
+/** Adds the rich demo workspace. Refuses to run twice so the data is not doubled. */
+export async function seedDemo(payload: SeedPayload, now: number, options: DemoOptions = {}): Promise<DemoCounts> {
+  if ((await readDemoEntries(store(payload))).length > 0)
+    throw new Error('Demo data is already present. Run the purge first.')
+  if (options.workspace !== true) await seedAll(payload, now)
+  const context = options.workspace === true ? await workspaceContext(payload, now) : await startContext(payload, now)
   try {
-    await writeAll(context)
+    await writeAll(context, options)
   } finally {
-    // Even after a failure the manifest lists what was created, so a purge can clean up the partial run.
-    writeManifest(context.manifest)
+    // Even after a failure the record lists what was created, so a purge can clean up the partial run.
+    await appendDemoEntries(store(payload), context.manifest)
   }
   const counts: Record<string, number> = {}
   for (const entry of context.manifest) counts[entry.collection] = (counts[entry.collection] ?? 0) + 1
   return counts
 }
 
-// Children first, so a record is never deleted while something still points at it.
-const PURGE_ORDER = [
-  'comments',
-  'emailMessages',
-  'activity',
-  'stageTransitions',
-  'tasks',
-  'projects',
-  'deals',
-  'leads',
-  'contacts',
-  'organizations',
-  'fieldDefinitions',
-  'users',
-]
-
-/** Removes exactly the documents the last demo run created. Returns how many were removed per collection. */
-export async function purgeDemo(payload: SeedPayload): Promise<DemoCounts> {
-  const entries = readManifest()
-  const removed: Record<string, number> = {}
-  for (const collection of PURGE_ORDER) {
-    const ids = entries.filter((entry) => entry.collection === collection).map((entry) => entry.id)
-    // The database adapter skips collection hooks; a comment's own hook refuses deletion through the API.
-    for (let start = 0; start < ids.length; start += 100) {
-      await payload.db.deleteMany({ collection, where: { id: { in: ids.slice(start, start + 100) } } })
-    }
-    if (ids.length > 0) removed[collection] = ids.length
-  }
-  removeManifest()
-  return removed
+/** Removes exactly the documents the last demo run created. Returns how many were removed per kind. */
+export function purgeDemo(payload: SeedPayload): Promise<DemoCounts> {
+  return purgeDemoRecords(store(payload))
 }

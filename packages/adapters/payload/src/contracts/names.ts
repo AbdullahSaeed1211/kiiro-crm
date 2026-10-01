@@ -21,6 +21,7 @@ export const COLLECTIONS = {
   stageTransitions: 'stageTransitions',
   timeEntries: 'timeEntries',
   webhookDeliveries: 'webhookDeliveries',
+  demoManifests: 'demoManifests',
 } as const
 
 /** One of the spike collection slugs. */

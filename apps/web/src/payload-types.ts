@@ -94,6 +94,7 @@ export interface Config {
     jobRuns: JobRun;
     timeEntries: TimeEntry;
     webhookDeliveries: WebhookDelivery;
+    demoManifests: DemoManifest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -128,6 +129,7 @@ export interface Config {
     jobRuns: JobRunsSelect<false> | JobRunsSelect<true>;
     timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
     webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
+    demoManifests: DemoManifestsSelect<false> | DemoManifestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1002,6 +1004,25 @@ export interface WebhookDelivery {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "demoManifests".
+ */
+export interface DemoManifest {
+  id: string;
+  part: number;
+  entries?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1131,6 +1152,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'webhookDeliveries';
         value: string | WebhookDelivery;
+      } | null)
+    | ({
+        relationTo: 'demoManifests';
+        value: string | DemoManifest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1664,6 +1689,16 @@ export interface WebhookDeliveriesSelect<T extends boolean = true> {
   attempts?: T;
   error?: T;
   at?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "demoManifests_select".
+ */
+export interface DemoManifestsSelect<T extends boolean = true> {
+  part?: T;
+  entries?: T;
   updatedAt?: T;
   createdAt?: T;
 }

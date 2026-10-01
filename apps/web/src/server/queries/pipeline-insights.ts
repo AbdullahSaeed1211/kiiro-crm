@@ -52,6 +52,11 @@ export async function loadPipelineSummary(context: RequestContext): Promise<Pipe
   return summary
 }
 
+/** Drops the cached figures, for after records are removed in bulk. */
+export function resetPipelineCache(): void {
+  cache.clear()
+}
+
 async function computePipelineSummary(context: RequestContext): Promise<PipelineSummary> {
   const deps = await crmDeps(context)
   const [rows, leadWorkflow, dealWorkflow, sources] = await Promise.all([

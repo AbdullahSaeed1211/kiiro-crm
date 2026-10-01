@@ -1,16 +1,17 @@
 import { isMain } from './lib/report'
-import { assertLocalOnly, localPayloadSecret, WEB_DIR } from './seed/local-env'
+import { demoTarget } from './lib/demo-target'
+import { localPayloadSecret, WEB_DIR } from './seed/local-env'
 import { seedDemo } from './seed/demo'
 import { loadPayload } from './seed/payload'
 
 async function main(): Promise<void> {
-  assertLocalOnly(process.env)
+  const target = demoTarget(process.argv.slice(2), process.env)
   process.env['PAYLOAD_SECRET'] = localPayloadSecret(WEB_DIR)
   process.chdir(WEB_DIR)
   const payload = await loadPayload()
-  const counts = await seedDemo(payload, Date.now())
+  const counts = await seedDemo(payload, Date.now(), { workspace: target.workspace })
   console.log(
-    `seed:demo created ${Object.entries(counts)
+    `seed:demo (${target.label}) created ${Object.entries(counts)
       .map(([name, count]) => `${name} ${String(count)}`)
       .join(', ')}`,
   )

@@ -38,17 +38,17 @@ Copy these instead of inventing a new shape. The task skills walk through each o
 
 ## Commands
 
-| Command                                         | Use                                                              |
-| ----------------------------------------------- | ---------------------------------------------------------------- |
-| `pnpm dev`                                      | local app on port 3000 (`PORT=3001 pnpm dev` if taken)           |
-| `pnpm db:reset:local && pnpm seed:dev`          | fresh local database                                             |
-| `pnpm seed:demo` / `pnpm seed:purge`            | add or remove the rich demo dataset (local database only)        |
-| `curl -s -b /tmp/ops.jar localhost:3001/api/v1` | every API endpoint with its body schema (sign in first, below)   |
-| `pnpm verify:fast`                              | while working: format check, typecheck, lint, changed unit tests |
-| `pnpm verify`                                   | before merging: every gate, tests, integration tests, build      |
-| `pnpm test:e2e`                                 | Playwright, against a running app                                |
-| `pnpm tenant:new <slug> ...`                    | write `tenants/<slug>.jsonc` for a new business (then provision) |
-| `pnpm tenant:owner-invite <slug>`               | print a fresh owner invitation link for a tenant                 |
+| Command                                         | Use                                                                                                                                      |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                      | local app on port 3000 (`PORT=3001 pnpm dev` if taken)                                                                                   |
+| `pnpm db:reset:local && pnpm seed:dev`          | fresh local database                                                                                                                     |
+| `pnpm seed:demo` / `pnpm seed:purge`            | add or remove the rich demo dataset (add `--remote <slug>` with `OPS_ALLOW_LIVE=1` for a live tenant; `DELETE /api/v1/demo` also purges) |
+| `curl -s -b /tmp/ops.jar localhost:3001/api/v1` | every API endpoint with its body schema (sign in first, below)                                                                           |
+| `pnpm verify:fast`                              | while working: format check, typecheck, lint, changed unit tests                                                                         |
+| `pnpm verify`                                   | before merging: every gate, tests, integration tests, build                                                                              |
+| `pnpm test:e2e`                                 | Playwright, against a running app                                                                                                        |
+| `pnpm tenant:new <slug> ...`                    | write `tenants/<slug>.jsonc` for a new business (then provision)                                                                         |
+| `pnpm tenant:owner-invite <slug>`               | print a fresh owner invitation link for a tenant                                                                                         |
 
 The static gates (`format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:*`) and unit tests take about a minute together; run them individually with `pnpm -s <name>` to see which one fails.
 
