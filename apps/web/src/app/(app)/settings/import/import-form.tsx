@@ -11,6 +11,7 @@ const TYPES = [
   ['organization', 'Organizations'],
   ['contact', 'Contacts'],
   ['lead', 'Leads'],
+  ['deal', 'Deals'],
 ] as const
 type ImportType = (typeof TYPES)[number][0]
 

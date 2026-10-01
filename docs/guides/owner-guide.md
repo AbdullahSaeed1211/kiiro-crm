@@ -38,13 +38,13 @@ Settings, Sales has three controls.
 
 ## Import from a spreadsheet
 
-Settings, Import takes organizations, contacts and leads as CSV (up to 5 MB and 500 rows per file).
+Settings, Import takes organizations, contacts, leads and deals as CSV (up to 5 MB and 500 rows per file).
 
 1. Download the template for what you are importing. Its columns include your own custom fields, by key.
 2. Fill it in and choose the file. Press **Check file**: nothing is saved, every row is validated, and problems are listed by row number.
 3. Press **Import** when the check looks right. An organization with the same name, or a contact or lead with the same email, is skipped. Contacts whose organization name is new get that organization created; leads need their organization to exist already. New leads follow your assignment rules.
 
-Deals, projects and tasks are not imported yet.
+A deal is skipped when a deal with the same title already exists at that organization. A deal row names its `organization` (created when new), a `value` in major units such as `12500.50`, a `currency` (your workspace currency when blank), a `stage` from the deal pipeline (the first stage when blank) and an `expectedClose` date. Projects and tasks are not imported yet.
 
 ## Send the newsletter
 

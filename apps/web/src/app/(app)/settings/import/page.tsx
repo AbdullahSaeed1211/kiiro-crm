@@ -22,14 +22,14 @@ export default function ImportSettingsPage() {
   return (
     <SettingsPage
       title="Import & export"
-      description="Bring organizations, contacts and leads in from a spreadsheet, or download everything as CSV."
+      description="Bring organizations, contacts, leads and deals in from a spreadsheet, or download everything as CSV."
       roles={['owner', 'manager']}
     >
       <SettingsForm>
         <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
           <li>Download the template for what you are importing and fill it in (CSV, up to 5 MB and 500 rows).</li>
           <li>Choose the file and press Check file. Nothing is saved; every row is checked and problems are listed.</li>
-          <li>When the check looks right, press Import. People and companies that already exist are skipped.</li>
+          <li>When the check looks right, press Import. People, companies and deals that already exist are skipped.</li>
         </ol>
         <div className="flex flex-wrap gap-2">
           {TEMPLATES.map(([recordType, label]) => (
@@ -51,7 +51,7 @@ export default function ImportSettingsPage() {
         <h2 className="text-sm font-medium">Export</h2>
         <p className="text-sm text-muted-foreground">
           Download every record you can see, with your custom fields, as a CSV that opens in any spreadsheet. The
-          organization, contact and lead files can be imported again.
+          organization, contact, lead and deal files can be imported again.
         </p>
         <div className="flex flex-wrap gap-2">
           {EXPORTS.map(([slug, label]) => (

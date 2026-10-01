@@ -7,7 +7,7 @@ const CORE_FIELDS: Readonly<Record<string, readonly string[]>> = {
   organization: ['name', 'website', 'phone', 'email'],
   contact: ['firstName', 'lastName', 'email', 'phone', 'organization'],
   lead: ['title', 'firstName', 'lastName', 'email', 'phone', 'companyName', 'organization', 'source'],
-  deal: ['title', 'organization', 'valueAmountMinor', 'valueCurrency', 'expectedCloseAt'],
+  deal: ['title', 'organization', 'value', 'currency', 'stage', 'expectedClose'],
   project: ['name', 'description', 'targetEndAt'],
   task: ['title', 'description', 'priority', 'startAt', 'dueAt'],
 }

@@ -4,25 +4,36 @@ import { z } from 'zod'
 import { parseCsv } from '../domain/csv'
 import { executeCommand, failure, parse, type CrmResult } from '../domain/helpers'
 import type { CrmDeps } from '../ports/repository'
-import { createOrganizationSchema, createContactSchema, createLeadSchema } from '../schema'
+import { createOrganizationSchema, createContactSchema, createDealSchema, createLeadSchema } from '../schema'
 import { createContact, createOrganization } from './crud'
 import { customValues } from './import-values'
-import { createLead } from './pipeline'
+import { dealFields, loadDeals, rowDealKey, type DealLookups } from './import-deals'
+import { createDeal, createLead } from './pipeline'
 
 /** The most rows one import takes; larger files go in several imports. */
 export const MAX_IMPORT_ROWS = 500
 
-const IMPORT_TYPES = ['organization', 'contact', 'lead'] as const
+const IMPORT_TYPES = ['organization', 'contact', 'lead', 'deal'] as const
 type ImportType = (typeof IMPORT_TYPES)[number]
 
 const importSchema = z
-  .object({ type: z.enum(IMPORT_TYPES), csv: z.string().min(1).max(5_000_000), dryRun: z.boolean().optional() })
+  .object({
+    type: z.enum(IMPORT_TYPES),
+    csv: z.string().min(1).max(5_000_000),
+    dryRun: z.boolean().optional(),
+    /** The currency of a deal amount that names none; the workspace's currency. */
+    currency: z
+      .string()
+      .regex(/^[A-Za-z]{3}$/u)
+      .optional(),
+  })
   .strict()
 
 const CORE_COLUMNS: Readonly<Record<ImportType, readonly string[]>> = {
   organization: ['name', 'website', 'phone', 'email'],
   contact: ['firstName', 'lastName', 'email', 'phone', 'organization'],
   lead: ['title', 'firstName', 'lastName', 'email', 'phone', 'companyName', 'organization', 'source'],
+  deal: ['title', 'organization', 'value', 'currency', 'stage', 'expectedClose'],
 }
 
 /** What an import did, or would do in a dry run. `row` counts from 1 at the first data row. */
@@ -42,6 +53,7 @@ interface Lookups {
   readonly organizations: Map<string, string>
   readonly sources: ReadonlyMap<string, string>
   readonly emails: Set<string>
+  readonly deals: DealLookups | undefined
   readonly fields: ReadonlyMap<string, FieldDefinition>
 }
 
@@ -59,7 +71,8 @@ const text = (cells: Cells, key: string): string | undefined => {
   return value === '' ? undefined : value
 }
 
-async function loadLookups(deps: CrmDeps, type: ImportType): Promise<Lookups> {
+async function loadLookups(deps: CrmDeps, input: { type: ImportType; currency: string }): Promise<Lookups> {
+  const { type } = input
   const [organizations, sources, contacts, leads, definitions] = await Promise.all([
     deps.repo.list('organization'),
     deps.repo.listLookups('source'),
@@ -67,13 +80,16 @@ async function loadLookups(deps: CrmDeps, type: ImportType): Promise<Lookups> {
     type === 'lead' ? deps.repo.list('lead') : Promise.resolve([]),
     deps.repo.loadFieldDefinitions(type),
   ])
-  const emails = new Set(
-    [...contacts, ...leads].flatMap((record) => (record.email === null ? [] : [lower(record.email)])),
-  )
+  const deals = type === 'deal' ? await loadDeals(deps, input.currency) : undefined
+  const emails = new Set([
+    ...[...contacts, ...leads].flatMap((record) => (record.email === null ? [] : [lower(record.email)])),
+    ...(deals?.existing ?? []),
+  ])
   return {
     organizations: new Map(organizations.map((organization) => [lower(organization.name), organization.id])),
     sources: new Map(sources.map((source) => [lower(source.name), source.id])),
     emails,
+    deals: deals?.lookups,
     fields: new Map(visibleFields(definitions, deps.actor).map((field) => [field.key, field])),
   }
 }
@@ -100,11 +116,16 @@ function validateCustom(state: RunState, cells: Cells): { data: Record<string, u
 /** Checks the row against its create schema, then runs the create command unless this is a dry run. */
 async function submit(state: RunState, input: Record<string, unknown>): Promise<string | undefined> {
   const { type, deps, dryRun } = state
-  const schema = { organization: createOrganizationSchema, contact: createContactSchema, lead: createLeadSchema }[type]
+  const schema = {
+    organization: createOrganizationSchema,
+    contact: createContactSchema,
+    lead: createLeadSchema,
+    deal: createDealSchema,
+  }[type]
   const parsed = schema.safeParse(input)
   if (!parsed.success) return parsed.error.issues[0]?.message ?? 'The row is not valid'
   if (dryRun) return undefined
-  const command = { organization: createOrganization, contact: createContact, lead: createLead }[type]
+  const command = { organization: createOrganization, contact: createContact, lead: createLead, deal: createDeal }[type]
   const result = await command(deps, input)
   return result.ok ? undefined : result.error.message
 }
@@ -136,6 +157,7 @@ function baseInput(state: RunState, cells: Cells): Record<string, unknown> {
       email: text(cells, 'email'),
     }
   }
+  if (state.type === 'deal') return {}
   const person = {
     firstName: text(cells, 'firstName'),
     lastName: text(cells, 'lastName'),
@@ -149,7 +171,11 @@ function baseInput(state: RunState, cells: Cells): Record<string, unknown> {
 
 function rowInput(state: RunState, cells: Cells): { input: Record<string, unknown> } | { error: string } {
   const custom = validateCustom(state, cells)
-  return 'error' in custom ? custom : { input: { ...baseInput(state, cells), customData: custom.data } }
+  if ('error' in custom) return custom
+  const input = { ...baseInput(state, cells), customData: custom.data }
+  if (state.lookups.deals === undefined) return { input }
+  const deal = dealFields(cells, state.lookups.deals)
+  return 'error' in deal ? deal : { input: { ...input, ...deal.input } }
 }
 
 async function linkOrganizationAndSource(
@@ -169,17 +195,19 @@ async function linkOrganizationAndSource(
   return undefined
 }
 
-function isDuplicate(state: RunState, input: Record<string, unknown>): boolean {
+function isDuplicate(state: RunState, input: Record<string, unknown>, cells: Cells): boolean {
   const { type, lookups } = state
   if (type === 'organization')
     return typeof input['name'] === 'string' && lookups.organizations.has(lower(input['name']))
+  if (type === 'deal') return lookups.emails.has(rowDealKey(input, cells))
   const email = typeof input['email'] === 'string' ? lower(input['email']) : ''
   return email !== '' && lookups.emails.has(email)
 }
 
-function remember(state: RunState, input: Record<string, unknown>): void {
+function remember(state: RunState, input: Record<string, unknown>, cells: Cells): void {
   const { type, lookups } = state
   if (type === 'organization') lookups.organizations.set(lower(String(input['name'])), 'new')
+  else if (type === 'deal') lookups.emails.add(rowDealKey(input, cells))
   else if (typeof input['email'] === 'string') lookups.emails.add(lower(input['email']))
 }
 
@@ -187,12 +215,12 @@ async function importRow(state: RunState, cells: Cells): Promise<RowOutcome> {
   const row = rowInput(state, cells)
   if ('error' in row) return row
   const { input } = row
-  if (isDuplicate(state, input)) return 'skipped'
+  if (isDuplicate(state, input, cells)) return 'skipped'
   const linkError = await linkOrganizationAndSource(state, cells, input)
   if (linkError !== undefined) return { error: linkError }
   const submitError = await submit(state, input)
   if (submitError !== undefined) return { error: submitError }
-  remember(state, input)
+  remember(state, input, cells)
   return 'created'
 }
 
@@ -240,7 +268,7 @@ async function importWork(deps: CrmDeps, input: unknown): Promise<CrmResult<Impo
   if (deps.actor.role === 'staff') return failure('FORBIDDEN', 'only owners and managers can import')
   const table = readTable(csv)
   if (!table.ok) return table
-  const lookups = await loadLookups(deps, type)
+  const lookups = await loadLookups(deps, { type, currency: parsed.value.currency ?? 'USD' })
   return ok(await processRows({ deps, type, dryRun, lookups, organizationsCreated: 0 }, table.value))
 }
 
