@@ -7,10 +7,22 @@ const EVENT_NAME = /^[a-z]+\.[a-z]+$/u
 /** The event a webhook subscribes to when it wants everything. */
 export const ALL_EVENTS = '*'
 
+const PRIVATE_SUFFIXES = ['.local', '.localhost', '.internal', '.lan', '.home', '.corp', '.test', '.invalid'] as const
+
+/** True for an https address on a public host name: no credentials, no IP literal, no local or internal name. */
 function isPublicHttpsUrl(text: string): boolean {
   try {
     const url = new URL(text)
-    return url.protocol === 'https:' && url.username === '' && url.password === '' && url.hostname.includes('.')
+    const host = url.hostname.toLowerCase()
+    const isIpLiteral = host.startsWith('[') || /^\d+\.\d+\.\d+\.\d+$/u.test(host)
+    return (
+      url.protocol === 'https:' &&
+      url.username === '' &&
+      url.password === '' &&
+      host.includes('.') &&
+      !isIpLiteral &&
+      !PRIVATE_SUFFIXES.some((suffix) => host.endsWith(suffix))
+    )
   } catch {
     return false
   }
