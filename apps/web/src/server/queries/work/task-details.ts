@@ -66,6 +66,7 @@ function readTaskDocuments(context: RequestContext, idValue: string) {
       select: TASK_FIELDS,
     }),
     context.payload.find({ collection: 'users', ...request, limit: 0, select: { id: true, name: true } }),
+    context.payload.find({ collection: 'groups', ...request, limit: 0, select: { id: true, name: true } }),
   ])
 }
 
@@ -91,10 +92,22 @@ async function canEdit(context: RequestContext, taskId: string): Promise<boolean
   return record !== undefined && canUpdateTask(deps, record)
 }
 
+function subtasksOf(
+  docs: readonly { id: string; title: string; stageId?: string | null; updatedAt: string }[],
+  terminal: ReadonlySet<string>,
+): TaskSheetTask['subtasks'] {
+  return docs.map((sub) => ({
+    id: sub.id,
+    title: sub.title,
+    complete: terminal.has(sub.stageId ?? ''),
+    updatedAt: Date.parse(sub.updatedAt),
+  }))
+}
+
 /** Loads one scoped task for the detail views; `undefined` when it does not exist or is outside the actor's scope. */
 export async function loadTaskView(idValue: string): Promise<TaskView | undefined> {
   const context = await getRequestContext()
-  const [[taskPage, workflowPage, subtaskPage, memberPage], locale] = await Promise.all([
+  const [[taskPage, workflowPage, subtaskPage, memberPage, groupPage], locale] = await Promise.all([
     readTaskDocuments(context, idValue),
     loadWorkspaceLocale(),
   ])
@@ -104,12 +117,7 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
   const terminal = new Set(stages.filter((stage) => isTerminalCategory(stage.category)).map((stage) => stage.id))
   const task = mapTask(doc, new Map<string, StageLabel>(stages.map((stage) => [stage.id, stage])))
   const [parent, canUpdate] = await Promise.all([loadParent(context, doc.parentTask), canEdit(context, task.id)])
-  const subtasks = subtaskPage.docs.map((sub) => ({
-    id: sub.id,
-    title: sub.title,
-    complete: terminal.has(sub.stageId ?? ''),
-    updatedAt: Date.parse(sub.updatedAt),
-  }))
+  const subtasks = subtasksOf(subtaskPage.docs, terminal)
   return {
     task: {
       id: task.id,
@@ -119,12 +127,19 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
       priority: task.priority,
       repeat: repeatOf(doc),
       assigneeIds: task.assigneeIds,
+      groupId: typeof doc.group === 'string' ? doc.group : null,
       startAt: task.startAt,
       dueAt: task.dueAt,
       description: task.description,
       parent,
       subtasks,
     },
-    options: { stages, members: memberPage.docs.map(({ id, name }) => ({ id, name })), canUpdate, locale },
+    options: {
+      stages,
+      members: memberPage.docs.map(({ id, name }) => ({ id, name })),
+      groups: groupPage.docs.map(({ id, name }) => ({ id, name })),
+      canUpdate,
+      locale,
+    },
   }
 }

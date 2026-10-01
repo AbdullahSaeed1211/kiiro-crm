@@ -1,3 +1,4 @@
+import { LocaleProvider } from '../../i18n/locale-context'
 import '@ops/ui/globals.css'
 import { ThemeProvider } from '@ops/ui'
 import { Toaster } from '@ops/ui/components/ui/sonner'
@@ -71,25 +72,27 @@ export default async function AppLayout({ children, modal }: Readonly<{ children
     <html lang={locale} suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
       <body style={themeStyle(settings)}>
         <ThemeProvider>
-          <AppFrame
-            defaultOpen={sidebarOpen}
-            appName={appName}
-            compactLogoUrl={brand.faviconUrl}
-            modules={{
-              crm: modulesValue.crm !== false,
-              work: modulesValue.work !== false,
-              intake: modulesValue.intake !== false,
-              mail: modulesValue.mail !== false,
-            }}
-            terminology={terminologyValue}
-            locale={locale}
-            userName={userName}
-            userEmail={userEmail}
-            role={context.actor.role}
-          >
-            {children}
-            {modal}
-          </AppFrame>
+          <LocaleProvider locale={locale}>
+            <AppFrame
+              defaultOpen={sidebarOpen}
+              appName={appName}
+              compactLogoUrl={brand.faviconUrl}
+              modules={{
+                crm: modulesValue.crm !== false,
+                work: modulesValue.work !== false,
+                intake: modulesValue.intake !== false,
+                mail: modulesValue.mail !== false,
+              }}
+              terminology={terminologyValue}
+              locale={locale}
+              userName={userName}
+              userEmail={userEmail}
+              role={context.actor.role}
+            >
+              {children}
+              {modal}
+            </AppFrame>
+          </LocaleProvider>
           <Toaster />
         </ThemeProvider>
       </body>

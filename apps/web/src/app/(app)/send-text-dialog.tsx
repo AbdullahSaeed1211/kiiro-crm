@@ -14,6 +14,9 @@ import { Textarea } from '@ops/ui/components/ui/textarea'
 import { MessageSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { SMS_COPY } from '../../i18n/sms-copy'
 
 const MAX_LENGTH = 480
 
@@ -30,16 +33,19 @@ function textingIsOn(): Promise<boolean> {
   return textingAvailable
 }
 
-async function post(input: Readonly<{ recordType: string; recordId: string; body: string }>): Promise<string | null> {
+type Sent = Readonly<{ ok: true }> | Readonly<{ ok: false; reason: string | undefined }>
+
+/** Sends the text. When it fails, `reason` is the server's message, if it gave one. */
+async function post(input: Readonly<{ recordType: string; recordId: string; body: string }>): Promise<Sent> {
   const response = await fetch('/api/v1/sms/send', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
   })
-  if (response.ok) return null
+  if (response.ok) return { ok: true }
   const payload: unknown = await response.json().catch(() => null)
   const error: unknown = typeof payload === 'object' && payload !== null ? Reflect.get(payload, 'error') : undefined
-  return typeof error === 'string' ? error : 'Unable to send the text. Try again.'
+  return { ok: false, reason: typeof error === 'string' ? error : undefined }
 }
 
 /** A button and form that texts the phone number on one record, and records the text on it. */
@@ -48,6 +54,7 @@ export function SendTextDialog({
   recordId,
   recipient,
 }: Readonly<{ recordType: 'contact' | 'lead' | 'organization'; recordId: string; recipient: string }>) {
+  const copy = catalogFor(SMS_COPY, useLocale())
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [body, setBody] = useState('')
@@ -59,10 +66,10 @@ export function SendTextDialog({
   }, [])
   const send = async () => {
     setPending(true)
-    const failure = await post({ recordType, recordId, body })
+    const sent = await post({ recordType, recordId, body })
     setPending(false)
-    setProblem(failure)
-    if (failure !== null) return
+    setProblem(sent.ok ? null : (sent.reason ?? copy.failed))
+    if (!sent.ok) return
     setBody('')
     setOpen(false)
     router.refresh()
@@ -74,14 +81,14 @@ export function SendTextDialog({
         render={
           <Button variant="outline" size="sm">
             <MessageSquare aria-hidden />
-            Text
+            {copy.open}
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Send a text</DialogTitle>
-          <DialogDescription>To {recipient}. The text is saved on this record.</DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.to.replace('{phone}', recipient)}</DialogDescription>
         </DialogHeader>
         <form
           className="grid gap-3"
@@ -91,7 +98,7 @@ export function SendTextDialog({
           }}
         >
           <Textarea
-            aria-label="Text message"
+            aria-label={copy.messageLabel}
             value={body}
             maxLength={MAX_LENGTH}
             rows={5}
@@ -100,7 +107,7 @@ export function SendTextDialog({
             }}
           />
           <p className="text-xs text-muted-foreground">
-            {body.length} of {MAX_LENGTH} characters
+            {copy.counter.replace('{used}', String(body.length)).replace('{max}', String(MAX_LENGTH))}
           </p>
           {problem === null ? null : (
             <p role="alert" className="text-sm text-destructive">
@@ -109,7 +116,7 @@ export function SendTextDialog({
           )}
           <DialogFooter>
             <Button type="submit" disabled={pending || body.trim() === ''}>
-              {pending ? 'Sending…' : 'Send text'}
+              {pending ? copy.sending : copy.send}
             </Button>
           </DialogFooter>
         </form>

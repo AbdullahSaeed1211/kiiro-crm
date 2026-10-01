@@ -188,7 +188,29 @@ export async function loadWorkspaceLocale(): Promise<Locale> {
 }
 
 /** The signed-in user's tasks with what My tasks needs to render them. */
-export type MyTaskModel = Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone' | 'stages' | 'locale'>
+export type MyTaskModel = Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone' | 'stages' | 'locale'> & {
+  /** Name of each project the tasks belong to, by project id. */
+  readonly projectNames: Readonly<Record<string, string>>
+}
+
+/** Names of the projects with these ids, for labelling tasks; an empty list reads nothing. */
+async function projectNamesFor(
+  context: RequestContext,
+  projectIds: readonly string[],
+): Promise<Record<string, string>> {
+  if (projectIds.length === 0) return {}
+  const found = await context.payload.find({
+    collection: 'projects',
+    where: { id: { in: [...projectIds] } },
+    select: { name: true },
+    limit: projectIds.length,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return Object.fromEntries(found.docs.map((project) => [project.id, project.name]))
+}
 
 /** Reads only the signed-in user's tasks for the dedicated My tasks page. */
 export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskModel> {
@@ -215,8 +237,11 @@ export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskM
   const stages = new Map<string, StageLabel>()
   const workflows = workflowPage.docs as readonly object[]
   for (const workflow of workflows) addStages(stages, workflow)
+  const tasks = (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages))
+  const projectIds = [...new Set(tasks.flatMap((task) => (task.projectId === null ? [] : [task.projectId])))]
   return {
-    tasks: (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages)),
+    tasks,
+    projectNames: await projectNamesFor(requestContext, projectIds),
     actorId: String(requestContext.actor.id),
     timeZone: text(settings, 'timezone') || 'UTC',
     stages: workflowStages(workflows),

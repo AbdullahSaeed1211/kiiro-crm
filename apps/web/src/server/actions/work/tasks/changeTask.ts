@@ -37,6 +37,7 @@ function fieldPatch(change: TaskChangeRequest['change']): Record<string, unknown
   if (change.kind === 'priority') return { priority: change.priority }
   if (change.kind === 'repeat') return { repeat: change.repeat }
   if (change.kind === 'assignees') return { assigneeIds: change.assigneeIds }
+  if (change.kind === 'group') return { groupId: change.groupId }
   if (change.kind === 'description') return { description: change.description }
   return undefined
 }

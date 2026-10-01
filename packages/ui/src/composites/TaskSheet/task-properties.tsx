@@ -140,6 +140,42 @@ function AssigneeSelect({
   )
 }
 
+const NO_GROUP = '__none__'
+
+function GroupSelect({
+  task,
+  options,
+  labels,
+  disabled,
+  onSave,
+}: Readonly<Omit<PropertiesProps, 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>) {
+  const names = new Map(options.groups.map((group) => [group.id, group.name]))
+  return (
+    <Select
+      value={task.groupId ?? NO_GROUP}
+      disabled={disabled}
+      onValueChange={(next: string | null) => {
+        const groupId = next === null || next === NO_GROUP ? null : next
+        if (groupId !== task.groupId) onSave({ kind: 'group', groupId })
+      }}
+    >
+      <SelectTrigger size="sm" aria-label={labels.group} className="w-full">
+        <SelectValue>
+          {(value: string) => (value === NO_GROUP ? labels.noGroup : (names.get(value) ?? value))}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent align="start" alignItemWithTrigger={false}>
+        <SelectItem value={NO_GROUP}>{labels.noGroup}</SelectItem>
+        {options.groups.map((group) => (
+          <SelectItem key={group.id} value={group.id}>
+            {group.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 /** Stage, priority, assignees, dates and parent; each control saves on change (spec §17.5). */
 export function TaskProperties({ task, options, labels, taskHref, busy, fields, onSave }: PropertiesProps) {
   const disabled = busy || !options.canUpdate
@@ -166,6 +202,9 @@ export function TaskProperties({ task, options, labels, taskHref, busy, fields, 
       </Property>
       <Property label={labels.assignees} error={fields['assigneeIds']}>
         <AssigneeSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />
+      </Property>
+      <Property label={labels.group} error={fields['groupId']}>
+        <GroupSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />
       </Property>
       <Property label={labels.startDate} error={fields['startAt']}>
         <DateField

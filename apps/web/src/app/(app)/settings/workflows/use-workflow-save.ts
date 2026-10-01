@@ -1,24 +1,25 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
 import { isTerminal, type ConfigAction, type Workflow } from './workflow-model'
 
-function validateWorkflow(draft: Workflow): string | null {
+function validateWorkflow(draft: Workflow, copy: WorkflowCopy): string | null {
   const stages = draft.stages
   const complete =
     draft.name.trim() !== '' &&
     stages.length > 0 &&
     stages.every((stage) => stage.name.trim() !== '') &&
     stages.some((stage) => !isTerminal(stage.category))
-  return complete ? null : 'Add a workflow name, a name for every stage, and a non-terminal default.'
+  return complete ? null : copy.needsNames
 }
 
-export function useWorkflowSave(draft: Workflow) {
+export function useWorkflowSave(draft: Workflow, copy: WorkflowCopy) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string>()
 
   const save = async (action: ConfigAction) => {
-    const validation = validateWorkflow(draft)
+    const validation = validateWorkflow(draft, copy)
     if (validation) {
       setMessage(validation)
       return
@@ -37,11 +38,11 @@ export function useWorkflowSave(draft: Workflow) {
         stages,
         defaultStageId: defaultStage?.id ?? '',
       })
-      const msg = result.ok ? 'Workflow saved.' : result.error.message
+      const msg = result.ok ? copy.saved : result.error.message
       if (result.ok) router.refresh()
       setMessage(msg)
     } catch {
-      setMessage('Unable to save workflow. Try again.')
+      setMessage(copy.saveFailed)
     } finally {
       setPending(false)
     }

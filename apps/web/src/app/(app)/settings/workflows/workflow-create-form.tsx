@@ -1,9 +1,12 @@
 'use client'
 
+import { Input } from '@ops/ui/components/ui/input'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
-import { RECORD_TYPES, title } from './workflow-model'
+import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
+import { RECORD_TYPES } from './workflow-model'
 
 interface WorkflowCreateFormProps {
+  copy: WorkflowCopy
   name: string
   recordType: string
   stageName: string
@@ -16,6 +19,7 @@ interface WorkflowCreateFormProps {
 }
 
 export function WorkflowCreateForm({
+  copy,
   name,
   recordType,
   stageName,
@@ -30,9 +34,8 @@ export function WorkflowCreateForm({
     <div className="mt-4 space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm">
-          <span className="font-medium">Workflow name</span>
-          <input
-            className="h-10 rounded-md border bg-background px-3"
+          <span className="font-medium">{copy.workflowName}</span>
+          <Input
             value={name}
             onChange={(event) => {
               onNameChange(event.target.value)
@@ -40,7 +43,7 @@ export function WorkflowCreateForm({
           />
         </label>
         <label className="grid gap-1 text-sm">
-          <span className="font-medium">Record type</span>
+          <span className="font-medium">{copy.recordType}</span>
           <NativeSelect
             value={recordType}
             onChange={(event) => {
@@ -49,17 +52,17 @@ export function WorkflowCreateForm({
           >
             {RECORD_TYPES.map((type) => (
               <option key={type} value={type}>
-                {title(type)}
+                {copy.recordTypes[type] ?? type}
               </option>
             ))}
           </NativeSelect>
         </label>
       </div>
       <label className="grid gap-1 text-sm">
-        <span className="font-medium">First stage</span>
-        <input
-          className="h-10 rounded-md border bg-background px-3"
+        <span className="font-medium">{copy.firstStep}</span>
+        <Input
           value={stageName}
+          placeholder={copy.stageNamePlaceholder}
           onChange={(event) => {
             onStageNameChange(event.target.value)
           }}
@@ -73,7 +76,7 @@ export function WorkflowCreateForm({
           onCreate()
         }}
       >
-        {pending ? 'Creating...' : 'Create workflow'}
+        {pending ? copy.creating : copy.create}
       </button>
       {message ? (
         <p className="text-sm text-muted-foreground" role="status">

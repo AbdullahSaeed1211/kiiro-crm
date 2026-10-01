@@ -3,6 +3,9 @@ import { deleteConfiguration, saveConfiguration } from '../../../../server/actio
 import { requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { WorkflowEditor } from './workflow-editor'
+import { catalogFor } from '../../../../i18n/locale'
+import { WORKFLOW_COPY } from '../../../../i18n/workflow-copy'
+import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 import { loadRequirementOptions } from '../../../../server/queries/settings/stage-requirements'
 
 export const metadata: Metadata = { title: 'Workflows' }
@@ -15,6 +18,7 @@ const stringValue = (value: unknown, fallback = ''): string =>
 
 export default async function WorkflowsSettingsPage() {
   const context = await requireRole('owner', 'manager')
+  const copy = catalogFor(WORKFLOW_COPY, await loadWorkspaceLocale())
   const result = await context.payload.find({
     collection: 'workflows',
     sort: 'recordType',
@@ -58,16 +62,9 @@ export default async function WorkflowsSettingsPage() {
     ]
   })
   return (
-    <SettingsPage
-      title="Workflows"
-      description="Define stages, defaults, and probabilities for each record type."
-      roles={['owner', 'manager']}
-    >
+    <SettingsPage title={copy.pageTitle} description={copy.pageDescription} roles={['owner', 'manager']}>
       <SettingsForm>
-        <p className="text-sm text-muted-foreground">
-          Every workflow is independent, so a sales pipeline, service queue, or project board can use language that fits
-          the business.
-        </p>
+        <p className="text-sm text-muted-foreground">{copy.intro}</p>
         <WorkflowEditor
           workflows={workflows}
           action={saveConfiguration}

@@ -3,32 +3,31 @@
 import { RecordForm, type RecordFieldConfig } from '@ops/ui'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { LEAD_FORM_COPY, type LeadFormCopy } from '../../../i18n/lead-form-copy'
 import { createLead } from '../../../server/crm/leads/actions'
 import { ensureSource } from '../../../server/actions/settings/lists'
 
-const fields = (sources: readonly { id: string; name: string }[]): readonly RecordFieldConfig[] => [
-  { name: 'title', label: 'Title', placeholder: 'e.g. Website redesign inquiry', required: true },
-  { name: 'firstName', label: 'First name', placeholder: 'e.g. Jane' },
-  { name: 'lastName', label: 'Last name', placeholder: 'Doe' },
-  { name: 'companyName', label: 'Company', placeholder: 'e.g. Acme Inc.' },
-  { name: 'email', label: 'Email', type: 'email', placeholder: 'jane@acme.test' },
-  { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 000 0000' },
+const fields = (copy: LeadFormCopy, sources: readonly { id: string; name: string }[]): readonly RecordFieldConfig[] => [
+  { name: 'title', label: copy.title, placeholder: copy.titlePlaceholder, required: true },
+  { name: 'firstName', label: copy.firstName, placeholder: copy.firstNamePlaceholder },
+  { name: 'lastName', label: copy.lastName, placeholder: copy.lastNamePlaceholder },
+  { name: 'companyName', label: copy.company, placeholder: copy.companyPlaceholder },
+  { name: 'email', label: copy.email, type: 'email', placeholder: 'jane@acme.test' },
+  { name: 'phone', label: copy.phone, type: 'tel', placeholder: '+1 555 000 0000' },
   {
     name: 'sourceId',
-    label: 'Source',
+    label: copy.source,
     type: 'select',
-    placeholder: 'Select a source',
+    placeholder: copy.sourcePlaceholder,
     options: sources.map((source) => ({ value: source.id, label: source.name })),
   },
-  {
-    name: 'newSource',
-    label: 'Or add a new source',
-    placeholder: 'e.g. Trade show, Podcast, Walk-in (owners and managers)',
-    maxLength: 120,
-  },
+  { name: 'newSource', label: copy.newSource, placeholder: copy.newSourcePlaceholder, maxLength: 120 },
 ]
 
 export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: string; name: string }[] }>) {
+  const copy = catalogFor(LEAD_FORM_COPY, useLocale())
   const router = useRouter()
   const [error, setError] = useState<string | undefined>()
   return (
@@ -39,8 +38,8 @@ export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: s
         </p>
       )}
       <RecordForm
-        fields={fields(sources)}
-        labels={{ submit: 'Create lead', saving: 'Creating…', cancel: 'Cancel', required: 'This field is required' }}
+        fields={fields(copy, sources)}
+        labels={{ submit: copy.submit, saving: copy.saving, cancel: copy.cancel, required: copy.required }}
         onCancel={() => {
           router.push('/leads')
         }}

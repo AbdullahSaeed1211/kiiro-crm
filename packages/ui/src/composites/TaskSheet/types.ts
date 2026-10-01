@@ -18,6 +18,8 @@ export interface TaskSheetTask {
   readonly priority: TaskPriority
   readonly repeat: TaskRepeat
   readonly assigneeIds: readonly string[]
+  /** The group the task belongs to, so everyone in it can see and work on it; null for none. */
+  readonly groupId: string | null
   readonly startAt: number | null
   readonly dueAt: number | null
   readonly description: string | null
@@ -29,6 +31,7 @@ export interface TaskSheetTask {
 export interface TaskSheetOptions {
   readonly stages: readonly StageOption[]
   readonly members: readonly Readonly<{ id: string; name: string }>[]
+  readonly groups: readonly Readonly<{ id: string; name: string }>[]
   /** False renders every property as text and hides the save controls. */
   readonly canUpdate: boolean
   /** BCP 47 locale for dates. */
@@ -41,6 +44,7 @@ export type TaskChange =
   | Readonly<{ kind: 'priority'; priority: TaskPriority }>
   | Readonly<{ kind: 'repeat'; repeat: TaskRepeat }>
   | Readonly<{ kind: 'assignees'; assigneeIds: readonly string[] }>
+  | Readonly<{ kind: 'group'; groupId: string | null }>
   | Readonly<{ kind: 'dates'; startAt: number | null; dueAt: number | null }>
   | Readonly<{ kind: 'description'; description: string }>
   | Readonly<{ kind: 'complete'; reopen: boolean }>
@@ -71,6 +75,8 @@ export type TaskSheetLabels = Readonly<{
   repeats: Readonly<Record<TaskRepeat, string>>
   assignees: string
   unassigned: string
+  group: string
+  noGroup: string
   startDate: string
   dueDate: string
   noDate: string

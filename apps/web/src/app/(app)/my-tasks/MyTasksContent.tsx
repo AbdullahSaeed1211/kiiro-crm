@@ -65,6 +65,38 @@ function DueCell({ dueAt, locale }: Readonly<{ dueAt: number | null; locale: Loc
   )
 }
 
+type Task = MyTaskBuckets['overdue'][number]
+
+function TaskRow({ task, model, overdue }: Readonly<{ task: Task; model: MyTaskModel; overdue: boolean }>) {
+  const stageInfo = model.stages.find((s) => s.id === task.stageId)
+  const project = task.projectId === null ? undefined : model.projectNames[task.projectId]
+  return (
+    <li className="px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <Link
+            className="block font-medium hover:text-primary hover:underline"
+            href={taskHref(task.id, '/my-tasks')}
+            data-task-link-id={task.id}
+          >
+            {task.title}
+          </Link>
+          {project === undefined ? null : <p className="truncate text-xs text-muted-foreground">{project}</p>}
+          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm">
+            {stageInfo && <StagePill name={stageInfo.name} color={toStageColor(stageInfo.color)} size="sm" />}
+            <PriorityCell priority={task.priority} locale={model.locale} />
+            <span className={overdue ? 'text-destructive' : undefined}>
+              <DueCell dueAt={task.dueAt} locale={model.locale} />
+            </span>
+          </div>
+        </div>
+        <TaskCompleteButton taskId={task.id} updatedAt={task.updatedAt} />
+      </div>
+    </li>
+  )
+}
+
+/** The signed-in person's open tasks in due-date groups; a group with nothing in it is left out. */
 export function MyTasksContent({
   buckets,
   model,
@@ -74,48 +106,19 @@ export function MyTasksContent({
 }>) {
   return (
     <div className="space-y-4">
-      {SECTIONS.map(([key, label]) => {
-        const rows = buckets[key]
-        return (
-          <section className="ops-dashboard-card" key={key}>
-            <header className="flex items-center justify-between border-b px-4 py-3">
-              <h2 className="font-medium">{label}</h2>
-              <span className="text-sm text-muted-foreground">{rows.length}</span>
-            </header>
-            {rows.length === 0 ? (
-              <div className="px-4 py-5 text-sm text-muted-foreground">Nothing here.</div>
-            ) : (
-              <ul className="divide-y">
-                {rows.map((task) => {
-                  const stageInfo = model.stages.find((s) => s.id === task.stageId)
-                  const stageColor = toStageColor(stageInfo?.color ?? 'gray')
-                  return (
-                    <li className="px-4 py-3" key={task.id}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <Link
-                            className="font-medium hover:text-primary hover:underline block"
-                            href={taskHref(task.id, '/my-tasks')}
-                            data-task-link-id={task.id}
-                          >
-                            {task.title}
-                          </Link>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm">
-                            {stageInfo && <StagePill name={stageInfo.name} color={stageColor} size="sm" />}
-                            <PriorityCell priority={task.priority} locale={model.locale} />
-                            <DueCell dueAt={task.dueAt} locale={model.locale} />
-                          </div>
-                        </div>
-                        <TaskCompleteButton taskId={task.id} updatedAt={task.updatedAt} />
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-        )
-      })}
+      {SECTIONS.filter(([key]) => buckets[key].length > 0).map(([key, label]) => (
+        <section className="ops-dashboard-card" key={key}>
+          <header className="flex items-center justify-between border-b px-4 py-3">
+            <h2 className={key === 'overdue' ? 'font-medium text-destructive' : 'font-medium'}>{label}</h2>
+            <span className="text-sm text-muted-foreground">{buckets[key].length}</span>
+          </header>
+          <ul className="divide-y">
+            {buckets[key].map((task) => (
+              <TaskRow key={task.id} task={task} model={model} overdue={key === 'overdue'} />
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   )
 }

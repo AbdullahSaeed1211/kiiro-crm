@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { SetStateAction, Dispatch } from 'react'
+import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
 import { newStage, type ConfigAction } from './workflow-model'
 
 interface CreateState {
@@ -31,12 +32,12 @@ function createSetter(setState: Dispatch<SetStateAction<CreateState>>, key: keyo
   }
 }
 
-export function useWorkflowCreate() {
+export function useWorkflowCreate(copy: WorkflowCopy) {
   const router = useRouter()
   const [state, setState] = useState(defaultState)
   const create = async (action: ConfigAction) => {
     if (!state.name.trim() || !state.stageName.trim()) {
-      setState((s) => ({ ...s, message: 'Workflow name and first stage are required.' }))
+      setState((s) => ({ ...s, message: copy.createNeedsNames }))
       return
     }
     const stage = { ...newStage(), name: state.stageName.trim(), position: 0 }
@@ -49,14 +50,14 @@ export function useWorkflowCreate() {
         stages: [stage],
         defaultStageId: stage.id,
       })
-      const msg = result.ok ? 'Workflow created.' : result.error.message
+      const msg = result.ok ? copy.created : result.error.message
       setState((s) => ({ ...s, pending: false, message: msg }))
       if (result.ok) {
         setState(defaultState)
         router.refresh()
       }
     } catch {
-      setState((s) => ({ ...s, pending: false, message: 'Could not create this workflow. Please try again.' }))
+      setState((s) => ({ ...s, pending: false, message: copy.createFailed }))
     }
   }
   return {

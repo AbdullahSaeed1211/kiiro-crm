@@ -1,13 +1,14 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { title, type ConfigAction, type Workflow } from './workflow-model'
+import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
+import type { ConfigAction, Workflow } from './workflow-model'
 
 interface DeleteState {
   pending: boolean
   message: string | undefined
 }
 
-export function useWorkflowDelete(draft: Workflow) {
+export function useWorkflowDelete(draft: Workflow, copy: WorkflowCopy) {
   const router = useRouter()
   const [state, setState] = useState<DeleteState>({
     pending: false,
@@ -15,7 +16,7 @@ export function useWorkflowDelete(draft: Workflow) {
   })
 
   const remove = async (deleteAction: ConfigAction) => {
-    if (!window.confirm(`Delete the ${title(draft.recordType)} workflow “${draft.name}”?`)) {
+    if (!window.confirm(copy.confirmDelete.replace('{name}', draft.name))) {
       return
     }
     setState({ pending: true, message: undefined })
@@ -23,7 +24,7 @@ export function useWorkflowDelete(draft: Workflow) {
       const result = await deleteAction({ collection: 'workflows', id: draft.id })
       setState({
         pending: false,
-        message: result.ok ? 'Workflow deleted.' : result.error.message,
+        message: result.ok ? copy.deleted : result.error.message,
       })
       if (result.ok) {
         router.refresh()
@@ -31,7 +32,7 @@ export function useWorkflowDelete(draft: Workflow) {
     } catch {
       setState({
         pending: false,
-        message: 'Unable to delete workflow. Try again.',
+        message: copy.deleteFailed,
       })
     }
   }

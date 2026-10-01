@@ -3,6 +3,9 @@
 import { Input } from '@ops/ui/components/ui/input'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useEffect, useState } from 'react'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { RECORD_PICKER_COPY } from '../../i18n/record-picker-copy'
 import { searchRecordOptions, type PickerOptions } from '../../server/crm/pickers'
 
 const SEARCH_DELAY_MS = 250
@@ -19,6 +22,7 @@ export function RecordPicker({
   type,
   emptyLabel,
 }: Readonly<{ id: string; name: string; type: 'organization' | 'contact'; emptyLabel: string }>) {
+  const copy = catalogFor(RECORD_PICKER_COPY, useLocale())
   const [found, setFound] = useState<PickerOptions>({ options: [], more: false })
   const [query, setQuery] = useState('')
   const [chosen, setChosen] = useState<Option>()
@@ -45,8 +49,8 @@ export function RecordPicker({
     <div className="grid gap-1.5">
       {found.more || query !== '' ? (
         <Input
-          aria-label={`Search ${type === 'organization' ? 'organizations' : 'contacts'}`}
-          placeholder="Type to narrow the list"
+          aria-label={type === 'organization' ? copy.searchOrganizations : copy.searchContacts}
+          placeholder={copy.narrow}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value)

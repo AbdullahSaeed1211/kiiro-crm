@@ -66,7 +66,7 @@ Each one caused a real defect here.
 - Reuse an existing composite before writing a per-entity copy: `StagePill`, `StageSelect`, `ActivityFeed`, `DataTable`, `EmptyState`. Never add a raw `<select>` or date input where `@ops/ui` has one.
 - Tailwind generates only class names that appear literally in source. Build variants from a literal table, as `STAGE_PILL` in `packages/ui/src/composites/KanbanBoard/stage-dot.ts` does, never by concatenating `bg-${color}/15`.
 - Do not disable lint for a whole file. Use a scoped `eslint-disable-next-line <rule> -- <reason>`; `check:disables` rejects a directive that names no rule.
-- User-facing copy goes through the i18n copy objects in `apps/web/src/i18n/`.
+- User-facing copy is short, plain English and always localization-ready: no text in a component. Each page or feature has its own `*-copy.ts` in `apps/web/src/i18n/` (not one shared file) with an `en` and an `es` entry; server code picks it with `catalogFor(X_COPY, locale)` and client components with `catalogFor(X_COPY, useLocale())` from `locale-context.tsx`.
 - Never send a raw exception message to the browser. Catch with `actionFailure(error, context, fallback)`.
 
 ## Verifying a change

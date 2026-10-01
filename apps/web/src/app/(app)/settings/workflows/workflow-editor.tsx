@@ -1,5 +1,8 @@
 'use client'
 
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { WORKFLOW_COPY } from '../../../../i18n/workflow-copy'
 import { type ConfigAction, type Workflow, type RequirementOptions } from './workflow-model'
 import { WorkflowCard } from './workflow-card'
 import { useWorkflowCreate } from './use-workflow-create'
@@ -13,6 +16,7 @@ interface WorkflowEditorProps {
 }
 
 export function WorkflowEditor({ workflows, action, deleteAction, requirementOptions }: Readonly<WorkflowEditorProps>) {
+  const copy = catalogFor(WORKFLOW_COPY, useLocale())
   const {
     adding,
     name,
@@ -25,7 +29,7 @@ export function WorkflowEditor({ workflows, action, deleteAction, requirementOpt
     setRecordType,
     setStageName,
     create,
-  } = useWorkflowCreate()
+  } = useWorkflowCreate(copy)
 
   const handleToggleAdding = () => {
     setAdding(!adding)
@@ -52,10 +56,11 @@ export function WorkflowEditor({ workflows, action, deleteAction, requirementOpt
           type="button"
           onClick={handleToggleAdding}
         >
-          {adding ? 'Cancel new workflow' : 'Add workflow'}
+          {adding ? copy.cancelNew : copy.addWorkflow}
         </button>
         {adding ? (
           <WorkflowCreateForm
+            copy={copy}
             name={name}
             recordType={recordType}
             stageName={stageName}

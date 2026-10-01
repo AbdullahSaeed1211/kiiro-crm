@@ -40,10 +40,10 @@ async function checkWorkflowCreateRecovery(page: Page): Promise<void> {
   const wasIntercepted = await interceptFailedAction(page, '/settings/workflows')
   await page.getByRole('button', { name: 'Add workflow' }).click()
   await page.getByRole('textbox', { name: 'Workflow name' }).last().fill('Website pipeline')
-  await page.getByLabel('First stage').fill('Open')
+  await page.getByLabel('First step').fill('Open')
   const button = page.getByRole('button', { name: 'Create workflow' })
   await button.click()
-  await expect(page.getByText('Could not create this workflow. Please try again.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Could not create the workflow. Try again.', { exact: true })).toBeVisible()
   await expect(button).toBeEnabled()
   expect(wasIntercepted()).toBe(true)
 }
