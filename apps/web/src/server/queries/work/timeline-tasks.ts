@@ -59,7 +59,7 @@ export async function loadTimelineTasks(context: RequestContext): Promise<Timeli
     sort: 'dueAt',
     limit: TIMELINE_LIMIT,
     page: 1,
-    select: { id: true, title: true, startAt: true, dueAt: true, stageId: true },
+    select: { id: true, title: true, startAt: true, dueAt: true, stageId: true, updatedAt: true },
     depth: 0,
     overrideAccess: false,
     req: context.req,
