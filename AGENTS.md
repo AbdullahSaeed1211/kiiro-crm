@@ -47,6 +47,8 @@ Copy these instead of inventing a new shape. The task skills walk through each o
 | `pnpm verify:fast`                              | while working: format check, typecheck, lint, changed unit tests |
 | `pnpm verify`                                   | before merging: every gate, tests, integration tests, build      |
 | `pnpm test:e2e`                                 | Playwright, against a running app                                |
+| `pnpm tenant:new <slug> ...`                    | write `tenants/<slug>.jsonc` for a new business (then provision) |
+| `pnpm tenant:owner-invite <slug>`               | print a fresh owner invitation link for a tenant                 |
 
 The static gates (`format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jscpd`, `check:*`) and unit tests take about a minute together; run them individually with `pnpm -s <name>` to see which one fails.
 
