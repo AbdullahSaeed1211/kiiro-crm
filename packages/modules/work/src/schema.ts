@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TASK_REPEATS } from './domain/recurrence'
 
 /** Epoch milliseconds (zod rejects NaN and infinities), or `null` to clear the date. */
 const date = z.number().nullable()
@@ -10,6 +11,7 @@ const title = z.string().trim().min(1, 'Enter a title.').max(300, 'Use 300 chara
 const projectName = z.string().trim().min(1, 'Enter a project name.').max(200, 'Use 200 characters or fewer.')
 const priority = z.enum(['none', 'low', 'medium', 'high', 'urgent'])
 const version = z.number()
+const repeat = z.enum(TASK_REPEATS)
 
 const startNotAfterDue = (value: { startAt?: number | null | undefined; dueAt?: number | null | undefined }): boolean =>
   typeof value.startAt !== 'number' || typeof value.dueAt !== 'number' || value.startAt <= value.dueAt
@@ -29,6 +31,7 @@ export const createTaskSchema = z
     assigneeIds: z.array(nonEmptyId).optional(),
     groupId: optionalRef,
     priority: priority.optional(),
+    repeat: repeat.optional(),
     relatedType: z.string().nullable().optional(),
     relatedId: optionalRef,
     startAt: date.optional(),
@@ -42,6 +45,7 @@ export const taskPatchSchema = z
     title: title.optional(),
     description: description.optional(),
     priority: priority.optional(),
+    repeat: repeat.optional(),
     assigneeIds: z.array(nonEmptyId).optional(),
     groupId: nonEmptyId.nullable().optional(),
     relatedType: z.string().nullable().optional(),

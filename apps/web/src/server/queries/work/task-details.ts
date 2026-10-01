@@ -24,6 +24,10 @@ export async function loadTaskPeople(userIds?: readonly string[]): Promise<Reado
   return new Map(docs.map((person) => [person.id, person.name] as const))
 }
 
+const REPEATS = ['none', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'] as const
+const repeatOf = (doc: { repeat?: unknown }): TaskSheetTask['repeat'] =>
+  REPEATS.find((item) => item === doc.repeat) ?? 'none'
+
 /** Everything the task panel and page render: the task, its stages, assignable people and edit access. */
 export interface TaskView {
   readonly task: TaskSheetTask
@@ -34,6 +38,7 @@ const TASK_FIELDS = { id: true, title: true, stageId: true, updatedAt: true } as
 const DETAIL_FIELDS = {
   ...TASK_FIELDS,
   priority: true,
+  repeat: true,
   description: true,
   startAt: true,
   dueAt: true,
@@ -112,6 +117,7 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
       stageId: task.stageId,
       updatedAt: task.updatedAt,
       priority: task.priority,
+      repeat: repeatOf(doc),
       assigneeIds: task.assigneeIds,
       startAt: task.startAt,
       dueAt: task.dueAt,

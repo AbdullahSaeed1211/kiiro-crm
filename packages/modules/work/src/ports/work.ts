@@ -1,5 +1,6 @@
 import type { Clock, Id, Result } from '@ops/kernel'
 import type { Actor, Can, StageCategory, StageStore, StageTransition, UnitOfWork, Workflow } from '@ops/platform'
+import type { TaskRepeat } from '../domain/recurrence'
 import type { TaskPriority, TaskRecord as TaskPortRecord } from './tasks'
 
 export type WorkRecordType = 'project' | 'task'
@@ -28,6 +29,8 @@ export interface WorkTaskRecord extends TaskPortRecord {
   readonly completedAt: number | null
   readonly createdAt: number
   readonly stageCategory: StageCategory
+  /** Completing a task with a due date and a repeat creates the next one. */
+  readonly repeat: TaskRepeat
 }
 
 export interface ProjectDraft {
@@ -58,6 +61,7 @@ export interface TaskDraft {
   readonly startAt?: number | null
   readonly dueAt?: number | null
   readonly completedAt?: number | null
+  readonly repeat?: TaskRepeat
 }
 
 export interface ProjectPatch {
@@ -78,6 +82,7 @@ export interface TaskPatch {
   readonly groupId?: Id | null
   readonly relatedType?: string | null
   readonly relatedId?: Id | null
+  readonly repeat?: TaskRepeat
 }
 
 export interface TaskDatePatch {

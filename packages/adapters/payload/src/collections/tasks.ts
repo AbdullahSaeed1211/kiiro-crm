@@ -12,7 +12,7 @@ import {
   textField,
 } from './fields'
 import { PROJECT_DESCRIPTION_MAX } from './projects'
-import { PRIORITY_VALUES } from './values'
+import { PRIORITY_VALUES, TASK_REPEAT_VALUES } from './values'
 
 const TASK_TITLE_MAX = 300
 
@@ -33,6 +33,7 @@ export const tasksCollection = spikeCollection({
     ...stageFields(),
     textField('rank', { maxLength: 64 }),
     selectOf('priority', PRIORITY_VALUES, { required: true, defaultValue: 'none' }),
+    selectOf('repeat', TASK_REPEAT_VALUES, { required: true, defaultValue: 'none' }),
     hasManyTo(FIELDS.assignees, COLLECTIONS.users),
     relationshipTo(FIELDS.group, COLLECTIONS.groups),
     epochMs('startAt'),

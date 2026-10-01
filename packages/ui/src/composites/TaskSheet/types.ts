@@ -5,6 +5,10 @@ import type { StageOption } from '../StagePill/stage'
 export const TASK_PRIORITIES = ['none', 'low', 'medium', 'high', 'urgent'] as const
 export type TaskPriority = (typeof TASK_PRIORITIES)[number]
 
+/** How a task repeats once completed, in display order. */
+export const TASK_REPEATS = ['none', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'] as const
+export type TaskRepeat = (typeof TASK_REPEATS)[number]
+
 /** One task as the sheet and the full page show it. */
 export interface TaskSheetTask {
   readonly id: string
@@ -12,6 +16,7 @@ export interface TaskSheetTask {
   readonly stageId: string
   readonly updatedAt: number
   readonly priority: TaskPriority
+  readonly repeat: TaskRepeat
   readonly assigneeIds: readonly string[]
   readonly startAt: number | null
   readonly dueAt: number | null
@@ -34,6 +39,7 @@ export interface TaskSheetOptions {
 export type TaskChange =
   | Readonly<{ kind: 'stage'; stageId: string }>
   | Readonly<{ kind: 'priority'; priority: TaskPriority }>
+  | Readonly<{ kind: 'repeat'; repeat: TaskRepeat }>
   | Readonly<{ kind: 'assignees'; assigneeIds: readonly string[] }>
   | Readonly<{ kind: 'dates'; startAt: number | null; dueAt: number | null }>
   | Readonly<{ kind: 'description'; description: string }>
@@ -61,6 +67,8 @@ export type TaskSheetLabels = Readonly<{
   stage: StageSelectLabels
   priority: string
   priorities: Readonly<Record<TaskPriority, string>>
+  repeat: string
+  repeats: Readonly<Record<TaskRepeat, string>>
   assignees: string
   unassigned: string
   startDate: string

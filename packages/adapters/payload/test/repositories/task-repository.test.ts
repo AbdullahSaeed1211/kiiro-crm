@@ -45,14 +45,15 @@ function setup(handlers: Handlers = {}) {
   return { ...fake, repository: createTaskRepository(fake.req) }
 }
 
+const listedDocs = () => [
+  taskDoc({ project: 'p1', relatedType: 'organization', relatedId: 'o1' }),
+  taskDoc({ id: 't2', workflow: null }),
+]
+
 describe('createTaskRepository listTasks', () => {
   it('reads with the user access and maps ISO timestamps and relationship ids', async () => {
-    const docs = [
-      taskDoc({ project: 'p1', relatedType: 'organization', relatedId: 'o1' }),
-      taskDoc({ id: 't2', workflow: null }),
-    ]
     const { repository, calls, req } = setup({
-      find: (args) => ({ docs: args['collection'] === 'workflows' ? [workflowDoc] : docs }),
+      find: (args) => ({ docs: args['collection'] === 'workflows' ? [workflowDoc] : listedDocs() }),
     })
     expect(await repository.listTasks()).toEqual([
       {
@@ -76,6 +77,7 @@ describe('createTaskRepository listTasks', () => {
         completedAt: null,
         createdAt: Date.parse(CREATED),
         stageCategory: 'open',
+        repeat: 'none',
       },
     ])
     expect(calls).toHaveLength(2)

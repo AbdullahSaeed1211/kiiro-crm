@@ -37,6 +37,9 @@ export const STAGE_COLOR_VALUES = [
 /** Task priorities of spec §10.2. */
 export const PRIORITY_VALUES = ['none', 'low', 'medium', 'high', 'urgent'] as const
 
+/** How a task repeats when completed; the same list as `TASK_REPEATS` in the work module. */
+export const TASK_REPEAT_VALUES = ['none', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'] as const
+
 /** Activity verbs of spec §9.5. */
 export const ACTIVITY_VERB_VALUES = [
   'record.created',

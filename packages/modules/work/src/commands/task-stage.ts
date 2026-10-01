@@ -2,6 +2,7 @@ import { asId, domainError, err, invalidInput, ok, type Id } from '@ops/kernel'
 import type { StageCategory, StageTransition } from '@ops/platform'
 import { moveTaskSchema } from '../schema'
 import { fail } from './input'
+import { nextOccurrence } from '../domain/recurrence'
 import { hasOpenChildren } from '../domain/rules'
 import { rankBetween } from '../domain/rank'
 import type { WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
@@ -132,6 +133,36 @@ function authorizeTaskUpdate(deps: WorkDeps, task: WorkTaskRecord): WorkResult<n
   return ok(null)
 }
 
+/**
+ * A repeating task that was just completed leaves its next occurrence behind: same title, people, project and priority,
+ * dated one step after this one's due date, in the workflow's first stage. The finished task stops repeating, so
+ * reopening and completing it again cannot make a second copy. A failure here never undoes the completion.
+ */
+async function spawnNextOccurrence(deps: WorkDeps, done: WorkTaskRecord): Promise<WorkTaskRecord> {
+  if (done.repeat === 'none' || done.dueAt === null) return done
+  const workflow = await deps.repo.loadDefaultWorkflow('task')
+  if (!workflow.ok) return done
+  const dueAt = nextOccurrence(done.dueAt, done.repeat)
+  const created = await deps.repo.createTask({
+    title: done.title,
+    description: done.description,
+    projectId: done.projectId,
+    relatedType: done.relatedType,
+    relatedId: done.relatedId,
+    parentTaskId: done.parentTaskId,
+    workflowId: workflow.value.id,
+    stageId: workflow.value.defaultStageId,
+    priority: done.priority,
+    assigneeIds: done.assigneeIds,
+    groupId: done.groupId,
+    startAt: done.startAt === null ? null : done.startAt + (dueAt - done.dueAt),
+    dueAt,
+    repeat: done.repeat,
+  })
+  if (!created.ok) return done
+  return (await deps.repo.updateTask(done.id, { repeat: 'none' }, done.updatedAt)) ?? done
+}
+
 /** Moves a task and persists all stage-related fields through one CAS unit. */
 export async function moveTask(deps: WorkDeps, input: unknown): Promise<WorkResult<WorkTaskRecord>> {
   const parsed = parseMove(input)
@@ -160,7 +191,17 @@ export async function moveTask(deps: WorkDeps, input: unknown): Promise<WorkResu
       actorId: deps.actor.id,
     }),
   })
-  return saved === undefined ? conflict(CONFLICT_UPDATED) : ok(saved)
+  return afterMove(deps, saved, destination.value.category)
+}
+
+/** The saved move, or a conflict when the task changed meanwhile; a completed repeating task also makes its next one. */
+async function afterMove(
+  deps: WorkDeps,
+  saved: WorkTaskRecord | undefined,
+  category: StageCategory,
+): Promise<WorkResult<WorkTaskRecord>> {
+  if (saved === undefined) return conflict(CONFLICT_UPDATED)
+  return ok(category === 'done_success' ? await spawnNextOccurrence(deps, saved) : saved)
 }
 /** Moves a task to the workflow's successful terminal stage. */
 export async function completeTask(

@@ -22,6 +22,7 @@ function taskInput(form: FormData, context: Readonly<{ relatedType: string | nul
     title: stringField(form, { name: 'title' }).trim(),
     description: stringField(form, { name: 'description' }).trim() || null,
     priority: stringField(form, { name: 'priority', fallback: 'none' }),
+    repeat: dueDate === '' ? 'none' : stringField(form, { name: 'repeat', fallback: 'none' }),
     projectId: stringField(form, { name: 'projectId' }) || null,
     ...context,
     dueAt: dueDate === '' ? null : Date.parse(`${dueDate}T00:00:00.000Z`),
@@ -66,6 +67,21 @@ function TaskScheduleFields() {
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-due-date">
         Due date
         <Input id="task-due-date" name="dueAt" type="date" />
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-repeat">
+        Repeats
+        <NativeSelect id="task-repeat" name="repeat" defaultValue="none" className="font-normal">
+          <option value="none">Does not repeat</option>
+          <option value="daily">Every day</option>
+          <option value="weekly">Every week</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Every month</option>
+          <option value="quarterly">Every 3 months</option>
+          <option value="yearly">Every year</option>
+        </NativeSelect>
+        <span className="text-xs font-normal text-muted-foreground">
+          Needs a due date. Completing it creates the next one.
+        </span>
       </label>
     </div>
   )

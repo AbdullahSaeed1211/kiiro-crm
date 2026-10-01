@@ -1,7 +1,7 @@
 import type { Id } from '@ops/kernel'
 import type { ProjectRecord, TaskRecord, WorkTaskRecord } from '@ops/module-work'
 import type { StageCategory, StageTrackedRecord } from '@ops/platform'
-import { PRIORITY_VALUES } from '../collections/values'
+import { PRIORITY_VALUES, TASK_REPEAT_VALUES } from '../collections/values'
 import { FIELDS, RECORD_TYPES } from '../contracts/names'
 import { fieldOf, idOf, idsOf, msOf, numberOf, oneOf, textOf, type Doc } from './documents'
 
@@ -74,6 +74,8 @@ export function toProjectRecord(doc: Doc, stageCategory: StageCategory): Project
   }
 }
 
+const repeatOf = (doc: Doc) => oneOf(TASK_REPEAT_VALUES, fieldOf(doc, 'repeat')) ?? 'none'
+
 /** Maps a work task after its workflow stage category has been resolved. */
 export function toWorkTaskRecord(doc: Doc, stageCategory: StageCategory): WorkTaskRecord | undefined {
   const base = toTaskRecord(doc)
@@ -88,6 +90,7 @@ export function toWorkTaskRecord(doc: Doc, stageCategory: StageCategory): WorkTa
     completedAt: numberOf(doc, 'completedAt'),
     createdAt: msOf(fieldOf(doc, 'createdAt')) ?? state.updatedAt,
     stageCategory,
+    repeat: repeatOf(doc),
   }
 }
 

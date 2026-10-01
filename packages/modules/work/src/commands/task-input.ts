@@ -1,4 +1,5 @@
 import { asId, err, invalidInput, ok, type Id } from '@ops/kernel'
+import type { z } from 'zod'
 import type { TaskDraft, TaskPatch, WorkResult } from '../ports/work'
 import { createTaskSchema, updateTaskSchema, type TaskPatchInput } from '../schema'
 
@@ -25,24 +26,32 @@ export interface ParsedTaskUpdate {
 const idOrNull = (value: string | null | undefined): Id | null =>
   value === null || value === undefined ? null : asId(value)
 
+type CreateInput = z.infer<typeof createTaskSchema>
+
+const identity = (value: CreateInput) => ({
+  title: value.title,
+  description: value.description ?? null,
+  projectId: idOrNull(value.projectId),
+  parentTaskId: idOrNull(value.parentTaskId),
+  assigneeIds: (value.assigneeIds ?? []).map(asId),
+  groupId: idOrNull(value.groupId),
+  relatedType: value.relatedType ?? null,
+  relatedId: idOrNull(value.relatedId),
+})
+
+const schedule = (value: CreateInput) => ({
+  priority: value.priority ?? 'none',
+  repeat: value.repeat ?? 'none',
+  startAt: value.startAt ?? null,
+  dueAt: value.dueAt ?? null,
+})
+
 /** Parses untrusted task-create input; a failure names each invalid field. */
 export function parseCreate(input: unknown): WorkResult<ParsedTaskDraft> {
   const parsed = createTaskSchema.safeParse(input)
   if (!parsed.success) return err(invalidInput('task fields are invalid', parsed.error.issues))
   const value = parsed.data
-  return ok({
-    title: value.title,
-    description: value.description ?? null,
-    projectId: idOrNull(value.projectId),
-    parentTaskId: idOrNull(value.parentTaskId),
-    assigneeIds: (value.assigneeIds ?? []).map(asId),
-    groupId: idOrNull(value.groupId),
-    priority: value.priority ?? 'none',
-    relatedType: value.relatedType ?? null,
-    relatedId: idOrNull(value.relatedId),
-    startAt: value.startAt ?? null,
-    dueAt: value.dueAt ?? null,
-  })
+  return ok({ ...identity(value), ...schedule(value) })
 }
 
 /** Maps a validated patch to the port shape, keeping only the keys the caller sent. */
@@ -50,7 +59,7 @@ function taskPatch(patch: TaskPatchInput): TaskPatch {
   const { assigneeIds, groupId, relatedId, ...plain } = patch
   const copied = Object.fromEntries(Object.entries(plain).filter(([, value]) => value !== undefined))
   return {
-    ...(copied as Pick<TaskPatch, 'title' | 'description' | 'priority' | 'relatedType'>),
+    ...(copied as Pick<TaskPatch, 'title' | 'description' | 'priority' | 'relatedType' | 'repeat'>),
     ...(assigneeIds === undefined ? {} : { assigneeIds: assigneeIds.map(asId) }),
     ...(groupId === undefined ? {} : { groupId: idOrNull(groupId) }),
     ...(relatedId === undefined ? {} : { relatedId: idOrNull(relatedId) }),

@@ -24,6 +24,7 @@ export {
   setTaskDates,
   updateTask,
 } from './commands/tasks'
+export { TASK_REPEATS, nextOccurrence, type TaskRepeat } from './domain/recurrence'
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'
 export { myTasksBuckets, type MyTaskBuckets } from './queries/my-tasks'

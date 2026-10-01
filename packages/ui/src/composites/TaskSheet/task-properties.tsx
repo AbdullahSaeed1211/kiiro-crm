@@ -7,8 +7,10 @@ import { StageSelect } from '../StageSelect/StageSelect'
 import { DateField } from '../DateField/DateField'
 import {
   TASK_PRIORITIES,
+  TASK_REPEATS,
   type TaskChange,
   type TaskPriority,
+  type TaskRepeat,
   type TaskSheetActions,
   type TaskSheetLabels,
   type TaskSheetOptions,
@@ -74,6 +76,35 @@ function PrioritySelect({
   )
 }
 
+function RepeatSelect({
+  task,
+  labels,
+  disabled,
+  onSave,
+}: Readonly<Omit<PropertiesProps, 'options' | 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>) {
+  return (
+    <Select
+      value={task.repeat}
+      disabled={disabled}
+      onValueChange={(next: string | null) => {
+        const repeat = TASK_REPEATS.find((item) => item === next)
+        if (repeat !== undefined && repeat !== task.repeat) onSave({ kind: 'repeat', repeat })
+      }}
+    >
+      <SelectTrigger size="sm" aria-label={labels.repeat} className="w-full">
+        <SelectValue>{(value: TaskRepeat) => labels.repeats[value]}</SelectValue>
+      </SelectTrigger>
+      <SelectContent align="start" alignItemWithTrigger={false}>
+        {TASK_REPEATS.map((repeat) => (
+          <SelectItem key={repeat} value={repeat}>
+            {labels.repeats[repeat]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 function AssigneeSelect({
   task,
   options,
@@ -129,6 +160,9 @@ export function TaskProperties({ task, options, labels, taskHref, busy, fields, 
       </Property>
       <Property label={labels.priority} error={fields['priority']}>
         <PrioritySelect task={task} labels={labels} disabled={disabled} onSave={onSave} />
+      </Property>
+      <Property label={labels.repeat} error={fields['repeat']}>
+        <RepeatSelect task={task} labels={labels} disabled={disabled} onSave={onSave} />
       </Property>
       <Property label={labels.assignees} error={fields['assigneeIds']}>
         <AssigneeSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />

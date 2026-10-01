@@ -21,6 +21,7 @@ export const task = (id: string, extra: Partial<WorkTaskRecord> = {}): WorkTaskR
   startAt: null,
   dueAt: null,
   completedAt: null,
+  repeat: 'none',
   stageCategory: 'open',
   createdAt: 0,
   updatedAt: 1,

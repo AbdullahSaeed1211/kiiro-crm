@@ -491,6 +491,7 @@ export interface Task {
   stageEnteredAt?: number | null;
   rank?: string | null;
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
+  repeat: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
   assignees?: (string | User)[] | null;
   group?: (string | null) | Group;
   /**
@@ -1297,6 +1298,7 @@ export interface TasksSelect<T extends boolean = true> {
   stageEnteredAt?: T;
   rank?: T;
   priority?: T;
+  repeat?: T;
   assignees?: T;
   group?: T;
   startAt?: T;
