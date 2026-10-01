@@ -15,6 +15,9 @@ import type {
 import { parseDirectorySort } from './utils'
 import { DIRECTORY_PAGE_SIZE, directoryOrder, searchWhere } from './query'
 
+/** The most contacts or deals one record's page lists. */
+const RELATED_LIMIT = 200
+
 export interface OrganizationOption {
   readonly value: string
   readonly label: string
@@ -131,10 +134,11 @@ export async function getOrganization(id: string): Promise<{
 } | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
+  const where = { organization: { equals: id } }
   const [record, contacts, deals] = await Promise.all([
     repo.get('organization', id as OrganizationRecord['id']),
-    repo.list('contact'),
-    repo.list('deal'),
+    listCrmPage(context.req, { type: 'contact', where, page: 1, limit: RELATED_LIMIT }),
+    listCrmPage(context.req, { type: 'deal', where, page: 1, limit: RELATED_LIMIT }),
   ])
   if (record === undefined) return null
   const [people, projects, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
@@ -149,8 +153,8 @@ export async function getOrganization(id: string): Promise<{
     record,
     owner: record.ownerId === null ? null : (people.get(record.ownerId) ?? null),
     relations: {
-      contacts: contacts.filter((contact) => contact.organizationId === record.id),
-      deals: deals.filter((deal) => deal.organizationId === record.id),
+      contacts: contacts.records,
+      deals: deals.records,
       projects,
     },
     activity,

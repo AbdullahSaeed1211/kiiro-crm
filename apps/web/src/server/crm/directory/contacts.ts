@@ -17,6 +17,18 @@ import { parseDirectorySort } from './utils'
 import { DIRECTORY_PAGE_SIZE, directoryOrder, searchClauses } from './query'
 
 const ORGANIZATION_MATCHES = 50
+/** The most leads or deals one contact's page lists. */
+const RELATED_LIMIT = 200
+
+/** Leads at the contact's organization or sent from the contact's email address. */
+async function relatedLeads(context: RequestContext, record: ContactRecord): Promise<readonly LeadRecord[]> {
+  const matches: Where[] = []
+  if (record.organizationId !== null) matches.push({ organization: { equals: record.organizationId } })
+  if (record.email !== null) matches.push({ email: { equals: record.email } })
+  if (matches.length === 0) return []
+  const found = await listCrmPage(context.req, { type: 'lead', where: { or: matches }, page: 1, limit: RELATED_LIMIT })
+  return found.records
+}
 
 export interface DirectoryPage<T> {
   readonly items: readonly T[]
@@ -100,7 +112,7 @@ async function contactItems(context: RequestContext, records: readonly ContactRe
 }
 
 interface ContactDetailDeps {
-  readonly organizations: readonly OrganizationRecord[]
+  readonly organization: OrganizationRecord | null
   readonly leads: readonly LeadRecord[]
   readonly deals: readonly DealRecord[]
   readonly people: ReadonlyMap<string, PersonSummary>
@@ -123,13 +135,18 @@ export async function getContact(id: string): Promise<{
 } | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
-  const [record, organizations, leads, deals] = await Promise.all([
-    repo.get('contact', id as ContactRecord['id']),
-    repo.list('organization'),
-    repo.list('lead'),
-    repo.list('deal'),
-  ])
+  const record = await repo.get('contact', id as ContactRecord['id'])
   if (record === undefined) return null
+  const [organization, leads, deals] = await Promise.all([
+    record.organizationId === null ? undefined : repo.get('organization', record.organizationId),
+    relatedLeads(context, record),
+    listCrmPage(context.req, {
+      type: 'deal',
+      where: { contacts: { equals: record.id } },
+      page: 1,
+      limit: RELATED_LIMIT,
+    }),
+  ])
 
   const [people, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
@@ -140,9 +157,9 @@ export async function getContact(id: string): Promise<{
   ])
 
   return buildContactDetail(record, {
-    organizations,
+    organization: organization ?? null,
     leads,
-    deals,
+    deals: deals.records,
     people,
     details: { activity, emailMessages, relatedTasks, attachments },
   })
@@ -160,20 +177,13 @@ function buildContactDetail(
   readonly relatedTasks: readonly RelatedTask[]
   readonly attachments: readonly RecordAttachment[]
 } {
-  const organizationMap = new Map(deps.organizations.map((org) => [org.id, org]))
-  const organization = record.organizationId === null ? null : (organizationMap.get(record.organizationId) ?? null)
   return {
     record,
     owner: record.ownerId === null ? null : (deps.people.get(record.ownerId) ?? null),
     relations: {
-      organization,
-      leads: deps.leads
-        .filter(
-          (lead) =>
-            lead.organizationId === record.organizationId || (record.email !== null && lead.email === record.email),
-        )
-        .map((lead) => ({ id: lead.id, title: lead.title })),
-      deals: deps.deals.filter((deal) => deal.contactIds.includes(record.id)),
+      organization: deps.organization,
+      leads: deps.leads.map((lead) => ({ id: lead.id, title: lead.title })),
+      deals: deps.deals,
     },
     ...deps.details,
   }
