@@ -16,6 +16,8 @@ import type { Metadata } from 'next'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { formatDate } from '../../../i18n/format'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
+import { loadProjectProgress, type Progress } from '../../../server/queries/work/project-progress'
+import { getRequestContext } from '@/server/container'
 import { ListViewBar, type ListSort } from '../list-view-bar'
 import { firstParam } from '../search-params'
 
@@ -33,7 +35,7 @@ const COLUMNS: DataTableColumn[] = [
   { id: 'target', header: 'Target end' },
 ]
 
-function Progress({ done, total }: Readonly<{ done: number; total: number }>) {
+function ProgressBar({ done, total }: Readonly<{ done: number; total: number }>) {
   const percentage = total === 0 ? 0 : Math.round((done / total) * 100)
   return (
     <div className="min-w-32 space-y-1.5">
@@ -54,9 +56,8 @@ function Progress({ done, total }: Readonly<{ done: number; total: number }>) {
   )
 }
 
-function rowOf(project: Project, model: Model): DataTableRow {
-  const own = model.tasks.filter((task) => task.projectId === project.id)
-  const done = own.filter((task) => task.stageCategory === 'done_success').length
+function rowOf(project: Project, shared: Readonly<{ model: Model; progress: Progress | undefined }>): DataTableRow {
+  const { model, progress } = shared
   return {
     id: project.id,
     cells: {
@@ -69,7 +70,7 @@ function rowOf(project: Project, model: Model): DataTableRow {
       members: (
         <AvatarStack users={project.memberIds.map((id) => ({ id, name: model.people.get(id) ?? 'Teammate' }))} />
       ),
-      progress: <Progress done={done} total={own.length} />,
+      progress: <ProgressBar done={progress?.done ?? 0} total={progress?.total ?? 0} />,
       target:
         project.targetEndAt === null ? (
           <EmptyValue />
@@ -89,6 +90,17 @@ const SORT_OPTIONS = [
 const sortMenu = (value: string): ListSort => ({ value, options: SORT_OPTIONS })
 
 const NO_TARGET = Number.POSITIVE_INFINITY
+const PAGE_SIZE = 50
+
+/** The Projects address for a page, keeping the search, stage filter and sort. */
+function pageHref(input: Readonly<{ query: string; stage: string; sort: string; page: number }>): string {
+  const params = new URLSearchParams()
+  if (input.query !== '') params.set('q', input.query)
+  if (input.stage !== '') params.set('stage', input.stage)
+  if (input.sort !== 'name') params.set('sort', input.sort)
+  params.set('page', String(input.page))
+  return `?${params.toString()}`
+}
 
 /** Compares two projects for the chosen sort; projects without a target end sort last. */
 function compareProjects(sort: string): (left: Project, right: Project) => number {
@@ -110,15 +122,28 @@ function matching(
 }
 
 /** Projects list with progress from the same scoped read model, searchable by name and filterable by stage. */
-export default async function ProjectsPage({
-  searchParams,
-}: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
-  const params = await searchParams
+type SearchParams = Record<string, string | string[] | undefined>
+
+/** Reads the projects for the address: the search, stage and sort applied, one page shown, with progress for that page. */
+async function loadView(params: SearchParams) {
   const query = firstParam(params.q)?.trim() ?? ''
   const stage = firstParam(params.stage) ?? ''
   const sort = firstParam(params.sort) ?? 'name'
-  const model = await loadWorkReadModel(undefined, 'projects')
-  const shown = matching(model.projects, { query, stage, sort })
+  const context = await getRequestContext()
+  const model = await loadWorkReadModel(context, 'projects')
+  const matched = matching(model.projects, { query, stage, sort })
+  const page = Math.max(1, Number(firstParam(params.page) ?? 1) || 1)
+  const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const progress = await loadProjectProgress(context, {
+    projectIds: shown.map((project) => project.id),
+    doneStageIds: new Set(model.stages.filter((item) => item.category === 'done_success').map((item) => item.id)),
+  })
+  return { query, stage, sort, model, matched, page, shown, progress }
+}
+
+/** Projects list with progress from the same scoped read model, searchable by name and filterable by stage. */
+export default async function ProjectsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
+  const { query, stage, sort, model, matched, page, shown, progress } = await loadView(await searchParams)
   const stages = [...new Set(model.projects.map((project) => project.stage))]
   return (
     <>
@@ -126,7 +151,7 @@ export default async function ProjectsPage({
       <PageContent>
         <PageHeader
           title="Projects"
-          count={shown.length}
+          count={matched.length}
           actions={
             <a
               className="ops-action-button rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
@@ -152,12 +177,12 @@ export default async function ProjectsPage({
         />
         <DataTable
           columns={COLUMNS}
-          rows={shown.map((project) => rowOf(project, model))}
+          rows={shown.map((project) => rowOf(project, { model, progress: progress.get(project.id) }))}
           pagination={paginationFor({
-            page: 1,
-            pageSize: Math.max(1, shown.length),
-            total: shown.length,
-            href: () => '',
+            page,
+            pageSize: PAGE_SIZE,
+            total: matched.length,
+            href: (next) => pageHref({ query, stage, sort, page: next }),
           })}
           labels={DATA_TABLE_LABELS}
           mobileCard={{ cells: ['name', 'stage', 'progress', 'target'] }}

@@ -31,6 +31,8 @@ function projectPage(context: WorkContext, request: ReturnType<typeof requestOpt
 }
 
 function taskPage(context: WorkContext, request: ReturnType<typeof requestOptions>, purpose: ReadPurpose) {
+  // The projects list asks for the tasks of the projects on its page only (see project-progress).
+  if (purpose === 'projects') return Promise.resolve(null)
   const select = getTaskSelect(purpose)
   return context.payload.find({
     collection: 'tasks',
@@ -66,7 +68,7 @@ export async function loadWorkPages(context: WorkContext, purpose: ReadPurpose) 
   ])
   return {
     projects: projects?.docs ?? [],
-    tasks: tasks.docs,
+    tasks: tasks?.docs ?? [],
     workflows: workflows.docs,
     users: users?.docs ?? [],
     settings,
@@ -77,7 +79,6 @@ function getTaskSelect(purpose: ReadPurpose) {
   if (purpose === 'dashboard') {
     return { id: true, title: true, stageId: true, priority: true, dueAt: true, assignees: true } as const
   }
-  if (purpose === 'projects') return { id: true, stageId: true, project: true } as const
   if (purpose === 'reports') {
     return {
       id: true,

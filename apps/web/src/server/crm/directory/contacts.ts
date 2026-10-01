@@ -1,6 +1,7 @@
-import { createCrmRepository } from '@ops/adapter-payload'
+import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, LeadRecord, OrganizationRecord } from '@ops/module-crm'
-import { getRequestContext } from '@/server/container'
+import type { Where } from 'payload'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import { listActivities } from './activities'
 import { listEmailMessages, listRecordAttachments, listRelatedTasks } from './helpers'
 import { loadPeople } from '../../people'
@@ -12,8 +13,10 @@ import type {
   RecordAttachment,
   RelatedTask,
 } from './types'
-import { displayName, parseDirectorySort } from './utils'
-import { DIRECTORY_PAGE_SIZE, contactItems } from './query'
+import { parseDirectorySort } from './utils'
+import { DIRECTORY_PAGE_SIZE, directoryOrder, searchClauses } from './query'
+
+const ORGANIZATION_MATCHES = 50
 
 export interface DirectoryPage<T> {
   readonly items: readonly T[]
@@ -28,6 +31,27 @@ export interface ContactRelations {
   readonly deals: readonly DealRecord[]
 }
 
+/** Where clause for a contact search: the person's name, email or phone, or the name of their organization. */
+async function contactSearch(context: RequestContext, query: string): Promise<Where> {
+  const text = query.trim()
+  if (text === '') return {}
+  const organizations = await context.payload.find({
+    collection: 'organizations',
+    where: { name: { contains: text } },
+    select: { name: true },
+    limit: ORGANIZATION_MATCHES,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return {
+    or: [
+      ...searchClauses(text, ['firstName', 'lastName', 'email', 'phone']),
+      ...(organizations.docs.length === 0 ? [] : [{ organization: { in: organizations.docs.map((doc) => doc.id) } }]),
+    ],
+  }
+}
+
 export async function listContacts(
   input: {
     readonly query?: string
@@ -36,34 +60,43 @@ export async function listContacts(
   } = {},
 ): Promise<DirectoryPage<ContactListItem>> {
   const context = await getRequestContext()
-  const repo = createCrmRepository(context.req)
-  const [records, organizations] = await Promise.all([repo.list('contact'), repo.list('organization')])
-  const people = await loadPeople(
-    context,
-    records.flatMap((record) => (record.ownerId === null ? [] : [record.ownerId])),
-  )
-  const organizationById = new Map(organizations.map((organization) => [organization.id, organization]))
-  const query = input.query?.trim().toLowerCase() ?? ''
-  const visible = records.filter((record) => {
-    const organization = record.organizationId === null ? null : organizationById.get(record.organizationId)
-    if (query === '') return true
-    return [displayName(record), record.email, record.phone, organization?.name].some((value) =>
-      value?.toLowerCase().includes(query),
-    )
-  })
-  const items = contactItems(visible, {
-    organizations: organizationById,
-    people,
-    sort: parseDirectorySort(input.sort),
-  })
-  const page = input.page ?? 1
-  const start = (page - 1) * DIRECTORY_PAGE_SIZE
-  return {
-    items: items.slice(start, start + DIRECTORY_PAGE_SIZE),
-    total: items.length,
+  const page = Math.max(1, input.page ?? 1)
+  const found = await listCrmPage(context.req, {
+    type: 'contact',
+    where: await contactSearch(context, input.query ?? ''),
+    sort: directoryOrder(parseDirectorySort(input.sort), ['firstName', 'lastName']),
     page,
-    pageSize: DIRECTORY_PAGE_SIZE,
-  }
+    limit: DIRECTORY_PAGE_SIZE,
+  })
+  return { items: await contactItems(context, found.records), total: found.total, page, pageSize: DIRECTORY_PAGE_SIZE }
+}
+
+/** The rows for one page of contacts, with their owners and the names of their organizations. */
+async function contactItems(context: RequestContext, records: readonly ContactRecord[]): Promise<ContactListItem[]> {
+  const repo = createCrmRepository(context.req)
+  const organizationIds = [
+    ...new Set(records.flatMap((record) => (record.organizationId === null ? [] : [record.organizationId]))),
+  ]
+  const [people, organizations] = await Promise.all([
+    loadPeople(
+      context,
+      records.flatMap((record) => (record.ownerId === null ? [] : [record.ownerId])),
+    ),
+    Promise.all(organizationIds.map((id) => repo.get('organization', id))),
+  ])
+  const byId = new Map(
+    organizations.flatMap((organization) =>
+      organization === undefined ? [] : [[organization.id, organization] as const],
+    ),
+  )
+  return records.map((record) => {
+    const organization = record.organizationId === null ? undefined : byId.get(record.organizationId)
+    return {
+      record,
+      organization: organization === undefined ? null : { id: organization.id, name: organization.name },
+      owner: record.ownerId === null ? null : (people.get(record.ownerId) ?? null),
+    }
+  })
 }
 
 interface ContactDetailDeps {

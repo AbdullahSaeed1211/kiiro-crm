@@ -1,6 +1,6 @@
-import { createCrmRepository } from '@ops/adapter-payload'
+import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
-import { getRequestContext } from '@/server/container'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import { listActivities } from './activities'
 import { listEmailMessages, listProjects, listRecordAttachments, listRelatedTasks } from './helpers'
 import { loadPeople } from '../../people'
@@ -13,7 +13,7 @@ import type {
   RelatedTask,
 } from './types'
 import { parseDirectorySort } from './utils'
-import { DIRECTORY_PAGE_SIZE, sortOrganizations } from './query'
+import { DIRECTORY_PAGE_SIZE, directoryOrder, searchWhere } from './query'
 
 export interface OrganizationOption {
   readonly value: string
@@ -33,6 +33,30 @@ export interface OrganizationRelations {
   readonly projects: readonly { readonly id: string; readonly name: string }[]
 }
 
+/** Open deals (not closed) for each of the given organizations, reading only those organizations' deals. */
+async function openDealCounts(
+  context: RequestContext,
+  organizationIds: readonly string[],
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  if (organizationIds.length === 0) return counts
+  const found = await context.payload.find({
+    collection: 'deals',
+    where: { and: [{ organization: { in: [...organizationIds] } }, { closedAt: { exists: false } }] },
+    select: { organization: true },
+    limit: 0,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  for (const deal of found.docs) {
+    const id = typeof deal.organization === 'string' ? deal.organization : ''
+    counts.set(id, (counts.get(id) ?? 0) + 1)
+  }
+  return counts
+}
+
 export async function listOrganizations(
   input: {
     readonly query?: string
@@ -41,32 +65,31 @@ export async function listOrganizations(
   } = {},
 ): Promise<DirectoryPage<OrganizationListItem>> {
   const context = await getRequestContext()
-  const repo = createCrmRepository(context.req)
-  const [records, deals] = await Promise.all([repo.list('organization'), repo.list('deal')])
-  const people = await loadPeople(
-    context,
-    records.flatMap((record) => (record.ownerId === null ? [] : [record.ownerId])),
-  )
-  const query = input.query?.trim().toLowerCase() ?? ''
-  const visible = records.filter((record) => {
-    if (query === '') return true
-    return [record.name, record.website, record.email, record.phone].some((value) =>
-      value?.toLowerCase().includes(query),
-    )
+  const page = Math.max(1, input.page ?? 1)
+  const found = await listCrmPage(context.req, {
+    type: 'organization',
+    where: searchWhere(input.query ?? '', ['name', 'website', 'email', 'phone']),
+    sort: directoryOrder(parseDirectorySort(input.sort), ['name']),
+    page,
+    limit: DIRECTORY_PAGE_SIZE,
   })
-  const items = sortOrganizations(
-    visible.map((record) => ({
+  const [people, openDeals] = await Promise.all([
+    loadPeople(
+      context,
+      found.records.flatMap((record) => (record.ownerId === null ? [] : [record.ownerId])),
+    ),
+    openDealCounts(
+      context,
+      found.records.map((record) => record.id),
+    ),
+  ])
+  return {
+    items: found.records.map((record) => ({
       record,
       owner: record.ownerId === null ? null : (people.get(record.ownerId) ?? null),
-      openDeals: deals.filter((deal) => deal.organizationId === record.id && deal.closedAt === null).length,
+      openDeals: openDeals.get(record.id) ?? 0,
     })),
-    parseDirectorySort(input.sort),
-  )
-  const page = input.page ?? 1
-  const start = (page - 1) * DIRECTORY_PAGE_SIZE
-  return {
-    items: items.slice(start, start + DIRECTORY_PAGE_SIZE),
-    total: items.length,
+    total: found.total,
     page,
     pageSize: DIRECTORY_PAGE_SIZE,
   }
