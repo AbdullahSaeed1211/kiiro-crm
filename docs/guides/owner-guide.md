@@ -73,6 +73,10 @@ Anyone can turn on two-step sign-in under Settings, Profile: add the setup key t
 
 If a teammate loses their phone and their recovery codes, an owner opens Settings, Members and presses **Reset two-step** on their row; they sign in with their password and can set it up again. The app does not draw a QR code yet, so the key is typed or opened as a link on a phone.
 
+## Calendar feed
+
+Settings, Profile, Calendar feed gives each person a private address for their calendar app. It lists the open tasks assigned to them that have a due date and the open leads they own that have a next action date, as all-day entries that link back to the record. In Google Calendar choose Other calendars, From URL; Apple Calendar and Outlook have a subscribe-by-address option too. Calendar apps refresh subscriptions on their own schedule, often every few hours. Anyone with the address can read those titles, so it is shown only when made; make a new one if it leaks (the old one stops working) or turn the feed off.
+
 ## Remove a record
 
 Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.
@@ -105,4 +109,4 @@ Settings, Activity (owners and managers) lists the last hundred changes anyone m
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
 - Archiving hides a lead, deal, contact or organization from every list and search; Settings, Archive lists them and restores any of them.
-- SMS and calendar sync are not available. Webhooks are retried twice on connection failures and server errors, and there is no delivery history yet.
+- SMS is not available, and the calendar feed is read-only: changes in a calendar app do not come back. Webhooks are retried twice on connection failures and server errors, and there is no delivery history yet.

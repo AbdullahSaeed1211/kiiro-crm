@@ -193,6 +193,7 @@ export interface User {
     | null;
   totpFailures?: number | null;
   totpLockedUntil?: number | null;
+  calendarToken?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1129,6 +1130,7 @@ export interface UsersSelect<T extends boolean = true> {
   totpRecovery?: T;
   totpFailures?: T;
   totpLockedUntil?: T;
+  calendarToken?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

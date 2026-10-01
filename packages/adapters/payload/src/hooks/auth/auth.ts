@@ -23,18 +23,25 @@ const STAFF_MANAGEMENT_FIELDS = new Set(['name', 'avatar', 'password', 'active',
 const ownerLocks = new WeakMap<object, Promise<void>>()
 const ownerReleases = new WeakMap<object, () => void>()
 
-/** The only fields the second-step code may write, and the context flag that lets it write them. */
-const TWO_FACTOR_FIELDS = new Set(['totpSecret', 'totpEnabled', 'totpRecovery', 'totpFailures', 'totpLockedUntil'])
+/** Credential-like fields (second step, calendar feed address) that only server code writes, under the `privateFields` context. */
+const PRIVATE_USER_FIELDS = new Set([
+  'totpSecret',
+  'totpEnabled',
+  'totpRecovery',
+  'totpFailures',
+  'totpLockedUntil',
+  'calendarToken',
+])
 
 /**
- * The sign-in code and the Profile page write the two-step fields through the Local API with this context, which a
+ * The sign-in code and the Profile page write these fields through the Local API with this context, which a
  * request cannot set. `data` holds the whole document on update, so every other field is put back to what it was.
  */
-function onlyTwoFactorChanges(data: Partial<UserRecord>, originalDoc: UserRecord | undefined): Partial<UserRecord> {
+function onlyPrivateFieldChanges(data: Partial<UserRecord>, originalDoc: UserRecord | undefined): Partial<UserRecord> {
   const original: Record<string, unknown> = { ...originalDoc }
   const kept = Object.entries(data).map(([key, value]) => [
     key,
-    TWO_FACTOR_FIELDS.has(key) ? value : (original[key] ?? value),
+    PRIVATE_USER_FIELDS.has(key) ? value : (original[key] ?? value),
   ])
   return Object.fromEntries(kept) as Partial<UserRecord>
 }
@@ -158,8 +165,8 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
     return data
   }
   if (trustedCreate(req)) return data
-  if ((context as Record<string, unknown> | undefined)?.['authOperation'] === 'twoFactor')
-    return onlyTwoFactorChanges(data, originalDoc)
+  if ((context as Record<string, unknown> | undefined)?.['authOperation'] === 'privateFields')
+    return onlyPrivateFieldChanges(data, originalDoc)
   const actor = await resolveActor(req)
   if (actor?.active !== true) throw new APIError('You do not have permission to update this user.', 403, null, true)
   if (actor.role === 'owner') return data

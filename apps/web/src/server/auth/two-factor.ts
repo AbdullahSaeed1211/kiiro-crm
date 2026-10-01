@@ -4,7 +4,7 @@ import type { User } from '../../payload-types'
 
 const MAX_FAILURES = 5
 const LOCK_MS = 10 * 60 * 1000
-const CONTEXT = { authOperation: 'twoFactor' } as const
+const CONTEXT = { authOperation: 'privateFields' } as const
 
 /** What the Local API needs to read and write the hidden two-step fields of one user. */
 interface Target {
