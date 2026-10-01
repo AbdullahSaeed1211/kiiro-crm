@@ -34,6 +34,7 @@
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:purge": "tsx scripts/purge-demo.ts",
     "db:reset:local": "tsx scripts/reset-local-db.ts",
+    "tenant:new": "tsx scripts/new-tenant.ts",
     "tenant:provision": "tsx scripts/provision-tenant.ts",
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",
     "tenants:deploy": "tsx scripts/deploy-tenants.ts",

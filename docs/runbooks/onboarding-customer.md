@@ -19,8 +19,14 @@ Collect the owner name and email, team roles and reporting lines, website origin
 
 ## Provision the instance
 
-1. Add `tenants/<slug>.jsonc` with `hostType: "platform"`, a host under `PLATFORM_DOMAIN`, unique resources, and the customer's intake origins.
-2. Validate the plan without network access:
+1. Create the tenant file. This writes `tenants/<slug>.jsonc` with a host under `PLATFORM_DOMAIN`, resource names that follow the slug, and the next free rate-limit namespaces and deploy order:
+
+```sh
+PLATFORM_DOMAIN=<domain> pnpm tenant:new <slug> --name "Business name" --owner-email <email> --owner-name "Name" \
+  --template <key> --timezone <zone> --currency <ISO> [--locale es] [--host <custom host>]
+```
+
+Then add the customer's intake origins and Turnstile hostnames to the file. 2. Validate the plan without network access:
 
 ```sh
 pnpm tenant:provision <slug> --dry-run
