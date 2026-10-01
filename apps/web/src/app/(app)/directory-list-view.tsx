@@ -134,6 +134,7 @@ export function OrganizationsTable({
       className="ops-directory-table"
       columns={organizationColumns(query, sort)}
       rows={organizationRows(result.items)}
+      mobileCard={{ cells: ['name', 'website', 'owner', 'deals'] }}
       toolbarStart={<ListViewBar searchLabel="Search organizations" query={query} sort={sortMenu(sort)} />}
       sort={{ id: sort.endsWith('updatedAt') ? 'updated' : 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/organizations', query, sort })}
@@ -215,6 +216,7 @@ export function ContactsTable({
       className="ops-directory-table"
       columns={contactColumns(query, sort)}
       rows={contactRows(result.items)}
+      mobileCard={{ cells: ['name', 'organization', 'email', 'owner'] }}
       toolbarStart={<ListViewBar searchLabel="Search contacts" query={query} sort={sortMenu(sort)} />}
       sort={{ id: 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/contacts', query, sort })}

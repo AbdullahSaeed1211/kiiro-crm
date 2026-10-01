@@ -152,6 +152,7 @@ export default async function DealsPage({
           key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}
           columns={columns()}
           rows={data.items.map(rowOf)}
+          mobileCard={{ cells: ['title', 'stage', 'value', 'organization'] }}
           pagination={pagination({ page, total: data.total, query: rawQuery, stageId })}
           labels={DATA_TABLE_LABELS}
           emptyState={
