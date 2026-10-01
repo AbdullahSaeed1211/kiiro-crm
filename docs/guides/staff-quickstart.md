@@ -2,7 +2,7 @@
 
 For anyone who works leads, clients and tasks every day. Setup and workspace rules are in the [owner guide](owner-guide.md).
 
-Sign in at `/login`. The sidebar holds My tasks, the sales pages (Leads, Deals, Organizations, Contacts) and the work pages (Projects, Tasks, Calendar, Timeline). Press `Cmd+K` to search every record. Under Settings, Profile you can turn on two-step sign-in (a code from an authenticator app after your password) and a calendar feed of your due dates and follow-ups.
+Sign in at `/login`. The sidebar holds My tasks, the sales pages (Leads, Deals, Organizations, Contacts) and the work pages (Projects, Tasks, Calendar, Timeline). Drag a task to another day on the Calendar to change its due date. Press `Cmd+K` to search every record. Under Settings, Profile you can turn on two-step sign-in (a code from an authenticator app after your password) and a calendar feed of your due dates and follow-ups.
 
 ## Work a lead
 

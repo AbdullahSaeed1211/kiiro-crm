@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { DayCell } from './DayCell'
 
-import type { CalendarEvent } from './types'
+import type { CalendarEvent, CalendarMove } from './types'
 
-export type { CalendarEvent }
+export type { CalendarEvent, CalendarMove }
 
 const MAX_VISIBLE_EVENTS = 4
 const pad = (value: number): string => String(value).padStart(2, '0')
@@ -26,6 +26,7 @@ export function CalendarMonth({
   weekStartsOn = 1,
   locale = 'en',
   labels = { previous: 'Previous month', next: 'Next month', more: '+{count} more' },
+  onMove,
 }: Readonly<{
   year: number
   month: number
@@ -33,6 +34,8 @@ export function CalendarMonth({
   weekStartsOn?: 0 | 1
   locale?: string
   labels?: Readonly<{ previous: string; next: string; more: string }>
+  /** When given, events can be dragged to another day. */
+  onMove?: CalendarMove
 }>) {
   const leading = firstWeekday({ year, month, weekStartsOn })
   const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
@@ -86,6 +89,7 @@ export function CalendarMonth({
               events={date === null ? [] : (byDate.get(date) ?? [])}
               maxVisible={MAX_VISIBLE_EVENTS}
               moreLabel={labels.more}
+              {...(onMove === undefined ? {} : { onMove })}
             />
           )
         })}

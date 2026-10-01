@@ -1,1 +1,1 @@
-export { CalendarMonth, type CalendarEvent } from './CalendarMonth'
+export { CalendarMonth, type CalendarEvent, type CalendarMove } from './CalendarMonth'

@@ -7,6 +7,7 @@ import { formatDateISO } from '@ops/ui/lib/dates'
 import { TASK_COPY } from '../../../i18n/config'
 import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
 import { taskHref } from '../task-navigation'
+import { moveTaskOnCalendar } from './move-task'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,7 @@ export default async function CalendarPage({
       date: formatDateISO(task.dueAt, formatter),
       href: taskHref(task.id, '/calendar'),
       color: eventColor(task.priority),
+      moveToken: JSON.stringify({ dueAt: task.dueAt, startAt: task.startAt, updatedAt: task.updatedAt }),
     }))
     .filter((event) => event.date.startsWith(monthPrefix))
   return (
@@ -62,6 +64,7 @@ export default async function CalendarPage({
           locale={model.locale}
           labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore }}
           events={events}
+          onMove={moveTaskOnCalendar}
         />
       </PageContent>
     </>

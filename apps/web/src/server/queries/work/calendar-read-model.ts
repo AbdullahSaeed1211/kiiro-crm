@@ -9,6 +9,8 @@ interface CalendarTask {
   readonly stageCategory: StageCategory
   readonly priority: 'none' | 'low' | 'medium' | 'high' | 'urgent'
   readonly dueAt: number | null
+  readonly startAt: number | null
+  readonly updatedAt: number
 }
 
 interface CalendarReadModel {
@@ -65,11 +67,16 @@ function addStageCategory(categories: Map<string, StageCategory>, stage: unknown
   }
 }
 
+const finiteOrNull = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) ? value : null
+
 function mapTasks(documents: readonly object[], categories: ReadonlyMap<string, StageCategory>): CalendarTask[] {
   const priorities = ['none', 'low', 'medium', 'high', 'urgent'] as const
   return documents.map((document) => {
     const id = field(document, 'id')
     const dueAt = field(document, 'dueAt')
+    const startAt = field(document, 'startAt')
+    const updatedAt = Date.parse(text(document, 'updatedAt'))
     const stageId = field(document, 'stageId')
     const priority = field(document, 'priority')
     return {
@@ -77,7 +84,9 @@ function mapTasks(documents: readonly object[], categories: ReadonlyMap<string, 
       title: text(document, 'title'),
       stageCategory: categories.get(String(stageId)) ?? 'open',
       priority: priorities.find((item) => item === priority) ?? 'none',
-      dueAt: typeof dueAt === 'number' && Number.isFinite(dueAt) ? dueAt : null,
+      dueAt: finiteOrNull(dueAt),
+      startAt: finiteOrNull(startAt),
+      updatedAt: Number.isFinite(updatedAt) ? updatedAt : 0,
     }
   })
 }
@@ -100,7 +109,7 @@ export async function loadCalendarReadModel(
       collection: 'tasks',
       ...request,
       where: { and: [{ dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }] },
-      select: { id: true, title: true, stageId: true, priority: true, dueAt: true },
+      select: { id: true, title: true, stageId: true, priority: true, dueAt: true, startAt: true, updatedAt: true },
     }),
     requestContext.payload.find({
       collection: 'workflows',
