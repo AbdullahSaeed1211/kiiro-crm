@@ -16,6 +16,7 @@ import {
 import type { Metadata } from 'next'
 import { TASK_COPY, type Locale } from '../../../../i18n/config'
 import { workDeps } from '@/server/container'
+import { loadBoardTasks } from '../../../../server/queries/work/board-tasks'
 import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 import { getRequestContext } from '@/server/container'
 import { loadTaskPeople } from '../../../../server/queries/work/task-details'
@@ -112,7 +113,9 @@ export default async function TaskBoardPage() {
   const { tasks } = await workDeps(context)
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
-  const [workflow, records] = await Promise.all([tasks.loadTaskWorkflow().then(workflowOrThrow), tasks.listTasks()])
+  const workflow = await tasks.loadTaskWorkflow().then(workflowOrThrow)
+  const page = await loadBoardTasks(context, workflow)
+  const records = page.records
   const assigneeIds = [...new Set(records.flatMap((task) => task.assigneeIds.map(String)))]
   const people = await loadTaskPeople(assigneeIds)
   return (
@@ -121,7 +124,12 @@ export default async function TaskBoardPage() {
       <PageContent>
         <PageHeader
           title={copy.board}
-          count={records.length}
+          count={page.total}
+          description={
+            page.total > records.length
+              ? `Showing ${String(records.length)} of ${String(page.total)} open and recently finished tasks. Use the Table to find the rest.`
+              : undefined
+          }
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <TaskWorkspaceViews active="board" locale={locale} />

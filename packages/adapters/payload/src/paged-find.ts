@@ -49,6 +49,36 @@ async function readChunks(
   return { docs, totalDocs: last?.totalDocs ?? docs.length, hasNextPage: false }
 }
 
+/** The largest page size that is at most one chunk and divides `limit`, so a big page is a whole number of small ones. */
+function chunkFor(limit: number): number {
+  for (let size = Math.min(PAGE_CHUNK, limit); size > 1; size -= 1) if (limit % size === 0) return size
+  return 1
+}
+
+/** Reads one big page (`limit` rows, page `page`) as several smaller pages and joins them. */
+async function readWindow(
+  find: Find,
+  args: FindArgs & { readonly limit: number; readonly page: number },
+): Promise<FindResult> {
+  const size = chunkFor(args.limit)
+  const parts = args.limit / size
+  const docs: unknown[] = []
+  let last: FindResult | undefined
+  let first: FindResult | undefined
+  for (let part = 0; part < parts; part += 1) {
+    last = await find({ ...args, limit: size, page: (args.page - 1) * parts + part + 1, sort: stableSort(args.sort) })
+    first ??= last
+    docs.push(...last.docs)
+    if (!last.hasNextPage) break
+  }
+  return {
+    ...last,
+    docs,
+    totalDocs: first?.totalDocs ?? docs.length,
+    hasNextPage: last?.hasNextPage ?? false,
+  }
+}
+
 /**
  * Wraps `payload.find` so a read of everything, or of more than one chunk, runs as several chunked pages and comes back
  * as one result. Reads that fit one chunk pass through untouched, as do paginated reads the caller made on purpose.
@@ -56,8 +86,10 @@ async function readChunks(
 export function withPagedFind<F extends Find>(find: F): F {
   const paged = (args: FindArgs): Promise<FindResult> => {
     const wanted = wantedRows(args)
-    const explicitPage = args.pagination !== false && args.limit !== 0 && args.page !== undefined
-    return wanted <= PAGE_CHUNK || explicitPage ? find(args) : readChunks(find, { args, wanted })
+    if (wanted <= PAGE_CHUNK) return find(args)
+    if (args.pagination !== false && args.limit !== undefined && args.limit > 0 && args.page !== undefined)
+      return readWindow(find, { ...args, limit: args.limit, page: args.page })
+    return readChunks(find, { args, wanted })
   }
   return paged as F
 }

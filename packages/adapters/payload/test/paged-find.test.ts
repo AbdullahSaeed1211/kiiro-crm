@@ -39,6 +39,14 @@ describe('withPagedFind', () => {
     expect(small.calls).toEqual([{ limit: 50 }, { limit: 50, page: 3 }])
   })
 
+  it('reads a big explicit page as small ones and keeps the page window and total', async () => {
+    const { find, calls } = fakeFind(1200)
+    const result = await withPagedFind(find)({ limit: 500, page: 2 })
+    expect(result.docs).toEqual(Array.from({ length: 500 }, (_, index) => 500 + index))
+    expect(result.totalDocs).toBe(1200)
+    expect(Math.max(...calls.map((call) => call.limit ?? 0))).toBeLessThanOrEqual(PAGE_CHUNK)
+  })
+
   it('stops at a caller limit above one chunk', async () => {
     const { find } = fakeFind(500)
     expect((await withPagedFind(find)({ limit: 200 })).docs).toHaveLength(200)
