@@ -1,7 +1,7 @@
 import { deliverWebhook, webhooksFor, webhooksSchema, type Webhook, type WebhookEvent } from '@ops/module-crm'
 import { createJsonLogger } from '@ops/kernel'
-import type { CollectionAfterChangeHook } from 'payload'
-import { SETTINGS_GLOBAL } from '../contracts/names'
+import type { CollectionAfterChangeHook, Payload } from 'payload'
+import { COLLECTIONS, SETTINGS_GLOBAL } from '../contracts/names'
 
 const logger = createJsonLogger()
 
@@ -30,13 +30,62 @@ const transient = (result: { readonly status: number | null }): boolean =>
 
 /** Sends the event, trying again after a short wait while the receiver is unreachable or erroring; returns the last result. */
 async function deliverWithRetry(webhook: Webhook, event: WebhookEvent) {
+  let attempts = 1
   let result = await deliverWebhook(webhook, event)
   for (const delay of RETRY_DELAYS_MS) {
     if (result.ok || !transient(result)) break
     await pause(delay)
     result = await deliverWebhook(webhook, event)
+    attempts += 1
   }
-  return result
+  return { result, attempts }
+}
+
+const KEEP_MS = 14 * 24 * 60 * 60 * 1000
+
+// Generated collection types lag a newly added collection until `payload generate:types` runs.
+interface UntypedLog {
+  create(options: Record<string, unknown>): Promise<unknown>
+  delete(options: Record<string, unknown>): Promise<unknown>
+}
+
+/** Keeps the outcome for the owner's delivery list, and drops entries older than two weeks. A log failure is ignored. */
+async function recordDelivery(
+  payload: Payload,
+  input: { webhook: Webhook; event: WebhookEvent; outcome: Awaited<ReturnType<typeof deliverWithRetry>> },
+): Promise<void> {
+  const { webhook, event, outcome } = input
+  const log = payload as unknown as UntypedLog
+  try {
+    await log.create({
+      collection: COLLECTIONS.webhookDeliveries,
+      data: {
+        webhook: webhook.id,
+        webhookName: webhook.name,
+        event: event.event,
+        recordType: event.recordType,
+        recordId: event.recordId,
+        ok: outcome.result.ok,
+        status: outcome.result.status,
+        attempts: outcome.attempts,
+        error: outcome.result.error,
+        at: Date.now(),
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    await log.delete({
+      collection: COLLECTIONS.webhookDeliveries,
+      where: { at: { less_than: Date.now() - KEEP_MS } },
+      depth: 0,
+      overrideAccess: true,
+    })
+  } catch (error) {
+    logger.warn('webhook.log_failed', {
+      webhook: webhook.id,
+      message: error instanceof Error ? error.message : 'error',
+    })
+  }
 }
 
 const iso = (value: unknown): string => {
@@ -64,8 +113,10 @@ export const sendActivityWebhooks: CollectionAfterChangeHook = async ({ doc, ope
   schedule(
     Promise.all(
       targets.map(async (webhook) => {
-        const result = await deliverWithRetry(webhook, event)
-        if (!result.ok) logger.warn('webhook.failed', { webhook: webhook.id, event: verb, status: result.status })
+        const outcome = await deliverWithRetry(webhook, event)
+        if (!outcome.result.ok)
+          logger.warn('webhook.failed', { webhook: webhook.id, event: verb, status: outcome.result.status })
+        await recordDelivery(req.payload, { webhook, event, outcome })
       }),
     ),
   )

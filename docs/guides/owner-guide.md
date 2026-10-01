@@ -91,7 +91,7 @@ To make requests the other way (read leads, create tasks), owners and managers m
 1. Add a webhook, give it a name and the public `https://` address the other system gave you, and choose the events.
 2. Save, then press **Send test**. It sends a `webhook.test` event and shows what the other system answered.
 
-Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `recordId` and `data`. The headers `X-Webhook-Timestamp` and `X-Webhook-Signature` let the receiver check the sender: the signature is `sha256=` followed by the HMAC-SHA256 of `timestamp.body`, made with the webhook's signing secret. Receivers should reject old timestamps. A delivery that finds the other system unreachable or erroring (HTTP 5xx) is tried again after 1 and 5 seconds; a refusal such as HTTP 400 is not retried. After the last try the failure is logged and dropped, so treat a webhook as a notification and read the record through the API when it matters.
+Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `recordId` and `data`. The headers `X-Webhook-Timestamp` and `X-Webhook-Signature` let the receiver check the sender: the signature is `sha256=` followed by the HMAC-SHA256 of `timestamp.body`, made with the webhook's signing secret. Receivers should reject old timestamps. A delivery that finds the other system unreachable or erroring (HTTP 5xx) is tried again after 1 and 5 seconds; a refusal such as HTTP 400 is not retried. The page lists the latest deliveries with what the other system answered and how many tries it took, for two weeks. A delivery that still fails is not queued again, so treat a webhook as a notification and read the record through the API when it matters.
 
 ## Read the pipeline
 
@@ -112,4 +112,4 @@ Settings, Activity (owners and managers) lists the last hundred changes anyone m
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
 - Archiving hides a lead, deal, contact or organization from every list and search; Settings, Archive lists them and restores any of them.
-- SMS is not available, and the calendar feed is read-only: changes in a calendar app do not come back. Webhooks are retried twice on connection failures and server errors, and there is no delivery history yet.
+- SMS is not available, and the calendar feed is read-only: changes in a calendar app do not come back. Webhooks are retried twice on connection failures and server errors, and a failed one is not queued again.

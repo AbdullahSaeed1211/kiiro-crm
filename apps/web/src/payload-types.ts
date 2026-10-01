@@ -93,6 +93,7 @@ export interface Config {
     emailMessages: EmailMessage;
     jobRuns: JobRun;
     timeEntries: TimeEntry;
+    webhookDeliveries: WebhookDelivery;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -126,6 +127,7 @@ export interface Config {
     emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
     jobRuns: JobRunsSelect<false> | JobRunsSelect<true>;
     timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
+    webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -978,6 +980,28 @@ export interface TimeEntry {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "webhookDeliveries".
+ */
+export interface WebhookDelivery {
+  id: string;
+  webhook: string;
+  webhookName?: string | null;
+  event: string;
+  recordType?: string | null;
+  recordId?: string | null;
+  ok?: boolean | null;
+  status?: number | null;
+  attempts?: number | null;
+  error?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  at: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1103,6 +1127,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'timeEntries';
         value: string | TimeEntry;
+      } | null)
+    | ({
+        relationTo: 'webhookDeliveries';
+        value: string | WebhookDelivery;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1618,6 +1646,24 @@ export interface TimeEntriesSelect<T extends boolean = true> {
   minutes?: T;
   day?: T;
   note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "webhookDeliveries_select".
+ */
+export interface WebhookDeliveriesSelect<T extends boolean = true> {
+  webhook?: T;
+  webhookName?: T;
+  event?: T;
+  recordType?: T;
+  recordId?: T;
+  ok?: T;
+  status?: T;
+  attempts?: T;
+  error?: T;
+  at?: T;
   updatedAt?: T;
   createdAt?: T;
 }
