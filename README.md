@@ -146,22 +146,22 @@ OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag vX.Y.Z --execute
 git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
 ```
 
-Pushing a `v*` tag also starts the GitHub Deploy workflow, which needs each tenant's `INTERNAL_SECRET_<SLUG>` secret to be current. See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md), plus the runbooks for rollback, incidents, tenant provisioning and customer onboarding.
+Pushing a `v*` tag also starts the GitHub Deploy workflow, which needs each tenant's `INTERNAL_SECRET_<SLUG>` secret to be current. See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md), plus the runbooks for backup and restore, rollback, incidents, tenant provisioning and customer onboarding.
 
 ## Documentation
 
-| Read                                                                 | For                                                  |
-| -------------------------------------------------------------------- | ---------------------------------------------------- |
-| [`docs/guides/owner-guide.md`](docs/guides/owner-guide.md)           | setting up and running a workspace as its owner      |
-| [`docs/guides/staff-quickstart.md`](docs/guides/staff-quickstart.md) | working leads, clients and tasks day to day          |
-| [`docs/spec.md`](docs/spec.md)                                       | authoritative product behavior                       |
-| [`docs/architecture.md`](docs/architecture.md)                       | the short map and the conventions every change keeps |
-| [`docs/roadmap.md`](docs/roadmap.md)                                 | the order in which open work ships                   |
-| [`docs/backlog/`](docs/backlog/)                                     | open code-health and UX findings                     |
-| [`docs/adr/`](docs/adr/)                                             | architecture decisions                               |
-| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md)   | the proposal for self-serve signup and provisioning  |
-| [`docs/runbooks/`](docs/runbooks/)                                   | deploy, rollback, incident and onboarding procedures |
-| [`AGENTS.md`](AGENTS.md)                                             | where code lives, golden examples and working rules  |
+| Read                                                                 | For                                                          |
+| -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [`docs/guides/owner-guide.md`](docs/guides/owner-guide.md)           | setting up and running a workspace as its owner              |
+| [`docs/guides/staff-quickstart.md`](docs/guides/staff-quickstart.md) | working leads, clients and tasks day to day                  |
+| [`docs/spec.md`](docs/spec.md)                                       | authoritative product behavior                               |
+| [`docs/architecture.md`](docs/architecture.md)                       | the short map and the conventions every change keeps         |
+| [`docs/roadmap.md`](docs/roadmap.md)                                 | the order in which open work ships                           |
+| [`docs/backlog/`](docs/backlog/)                                     | open code-health and UX findings                             |
+| [`docs/adr/`](docs/adr/)                                             | architecture decisions                                       |
+| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md)   | the proposal for self-serve signup and provisioning          |
+| [`docs/runbooks/`](docs/runbooks/)                                   | deploy, backup, rollback, incident and onboarding procedures |
+| [`AGENTS.md`](AGENTS.md)                                             | where code lives, golden examples and working rules          |
 
 ## Contributing
 
