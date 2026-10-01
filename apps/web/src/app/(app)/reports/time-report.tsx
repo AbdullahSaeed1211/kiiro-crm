@@ -41,7 +41,12 @@ export async function TimeReport({
     <section className="ops-surface-card overflow-hidden rounded-lg border bg-card">
       <header className="flex items-baseline justify-between border-b px-4 py-3">
         <h2 className="text-sm font-semibold">Time logged</h2>
-        <span className="text-sm tabular-nums text-muted-foreground">{formatDuration(report.total)}</span>
+        <span className="flex items-baseline gap-3 text-sm text-muted-foreground">
+          <a className="underline" href={`/api/v1/export/time?from=${fromDate}&to=${toDate}`} download>
+            Download CSV
+          </a>
+          <span className="tabular-nums">{formatDuration(report.total)}</span>
+        </span>
       </header>
       {report.total === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">

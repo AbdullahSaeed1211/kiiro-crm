@@ -42,26 +42,35 @@ async function inChunks(
   return found
 }
 
-const sorted = (totals: ReadonlyMap<string, number>, names: (key: string) => string): TimeTotal[] =>
+const sorted = (totals: ReadonlyMap<string, number>): TimeTotal[] =>
   [...totals]
-    .map(([key, minutes]) => ({ name: names(key), minutes }))
+    .map(([name, minutes]) => ({ name, minutes }))
     .toSorted((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name))
 
-/** Hours logged between two days (epoch ms, inclusive), by person and by the project of each task; owners and managers only. */
-export async function loadTimeReport(
+export interface TimeRow {
+  readonly day: number
+  readonly person: string
+  readonly project: string
+  readonly task: string
+  readonly minutes: number
+  readonly note: string
+}
+
+/** Every entry logged between two days (epoch ms, inclusive), oldest first, with names filled in. */
+export async function loadTimeRows(
   context: ReportContext,
   range: { fromMs: number; toMs: number },
-): Promise<TimeReport> {
+): Promise<TimeRow[]> {
   const entries = (
     await payloadData(context.payload).find({
       collection: 'timeEntries',
       where: { and: [{ day: { greater_than_equal: range.fromMs } }, { day: { less_than_equal: range.toMs } }] },
+      sort: 'day',
       limit: MAX_ENTRIES,
       depth: 0,
       overrideAccess: true,
     })
   ).docs.flatMap((doc) => (doc === undefined ? [] : [doc]))
-  const minutesOf = (entry: Record<string, unknown>): number => (typeof entry.minutes === 'number' ? entry.minutes : 0)
   const tasks = await inChunks(context, {
     collection: 'tasks',
     ids: entries.map((e) => refId(e.task)),
@@ -73,17 +82,31 @@ export async function loadTimeReport(
     context,
     entries.map((entry) => refId(entry.user)),
   )
+  return entries.map((entry) => ({
+    day: typeof entry.day === 'number' ? entry.day : 0,
+    person: people.get(refId(entry.user))?.name ?? 'Someone',
+    project: text(projects.get(projectOf(entry))?.name) || 'No project',
+    task: text(tasks.get(refId(entry.task))?.title),
+    minutes: typeof entry.minutes === 'number' ? entry.minutes : 0,
+    note: text(entry.note),
+  }))
+}
+
+/** Hours logged between two days, by person and by project; owners and managers only. */
+export async function loadTimeReport(
+  context: ReportContext,
+  range: { fromMs: number; toMs: number },
+): Promise<TimeReport> {
+  const rows = await loadTimeRows(context, range)
   const byPerson = new Map<string, number>()
   const byProject = new Map<string, number>()
-  for (const entry of entries) {
-    const person = refId(entry.user)
-    const project = projectOf(entry)
-    byPerson.set(person, (byPerson.get(person) ?? 0) + minutesOf(entry))
-    byProject.set(project, (byProject.get(project) ?? 0) + minutesOf(entry))
+  for (const row of rows) {
+    byPerson.set(row.person, (byPerson.get(row.person) ?? 0) + row.minutes)
+    byProject.set(row.project, (byProject.get(row.project) ?? 0) + row.minutes)
   }
   return {
-    total: entries.reduce((sum, entry) => sum + minutesOf(entry), 0),
-    byPerson: sorted(byPerson, (id) => people.get(id)?.name ?? 'Someone'),
-    byProject: sorted(byProject, (id) => text(projects.get(id)?.name) || 'No project'),
+    total: rows.reduce((sum, row) => sum + row.minutes, 0),
+    byPerson: sorted(byPerson),
+    byProject: sorted(byProject),
   }
 }

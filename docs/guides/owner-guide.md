@@ -94,7 +94,7 @@ Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `r
 
 ## Read the pipeline
 
-The dashboard shows owners and managers a Sales pipeline card: open pipeline value, win rate and open deals by stage. Figures goes further, and shows the time people logged on tasks in the chosen range, by person and by project (useful for retainers and billing). Figures shows the team's work for a date range, then the whole pipeline in charts: open pipeline value, revenue won over the last six months, win rate, deals and leads by stage, and where leads come from. The charts cover every deal and lead you can see, not only the date range.
+The dashboard shows owners and managers a Sales pipeline card: open pipeline value, win rate and open deals by stage. Figures goes further, and shows the time people logged on tasks in the chosen range, by person and by project (useful for retainers and billing); **Download CSV** there gives every entry (day, person, project, task, hours, note) for invoicing or payroll. Figures shows the team's work for a date range, then the whole pipeline in charts: open pipeline value, revenue won over the last six months, win rate, deals and leads by stage, and where leads come from. The charts cover every deal and lead you can see, not only the date range.
 
 ## See who changed what
 
