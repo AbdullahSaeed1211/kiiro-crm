@@ -34,6 +34,7 @@ describe('toTaskListItem', () => {
     expect(toTaskListItem(task, { workflow, people })).toEqual({
       id: 't1',
       title: 'Draft checklist',
+      updatedAt: 2,
       stage: { name: 'To do', color: 'blue', position: 1 },
       priority: 'high',
       assignees: [{ id: 'u1', name: 'Ada Example', email: 'ada@example.test' }],
