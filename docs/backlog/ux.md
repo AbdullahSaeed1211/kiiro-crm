@@ -1,6 +1,6 @@
 # UX backlog
 
-19 findings are open: 2 critical, 7 major and 10 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+8 findings are open: 1 critical, 4 major and 3 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -25,16 +25,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Now: Contacts, organizations, deals and projects share `ListViewBar` (search, filters, sort; the state lives in the URL). Leads keep `LeadListControls` because they filter by several stages at once, owner and source and save views; tasks keep their view menu. Deals have no sort because the deals query does not sort yet.
 - Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
 - Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads and tasks onto it, and add a sort to the deals query.
-
-### 10. The seed has no pipeline, so the CRM is never tested end to end
-
-- Area: Tests. Effort: Quick.
-- `crm-pipeline-data.ts:4-5` sets `LEADS = []` and `DEALS = []`, so the deal tests at `route-health.spec.ts:846` and `:946` have skipped since attempt 30. Their restore-in-`finally` logic is well built but never runs. Lead conversion, deal stages and board totals never run in a browser.
-
-### 11. There's no neutral demo tenant
-
-- Area: Platform. Effort: Quick.
-- Add a `tenants/demo.jsonc` with `example.test` identities, fictional clients and a real pipeline, and make it the default for `seed:dev` and E2E. Tests should read expected values from the fixture. Keep Mirch as a real tenant, but stop using it as the test fixture. Running two tenants in CI would show the white-label setup actually works.
 
 ### 12. Many screens skip the design-system components
 

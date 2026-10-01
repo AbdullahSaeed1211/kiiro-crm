@@ -42,4 +42,37 @@ export const ORGANIZATIONS: readonly OrganizationSeed[] = [
   ).map(([key, name, website, phone, email]) => ({ key, name, website, phone, email })),
 ]
 
-export const CONTACTS: readonly ContactSeed[] = []
+export const CONTACTS: readonly ContactSeed[] = [
+  {
+    key: 'homes-owner',
+    firstName: 'Grace',
+    lastName: 'Nolan',
+    email: 'grace.nolan@keystonehomes.example.test',
+    phone: '+1 555-0102-01',
+    organization: 'keystone-homes',
+  },
+  {
+    key: 'solar-marketing',
+    firstName: 'Omar',
+    lastName: 'Haddad',
+    email: 'omar.haddad@evergreensolar.example.test',
+    phone: '+1 555-0102-02',
+    organization: 'evergreen-solar',
+  },
+  {
+    key: 'law-partner',
+    firstName: 'Ruth',
+    lastName: 'Bennett',
+    email: 'ruth.bennett@lakesidelaw.example.test',
+    phone: '+1 555-0102-03',
+    organization: 'lakeside-law-office',
+  },
+  {
+    key: 'kings-manager',
+    firstName: 'Tyrone',
+    lastName: 'Davis',
+    email: 'tyrone.davis@courtkings.example.test',
+    phone: '+1 555-0102-04',
+    organization: 'court-kings',
+  },
+]
