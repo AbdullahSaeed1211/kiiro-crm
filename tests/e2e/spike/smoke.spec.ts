@@ -78,6 +78,8 @@ async function expectContained(page: Page, route: string): Promise<void> {
 async function verifyMobileSidebar(page: Page): Promise<void> {
   const toggle = page.locator('[data-slot="sidebar-trigger"]')
   const mobileSidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]')
+  // Until the page hydrates on a phone, the server-rendered desktop sidebar has a second trigger.
+  await expect(toggle).toHaveCount(1)
   await toggle.click()
   await expect(mobileSidebar).toBeVisible()
   await expect(mobileSidebar.getByRole('link', { name: 'Deals' })).toBeVisible()
@@ -88,6 +90,8 @@ async function verifyMobileSidebar(page: Page): Promise<void> {
   await expect(mobileSidebar).toBeHidden()
   await toggle.click()
   await expect(mobileSidebar).toBeVisible()
+  // Escape is ignored while the panel is still sliding in.
+  await expect(mobileSidebar).not.toHaveAttribute('data-starting-style')
   await page.keyboard.press('Escape')
   await expect(mobileSidebar).toBeHidden()
 }
