@@ -76,11 +76,19 @@ export function toLibraryTasks(bars: readonly GanttBar[]): ITask[] {
 
 const LEAD_DAYS = 3
 
-/** The pixel offset that scrolls the chart to a few days before the earliest task, given the chart's first day and day width. */
-export function openingOffset(tasks: readonly ITask[], chart: Readonly<{ start: Date; dayWidth: number }>): number {
+/**
+ * The pixel offset that opens the chart on today, a few days before it, or on the work if today is outside it: the
+ * first task when today is earlier, the last task when today is later.
+ */
+export function openingOffset(
+  tasks: readonly ITask[],
+  chart: Readonly<{ start: Date; dayWidth: number; now: number }>,
+): number {
   const starts = tasks.flatMap((task) => (task.start === undefined ? [] : [task.start.getTime()]))
-  if (starts.length === 0) return 0
-  const days = (Math.min(...starts) - chart.start.getTime()) / DAY_MS - LEAD_DAYS
+  const ends = tasks.flatMap((task) => (task.end === undefined ? [] : [task.end.getTime()]))
+  if (starts.length === 0 || ends.length === 0) return 0
+  const target = Math.min(Math.max(chart.now, Math.min(...starts)), Math.max(...ends))
+  const days = (target - chart.start.getTime()) / DAY_MS - LEAD_DAYS
   return Math.max(0, Math.round(days * chart.dayWidth))
 }
 

@@ -15,13 +15,13 @@ const AIM_DELAYS_MS = [0, 150, 400, 900, 1600]
 
 function aim(api: IApi, scale: ChartScale | undefined, tasks: readonly ITask[]): void {
   if (scale?.start === undefined || scale.lengthUnitWidth === undefined) return
-  const left = openingOffset(tasks, { start: scale.start, dayWidth: scale.lengthUnitWidth })
+  const left = openingOffset(tasks, { start: scale.start, dayWidth: scale.lengthUnitWidth, now: Date.now() })
   if (left > 0) void api.exec('scroll-chart', { left })
 }
 
 /**
- * The library starts its chart at an early day of its own choosing, so a timeline of this month's work opens on empty
- * weeks. This scrolls it to a few days before the first task as soon as the scale is known, and again a few times
+ * The library starts its chart at an early day of its own choosing, so a timeline of this month's work can open on empty
+ * weeks (or on an old open task). This scrolls it to today, or to the work when today is outside it, as soon as the scale is known, and again a few times
  * while the chart finishes opening, then leaves the position to the person.
  */
 export function openOnWork(api: IApi, tasks: () => readonly ITask[]): void {
