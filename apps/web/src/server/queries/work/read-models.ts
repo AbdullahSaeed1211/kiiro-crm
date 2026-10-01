@@ -48,8 +48,8 @@ export interface WorkReadModel {
   }[]
 }
 
-const value = (doc: object, key: string): unknown => Reflect.get(doc, key)
-const text = (doc: object, key: string): string => {
+export const value = (doc: object, key: string): unknown => Reflect.get(doc, key)
+export const text = (doc: object, key: string): string => {
   const item = value(doc, key)
   return typeof item === 'string' ? item : ''
 }
@@ -78,7 +78,7 @@ export interface StageLabel {
   readonly name: string
   readonly category: StageCategory
 }
-function addStages(stages: Map<string, StageLabel>, workflow: object): void {
+export function addStages(stages: Map<string, StageLabel>, workflow: object): void {
   for (const row of rows(value(workflow, 'stages'))) {
     const stageId = id(row, 'id')
     const category = value(row, 'category')
@@ -186,67 +186,3 @@ export async function loadWorkspaceLocale(): Promise<Locale> {
   const settings = await getWorkspaceSettings()
   return normalizeLocale(value(settings, 'locale'))
 }
-
-/** The signed-in user's tasks with what My tasks needs to render them. */
-export type MyTaskModel = Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone' | 'stages' | 'locale'> & {
-  /** Name of each project the tasks belong to, by project id. */
-  readonly projectNames: Readonly<Record<string, string>>
-}
-
-/** Names of the projects with these ids, for labelling tasks; an empty list reads nothing. */
-async function projectNamesFor(
-  context: RequestContext,
-  projectIds: readonly string[],
-): Promise<Record<string, string>> {
-  if (projectIds.length === 0) return {}
-  const found = await context.payload.find({
-    collection: 'projects',
-    where: { id: { in: [...projectIds] } },
-    select: { name: true },
-    limit: projectIds.length,
-    pagination: false,
-    depth: 0,
-    overrideAccess: false,
-    req: context.req,
-  })
-  return Object.fromEntries(found.docs.map((project) => [project.id, project.name]))
-}
-
-/** Reads only the signed-in user's tasks for the dedicated My tasks page. */
-export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskModel> {
-  const requestContext = context ?? (await getRequestContext())
-  const request = { depth: 0, overrideAccess: false as const, req: requestContext.req }
-  const [taskPage, workflowPage, settings] = await Promise.all([
-    requestContext.payload.find({
-      collection: 'tasks',
-      ...request,
-      where: { assignees: { in: [String(requestContext.actor.id)] } },
-      sort: ['dueAt', 'id'],
-      limit: 0,
-      pagination: false,
-    }),
-    requestContext.payload.find({
-      collection: 'workflows',
-      ...request,
-      where: { recordType: { equals: 'task' } },
-      limit: 1,
-      pagination: false,
-    }),
-    getWorkspaceSettings(),
-  ])
-  const stages = new Map<string, StageLabel>()
-  const workflows = workflowPage.docs as readonly object[]
-  for (const workflow of workflows) addStages(stages, workflow)
-  const tasks = (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages))
-  const projectIds = [...new Set(tasks.flatMap((task) => (task.projectId === null ? [] : [task.projectId])))]
-  return {
-    tasks,
-    projectNames: await projectNamesFor(requestContext, projectIds),
-    actorId: String(requestContext.actor.id),
-    timeZone: text(settings, 'timezone') || 'UTC',
-    stages: workflowStages(workflows),
-    locale: normalizeLocale(value(settings, 'locale')),
-  }
-}
-
-/** Loads one scoped project and its task rows. */
