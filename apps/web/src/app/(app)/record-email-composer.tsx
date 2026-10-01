@@ -193,7 +193,7 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
         <p className="mt-2 truncate text-xs text-muted-foreground">Attached: {selectedFile.name}</p>
       )}
       {message === null ? (
-        <p className="mt-2 text-[11px] text-muted-foreground">⌘/Ctrl + Enter to send</p>
+        <p className="mt-2 text-xs text-muted-foreground">⌘/Ctrl + Enter to send</p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground" role="status" aria-live="polite">
           {message}

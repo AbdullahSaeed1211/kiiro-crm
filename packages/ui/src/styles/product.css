@@ -209,7 +209,7 @@ select {
 [data-sidebar='group-label'] {
   height: 1.65rem;
   padding-inline: 0.55rem;
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   font-weight: 650;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -675,7 +675,7 @@ select:focus {
 
   .ops-settings-nav h2 {
     padding-inline: 0.45rem;
-    font-size: 0.62rem;
+    font-size: 0.72rem;
     letter-spacing: 0.08em;
     white-space: nowrap;
   }
@@ -751,4 +751,21 @@ select:focus {
 input::placeholder,
 textarea::placeholder {
   color: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+}
+
+/* Touch screens: buttons and fields get a finger-sized hit area (at least 40px high). */
+@media (pointer: coarse) {
+  [data-slot='button'],
+  button[data-size^='icon'],
+  .ops-app-header button,
+  [data-slot='input'],
+  [data-slot='native-select'] {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  [data-slot='input'],
+  [data-slot='native-select'] {
+    min-width: 0;
+  }
 }

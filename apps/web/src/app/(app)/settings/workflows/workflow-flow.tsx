@@ -13,7 +13,7 @@ function InsertButton({ label, onClick }: Readonly<{ label: string; onClick: () 
       type="button"
       aria-label={label}
       title={label}
-      className="inline-flex size-7 shrink-0 items-center justify-center self-center rounded-full border border-dashed text-muted-foreground hover:border-solid hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex size-10 shrink-0 items-center justify-center self-center rounded-full border border-dashed sm:size-7 text-muted-foreground hover:border-solid hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       onClick={onClick}
     >
       <Plus className="size-4" aria-hidden />

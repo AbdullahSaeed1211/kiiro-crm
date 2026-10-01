@@ -12,10 +12,10 @@ function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined
     : undefined
 }
 
-/** The selected view: a saved view id, or one of the built-in modes. */
+/** The selected view: a saved view id, or one of the built-in modes. With none chosen it is open tasks, so finished work does not crowd the list. */
 export function parseTaskView(value: string | undefined, savedViews: readonly SavedViewSummary[]): string {
   if (value !== undefined && savedViews.some((view) => view.id === value)) return value
-  return value === 'open' || value === 'mine' ? value : 'all'
+  return value === 'all' || value === 'mine' ? value : 'open'
 }
 
 /** The sort a saved view stores, or `fallback` when it stores none. */
@@ -35,7 +35,7 @@ function savedViewMode(view: SavedViewSummary): TaskMode {
 /** Which tasks the view lists: a saved view's status filter, or the built-in mode. */
 export function taskModeOf(view: string, savedView: SavedViewSummary | undefined): TaskMode {
   if (savedView !== undefined) return savedViewMode(savedView)
-  return view === 'open' || view === 'mine' ? view : 'all'
+  return view === 'all' || view === 'mine' ? view : 'open'
 }
 
 /** The tasks list address that shows this sort, page and view; a task opened from it returns here. */

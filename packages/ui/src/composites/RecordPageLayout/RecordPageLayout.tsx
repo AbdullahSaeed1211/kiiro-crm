@@ -52,18 +52,20 @@ function RecordTitle({
   if (onTitleChange === undefined) return <h1 className="truncate text-2xl font-semibold">{title}</h1>
   if (!editing) {
     return (
-      <Button
-        type="button"
-        variant="ghost"
-        className="h-auto max-w-full justify-start px-1 text-left text-2xl font-semibold"
-        aria-label={titleLabel}
-        onClick={() => {
-          setDraft(title)
-          setEditing(true)
-        }}
-      >
-        <span className="truncate">{title}</span>
-      </Button>
+      <h1 className="min-w-0 max-w-full">
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto max-w-full justify-start px-1 text-left text-2xl font-semibold"
+          aria-label={titleLabel}
+          onClick={() => {
+            setDraft(title)
+            setEditing(true)
+          }}
+        >
+          <span className="truncate">{title}</span>
+        </Button>
+      </h1>
     )
   }
   return (

@@ -112,7 +112,7 @@ function SidebarAccount({
         </span>
         <span className="min-w-0 group-data-[collapsible=icon]:hidden">
           <span className="block truncate text-xs font-medium">{name}</span>
-          <span className="block truncate text-[10px] text-muted-foreground">{email || role}</span>
+          <span className="block truncate text-xs text-muted-foreground">{email || role}</span>
         </span>
       </a>
       <a

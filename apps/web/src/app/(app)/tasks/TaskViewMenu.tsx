@@ -21,14 +21,14 @@ export function TaskViewMenu({
     <SavedViewMenu
       selectedId={selectedId}
       views={[
-        { id: 'all', label: copy.allTasks, pinned: true },
-        { id: 'open', label: copy.openTasks },
+        { id: 'open', label: copy.openTasks, pinned: true },
+        { id: 'all', label: copy.allTasks },
         { id: 'mine', label: copy.myTasks },
         ...customViews,
       ]}
       onSelect={(id) => {
         const params = new URLSearchParams(searchParams.toString())
-        if (id === 'all') params.delete('view')
+        if (id === 'open') params.delete('view')
         else params.set('view', id)
         params.delete('page')
         const query = params.toString()

@@ -25,7 +25,7 @@ function Swatches({
           role="radio"
           aria-checked={colour === value}
           aria-label={copy.colours[colour] ?? colour}
-          className={`size-5 rounded-full ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring ${stageDotClass(toStageColor(colour))} ${colour === value ? 'ring-2 ring-foreground' : ''}`}
+          className={`size-8 rounded-full ring-offset-2 sm:size-5 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring ${stageDotClass(toStageColor(colour))} ${colour === value ? 'ring-2 ring-foreground' : ''}`}
           onClick={() => {
             onChange(colour)
           }}
@@ -52,10 +52,10 @@ function NodeTools({
         <GripVertical className="size-4" />
       </span>
       <button className={button} type="button" aria-label={fill(copy.moveEarlier, name)} onClick={tools.onEarlier}>
-        <ChevronLeft className="size-4" aria-hidden />
+        <ChevronLeft className="size-4 rotate-90 lg:rotate-0" aria-hidden />
       </button>
       <button className={button} type="button" aria-label={fill(copy.moveLater, name)} onClick={tools.onLater}>
-        <ChevronRight className="size-4" aria-hidden />
+        <ChevronRight className="size-4 rotate-90 lg:rotate-0" aria-hidden />
       </button>
       <button
         className={`${button} ml-auto hover:text-destructive`}

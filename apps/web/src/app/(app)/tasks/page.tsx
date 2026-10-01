@@ -43,6 +43,7 @@ export default async function TasksPage({
   const selectedSavedView = savedViews.find((savedView) => savedView.id === view)
   const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
   const taskMode = taskModeOf(view, selectedSavedView)
+  const title = selectedSavedView?.name ?? { all: copy.allTasks, mine: copy.myTasks, open: copy.openTasks }[taskMode]
   const returnTo = taskListHref({ sort, page: parseTaskPage(firstParam(pageParam)), view })
   const result = await listTasks(
     {
@@ -54,10 +55,10 @@ export default async function TasksPage({
   )
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: copy.allTasks }]} />
+      <AppHeader breadcrumbs={[{ label: title }]} />
       <PageContent>
         <PageHeader
-          title={copy.allTasks}
+          title={title}
           count={result.total}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
@@ -95,7 +96,7 @@ export default async function TasksPage({
           pagination={paginationOf({ result, sort: effectiveSort, view })}
           labels={labelsFor(locale)}
           emptyState={<EmptyState icon={ListTodo} title={copy.noTasks} description={copy.noTasksDescription} />}
-          mobileCard={{ cells: ['title', 'stage', 'dueAt', 'assignees'] }}
+          mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees'] }}
         />
       </PageContent>
     </>

@@ -136,7 +136,7 @@
   margin-top: auto;
   padding: 0.7rem 0.45rem 0.25rem;
   color: var(--inbox-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 
@@ -196,7 +196,7 @@
   border-radius: 0.25rem;
   padding: 0.05rem 0.3rem;
   color: var(--inbox-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 .toolbarActions {
@@ -216,7 +216,7 @@
   padding: 0.45rem 0.55rem;
   color: var(--primary-foreground);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -311,7 +311,7 @@
   background: color-mix(in oklch, var(--inbox-accent) 10%, transparent);
   padding: 0.2rem 0.5rem;
   color: var(--inbox-accent);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -360,7 +360,7 @@
   border-radius: 50%;
   background: color-mix(in oklch, var(--inbox-accent) 10%, var(--background));
   color: var(--inbox-accent);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -383,12 +383,12 @@
 .threadTopline {
   justify-content: space-between;
   color: var(--inbox-muted);
-  font-size: 0.69rem;
+  font-size: 0.75rem;
 }
 
 .threadTopline time {
   flex: none;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -411,7 +411,7 @@
 
 .threadPreview {
   color: var(--inbox-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 .unreadRow .threadSender,
@@ -430,7 +430,7 @@
   background: var(--muted);
   padding-inline: 0.2rem;
   color: var(--muted-foreground);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 }
 
 .unreadDot {
@@ -609,7 +609,7 @@
 .messageActions time {
   overflow: hidden;
   color: var(--inbox-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -626,7 +626,7 @@
   gap: 0.4rem;
   margin: 0.3rem 0 0;
   color: var(--inbox-muted);
-  font-size: 0.67rem;
+  font-size: 0.75rem;
 }
 
 .messageRecipients span {
