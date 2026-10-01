@@ -37,6 +37,7 @@ export {
   peopleGroupsCollection,
   peopleUsersCollection,
   protectLastActiveOwner,
+  TWO_FACTOR_REQUIRED,
 } from './collections/people'
 export { createIntakeStore, findIntakeForm, toIntakeForm } from './repositories/intake-store'
 export { createJobRunStore, createJobSources } from './repositories/job-store'

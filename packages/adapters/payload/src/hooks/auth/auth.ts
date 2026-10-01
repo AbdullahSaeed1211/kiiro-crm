@@ -15,12 +15,32 @@ interface UserRecord extends TypeWithID {
   readonly active?: unknown
   readonly email?: unknown
   readonly password?: unknown
+  readonly totpEnabled?: unknown
 }
 
 const SELF_UPDATE_FIELDS = new Set(['name', 'avatar', 'password'])
 const STAFF_MANAGEMENT_FIELDS = new Set(['name', 'avatar', 'password', 'active', 'groups', 'reportsTo'])
 const ownerLocks = new WeakMap<object, Promise<void>>()
 const ownerReleases = new WeakMap<object, () => void>()
+
+/** The only fields the second-step code may write, and the context flag that lets it write them. */
+const TWO_FACTOR_FIELDS = new Set(['totpSecret', 'totpEnabled', 'totpRecovery', 'totpFailures', 'totpLockedUntil'])
+
+/**
+ * The sign-in code and the Profile page write the two-step fields through the Local API with this context, which a
+ * request cannot set. `data` holds the whole document on update, so every other field is put back to what it was.
+ */
+function onlyTwoFactorChanges(data: Partial<UserRecord>, originalDoc: UserRecord | undefined): Partial<UserRecord> {
+  const original: Record<string, unknown> = { ...originalDoc }
+  const kept = Object.entries(data).map(([key, value]) => [
+    key,
+    TWO_FACTOR_FIELDS.has(key) ? value : (original[key] ?? value),
+  ])
+  return Object.fromEntries(kept) as Partial<UserRecord>
+}
+
+/** The message sign-in answers with when a password is right but the account also needs an authenticator code. */
+export const TWO_FACTOR_REQUIRED = 'Two-step code required.'
 
 function trustedCreate(req: PayloadRequest): boolean {
   const context = req.context as Record<string, unknown> | undefined
@@ -40,9 +60,16 @@ function valueOf(record: UserRecord | undefined, key: keyof UserRecord): unknown
   return record?.[key]
 }
 
-/** Payload login guard for deactivated users. The check runs after credentials are verified. */
-export const blockInactiveUser: CollectionBeforeLoginHook<UserRecord> = ({ user }) => {
+/**
+ * Payload login guard for deactivated users and for accounts with two-step sign-in. It runs after the password is
+ * verified, so every login path, including Payload's own routes, needs the code; only the product's sign-in route sets
+ * `twoFactorVerified` after it has checked one.
+ */
+export const blockInactiveUser: CollectionBeforeLoginHook<UserRecord> = ({ user, context }) => {
   if (user.active !== true) throw new APIError('This account has been deactivated.', 403, null, true)
+  const sealed = user.totpEnabled === true
+  if (sealed && (context as Record<string, unknown>)['twoFactorVerified'] !== true)
+    throw new APIError(TWO_FACTOR_REQUIRED, 401, null, true)
 }
 
 function isOwner(record: UserRecord | undefined): boolean {
@@ -118,6 +145,7 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
   originalDoc,
   req,
   operation,
+  context,
 }) => {
   const email = data.email ?? originalDoc?.email
   if (data.password !== undefined) {
@@ -130,6 +158,8 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
     return data
   }
   if (trustedCreate(req)) return data
+  if ((context as Record<string, unknown> | undefined)?.['authOperation'] === 'twoFactor')
+    return onlyTwoFactorChanges(data, originalDoc)
   const actor = await resolveActor(req)
   if (actor?.active !== true) throw new APIError('You do not have permission to update this user.', 403, null, true)
   if (actor.role === 'owner') return data

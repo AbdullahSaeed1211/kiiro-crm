@@ -24,6 +24,7 @@ interface AuthResponse {
   readonly redirect?: string
   readonly message?: string
   readonly ok?: boolean
+  readonly twoFactor?: boolean
 }
 function fieldLabel(field: AuthField): string {
   if (field === 'confirm') return 'Confirm password'
@@ -65,6 +66,13 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
   const [error, setError] = useState<string | undefined>()
   const [pending, setPending] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
+  const [needsCode, setNeedsCode] = useState(false)
+  function show(data: AuthResponse & { ok: boolean }) {
+    if (data.twoFactor === true) setNeedsCode(true)
+    if (!data.ok) setError(data.error ?? 'Unable to continue.')
+    else if (data.redirect !== undefined) window.location.assign(data.redirect)
+    else setError(data.message ?? 'Check your email for the next step.')
+  }
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (disabled) return
@@ -79,9 +87,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
     }
     try {
       const data = await send(endpoint, values)
-      if (!data.ok) setError(data.error ?? 'Unable to continue.')
-      else if (data.redirect !== undefined) window.location.assign(data.redirect)
-      else setError(data.message ?? 'Check your email for the next step.')
+      show(data)
     } catch {
       setError('Unable to reach the server. Try again.')
     } finally {
@@ -133,6 +139,22 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
               </div>
             </div>
           ))}
+          {needsCode ? (
+            <div className="space-y-2">
+              <Label htmlFor="auth-code">Authentication code</Label>
+              <Input
+                id="auth-code"
+                className="h-9"
+                name="code"
+                autoComplete="one-time-code"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                autoFocus
+                disabled={disabled || pending}
+              />
+            </div>
+          ) : null}
           {Object.entries(hidden ?? {}).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}

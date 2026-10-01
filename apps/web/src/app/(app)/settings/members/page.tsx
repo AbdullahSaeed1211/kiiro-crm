@@ -7,6 +7,7 @@ import {
   saveMember,
 } from '../../../../server/actions/settings/members'
 import { InviteMemberForm, InvitationActions, MemberActions } from '../member-forms'
+import { ResetTwoFactorButton } from './reset-two-factor-button'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { requireRole } from '../../../../server/auth/context'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
@@ -124,18 +125,23 @@ export default async function MembersSettingsPage() {
       status: user.active === true ? 'Active' : 'Inactive',
       lastInvitation: 'Not sent',
       actions: can(context.actor, 'manage_members', { type: 'users', role: user.role }) ? (
-        <MemberActions
-          action={saveMember}
-          groups={groupOptions}
-          reports={reportOptions.filter((report) => report.id !== user.id)}
-          member={{
-            id: user.id,
-            role: user.role,
-            active: user.active === true,
-            groups: (user.groups ?? []).map((group) => (typeof group === 'string' ? group : group.id)),
-            reportsTo: typeof user.reportsTo === 'string' ? user.reportsTo : '',
-          }}
-        />
+        <>
+          {context.actor.role === 'owner' ? (
+            <ResetTwoFactorButton userId={user.id} name={user.name || user.email} />
+          ) : null}
+          <MemberActions
+            action={saveMember}
+            groups={groupOptions}
+            reports={reportOptions.filter((report) => report.id !== user.id)}
+            member={{
+              id: user.id,
+              role: user.role,
+              active: user.active === true,
+              groups: (user.groups ?? []).map((group) => (typeof group === 'string' ? group : group.id)),
+              reportsTo: typeof user.reportsTo === 'string' ? user.reportsTo : '',
+            }}
+          />
+        </>
       ) : (
         <span className="text-xs text-muted-foreground">Managed by role policy</span>
       ),

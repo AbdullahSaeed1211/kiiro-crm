@@ -180,6 +180,19 @@ export interface User {
   active?: boolean | null;
   groups?: (string | Group)[] | null;
   reportsTo?: (string | null) | User;
+  totpSecret?: string | null;
+  totpEnabled?: boolean | null;
+  totpRecovery?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  totpFailures?: number | null;
+  totpLockedUntil?: number | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1111,6 +1124,11 @@ export interface UsersSelect<T extends boolean = true> {
   active?: T;
   groups?: T;
   reportsTo?: T;
+  totpSecret?: T;
+  totpEnabled?: T;
+  totpRecovery?: T;
+  totpFailures?: T;
+  totpLockedUntil?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

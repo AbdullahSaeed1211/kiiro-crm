@@ -67,6 +67,12 @@ Settings, Newsletter.
 
 On Leads and Deals, owners and managers tick several rows and choose either a new owner or an open stage, then press **Apply**. A record that someone changed meanwhile, or that cannot move to that stage, is skipped and counted. Won and lost stages are set from the record page, because they ask for a lost reason or start onboarding.
 
+## Two-step sign-in
+
+Anyone can turn on two-step sign-in under Settings, Profile: add the setup key to an authenticator app (1Password, Google Authenticator, Authy), enter the first 6-digit code, and save the eight recovery codes shown once. From then on, signing in asks for a code after the password; a recovery code works once in place of a code. Five wrong codes in a row lock the second step for ten minutes. Owners are encouraged to turn it on first.
+
+If a teammate loses their phone and their recovery codes, an owner opens Settings, Members and presses **Reset two-step** on their row; they sign in with their password and can set it up again. The app does not draw a QR code yet, so the key is typed or opened as a link on a phone.
+
 ## Remove a record
 
 Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.

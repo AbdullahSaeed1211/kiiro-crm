@@ -1,9 +1,21 @@
-import type { CollectionConfig, CollectionSlug, RelationshipField } from 'payload'
+import type { CollectionConfig, CollectionSlug, Field, RelationshipField } from 'payload'
 import { authHooks } from '../../hooks/auth/auth'
 import { canUseAdmin } from '../../access/spike-access'
 import { ADMIN_GROUPS } from '../fields'
 import { peopleAccess, userFieldRead } from './access'
 import { INVITATION_STATUS_VALUES, PEOPLE_COLLECTIONS, PEOPLE_ROLE_VALUES } from './values'
+
+/** Nobody reads or writes these through the API; the sign-in and Profile code use the Local API with `overrideAccess`. */
+const noAccess = { read: () => false, create: () => false, update: () => false } as const
+
+/** Second sign-in step (an authenticator app code): the sealed secret, recovery code hashes and the lockout counters. */
+const twoFactorFields: Field[] = [
+  { name: 'totpSecret', type: 'text', access: noAccess },
+  { name: 'totpEnabled', type: 'checkbox', defaultValue: false, access: noAccess },
+  { name: 'totpRecovery', type: 'json', defaultValue: [], access: noAccess },
+  { name: 'totpFailures', type: 'number', defaultValue: 0, access: noAccess },
+  { name: 'totpLockedUntil', type: 'number', access: noAccess },
+]
 
 const relation = (name: string, relationTo: string, options: Record<string, unknown> = {}): RelationshipField =>
   // Generated collection unions lag leaf registration until `payload generate:types` runs.
@@ -61,6 +73,7 @@ export const peopleUsersCollection: CollectionConfig = {
       { name: 'active', type: 'checkbox', defaultValue: true, index: true, access: { read: userFieldRead('active') } },
       relation('groups', PEOPLE_COLLECTIONS.groups, { hasMany: true, access: { read: userFieldRead('groups') } }),
       relation('reportsTo', PEOPLE_COLLECTIONS.users, { access: { read: userFieldRead('reportsTo') } }),
+      ...twoFactorFields,
     ],
     access: { ...peopleAccess.users, admin: canUseAdmin },
   }),

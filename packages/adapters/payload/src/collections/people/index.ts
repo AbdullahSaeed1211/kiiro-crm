@@ -1,4 +1,4 @@
-export { blockInactiveUser, protectLastActiveOwner, authHooks } from '../../hooks/auth/auth'
+export { blockInactiveUser, protectLastActiveOwner, authHooks, TWO_FACTOR_REQUIRED } from '../../hooks/auth/auth'
 export {
   peopleCollections,
   peopleGroupsCollection,

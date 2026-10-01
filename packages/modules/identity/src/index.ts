@@ -8,3 +8,4 @@ export type {
   MemberAccess,
 } from './ports'
 export { inviteMemberSchema, recordIdSchema, saveGroupSchema, saveMemberSchema } from './schema'
+export { generateTotpSecret, matchRecoveryCode, newRecoveryCodes, otpauthUri, verifyTotp } from './totp'

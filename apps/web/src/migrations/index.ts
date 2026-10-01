@@ -11,6 +11,7 @@ import * as migration_20260930_150000_sales_settings from './20260930_150000_sal
 import * as migration_20260930_190000_intake_form_fields from './20260930_190000_intake_form_fields';
 import * as migration_20261001_090000_record_archive from './20261001_090000_record_archive';
 import * as migration_20261001_120000_webhooks from './20261001_120000_webhooks';
+import * as migration_20261001_150000_two_factor from './20261001_150000_two_factor';
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20261001_120000_webhooks.up,
     down: migration_20261001_120000_webhooks.down,
     name: '20261001_120000_webhooks'
+  },
+  {
+    up: migration_20261001_150000_two_factor.up,
+    down: migration_20261001_150000_two_factor.down,
+    name: '20261001_150000_two_factor'
   },
 ];
