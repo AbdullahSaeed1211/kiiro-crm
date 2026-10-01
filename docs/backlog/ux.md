@@ -1,6 +1,6 @@
 # UX backlog
 
-8 findings are open: 1 critical, 4 major and 3 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+7 findings are open: 1 critical, 3 major and 3 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -30,12 +30,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Design system. Effort: Structural. Codes: S-01 S-02.
 - There are 32 native `<select>` elements across 18 files, against 26 `Select` and 27 `Combobox` uses. There are 4 native date inputs, while `calendar.tsx` and `popover.tsx` already exist. There are 55 raw `<button>` elements against 72 `Button` uses. The hotspots are the settings forms (`member-forms`, `workflow-editor`, `field-definition-editor`, `intake-forms`), `NewTaskForm`, `DealCreateDialog` and `reports`. Fix: add a `DatePicker`, migrate the call sites, and add a lint rule against raw `<select>` in app code.
-
-### 13. Bulk actions on tasks stop at "Mark done"
-
-- Area: Tasks. Effort: Quick. Codes: T-10.
-- Status: partly fixed. Leads have bulk assign and stage move, and the task table has a bulk Mark done. Deals now have bulk assign and stage move. Still missing: bulk assignee and priority for tasks.
-- Fix: add them to `TaskBulkTable` the same way, each through the module command so access and version checks apply per record.
 
 ### 16. Tasks can't be rescheduled on the calendar
 
