@@ -59,20 +59,23 @@ export async function loadTimelineTasks(context: RequestContext): Promise<Timeli
     sort: 'dueAt',
     limit: TIMELINE_LIMIT,
     page: 1,
-    select: { id: true, title: true, startAt: true, dueAt: true, stageId: true, updatedAt: true },
+    select: { id: true, title: true, startAt: true, dueAt: true, stageId: true, updatedAt: true, rank: true },
     depth: 0,
     overrideAccess: false,
     req: context.req,
   })
   return {
-    rows: page.docs.map((task) => ({
-      id: task.id,
-      title: task.title,
-      startAt: task.startAt ?? null,
-      dueAt: task.dueAt ?? null,
-      updatedAt: Date.parse(task.updatedAt),
-      tone: tones.get(text(task.stageId)) ?? 'gray',
-    })),
+    // Listed in the order tasks are ranked everywhere else, so rescheduling a bar does not make its row jump.
+    rows: page.docs
+      .toSorted((a, b) => text(a.rank).localeCompare(text(b.rank)) || a.id.localeCompare(b.id))
+      .map((task) => ({
+        id: task.id,
+        title: task.title,
+        startAt: task.startAt ?? null,
+        dueAt: task.dueAt ?? null,
+        updatedAt: Date.parse(task.updatedAt),
+        tone: tones.get(text(task.stageId)) ?? 'gray',
+      })),
     total: page.totalDocs,
     locale: normalizeLocale(settings.locale),
   }
