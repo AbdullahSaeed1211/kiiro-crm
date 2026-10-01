@@ -2,6 +2,7 @@
 
 import { Search, X } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { InboxCopy } from '../../../i18n/inbox-copy'
 import styles from './inbox.module.css'
@@ -20,6 +21,13 @@ const ROUTES: Readonly<Record<string, string>> = {
   organization: 'organizations',
 }
 const MIN_QUERY = 2
+
+/** True for text shaped like name@host.tld; checked by position, not a pattern, so odd input cannot make it slow. */
+function looksLikeEmail(text: string): boolean {
+  const at = text.indexOf('@')
+  const dot = text.lastIndexOf('.')
+  return at > 0 && at === text.lastIndexOf('@') && dot > at + 1 && dot < text.length - 1 && !/\s/u.test(text)
+}
 const SEARCH_DELAY_MS = 180
 
 async function searchRecords(query: string, signal: AbortSignal): Promise<readonly Match[]> {
@@ -57,6 +65,102 @@ function useRecordSearch(query: string): { readonly matches: readonly Match[]; r
     }
   }, [query])
   return { matches, loading }
+}
+
+/** A first name made from the part of an address before the @, such as "Abdullah Saeed" for abdullah.saeed@example.com. */
+function nameFromAddress(address: string): string {
+  const local = address.split('@')[0] ?? address
+  return local
+    .split(/[._-]+/u)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+/** Adds the address as a contact, or finds the one that has it, and returns the contact's id. */
+async function contactIdFor(address: string): Promise<string | undefined> {
+  const response = await fetch('/api/v1/contacts', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ firstName: nameFromAddress(address), email: address }),
+  })
+  const body = (await response.json().catch(() => ({}))) as { data?: { id?: string } }
+  return response.ok ? body.data?.id : undefined
+}
+
+/** Offers to write to an address that is not on any record yet, by adding it as a contact first. */
+function WriteToAddress({
+  address,
+  copy,
+  onClose,
+}: Readonly<{ address: string; copy: InboxCopy; onClose: () => void }>) {
+  const router = useRouter()
+  const [pending, setPending] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const go = async () => {
+    setPending(true)
+    setFailed(false)
+    const id = await contactIdFor(address)
+    setPending(false)
+    if (id === undefined) {
+      setFailed(true)
+      return
+    }
+    onClose()
+    router.push(`/contacts/${id}?tab=email`)
+  }
+  return (
+    <li>
+      <button
+        disabled={pending}
+        onClick={() => {
+          void go()
+        }}
+        type="button"
+      >
+        <strong>{copy.composeWriteTo.replace('{email}', address)}</strong>
+        <span>{failed ? copy.composeWriteToFailed : copy.composeWriteToHelp}</span>
+      </button>
+    </li>
+  )
+}
+
+/** The records that match the search, plus the offer to write to a typed address that is on no record yet. */
+function ComposeResults({
+  copy,
+  loading,
+  matches,
+  onClose,
+  query,
+}: Readonly<{
+  copy: InboxCopy
+  loading: boolean
+  matches: readonly Match[]
+  onClose: () => void
+  query: string
+}>) {
+  const address = query.trim().toLowerCase()
+  const offersAddress =
+    looksLikeEmail(address) &&
+    !matches.some(
+      (match) => match.title.toLowerCase().includes(address) || match.subtitle.toLowerCase().includes(address),
+    )
+  return (
+    <ul className={styles.composeResults}>
+      {offersAddress ? <WriteToAddress address={address} copy={copy} onClose={onClose} /> : null}
+      {matches.map((match) => (
+        <li key={`${match.recordType}:${match.id}`}>
+          <Link href={`/${ROUTES[match.recordType] ?? ''}/${match.id}?tab=email`} onClick={onClose}>
+            <strong>{match.title}</strong>
+            <span>{match.subtitle === '' ? match.recordType : match.subtitle}</span>
+          </Link>
+        </li>
+      ))}
+      {query.trim().length >= MIN_QUERY && matches.length === 0 && !offersAddress ? (
+        <li className={styles.composeEmpty}>{loading ? copy.composeSearching : copy.composeNoMatches}</li>
+      ) : null}
+    </ul>
+  )
 }
 
 /** "Compose" in the inbox: pick the record to write from, then continue on its Email tab where the message is sent and kept. */
@@ -104,19 +208,7 @@ export function InboxComposeDialog({
                 value={query}
               />
             </label>
-            <ul className={styles.composeResults}>
-              {matches.map((match) => (
-                <li key={`${match.recordType}:${match.id}`}>
-                  <Link href={`/${ROUTES[match.recordType] ?? ''}/${match.id}?tab=email`} onClick={onClose}>
-                    <strong>{match.title}</strong>
-                    <span>{match.subtitle === '' ? match.recordType : match.subtitle}</span>
-                  </Link>
-                </li>
-              ))}
-              {query.trim().length >= MIN_QUERY && matches.length === 0 ? (
-                <li className={styles.composeEmpty}>{loading ? copy.composeSearching : copy.composeNoMatches}</li>
-              ) : null}
-            </ul>
+            <ComposeResults copy={copy} loading={loading} matches={matches} onClose={onClose} query={query} />
           </>
         ) : null}
       </section>

@@ -74,6 +74,16 @@ export function toLibraryTasks(bars: readonly GanttBar[]): ITask[] {
   })
 }
 
+const LEAD_DAYS = 3
+
+/** The pixel offset that scrolls the chart to a few days before the earliest task, given the chart's first day and day width. */
+export function openingOffset(tasks: readonly ITask[], chart: Readonly<{ start: Date; dayWidth: number }>): number {
+  const starts = tasks.flatMap((task) => (task.start === undefined ? [] : [task.start.getTime()]))
+  if (starts.length === 0) return 0
+  const days = (Math.min(...starts) - chart.start.getTime()) / DAY_MS - LEAD_DAYS
+  return Math.max(0, Math.round(days * chart.dayWidth))
+}
+
 /** Resolved spans by bar id; the last server-confirmed dates a failed change rolls back to. */
 export function spanMap(bars: readonly GanttBar[]): Map<string, BarSpan> {
   const spans = new Map<string, BarSpan>()

@@ -21,6 +21,7 @@ import {
   type GanttDatesChange,
   type GanttZoom,
 } from './model'
+import { openOnWork } from './open-on-work'
 
 /** Visible strings of {@link GanttView}. */
 export interface GanttViewLabels extends GanttColumnLabels {
@@ -177,8 +178,11 @@ export function GanttView({ bars, zoom, compact, displayMode, onDatesChange, lab
   const setup = useMemo(() => scaleSetup(zoom, locale), [locale, zoom])
   const columns = useMemo(() => ganttColumns(labels, locale), [labels, locale])
   useGanttAccessibility(rootRef, { tasks, chartLabel: labels.timelineChart, clientReady })
+  const tasksRef = useRef(tasks)
+  tasksRef.current = tasks
   const init = useCallback((api: IApi) => {
     apiRef.current = api
+    openOnWork(api, () => tasksRef.current)
     const context = { api, onDatesChange: onDatesChangeRef, confirmed, labels: labelsRef, setError }
     guardEdits(api)
     api.on('update-task', (event) => {

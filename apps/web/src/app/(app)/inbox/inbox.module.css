@@ -752,21 +752,30 @@
   list-style: none;
 }
 
-.composeResults a {
+.composeResults a,
+.composeResults button {
   display: grid;
+  width: 100%;
   gap: 0.1rem;
+  border: 0;
   border-radius: 0.4rem;
+  background: transparent;
   padding: 0.5rem 0.6rem;
   color: var(--foreground);
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .composeResults a:hover,
-.composeResults a:focus-visible {
+.composeResults a:focus-visible,
+.composeResults button:hover,
+.composeResults button:focus-visible {
   background: color-mix(in oklch, var(--foreground) 6%, transparent);
 }
 
 .composeResults a span,
+.composeResults button span,
 .composeEmpty {
   color: var(--inbox-muted);
   font-size: 0.75rem;

@@ -30,7 +30,7 @@ type AccessRow = Readonly<{
 
 function AccessCards({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
   return (
-    <div className="grid gap-2 md:hidden">
+    <div className="grid gap-2 lg:hidden">
       {rows.map((row) => (
         <article className="rounded-lg border bg-card p-3" key={row.id}>
           <div className="flex items-start justify-between gap-3">
@@ -59,15 +59,15 @@ function AccessCards({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
 
 function AccessTable({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
   return (
-    <div className="hidden overflow-hidden md:block">
+    <div className="hidden lg:block">
       <table className="w-full table-fixed text-left text-sm">
         <thead className="text-xs text-muted-foreground">
           <tr>
-            <th className="w-[34%] py-2 pr-3">Member</th>
-            <th className="w-[12%] py-2 pr-3">Role</th>
-            <th className="w-[14%] py-2 pr-3">Status</th>
-            <th className="w-[22%] py-2">Last invitation</th>
-            <th className="w-[18%] py-2">Actions</th>
+            <th className="w-[28%] py-2 pr-3">Member</th>
+            <th className="w-[10%] py-2 pr-3">Role</th>
+            <th className="w-[12%] py-2 pr-3">Status</th>
+            <th className="w-[18%] py-2">Last invitation</th>
+            <th className="w-[32%] py-2">Actions</th>
           </tr>
         </thead>
         <tbody>

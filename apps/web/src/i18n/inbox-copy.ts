@@ -37,6 +37,10 @@ export interface InboxCopy {
   readonly composeSearch: string
   readonly composeSearching: string
   readonly composeNoMatches: string
+  /** `{email}` is the address typed in the search box. */
+  readonly composeWriteTo: string
+  readonly composeWriteToHelp: string
+  readonly composeWriteToFailed: string
   readonly close: string
   readonly openFolders: string
   readonly closeFolders: string
@@ -81,6 +85,9 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     composeSearch: 'Search contacts, leads, deals and organizations',
     composeSearching: 'Searching…',
     composeNoMatches: 'No matching records',
+    composeWriteTo: 'Write to {email}',
+    composeWriteToHelp: 'Adds them as a contact, so the message stays in their history.',
+    composeWriteToFailed: 'Unable to add that address. Try again.',
     close: 'Close',
     openFolders: 'Open mail folders',
     closeFolders: 'Close mail folders',
@@ -124,6 +131,9 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     composeSearch: 'Buscar contactos, leads, negocios y organizaciones',
     composeSearching: 'Buscando…',
     composeNoMatches: 'Sin registros coincidentes',
+    composeWriteTo: 'Escribir a {email}',
+    composeWriteToHelp: 'Se añade como contacto para que el mensaje quede en su historial.',
+    composeWriteToFailed: 'No se pudo añadir esa dirección. Inténtalo de nuevo.',
     close: 'Cerrar',
     openFolders: 'Abrir carpetas de correo',
     closeFolders: 'Cerrar carpetas de correo',

@@ -48,3 +48,36 @@ export async function removeListItem(input: unknown): Promise<ActionResult> {
     return actionFailure(error, 'removeListItem', 'Unable to remove it.')
   }
 }
+
+const sourceSchema = z.object({ name: z.string().trim().min(1).max(120) }).strict()
+
+/** Finds the lead source with this name, or adds it, and returns its id; owners and managers only. */
+export async function ensureSource(input: unknown): Promise<ActionResult<{ id: string }>> {
+  const context = await requireRole('owner', 'manager')
+  const parsed = sourceSchema.safeParse(input)
+  if (!parsed.success) return actionError('VALIDATION', 'Enter a source name of up to 120 characters.')
+  try {
+    const found = await context.payload.find({
+      collection: 'sources',
+      where: { name: { equals: parsed.data.name } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: false,
+      req: context.req,
+    })
+    const existing = found.docs.at(0)
+    const source =
+      existing ??
+      (await context.payload.create({
+        collection: 'sources',
+        data: { name: parsed.data.name },
+        depth: 0,
+        overrideAccess: false,
+        req: context.req,
+      }))
+    revalidatePath('/settings/lists')
+    return actionOk({ id: source.id })
+  } catch (error) {
+    return actionFailure(error, 'ensureSource', 'Unable to add that source.')
+  }
+}
