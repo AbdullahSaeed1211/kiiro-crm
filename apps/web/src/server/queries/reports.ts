@@ -1,11 +1,13 @@
 import { createCrmRepository } from '@ops/adapter-payload'
-import type { DealRecord, LeadRecord } from '@ops/module-crm'
+import type { DealRecord } from '@ops/module-crm'
 import type { Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { resolveReportRange, type ReportRange } from './report-range'
-import { loadWorkReadModel, type WorkReadModel } from './work/read-models'
+import { loadLeanRows, type ReportDeal, type ReportLead } from './report-rows'
+import { loadTaskFigures } from './report-task-counts'
+import type { Locale } from '../../i18n/config'
 
-const TERMINAL_TASKS = new Set(['done_success', 'done_failure', 'cancelled'])
+const TERMINAL_DEALS = new Set(['done_success', 'done_failure', 'cancelled'])
 export type { ReportRange, ReportRangeKey } from './report-range'
 
 export interface OwnerFigure {
@@ -34,7 +36,7 @@ export interface ReportFigures {
     readonly pipelineCurrency: string | null
   }
   readonly owners: readonly OwnerFigure[]
-  readonly locale: WorkReadModel['locale']
+  readonly locale: Locale
   readonly timeZone: string
 }
 
@@ -44,7 +46,7 @@ function inRange(value: number | null, range: ReportRange): boolean {
   return value !== null && value >= range.from && value < range.to
 }
 
-function terminalStage(workflow: Workflow | undefined, record: LeadRecord | DealRecord): string | undefined {
+function terminalStage(workflow: Workflow | undefined, record: Pick<DealRecord, 'stageId'>): string | undefined {
   return workflow?.stages.find((stage) => stage.id === record.stageId)?.category
 }
 
@@ -105,37 +107,12 @@ function currencyTotal(
   return { pipelineMinor: current.pipelineMinor, pipelineCurrency: null }
 }
 
-function taskMetrics(
-  task: WorkReadModel['tasks'][number],
-  range: ReportRange,
-  now: number,
-): { include: boolean; open: boolean; completed: boolean; overdue: boolean } {
-  const completed = inRange(task.completedAt, range)
-  const due = inRange(task.dueAt, range)
-  const open = !TERMINAL_TASKS.has(task.stageCategory)
-  return { include: due || completed, open, completed, overdue: open && task.dueAt !== null && task.dueAt < now }
-}
-
-function addTaskCounts({
-  target,
-  task,
-  range,
-  now,
-}: Readonly<{ target: FigureCounts; task: WorkReadModel['tasks'][number]; range: ReportRange; now: number }>): boolean {
-  const metrics = taskMetrics(task, range, now)
-  if (!metrics.include) return false
-  target.openTasks += metrics.open && inRange(task.dueAt, range) ? 1 : 0
-  target.completedTasks += metrics.completed ? 1 : 0
-  target.overdueTasks += metrics.overdue ? 1 : 0
-  return true
-}
-
 function addLeadCount(target: FigureCounts): void {
   target.leads += 1
 }
 
 function dealMetrics(
-  deal: DealRecord,
+  deal: ReportDeal,
   workflow: Workflow | undefined,
   range: ReportRange,
 ): { created: boolean; won: boolean; open: boolean; include: boolean } {
@@ -146,7 +123,7 @@ function dealMetrics(
   return {
     created,
     won: category === 'done_success' && closed,
-    open: category === undefined || !TERMINAL_TASKS.has(category),
+    open: category === undefined || !TERMINAL_DEALS.has(category),
     include: true,
   }
 }
@@ -158,34 +135,13 @@ function addDealCounts(target: FigureCounts, metrics: ReturnType<typeof dealMetr
 
 function addPipeline(
   target: Pick<FigureAccumulator, 'pipelineMinor' | 'pipelineCurrency'>,
-  deal: DealRecord,
+  deal: ReportDeal,
   open: boolean,
 ): void {
   if (!open || deal.value === null) return
   const next = currencyTotal(target, deal.value.amountMinor, deal.value.currency)
   target.pipelineMinor = next.pipelineMinor
   target.pipelineCurrency = next.pipelineCurrency
-}
-
-function aggregateTasks({
-  model,
-  range,
-  now,
-  figures,
-  totals,
-}: Readonly<{
-  model: WorkReadModel
-  range: ReportRange
-  now: number
-  figures: Map<string, FigureAccumulator>
-  totals: FigureCounts
-}>): void {
-  for (const task of model.tasks) {
-    if (!addTaskCounts({ target: totals, task, range, now })) continue
-    for (const id of task.assigneeIds.length > 0 ? task.assigneeIds : [null]) {
-      addTaskCounts({ target: figureFor(figures, id, model.people), task, range, now })
-    }
-  }
 }
 
 function aggregateLeads({
@@ -195,7 +151,7 @@ function aggregateLeads({
   figures,
   totals,
 }: Readonly<{
-  leads: readonly LeadRecord[]
+  leads: readonly ReportLead[]
   range: ReportRange
   people: ReadonlyMap<string, string>
   figures: Map<string, FigureAccumulator>
@@ -217,7 +173,7 @@ function aggregateDeals({
   figures,
   totals,
 }: Readonly<{
-  deals: readonly DealRecord[]
+  deals: readonly ReportDeal[]
   workflow: Workflow | undefined
   range: ReportRange
   people: ReadonlyMap<string, string>
@@ -243,28 +199,33 @@ export async function loadReportFigures(
   const requestContext = context ?? (await getRequestContext())
   const repository = createCrmRepository(requestContext.req)
   const range = resolveReportRange(input)
-  const [model, leads, deals, dealWorkflow] = await Promise.all([
-    loadWorkReadModel(requestContext, 'reports'),
-    repository.list('lead'),
-    repository.list('deal'),
+  const now = Date.now()
+  const [taskFigures, { leads, deals }, dealWorkflow] = await Promise.all([
+    loadTaskFigures(requestContext, { range, now }),
+    loadLeanRows(requestContext),
     repository.loadDefaultWorkflow('deal').then(
       (result) => (result.ok ? result.value : undefined),
       () => undefined,
     ),
   ])
   const figures = new Map<string, FigureAccumulator>()
-  const now = Date.now()
-  const totals: ReportFigures['totals'] = { ...emptyCounts(), pipelineMinor: 0, pipelineCurrency: null }
-  aggregateTasks({ model, range, now, figures, totals })
-  aggregateLeads({ leads, range, people: model.people, figures, totals })
-  aggregateDeals({ deals, workflow: dealWorkflow, range, people: model.people, figures, totals })
+  const { people } = taskFigures
+  const totals: ReportFigures['totals'] = {
+    ...emptyCounts(),
+    ...taskFigures.totals,
+    pipelineMinor: 0,
+    pipelineCurrency: null,
+  }
+  for (const [owner, counts] of taskFigures.byOwner) Object.assign(figureFor(figures, owner, people), counts)
+  aggregateLeads({ leads, range, people, figures, totals })
+  aggregateDeals({ deals, workflow: dealWorkflow, range, people, figures, totals })
   return {
     range,
     totals,
     owners: [...figures.values()].sort(
       (a, b) => b.openTasks + b.pipelineMinor - (a.openTasks + a.pipelineMinor) || a.name.localeCompare(b.name),
     ),
-    locale: model.locale,
-    timeZone: model.timeZone,
+    locale: taskFigures.locale,
+    timeZone: taskFigures.timeZone,
   }
 }

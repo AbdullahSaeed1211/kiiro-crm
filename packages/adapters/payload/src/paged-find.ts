@@ -30,23 +30,28 @@ function stableSort(sort: FindArgs['sort']): readonly string[] {
   return given.includes('id') ? given : [...given, 'id']
 }
 
-/** Reads `wanted` rows one chunk at a time, stopping early when a page says there are no more. */
+/** How many chunk reads run at once once the first one has said how many rows there are. */
+const PARALLEL_CHUNKS = 6
+
+/**
+ * Reads `wanted` rows in chunks. The first chunk says how many rows exist, and the rest are then read several at a
+ * time and put back in order, so a long list costs a few round trips rather than one per chunk.
+ */
 async function readChunks(
   find: Find,
   input: { readonly args: FindArgs; readonly wanted: number },
 ): Promise<FindResult> {
   const { args, wanted } = input
-  const docs: unknown[] = []
-  let page = 1
-  let last: FindResult | undefined
-  while (docs.length < wanted) {
-    const limit = Math.min(PAGE_CHUNK, wanted - docs.length)
-    last = await find({ ...args, pagination: true, limit, page, sort: stableSort(args.sort) })
-    docs.push(...last.docs)
-    if (!last.hasNextPage) break
-    page += 1
+  const sort = stableSort(args.sort)
+  const read = (page: number): Promise<FindResult> => find({ ...args, pagination: true, limit: PAGE_CHUNK, page, sort })
+  const first = await read(1)
+  const docs: unknown[] = [...first.docs]
+  const pages = Math.ceil(Math.min(wanted, first.totalDocs) / PAGE_CHUNK)
+  for (let at = 2; at <= pages; at += PARALLEL_CHUNKS) {
+    const batch = Array.from({ length: Math.min(PARALLEL_CHUNKS, pages - at + 1) }, (_, offset) => read(at + offset))
+    for (const result of await Promise.all(batch)) docs.push(...result.docs)
   }
-  return { docs, totalDocs: last?.totalDocs ?? docs.length, hasNextPage: false }
+  return { docs: docs.slice(0, wanted), totalDocs: first.totalDocs, hasNextPage: false }
 }
 
 /** The largest page size that is at most one chunk and divides `limit`, so a big page is a whole number of small ones. */

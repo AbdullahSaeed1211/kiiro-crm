@@ -5,8 +5,8 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { ChartGantt } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY } from '../../../i18n/config'
-import { loadWorkReadModel } from '../../../server/queries/work/read-models'
-import type { TimelineTask } from './save-dates'
+import { getRequestContext } from '@/server/container'
+import { loadTimelineTasks } from '../../../server/queries/work/timeline-tasks'
 import { TimelineChart } from './TimelineChart'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
@@ -20,25 +20,22 @@ export const dynamic = 'force-dynamic'
 
 /** Dated tasks the signed-in user can see, coloured by their stage. */
 export default async function TimelinePage() {
-  const { tasks: records, stages, locale } = await loadWorkReadModel()
-  const tone = new Map(stages.map((stage) => [stage.id, stage.color]))
-  const tasks: TimelineTask[] = records
-    .filter((task) => task.startAt !== null || task.dueAt !== null)
-    .map(({ id, title, startAt, dueAt, updatedAt, stageId }) => ({
-      id,
-      title,
-      startAt,
-      dueAt,
-      updatedAt,
-      tone: tone.get(stageId) ?? 'gray',
-    }))
+  const { rows: tasks, total, locale } = await loadTimelineTasks(await getRequestContext())
   const copy = TASK_COPY[locale]
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.gantt }]} />
       <PageContent>
         {tasks.length > 0 ? (
-          <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} />
+          <>
+            {total > tasks.length ? (
+              <p className="mb-2 text-sm text-muted-foreground">
+                Showing the {tasks.length} soonest of {total} open tasks that have dates. Use the Table to find the
+                rest.
+              </p>
+            ) : null}
+            <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} />
+          </>
         ) : (
           <>
             <PageHeader title={copy.gantt} actions={<TaskWorkspaceViews active="gantt" locale={locale} />} />
