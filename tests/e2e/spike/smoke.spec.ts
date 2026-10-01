@@ -203,9 +203,11 @@ async function moveAndVerifyAfterReloadWithKeyboard(page: Page, move: CardMove):
   await expect(boardColumn(page, move.to).locator(CARD, { hasText: move.title })).toBeVisible()
 }
 
-test('spike: /tasks shows the task table after sign-in', async ({ page }) => {
+test('spike: /tasks shows the task table after sign-in', async ({ page, isMobile }) => {
   await signIn(page)
   await page.goto('/tasks')
+  // A phone lists tasks as cards instead of a table.
+  if (isMobile) return expect(page.locator('a[href^="/tasks/"]').first()).toBeVisible()
   const table = page.getByRole('table')
   await expect(table.getByRole('columnheader', { name: 'Title' })).toBeVisible()
   await expect(table.locator('tbody tr').first()).toBeVisible()

@@ -30,7 +30,8 @@ async function prepareTimeline(page: Page): Promise<TimelineTask> {
   const mobile = (page.viewportSize()?.width ?? 0) <= 650
   if (mobile) await setTimelineMode(page, 'Grid')
   // Not the first row: when that task starts earliest, moving it moves the chart's own origin and the bar seems not to move.
-  const firstTask = page.getByRole('grid').getByRole('row').last().getByRole('gridcell').first()
+  const rows = page.getByRole('grid').getByRole('row')
+  const firstTask = (mobile ? rows.nth(1) : rows.last()).getByRole('gridcell').first()
   await expect(firstTask).toBeVisible()
   const title = (await firstTask.innerText()).trim()
   const dates = page.locator('.wx-row', { hasText: title }).locator('[data-col-id=":start"], [data-col-id=":end"]')
