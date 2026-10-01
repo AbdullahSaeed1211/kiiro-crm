@@ -6,6 +6,7 @@ import { expect as baseExpect, test, type Page, type Response } from '@playwrigh
 import { APP_SETTINGS, DEV_PASSWORD, USERS } from '../../../scripts/seed/data'
 import { parseDevVars, WEB_DIR } from '../../../scripts/seed/local-env'
 import { assignedTaskTitle, searchForDashboardTask } from '../helpers/task-fixtures'
+import { verifyMobileSidebar } from './mobile-sidebar'
 import { verifyTimelineDragPersistence } from './timeline-drag'
 
 // Runs against `pnpm dev` on a database prepared by `pnpm db:reset:local && pnpm seed:dev`.
@@ -73,27 +74,6 @@ async function expectContained(page: Page, route: string): Promise<void> {
   await page.goto(route)
   const dimensions = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, viewport: innerWidth }))
   expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewport)
-}
-
-async function verifyMobileSidebar(page: Page): Promise<void> {
-  const toggle = page.locator('[data-slot="sidebar-trigger"]')
-  const mobileSidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]')
-  // Until the page hydrates on a phone, the server-rendered desktop sidebar has a second trigger.
-  await expect(toggle).toHaveCount(1)
-  await toggle.click()
-  await expect(mobileSidebar).toBeVisible()
-  await expect(mobileSidebar.getByRole('link', { name: 'Deals' })).toBeVisible()
-  await expect(mobileSidebar.getByRole('link', { name: 'Contacts' })).toBeVisible()
-  const closeButton = mobileSidebar.locator('[data-slot="sheet-close"]')
-  await expect(closeButton).toBeVisible()
-  await closeButton.click()
-  await expect(mobileSidebar).toBeHidden()
-  await toggle.click()
-  await expect(mobileSidebar).toBeVisible()
-  // Escape is ignored while the panel is still sliding in.
-  await expect(mobileSidebar).not.toHaveAttribute('data-starting-style')
-  await page.keyboard.press('Escape')
-  await expect(mobileSidebar).toBeHidden()
 }
 
 async function verifyDesktopSidebarCollapse(page: Page): Promise<void> {
