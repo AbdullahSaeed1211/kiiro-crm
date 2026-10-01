@@ -17,7 +17,7 @@ function postProvision(request: typeof fetch, timeoutMs: number): ProvisionHttpC
         body: JSON.stringify(body),
       },
       timeoutMs,
-    }).then((response) => ({ ok: response.ok, status: response.status }))
+    }).then(readProvisionResponse)
 }
 
 function getProvision(request: typeof fetch, timeoutMs: number): ProvisionHttpClient['get'] {

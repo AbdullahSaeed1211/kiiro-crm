@@ -10,10 +10,12 @@ import {
   SETTINGS_GLOBAL,
 } from '@ops/adapter-payload'
 import { DEFAULT_LEAD_SOURCES, DEFAULT_LOST_REASONS } from '@ops/templates'
-import { getPayload } from 'payload'
+import { createLocalReq, getPayload } from 'payload'
+import { applyTemplate } from '../../../../actions/onboarding/apply-template'
 import type { Setting } from '../../../../../payload-types'
 import { mergeAppliedTemplates, provisionBody, type ProvisionBody } from './helpers'
 import { isBrandContentType } from '../../../../collaboration/brand'
+import { invitationUrl } from '../../../../auth/invitation-url'
 
 const BODY_LIMIT = 192_000
 const BRAND_ASSET_LIMIT = 1_024 * 1_024
@@ -109,16 +111,17 @@ async function hasExistingOwnerState(payload: Awaited<ReturnType<typeof getPaylo
   return reusable
 }
 
-async function createOwnerInvitation(
+/** Makes a pending owner invitation for `email` and returns the link the owner opens; the secret in it is shown once. */
+export async function createOwnerInvitation(
   payload: Awaited<ReturnType<typeof getPayload>>,
-  body: ProvisionBody,
-): Promise<void> {
+  email: string,
+): Promise<string> {
   const token = createInvitationToken()
   await payload.create({
     collection: PEOPLE_COLLECTIONS.invitations,
     data: {
       tokenHash: await hashInvitationToken(token),
-      email: body.owner.email,
+      email,
       role: 'owner',
       status: 'pending',
       expiresAt: invitationExpiresAt(),
@@ -126,15 +129,16 @@ async function createOwnerInvitation(
     depth: 0,
     overrideAccess: true,
   })
+  return invitationUrl(token)
 }
 
+/** The new owner's invitation link, or undefined when the owner already has an account or a usable invitation. */
 async function ensureOwnerInvitation(
   payload: Awaited<ReturnType<typeof getPayload>>,
   body: ProvisionBody,
-): Promise<boolean> {
-  if (await hasExistingOwnerState(payload, body.owner.email)) return false
-  await createOwnerInvitation(payload, body)
-  return true
+): Promise<string | undefined> {
+  if (await hasExistingOwnerState(payload, body.owner.email)) return undefined
+  return createOwnerInvitation(payload, body.owner.email)
 }
 
 async function ensureIntakeForm(payload: Awaited<ReturnType<typeof getPayload>>, body: ProvisionBody): Promise<void> {
@@ -203,10 +207,16 @@ export async function POST(request: Request): Promise<Response> {
   const body = provisionBody(await request.json().catch(() => undefined))
   if (body === undefined) return Response.json({ error: 'invalid provision request' }, { status: 400 })
   const payload = await getPayload({ config })
-  const created = await ensureOwnerInvitation(payload, body)
   await installBrandAssets(payload, body.brandAssets)
   await seedSettings(payload, body)
   await ensureIntakeForm(payload, body)
   await ensureLookups(payload)
-  return Response.json({ status: created ? 'created' : 'existing' })
+  // The tenant file names its business type, so the workspace starts with that type's pipelines, fields and wording.
+  const applied = await applyTemplate({ payload, req: await createLocalReq({}, payload) }, body.template, {
+    trusted: true,
+  })
+  if (!applied.ok) return Response.json({ error: applied.error.message }, { status: 400 })
+  // Last, so a run that fails earlier never spends the owner's invitation link, which is shown only once.
+  const inviteUrl = await ensureOwnerInvitation(payload, body)
+  return Response.json(inviteUrl === undefined ? { status: 'existing' } : { status: 'created', inviteUrl })
 }

@@ -8,6 +8,12 @@ interface StepResult {
   readonly secrets?: Record<string, string>
 }
 
+/** The owner's invitation link in a provisioning response; present only when the invitation was just made. */
+export function inviteUrlOf(body: unknown): string | undefined {
+  const url: unknown = typeof body === 'object' && body !== null ? Reflect.get(body, 'inviteUrl') : undefined
+  return typeof url === 'string' ? url : undefined
+}
+
 /** Seeds the tenant through the authenticated internal HTTP boundary. */
 export async function executeSeed(
   tenant: Tenant,
@@ -19,6 +25,9 @@ export async function executeSeed(
     throw new Error('authenticated provisioning client and INTERNAL_SECRET are required for seeding')
   const response = await deps.http.post(internalEndpoint(tenant, 'provision'), seedBody(tenant), secret)
   if (!response.ok) throw new Error(`tenant seed failed (HTTP ${String(response.status)})`)
+  const inviteUrl = inviteUrlOf(response.body)
+  if (inviteUrl !== undefined)
+    deps.print?.(`owner invitation (shown once; send it to ${tenant.owner.email}): ${inviteUrl}`)
   return secrets === undefined ? {} : { secrets }
 }
 
@@ -103,7 +112,7 @@ function contentTypeFor(path: string): string {
   throw new Error(`unsupported packaged brand asset extension: ${extension ?? 'unknown'}`)
 }
 
-function internalEndpoint(tenant: Tenant, path: string): string {
+export function internalEndpoint(tenant: Tenant, path: string): string {
   const host = tenant.hostType === 'workers_dev' ? `ops-${tenant.slug}.workers.dev` : (tenant.host ?? '')
   return `https://${host}/api/v1/internal/${path}`
 }

@@ -25,6 +25,10 @@ For an authorized operator run, provide `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCO
 
 ## Rerun behavior
 
+## Seeding and the owner invitation
+
+The seed step gives the workspace its settings, a website intake form, the usual lead sources and lost reasons, and the business type named in the tenant file (its pipelines, custom fields and wording), so a lead, deal, project or task can be created the moment the owner signs in. It also makes the owner's invitation and prints its link once, as `owner invitation (shown once; send it to <email>): <link>`. Send that link to the owner; they choose a password and land in the setup wizard. The link is not stored anywhere readable. If it is lost before the owner signs up, run `OPS_ALLOW_LIVE=1 pnpm tenant:owner-invite <slug>` (with `INTERNAL_SECRET_<SLUG>` set) to retire the old link and print a new one; it refuses when the owner already has an account. Saved views are not part of the seed; they appear when the owner confirms the business type in the wizard.
+
 Reruns are safe when the operator re-supplies the tenant `INTERNAL_SECRET_<SLUG>` from secure custody. A tenant file with a D1 id skips D1 creation. The executable path checks exact R2 rows, D1 databases, tenant and mail-router secret names, generated configuration, and authenticated remote status before running steps. An interruption after secret upload without the custodied secret fails before migrations or deployment; rerun after resolving that prerequisite and retain the existing resource ids. Payload migration, tenant seeding, sender status persistence, router-secret synchronization, and smoke probes are idempotent operations. A disabled email capability skips sender verification and accepts the explicit disabled smoke state; it does not send a probe.
 
 ## Expected result

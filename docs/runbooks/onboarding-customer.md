@@ -38,7 +38,7 @@ pnpm tenant:provision <slug> --dry-run
 
 ## Set up the owner
 
-The owner accepts the invitation and sets a password. The owner then completes the onboarding wizard for workspace name, branding, template, team, and intake. Import CSVs in this order: organizations, contacts, projects, open tasks, and leads. Send a test email from the email settings page.
+Send the owner the invitation link printed during provisioning (or make a new one with `pnpm tenant:owner-invite <slug>`). The owner opens it and sets a password. The owner then completes the onboarding wizard for workspace name, branding, template, team, and intake. Import CSVs in this order: organizations, contacts, projects, open tasks, and leads. Send a test email from the email settings page.
 
 ## Cut over website leads
 

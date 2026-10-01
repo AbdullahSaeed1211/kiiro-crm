@@ -53,11 +53,14 @@ function nextStages(desired: readonly TemplateStage[], existing: ExistingStage[]
 interface Target {
   readonly payload: UntypedPayload
   readonly context: PayloadContext
+  /** True when no signed-in user is acting (provisioning), so writes skip the access rules. */
+  readonly trusted: boolean
 }
 
 async function upsertWorkflow({
   payload,
   context,
+  trusted,
   template,
   recordType,
 }: Target &
@@ -73,20 +76,22 @@ async function upsertWorkflow({
     limit: 1,
     sort: 'createdAt',
     depth: 0,
-    overrideAccess: false,
+    overrideAccess: trusted,
     req: context.req,
   })
   const current = found.docs[0]
   const stages = nextStages(definition.stages, stageRows(current?.stages))
   const data = { recordType, name: definition.name, stages, defaultStageId: stages[0]?.id }
   if (current?.id === undefined)
-    await payload.create({ collection: 'workflows', data, req: context.req, overrideAccess: false })
-  else await payload.update({ collection: 'workflows', id: current.id, data, req: context.req, overrideAccess: false })
+    await payload.create({ collection: 'workflows', data, req: context.req, overrideAccess: trusted })
+  else
+    await payload.update({ collection: 'workflows', id: current.id, data, req: context.req, overrideAccess: trusted })
 }
 
 async function upsertField({
   payload,
   context,
+  trusted,
   field,
   position,
 }: Target & Readonly<{ field: TemplateField; position: number }>): Promise<void> {
@@ -95,7 +100,7 @@ async function upsertField({
     where: { and: [{ recordType: { equals: field.recordType } }, { key: { equals: field.key } }] },
     limit: 1,
     depth: 0,
-    overrideAccess: false,
+    overrideAccess: trusted,
     req: context.req,
   })
   const data = {
@@ -112,24 +117,25 @@ async function upsertField({
   }
   const current = found.docs[0]
   if (current?.id === undefined)
-    await payload.create({ collection: 'fieldDefinitions', data, req: context.req, overrideAccess: false })
+    await payload.create({ collection: 'fieldDefinitions', data, req: context.req, overrideAccess: trusted })
   else
     await payload.update({
       collection: 'fieldDefinitions',
       id: current.id,
       data,
       req: context.req,
-      overrideAccess: false,
+      overrideAccess: trusted,
     })
 }
 
-async function ensureView(payload: UntypedPayload, context: PayloadContext, view: TemplateView): Promise<void> {
+async function ensureView(target: Target, view: TemplateView): Promise<void> {
+  const { payload, context, trusted } = target
   const found = await payload.find({
     collection: 'savedViews',
     where: { and: [{ recordType: { equals: view.recordType } }, { name: { equals: view.name } }] },
     limit: 1,
     depth: 0,
-    overrideAccess: false,
+    overrideAccess: trusted,
     req: context.req,
   })
   if (found.docs[0]?.id !== undefined) return
@@ -147,7 +153,7 @@ async function ensureView(payload: UntypedPayload, context: PayloadContext, view
       isDefault: view.name === 'All tasks',
     },
     req: context.req,
-    overrideAccess: false,
+    overrideAccess: trusted,
   })
 }
 
@@ -174,7 +180,8 @@ async function applyConfiguration(target: Target, template: VerticalTemplate): P
   for (const workflow of template.workflows)
     await upsertWorkflow({ ...target, template, recordType: workflow.recordType })
   for (const [position, field] of template.fields.entries()) await upsertField({ ...target, field, position })
-  for (const view of template.views) await ensureView(target.payload, target.context, view)
+  // Saved views belong to a person, so a provisioning run (no signed-in user) leaves them for the owner's setup wizard.
+  if (!target.trusted) for (const view of template.views) await ensureView(target, view)
 }
 
 /** Merges the template's modules and terminology into workspace settings and records that it was applied. */
@@ -196,11 +203,18 @@ async function applySettings(context: PayloadContext, template: VerticalTemplate
 }
 
 /** Applies one declarative vertical template idempotently to a tenant's configuration collections. */
-export async function applyTemplate(context: PayloadContext, key: string): Promise<ActionResult<{ key: string }>> {
+export async function applyTemplate(
+  context: PayloadContext,
+  key: string,
+  options: Readonly<{ trusted?: boolean }> = {},
+): Promise<ActionResult<{ key: string }>> {
   const template = templateFor(key)
   if (template === undefined) return actionError('VALIDATION', 'Choose a supported business type.')
   try {
-    await applyConfiguration({ payload: context.payload as UntypedPayload, context }, template)
+    await applyConfiguration(
+      { payload: context.payload as UntypedPayload, context, trusted: options.trusted === true },
+      template,
+    )
     await applySettings(context, template)
     for (const path of REVALIDATED_PATHS) revalidatePath(path)
     return actionOk({ key: template.key })

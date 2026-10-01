@@ -20,7 +20,7 @@ export interface ProvisionStep {
 }
 
 export interface ProvisionHttpClient {
-  post: (url: string, body: unknown, secret: string) => Promise<{ ok: boolean; status: number }>
+  post: (url: string, body: unknown, secret: string) => Promise<{ ok: boolean; status: number; body?: unknown }>
   get: (url: string, secret: string) => Promise<{ ok: boolean; status: number; body?: unknown }>
 }
 
