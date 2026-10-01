@@ -6,6 +6,7 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import type { RecordAttachment, RelatedTask } from '../../server/crm/directory/types'
 import { formatDate } from '../../i18n/format'
 import { describeClientError } from './client-errors'
+import { readApi } from './api-client'
 
 function bytes(value: number): string {
   if (value < 1024) return `${String(value)} B`
@@ -73,7 +74,6 @@ export function RecordFilesTab({
   const inputRef = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string>()
-  // eslint-disable-next-line complexity -- upload feedback handles the complete browser request lifecycle.
   const upload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file === undefined) return
@@ -85,9 +85,8 @@ export function RecordFilesTab({
     form.set('file', file)
     try {
       const response = await fetch('/api/v1/files', { method: 'POST', body: form })
-      const payload: unknown = await response.json()
-      const data = typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {}
-      if (!response.ok) setMessage(typeof data.error === 'string' ? data.error : 'Unable to upload file.')
+      const result = await readApi(response, 'Unable to upload file.')
+      if (!result.ok) setMessage(result.message)
       else {
         setMessage('File uploaded.')
         router.refresh()

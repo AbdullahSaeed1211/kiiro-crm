@@ -2,6 +2,7 @@ import type { DomainError, ErrorCode } from '@ops/kernel'
 
 const STATUS_BY_CODE: Readonly<Record<ErrorCode, number>> = {
   VALIDATION: 400,
+  UNAUTHORIZED: 401,
   NOT_FOUND: 404,
   FORBIDDEN: 403,
   CONFLICT: 409,

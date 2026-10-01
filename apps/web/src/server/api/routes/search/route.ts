@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { searchWorkspace } from '../../../collaboration/service'
 import { authenticate } from '../../../collaboration/auth'
 import { badRequest, unauthorized } from '../../../collaboration/responses'
+import { success } from '../../respond'
 
 /** Searches registered record types through their normal Payload scope access. */
 export async function GET(request: Request): Promise<Response> {
@@ -13,5 +14,5 @@ export async function GET(request: Request): Promise<Response> {
   const context = await authenticate(payload, request)
   if (context === null) return unauthorized()
   const results = await searchWorkspace(payload, context, query)
-  return Response.json({ results })
+  return success({ records: results })
 }

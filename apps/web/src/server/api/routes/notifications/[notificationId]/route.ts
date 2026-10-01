@@ -2,6 +2,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { authenticate, requestForUser } from '../../../../collaboration/auth'
 import { payloadNotFoundOrDenied, unauthorized } from '../../../../collaboration/responses'
+import { failure, success } from '../../../respond'
 
 interface Params {
   readonly params: Promise<{ notificationId: string }>
@@ -25,7 +26,7 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
       user: context.user,
       req,
     })
-    if (owned.docs.length === 0) return Response.json({ error: 'Not found' }, { status: 404 })
+    if (owned.docs.length === 0) return failure('NOT_FOUND', 'Not found')
     const notification = await payload.update({
       collection: 'notifications',
       id: notificationId,
@@ -35,9 +36,9 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
       user: context.user,
       req,
     })
-    return Response.json({ notification })
+    return success(notification)
   } catch (error) {
     console.error('[notification read]', error)
-    return payloadNotFoundOrDenied(error) ?? Response.json({ error: 'Unable to update notification.' }, { status: 500 })
+    return payloadNotFoundOrDenied(error) ?? failure('INTERNAL', 'Unable to update notification.')
   }
 }

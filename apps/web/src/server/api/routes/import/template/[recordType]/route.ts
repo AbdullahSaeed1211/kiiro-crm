@@ -2,6 +2,7 @@ import config from '@payload-config'
 import { resolveActor } from '@ops/adapter-payload'
 import { getPayload, createLocalReq } from 'payload'
 import { notFound } from 'next/navigation'
+import { failure } from '../../../../respond'
 
 const CORE_FIELDS: Readonly<Record<string, readonly string[]>> = {
   organization: ['name', 'website', 'phone', 'email'],
@@ -25,11 +26,10 @@ export async function GET(
   const core = CORE_FIELDS[recordType]
   const payload = await getPayload({ config })
   const auth = await payload.auth({ headers: new Headers(_request.headers) })
-  if (auth.user === null) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  if (auth.user === null) return failure('UNAUTHORIZED', 'Unauthorized')
   const req = await createLocalReq({ user: auth.user }, payload)
   const actor = await resolveActor(req)
-  if (actor?.active !== true || !['owner', 'manager'].includes(actor.role))
-    return Response.json({ error: 'Forbidden' }, { status: 403 })
+  if (actor?.active !== true || !['owner', 'manager'].includes(actor.role)) return failure('FORBIDDEN', 'Forbidden')
   const custom = await payload.find({
     collection: 'fieldDefinitions',
     where: { recordType: { equals: recordType } },

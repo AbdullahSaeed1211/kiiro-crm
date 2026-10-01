@@ -18,6 +18,7 @@ import {
   createInvitationClaimId,
   type InvitationClaimResult,
 } from '../../../../auth/invitation-claims'
+import { failure } from '../../../respond'
 
 function hashInvitationToken(token: string): Promise<string> {
   return crypto.subtle
@@ -26,11 +27,11 @@ function hashInvitationToken(token: string): Promise<string> {
 }
 
 function invalidInvitation(invitation: UntypedPayloadDocument | undefined): Response | undefined {
-  if (invitation === undefined) return Response.json({ error: 'Invitation not found.' }, { status: 404 })
+  if (invitation === undefined) return failure('NOT_FOUND', 'Invitation not found.')
   if (invitation.status === 'accepted' || invitation.status === 'revoked' || invitation.status === 'expired')
-    return Response.json({ error: 'This invitation has already been used or revoked.' }, { status: 409 })
+    return failure('CONFLICT', 'This invitation has already been used or revoked.')
   if (typeof invitation.expiresAt !== 'number' || invitation.expiresAt <= Date.now())
-    return Response.json({ error: 'This invitation has expired.' }, { status: 409 })
+    return failure('CONFLICT', 'This invitation has expired.')
   return undefined
 }
 
@@ -51,12 +52,10 @@ async function findInvitation(
 }
 
 function claimError(result: InvitationClaimResult): Response | undefined {
-  if (result.kind === 'missing') return Response.json({ error: 'Invitation not found.' }, { status: 404 })
-  if (result.kind === 'expired') return Response.json({ error: 'This invitation has expired.' }, { status: 409 })
-  if (result.kind === 'used')
-    return Response.json({ error: 'This invitation has already been used or revoked.' }, { status: 409 })
-  if (result.kind === 'busy')
-    return Response.json({ error: 'This invitation is already being accepted.' }, { status: 409 })
+  if (result.kind === 'missing') return failure('NOT_FOUND', 'Invitation not found.')
+  if (result.kind === 'expired') return failure('CONFLICT', 'This invitation has expired.')
+  if (result.kind === 'used') return failure('CONFLICT', 'This invitation has already been used or revoked.')
+  if (result.kind === 'busy') return failure('CONFLICT', 'This invitation is already being accepted.')
   return undefined
 }
 
@@ -102,7 +101,7 @@ async function finishInvitation({
   const role = roleOf(invitation)
   let user = await findUser(dataPayload, email, req)
   if (user !== undefined && user.invitationId !== invitation.id)
-    return Response.json({ error: 'An account already exists for this email.' }, { status: 409 })
+    return failure('CONFLICT', 'An account already exists for this email.')
   if (user === undefined) {
     try {
       user = await dataPayload.create({
@@ -130,9 +129,8 @@ async function finishInvitation({
   const completed = await completeInvitationClaim({ store: dataPayload, invitationId: invitation.id, claimId, req })
   if (!completed) {
     const current = await findInvitation(dataPayload, String(invitation.tokenHash), req)
-    if (current?.status === 'accepted')
-      return Response.json({ error: 'This invitation has already been accepted.' }, { status: 409 })
-    return Response.json({ error: 'This invitation could not be completed.' }, { status: 409 })
+    if (current?.status === 'accepted') return failure('CONFLICT', 'This invitation has already been accepted.')
+    return failure('CONFLICT', 'This invitation could not be completed.')
   }
   const login = await payload.login({ collection: 'users', data: { email, password } })
   if (typeof login.token !== 'string') throw new Error('Invitation acceptance did not return a session token.')
@@ -164,8 +162,7 @@ async function acceptInvitation({
     const claim = await claimInvitationWithCas({ store: dataPayload, tokenHash, claimId, req, initial })
     const claimErrorResponse = claimError(claim)
     if (claimErrorResponse !== undefined) return claimErrorResponse
-    if (claim.kind !== 'claimed')
-      return Response.json({ error: 'This invitation could not be claimed.' }, { status: 409 })
+    if (claim.kind !== 'claimed') return failure('CONFLICT', 'This invitation could not be claimed.')
     const invitation = claim.document
     const email = typeof invitation.email === 'string' ? invitation.email.toLowerCase() : ''
     return finishInvitation({ payload, dataPayload, invitation, email, password, name, req })
@@ -180,7 +177,7 @@ export async function POST(request: Request): Promise<Response> {
   const name = stringOf(body, 'name')
   const password = stringOf(body, 'password')
   if (token === undefined || name === undefined || password === undefined)
-    return Response.json({ error: 'Token, name and password are required.' }, { status: 400 })
+    return failure('VALIDATION', 'Token, name and password are required.')
   try {
     return await acceptInvitation({ payload: await payloadForAuth(), token, name, password })
   } catch (error) {

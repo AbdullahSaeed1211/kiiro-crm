@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import type { RecordNote } from '../../server/queries/crm/record-notes'
+import { readApi } from './api-client'
 
 export interface RecordNotesProps {
   readonly recordType: string
@@ -113,20 +114,16 @@ async function postNote(context: {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ recordType: context.recordType, recordId: context.recordId, body: context.body }),
   })
-  const payload: unknown = await response.json().catch(() => null)
-  if (!response.ok) {
-    const errorMsg = typeof payload === 'object' && payload !== null && 'error' in payload ? payload.error : null
-    throw new Error(typeof errorMsg === 'string' ? errorMsg : context.copy.error)
-  }
+  const result = await readApi(response, context.copy.error)
+  if (!result.ok) throw new Error(result.message)
 }
 
 async function deleteCommentNote(noteId: string): Promise<void> {
   const response = await fetch(`/api/v1/comments/${noteId}`, {
     method: 'DELETE',
   })
-  if (!response.ok) {
-    throw new Error('Unable to delete note')
-  }
+  const result = await readApi(response, 'Unable to delete note')
+  if (!result.ok) throw new Error(result.message)
 }
 
 export function RecordNotes({ recordType, recordId, notes, locale = 'en' }: RecordNotesProps) {

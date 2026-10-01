@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { createComment } from '../../../../../../../packages/adapters/payload/src/collaboration/comments'
 import { authenticate, requestForUser } from '../../../collaboration/auth'
 import { badRequest, payloadNotFoundOrDenied, unauthorized } from '../../../collaboration/responses'
+import { failure, success } from '../../respond'
 
 interface CommentInput {
   readonly recordType: string
@@ -27,8 +28,7 @@ function parseCommentInput(input: unknown): CommentInput | Response {
 function commentError(error: unknown): Response {
   const mapped = payloadNotFoundOrDenied(error)
   if (mapped !== undefined) return mapped
-  if (error instanceof Error && error.message.includes('not available'))
-    return Response.json({ error: 'Not found' }, { status: 404 })
+  if (error instanceof Error && error.message.includes('not available')) return failure('NOT_FOUND', 'Not found')
   return badRequest(error instanceof Error ? error.message : 'Unable to create comment.')
 }
 
@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
   if (parsed instanceof Response) return parsed
   try {
     const result = await createComment(requestForUser(payload, context.user), parsed)
-    return Response.json(result, { status: 201 })
+    return success(result, 201)
   } catch (error) {
     return commentError(error)
   }

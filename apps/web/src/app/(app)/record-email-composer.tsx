@@ -7,6 +7,7 @@ import { MailWarning } from 'lucide-react'
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailTemplatePicker } from './email-template-picker'
+import { readApi } from './api-client'
 
 interface Props {
   readonly recordType: string
@@ -31,26 +32,19 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // eslint-disable-next-line complexity -- maps upload response and validation errors at the transport boundary.
   async function upload(file: File): Promise<Attachment> {
     const form = new FormData()
     form.set('recordType', recordType)
     form.set('recordId', recordId)
     form.set('file', file)
     const response = await fetch('/api/v1/files', { method: 'POST', body: form })
-    const payload: unknown = await response.json().catch(() => null)
-    if (!response.ok) {
-      const error = typeof payload === 'object' && payload !== null && 'error' in payload ? payload.error : null
-      throw new Error(typeof error === 'string' ? error : 'Unable to upload the attachment.')
-    }
-    const attachment =
-      typeof payload === 'object' && payload !== null && 'attachment' in payload ? payload.attachment : null
-    if (typeof attachment !== 'object' || attachment === null || !('id' in attachment))
-      throw new Error('Attachment upload returned no id.')
-    return { id: String(attachment.id), name: file.name }
+    const result = await readApi<{ id?: string | number }>(response, 'Unable to upload the attachment.')
+    if (!result.ok) throw new Error(result.message)
+    if (result.data.id === undefined) throw new Error('Attachment upload returned no id.')
+    return { id: String(result.data.id), name: file.name }
   }
 
-  // eslint-disable-next-line complexity, max-statements, sonarjs/cognitive-complexity -- one submit flow keeps pending/error/retry state consistent.
+  // eslint-disable-next-line complexity, max-statements -- one submit flow keeps pending/error/retry state consistent.
   async function submit(): Promise<void> {
     if (pending) return
     const recipient = to.trim()
@@ -79,11 +73,8 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
           attachmentIds,
         }),
       })
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        const error = typeof payload === 'object' && payload !== null && 'error' in payload ? payload.error : null
-        throw new Error(typeof error === 'string' ? error : 'Unable to send the message. Try again.')
-      }
+      const result = await readApi(response, 'Unable to send the message. Try again.')
+      if (!result.ok) throw new Error(result.message)
       setSubject('')
       setBody('')
       setSelectedFile(null)

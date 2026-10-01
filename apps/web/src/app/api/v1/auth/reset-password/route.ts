@@ -7,6 +7,7 @@ import {
   payloadForAuth,
   stringOf,
 } from '../../../../../server/auth/api'
+import { failure } from '../../../../../server/api/respond'
 
 export async function POST(request: Request): Promise<Response> {
   const prepared = await authBody(request)
@@ -14,8 +15,7 @@ export async function POST(request: Request): Promise<Response> {
   const body = prepared
   const token = stringOf(body, 'token')
   const password = stringOf(body, 'password')
-  if (token === undefined || password === undefined)
-    return Response.json({ error: 'Token and password are required.' }, { status: 400 })
+  if (token === undefined || password === undefined) return failure('VALIDATION', 'Token and password are required.')
   const passwordError = passwordPolicyResponse(password)
   if (passwordError !== undefined) return passwordError
   try {
@@ -30,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     const knownStatus = typeof error === 'object' && error !== null && 'status' in error ? error.status : undefined
     return knownStatus === 400
-      ? Response.json({ error: 'The reset link is invalid or expired.' }, { status: 410 })
+      ? failure('NOT_FOUND', 'The reset link is invalid or expired.', { status: 410 })
       : errorResponse(error, 'The reset link is invalid or expired.')
   }
 }

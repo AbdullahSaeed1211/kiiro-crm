@@ -6,6 +6,7 @@ import { authenticate, requestForUser, type AuthContext } from '../../../../coll
 import { canReadParent } from '../../../../collaboration/parents'
 import { badRequest, forbidden, unauthorized } from '../../../../collaboration/responses'
 import { internationalNumber, sendSms, smsConfig, type SmsConfig } from '../../../../sms/transport'
+import { failure, success } from '../../../respond'
 
 const MAX_BODY = 480
 const NO_NUMBER = 'This record has no phone number with a country code, like +1 555 0100.'
@@ -91,11 +92,11 @@ async function queueAndSend(delivery: Delivery): Promise<Response> {
   try {
     const providerId = await sendSms(sms, { to, body: input.body })
     await markText(delivery, queued.id, { status: 'sent', messageId: `sms:${providerId}` })
-    return Response.json({ status: 'sent', id: queued.id }, { status: 201 })
+    return success({ status: 'sent', id: queued.id }, 201)
   } catch (error) {
     const reason = error instanceof Error ? error.message.slice(0, 2000) : 'Unable to send the text.'
     await markText(delivery, queued.id, { status: 'failed', error: reason }).catch(() => undefined)
-    return Response.json({ error: 'Unable to send the text.', status: 'failed', id: queued.id }, { status: 502 })
+    return failure('UNAVAILABLE', 'Unable to send the text.', { status: 502 })
   }
 }
 
@@ -110,7 +111,7 @@ export async function GET(request: Request): Promise<Response> {
   const payload = await getPayload({ config })
   if ((await authenticate(payload, request)) === null) return unauthorized()
   const { env } = await getCloudflareContext({ async: true })
-  return Response.json({ enabled: smsConfig(env) !== undefined })
+  return success({ enabled: smsConfig(env) !== undefined })
 }
 
 /** Sends a text to the phone number on a record the caller can read, and records it on that record. */
@@ -120,11 +121,7 @@ export async function POST(request: Request): Promise<Response> {
   if (context === null) return unauthorized()
   const { env } = await getCloudflareContext({ async: true })
   const sms = smsConfig(env)
-  if (sms === undefined)
-    return Response.json(
-      { error: 'Text messages are not set up for this workspace.', code: 'SMS_DISABLED' },
-      { status: 503 },
-    )
+  if (sms === undefined) return failure('UNAVAILABLE', 'Text messages are not set up for this workspace.')
   const input = await readInput(request)
   if (input instanceof Response) return input
   if (!(await canReadParent(payload, context, input))) return forbidden()

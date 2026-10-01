@@ -563,7 +563,7 @@ Docs describe current behavior only; outdated sections are deleted in the same P
 |---|---|
 | `Result<T, E>`, `ok()`, `err()`, `isOk()` | Discriminated union; no exceptions cross layer boundaries |
 | `DomainError` | `{ code: ErrorCode; message: string; details?: Record<string, unknown> }` |
-| `ErrorCode` | `VALIDATION`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `ALREADY_DONE`, `RATE_LIMITED`, `UNAVAILABLE`, `INTERNAL` (HTTP/UI mapping §12.1) |
+| `ErrorCode` | `VALIDATION`, `UNAUTHORIZED`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `ALREADY_DONE`, `RATE_LIMITED`, `UNAVAILABLE`, `INTERNAL` (HTTP/UI mapping §12.1) |
 | `Id` (branded string), `newId()` | `newId()` = `crypto.randomUUID()` for non-persisted ids; persisted ids come from Payload (D-08) |
 | `Clock` port `{ now(): number }` | `systemClock`, `fixedClock(ms)` |
 | `Logger` port `{ debug, info, warn, error }(msg: string, fields?: Record<string, unknown>)` | JSON console adapter in apps; `redact()` removes keys `password`, `token`, `cookie`, `authorization`, `secret`, `payload`, `body`, `html`, `text` |
@@ -846,6 +846,7 @@ Server Actions (one per command) at `apps/web/src/server/actions/<module>/<comma
 |---|---|---|
 | VALIDATION | 400 | Inline field errors in forms; toast for inline edits |
 | NOT_FOUND | 404 | `not-found` page for routes; toast "no longer exists" + remove row for lists |
+| UNAUTHORIZED | 401 | Redirect to `/login` (API: the request carried no active session) |
 | FORBIDDEN | 403 | `ErrorState` "no access" for pages; toast for actions |
 | CONFLICT | 409 | Toast "Updated by someone else, refreshed" + `router.refresh()`; dialog message for business conflicts (e.g. last active owner, open subtasks) |
 | ALREADY_DONE | 409 | Info toast + refresh |
@@ -864,7 +865,8 @@ The product API exposes module use cases over JSON for scripts, integrations and
 
 - Authentication is the Payload session cookie from `POST /api/v1/auth/login`; without an active session every endpoint returns 401.
 - Request bodies are JSON and validated against the registry schema, which is the module's zod schema minus path params. Records are read with the actor's access, as in the UI.
-- Every response is an `ActionResult`. The status comes from §12.1 for failures and from the registry for success (200, or 201 for creates). A `VALIDATION` failure carries `error.fields`, keyed by dotted input path.
+- Every JSON response is an `ActionResult`: `{ ok: true, data }` or `{ ok: false, error: { code, message, fields? } }`. This covers the record and work endpoints and the collaboration ones (comments, files, email, notifications, search, text messages, demo data). The auth endpoints under `/api/v1/auth` keep their own simpler bodies, and `GET /api/v1/health` is a plain status document. The status comes from §12.1 for failures (a request with no active session is 401 `UNAUTHORIZED`) and from the registry for success (200, or 201 for creates). A `VALIDATION` failure carries `error.fields`, keyed by dotted input path.
+- Lists return `data: { records, total, page }` and take `?page=` and `?limit=` (50 by default, 100 at most): leads, deals, organizations, contacts, tasks and projects. Notifications return `data: { records, total }`, and search returns `data: { records }`.
 - Writes that change a versioned record take `expectedUpdatedAt`; a stale version returns 409 `CONFLICT`.
 - A route calls the same module command as the matching server action and contains no business rules. `apiRoute` in `apps/web/src/server/api/http.ts` owns authentication, status mapping and exception handling.
 

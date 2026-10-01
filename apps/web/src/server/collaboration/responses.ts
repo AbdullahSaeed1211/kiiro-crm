@@ -1,13 +1,15 @@
+import { failure } from '../api/respond'
+
 export function unauthorized(): Response {
-  return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  return failure('UNAUTHORIZED', 'Sign in to use the API.')
 }
 
 export function forbidden(): Response {
-  return Response.json({ error: 'Forbidden' }, { status: 403 })
+  return failure('FORBIDDEN', 'You do not have access to this.')
 }
 
-export function badRequest(error: string): Response {
-  return Response.json({ error }, { status: 400 })
+export function badRequest(message: string): Response {
+  return failure('VALIDATION', message)
 }
 
 /** Converts Payload's expected not-found/access failures into one non-leaky response. */
@@ -19,6 +21,6 @@ export function payloadNotFoundOrDenied(error: unknown): Response | undefined {
     message.includes('unauthorized') ||
     message.includes('access')
   )
-    return Response.json({ error: 'Not found' }, { status: 404 })
+    return failure('NOT_FOUND', 'Not found.')
   return undefined
 }

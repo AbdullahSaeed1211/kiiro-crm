@@ -5,6 +5,7 @@ import { authenticate } from '../../../../collaboration/auth'
 import { canReadParent } from '../../../../collaboration/parents'
 import { payloadNotFoundOrDenied, unauthorized } from '../../../../collaboration/responses'
 import { sanitizeFileName } from '../../../../../../../../packages/adapters/payload/src/collaboration/files'
+import { failure } from '../../../respond'
 
 interface Params {
   readonly params: Promise<{ attachmentId: string }>
@@ -52,7 +53,7 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
   try {
     attachment = await readAttachment(contextPayload, attachmentId, context.user)
   } catch (error) {
-    return payloadNotFoundOrDenied(error) ?? Response.json({ error: 'Unable to read attachment.' }, { status: 500 })
+    return payloadNotFoundOrDenied(error) ?? failure('INTERNAL', 'Unable to read attachment.')
   }
   if (attachment === null || !(await canReadParent(contextPayload, context, attachment)))
     return new Response('Not found', { status: 404 })

@@ -147,7 +147,7 @@ export function RecordPageLayout({
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="ops-record-grid grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="ops-record-grid grid min-h-[28rem] content-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0">
             {tabs.map((tab) => (
               <TabsContent key={tab.id} value={tab.id} className="mt-4">

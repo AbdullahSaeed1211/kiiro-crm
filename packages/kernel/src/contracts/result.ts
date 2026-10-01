@@ -1,6 +1,14 @@
 /** Error categories shared by every layer; HTTP and UI mappings live in spec §12.1. */
 export type ErrorCode =
-  'VALIDATION' | 'NOT_FOUND' | 'FORBIDDEN' | 'CONFLICT' | 'ALREADY_DONE' | 'RATE_LIMITED' | 'UNAVAILABLE' | 'INTERNAL'
+  | 'VALIDATION'
+  | 'UNAUTHORIZED'
+  | 'NOT_FOUND'
+  | 'FORBIDDEN'
+  | 'CONFLICT'
+  | 'ALREADY_DONE'
+  | 'RATE_LIMITED'
+  | 'UNAVAILABLE'
+  | 'INTERNAL'
 
 /** A failure returned across layer boundaries instead of throwing. */
 export interface DomainError {

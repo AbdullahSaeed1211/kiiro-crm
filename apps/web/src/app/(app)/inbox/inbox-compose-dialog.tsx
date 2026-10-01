@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { InboxCopy } from '../../../i18n/inbox-copy'
 import styles from './inbox.module.css'
+import { readApi } from '../api-client'
 
 interface Match {
   readonly recordType: string
@@ -32,8 +33,8 @@ const SEARCH_DELAY_MS = 180
 
 async function searchRecords(query: string, signal: AbortSignal): Promise<readonly Match[]> {
   const response = await fetch(`/api/v1/search?q=${encodeURIComponent(query)}`, { signal })
-  const data: { results?: readonly Match[] } = await response.json()
-  return (data.results ?? []).filter((match) => match.recordType in ROUTES)
+  const result = await readApi<{ records?: readonly Match[] }>(response, 'Search failed.')
+  return ((result.ok ? result.data.records : undefined) ?? []).filter((match) => match.recordType in ROUTES)
 }
 
 /** Records a message can be written from that match the query; empty while the query is too short. */
@@ -84,8 +85,8 @@ async function contactIdFor(address: string): Promise<string | undefined> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ firstName: nameFromAddress(address), email: address }),
   })
-  const body = (await response.json().catch(() => ({}))) as { data?: { id?: string } }
-  return response.ok ? body.data?.id : undefined
+  const result = await readApi<{ id?: string }>(response, '')
+  return result.ok ? result.data.id : undefined
 }
 
 /** Offers to write to an address that is not on any record yet, by adding it as a contact first. */

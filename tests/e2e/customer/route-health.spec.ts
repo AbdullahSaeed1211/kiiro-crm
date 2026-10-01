@@ -214,15 +214,19 @@ type TaskNotificationFixture = Readonly<{
 async function serveNotificationList(route: Route, item: TaskNotificationFixture): Promise<void> {
   await route.fulfill({
     json: {
-      notifications: [
-        {
-          id: item.notificationId,
-          type: 'task_due_soon',
-          recordType: 'task',
-          recordId: item.taskId,
-          data: { message: 'Task due soon' },
-        },
-      ],
+      ok: true,
+      data: {
+        records: [
+          {
+            id: item.notificationId,
+            type: 'task_due_soon',
+            recordType: 'task',
+            recordId: item.taskId,
+            data: { message: 'Task due soon' },
+          },
+        ],
+        total: 1,
+      },
     },
   })
 }
@@ -230,18 +234,21 @@ async function serveNotificationList(route: Route, item: TaskNotificationFixture
 async function serveNotificationRead(route: Route, item: TaskNotificationFixture): Promise<void> {
   item.attempts.count += 1
   if (item.attempts.count === 1) {
-    await route.fulfill({ status: 503, json: { error: 'notification service unavailable' } })
+    await route.fulfill({
+      status: 503,
+      json: { ok: false, error: { code: 'UNAVAILABLE', message: 'notification service unavailable' } },
+    })
     return
   }
   item.markRead()
-  await route.fulfill({ status: 204 })
+  await route.fulfill({ json: { ok: true, data: { id: item.notificationId } } })
 }
 
 async function serveTaskNotification(route: Route, item: TaskNotificationFixture): Promise<void> {
   const request = route.request()
   const url = new URL(request.url())
   if (request.method() === 'GET' && url.pathname === '/api/v1/notifications/unread-count') {
-    await route.fulfill({ json: { count: 1 } })
+    await route.fulfill({ json: { ok: true, data: { count: 1 } } })
     return
   }
   if (request.method() === 'GET' && url.pathname === '/api/v1/notifications') {
@@ -806,7 +813,7 @@ async function exerciseRecordEmail(page: Page, detail: string): Promise<void> {
     await route.fulfill({
       status: 201,
       contentType: 'application/json',
-      body: JSON.stringify({ status: 'sent', id: 'local-e2e-only' }),
+      body: JSON.stringify({ ok: true, data: { status: 'sent', id: 'local-e2e-only' } }),
     })
   })
   page.once('dialog', (dialog) => void dialog.accept())

@@ -2,6 +2,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { authenticate, type AuthContext, requestForUser } from '../../../../collaboration/auth'
 import { unauthorized } from '../../../../collaboration/responses'
+import { success } from '../../../respond'
 
 /** Returns only the signed-in user's unread notification count. */
 export async function GET(request: Request): Promise<Response> {
@@ -9,7 +10,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     payload = await getPayload({ config })
   } catch {
-    return Response.json({ count: 0 })
+    return success({ count: 0 })
   }
   let context: AuthContext | null
   try {
@@ -29,10 +30,10 @@ export async function GET(request: Request): Promise<Response> {
       user: context.user,
       req,
     })
-    return Response.json({ count: result.totalDocs })
+    return success({ count: result.totalDocs })
   } catch {
     // Notification badges are enhancement-only. A transient local adapter
     // or access-policy failure must never turn every app route into a 500.
-    return Response.json({ count: 0 })
+    return success({ count: 0 })
   }
 }

@@ -9,6 +9,7 @@ import {
 import { authenticate } from '../../../collaboration/auth'
 import { canReadParent } from '../../../collaboration/parents'
 import { badRequest, forbidden, payloadNotFoundOrDenied, unauthorized } from '../../../collaboration/responses'
+import { failure, success } from '../../respond'
 
 interface UploadInput {
   readonly recordType: string
@@ -63,13 +64,13 @@ async function storeUpload({ env, payload, req, input, key, user, userId }: Stor
   await env.R2.put(key, await input.file.arrayBuffer(), { httpMetadata: { contentType: input.file.type } })
   try {
     const attachment = await createAttachment({ payload, req, input, key, user, userId })
-    return Response.json({ attachment }, { status: 201 })
+    return success(attachment, 201)
   } catch (error) {
     await env.R2.delete(key)
     console.error('attachment metadata write failed', error)
     const expected = payloadNotFoundOrDenied(error)
     if (expected !== undefined) return expected
-    return Response.json({ error: 'Unable to save the attachment.' }, { status: 500 })
+    return failure('INTERNAL', 'Unable to save the attachment.')
   }
 }
 

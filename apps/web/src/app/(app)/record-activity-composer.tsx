@@ -4,6 +4,7 @@ import { Button } from '@ops/ui/components/ui/button'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { readApi } from './api-client'
 
 export function RecordActivityComposer({
   recordType,
@@ -13,7 +14,6 @@ export function RecordActivityComposer({
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
-  // eslint-disable-next-line complexity -- maps API, validation, and pending states at one boundary
   async function submit() {
     const trimmed = body.trim()
     if (trimmed === '' || submitting) return
@@ -25,11 +25,8 @@ export function RecordActivityComposer({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ recordType, recordId, body: trimmed }),
       })
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        const error = typeof payload === 'object' && payload !== null && 'error' in payload ? payload.error : null
-        throw new Error(typeof error === 'string' ? error : 'Unable to add comment.')
-      }
+      const result = await readApi(response, 'Unable to add comment.')
+      if (!result.ok) throw new Error(result.message)
       setBody('')
       setMessage('Comment added.')
       router.refresh()

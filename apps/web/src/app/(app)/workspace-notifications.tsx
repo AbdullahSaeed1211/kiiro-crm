@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react'
 import { taskHref } from './task-navigation'
 import { NOTIFICATION_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
 import { describeClientError } from './client-errors'
+import { readApi } from './api-client'
 
 interface NotificationItem {
   readonly id: string
@@ -59,17 +60,17 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
     const controller = new AbortController()
     setLoading(true)
     void fetch('/api/v1/notifications/unread-count', { credentials: 'same-origin', signal: controller.signal })
-      .then((response) => response.json())
-      .then((data) => {
-        if (!controller.signal.aborted) setCount((data as { count?: number }).count ?? 0)
+      .then((response) => readApi<{ count?: number }>(response, 'Could not count notifications.'))
+      .then((result) => {
+        if (!controller.signal.aborted) setCount(result.ok ? (result.data.count ?? 0) : 0)
       })
       .catch(() => {
         if (!controller.signal.aborted) setCount(0)
       })
     void fetch('/api/v1/notifications', { credentials: 'same-origin', signal: controller.signal })
-      .then((response) => response.json())
-      .then((data) => {
-        setItems((data as { notifications?: readonly NotificationItem[] }).notifications ?? [])
+      .then((response) => readApi<{ records?: readonly NotificationItem[] }>(response, 'Could not load notifications.'))
+      .then((result) => {
+        setItems(result.ok ? (result.data.records ?? []) : [])
       })
       .catch(() => {
         setItems([])

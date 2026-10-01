@@ -6,6 +6,7 @@ import { isOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../../.
 import { authenticate, requestForUser, type AuthContext } from '../../../../collaboration/auth'
 import { canReadParent } from '../../../../collaboration/parents'
 import { badRequest, forbidden, payloadNotFoundOrDenied, unauthorized } from '../../../../collaboration/responses'
+import { failure, success } from '../../../respond'
 
 const MAX_RECIPIENTS = 50
 const MAX_SUBJECT = 998
@@ -102,7 +103,7 @@ async function readAttachmentContent(env: Env, attachments: readonly AuthorizedA
   const content = []
   for (const attachment of attachments) {
     const object = await env.R2.get(attachment.fileKey)
-    if (object === null) return Response.json({ error: 'Attachment is no longer available.' }, { status: 409 })
+    if (object === null) return failure('CONFLICT', 'Attachment is no longer available.')
     content.push({
       filename: attachment.fileName,
       contentType: attachment.mime,
@@ -180,11 +181,11 @@ async function deliver(delivery: Delivery, id: string, provisionalId: string): P
       messageId: typeof providerId === 'string' ? providerId : provisionalId,
       status: 'sent',
     })
-    return Response.json({ status: 'sent', id }, { status: 201 })
+    return success({ status: 'sent', id }, 201)
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 2000) : 'Unable to send the message.'
     await markMessage(delivery, id, { status: 'failed', error: message }).catch(() => undefined)
-    return Response.json({ error: 'Unable to send the message.', status: 'failed', id }, { status: 502 })
+    return failure('UNAVAILABLE', 'Unable to send the message.', { status: 502 })
   }
 }
 
@@ -195,7 +196,7 @@ async function queueAndDeliver(delivery: Delivery): Promise<Response> {
   try {
     queuedId = await queueMessage(delivery, provisionalId)
   } catch (error) {
-    return payloadNotFoundOrDenied(error) ?? Response.json({ error: 'Unable to queue the message.' }, { status: 500 })
+    return payloadNotFoundOrDenied(error) ?? failure('INTERNAL', 'Unable to queue the message.')
   }
   return deliver(delivery, queuedId, provisionalId)
 }
@@ -231,8 +232,7 @@ export async function POST(request: Request): Promise<Response> {
   const context = await authenticate(payload, request)
   if (context === null) return unauthorized()
   const { env } = await getCloudflareContext({ async: true })
-  if (!isOutboundEmailEnabled(env.MAIL_TRANSPORT))
-    return Response.json({ error: OUTBOUND_EMAIL_DISABLED_MESSAGE, code: 'EMAIL_DISABLED' }, { status: 503 })
+  if (!isOutboundEmailEnabled(env.MAIL_TRANSPORT)) return failure('UNAVAILABLE', OUTBOUND_EMAIL_DISABLED_MESSAGE)
   const input = await readInput(request)
   if (input instanceof Response) return input
   const authorized = await authorizeAttachments(payload, context, input)

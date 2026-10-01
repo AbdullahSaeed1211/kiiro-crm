@@ -1,18 +1,7 @@
-import { domainError, err, invalidInput, ok, type ErrorCode, type InputIssue, type Result } from '@ops/kernel'
+import { domainError, err, invalidInput, ok, type InputIssue, type Result } from '@ops/kernel'
 import { actionError, actionFailure, toActionResult, type ActionResult } from '../action-result'
 import { findProductContext, type ProductContext } from '../auth/context'
-
-/** HTTP status of each error code (spec §12.1). */
-const HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
-  VALIDATION: 400,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  ALREADY_DONE: 409,
-  RATE_LIMITED: 429,
-  INTERNAL: 500,
-  UNAVAILABLE: 503,
-}
+import { HTTP_STATUS } from './respond'
 
 /** A zod-compatible schema. */
 export interface BodySchema<T> {
@@ -53,7 +42,7 @@ export function apiRoute<P extends Record<string, string> = Record<string, never
 ): (request: Request, route: { params: Promise<P> }) => Promise<Response> {
   return async (request, route) => {
     const context = await findProductContext()
-    if (context === null) return Response.json(actionError('FORBIDDEN', 'Sign in to use the API.'), { status: 401 })
+    if (context === null) return Response.json(actionError('UNAUTHORIZED', 'Sign in to use the API.'), { status: 401 })
     try {
       return toResponse(toActionResult(await handle({ request, params: await route.params, context })), okStatus)
     } catch (error) {

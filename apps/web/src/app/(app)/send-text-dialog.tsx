@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react'
 import { catalogFor } from '../../i18n/locale'
 import { useLocale } from '../../i18n/locale-context'
 import { SMS_COPY } from '../../i18n/sms-copy'
+import { readApi } from './api-client'
 
 const MAX_LENGTH = 480
 
@@ -26,8 +27,8 @@ let textingAvailable: Promise<boolean> | undefined
 function textingIsOn(): Promise<boolean> {
   textingAvailable ??= fetch('/api/v1/sms/send')
     .then(async (response) => {
-      const payload: unknown = await response.json().catch(() => null)
-      return typeof payload === 'object' && payload !== null && Reflect.get(payload, 'enabled') === true
+      const result = await readApi<{ enabled?: boolean }>(response, '')
+      return result.ok && result.data.enabled === true
     })
     .catch(() => false)
   return textingAvailable
@@ -42,10 +43,8 @@ async function post(input: Readonly<{ recordType: string; recordId: string; body
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
   })
-  if (response.ok) return { ok: true }
-  const payload: unknown = await response.json().catch(() => null)
-  const error: unknown = typeof payload === 'object' && payload !== null ? Reflect.get(payload, 'error') : undefined
-  return { ok: false, reason: typeof error === 'string' ? error : undefined }
+  const result = await readApi(response, '')
+  return result.ok ? { ok: true } : { ok: false, reason: result.message === '' ? undefined : result.message }
 }
 
 /** A button and form that texts the phone number on one record, and records the text on it. */

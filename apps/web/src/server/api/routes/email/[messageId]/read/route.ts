@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { authenticate, requestForUser } from '../../../../../collaboration/auth'
 import { canReadParent } from '../../../../../collaboration/parents'
 import { payloadNotFoundOrDenied, unauthorized } from '../../../../../collaboration/responses'
+import { failure, success } from '../../../../respond'
 
 interface Params {
   readonly params: Promise<{ messageId: string }>
@@ -26,8 +27,7 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
     })) as unknown as Record<string, unknown>
     const recordType = typeof message.recordType === 'string' ? message.recordType : ''
     const recordId = typeof message.recordId === 'string' ? message.recordId : ''
-    if (!(await canReadParent(payload, context, { recordType, recordId })))
-      return Response.json({ error: 'Not found.' }, { status: 404 })
+    if (!(await canReadParent(payload, context, { recordType, recordId }))) return failure('NOT_FOUND', 'Not found.')
     const readBy = Array.isArray(message.readBy)
       ? message.readBy.filter((item): item is string => typeof item === 'string')
       : []
@@ -41,8 +41,8 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
       user: context.user,
       req,
     })
-    return Response.json({ message: updated })
+    return success(updated)
   } catch (error) {
-    return payloadNotFoundOrDenied(error) ?? Response.json({ error: 'Unable to mark email read.' }, { status: 500 })
+    return payloadNotFoundOrDenied(error) ?? failure('INTERNAL', 'Unable to mark email read.')
   }
 }

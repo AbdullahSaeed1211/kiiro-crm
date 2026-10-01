@@ -26,6 +26,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { taskHref } from './task-navigation'
 import { useEffect, useState } from 'react'
 import { SEARCH_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
+import { readApi } from './api-client'
 
 interface SearchResult {
   readonly recordType: string
@@ -114,10 +115,9 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
     setLoading(true)
     const timer = window.setTimeout(() => {
       void fetch(`/api/v1/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal })
-        .then((response) => response.json())
-        .then((data) => {
-          const payload = data as { results?: readonly SearchResult[] }
-          setResults(payload.results ?? [])
+        .then((response) => readApi<{ records?: readonly SearchResult[] }>(response, 'Search failed.'))
+        .then((result) => {
+          setResults(result.ok ? (result.data.records ?? []) : [])
         })
         .catch(() => {
           if (!controller.signal.aborted) setResults([])
