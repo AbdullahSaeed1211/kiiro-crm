@@ -1,4 +1,4 @@
-import { deliverWebhook, webhooksFor, webhooksSchema, type WebhookEvent } from '@ops/module-crm'
+import { deliverWebhook, webhooksFor, webhooksSchema, type Webhook, type WebhookEvent } from '@ops/module-crm'
 import { createJsonLogger } from '@ops/kernel'
 import type { CollectionAfterChangeHook } from 'payload'
 import { SETTINGS_GLOBAL } from '../contracts/names'
@@ -15,6 +15,28 @@ let schedule: Schedule = (work) => {
 /** Lets the host keep deliveries alive past the response that caused them. */
 export function setWebhookScheduler(next: Schedule): void {
   schedule = next
+}
+
+const RETRY_DELAYS_MS = [1000, 5000] as const
+
+const pause = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+/** True for a failure worth another try: the receiver was unreachable or had a server error, not a refusal like 400. */
+const transient = (result: { readonly status: number | null }): boolean =>
+  result.status === null || result.status >= 500
+
+/** Sends the event, trying again after a short wait while the receiver is unreachable or erroring; returns the last result. */
+async function deliverWithRetry(webhook: Webhook, event: WebhookEvent) {
+  let result = await deliverWebhook(webhook, event)
+  for (const delay of RETRY_DELAYS_MS) {
+    if (result.ok || !transient(result)) break
+    await pause(delay)
+    result = await deliverWebhook(webhook, event)
+  }
+  return result
 }
 
 const iso = (value: unknown): string => {
@@ -42,7 +64,7 @@ export const sendActivityWebhooks: CollectionAfterChangeHook = async ({ doc, ope
   schedule(
     Promise.all(
       targets.map(async (webhook) => {
-        const result = await deliverWebhook(webhook, event)
+        const result = await deliverWithRetry(webhook, event)
         if (!result.ok) logger.warn('webhook.failed', { webhook: webhook.id, event: verb, status: result.status })
       }),
     ),

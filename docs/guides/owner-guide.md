@@ -78,7 +78,7 @@ Settings, Webhooks (owners only) sends an event to another system whenever somet
 1. Add a webhook, give it a name and the public `https://` address the other system gave you, and choose the events.
 2. Save, then press **Send test**. It sends a `webhook.test` event and shows what the other system answered.
 
-Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `recordId` and `data`. The headers `X-Webhook-Timestamp` and `X-Webhook-Signature` let the receiver check the sender: the signature is `sha256=` followed by the HMAC-SHA256 of `timestamp.body`, made with the webhook's signing secret. Receivers should reject old timestamps. A failed delivery is logged and not retried, so treat a webhook as a notification and read the record through the API when it matters.
+Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `recordId` and `data`. The headers `X-Webhook-Timestamp` and `X-Webhook-Signature` let the receiver check the sender: the signature is `sha256=` followed by the HMAC-SHA256 of `timestamp.body`, made with the webhook's signing secret. Receivers should reject old timestamps. A delivery that finds the other system unreachable or erroring (HTTP 5xx) is tried again after 1 and 5 seconds; a refusal such as HTTP 400 is not retried. After the last try the failure is logged and dropped, so treat a webhook as a notification and read the record through the API when it matters.
 
 ## Read the pipeline
 
@@ -99,4 +99,4 @@ Settings, Activity (owners and managers) lists the last hundred changes anyone m
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
 - Archiving hides a lead, deal, contact or organization from every list and search; Settings, Archive lists them and restores any of them.
-- SMS and calendar sync are not available. Webhooks are sent once, without retries, and there is no delivery history yet.
+- SMS and calendar sync are not available. Webhooks are retried twice on connection failures and server errors, and there is no delivery history yet.
