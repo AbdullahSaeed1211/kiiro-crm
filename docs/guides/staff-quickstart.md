@@ -35,6 +35,8 @@ Tick several rows in the lead list to assign an owner or move them to another st
 
 - **My tasks** shows what is assigned to you. Open a task to edit its properties, add subtasks and see its activity.
 - Switch between Table, Kanban, Calendar and Timeline with the view switcher at the top of Tasks.
+- In the Table, tick several tasks and press **Mark done** to finish them at once. A task that someone else changed meanwhile, or that you may not complete, is skipped and counted.
+- In the Table, tick several tasks and press **Mark done** to finish them at once. A task that someone else changed meanwhile, or that you may not complete, is skipped and counted.
 - On Timeline, drag a bar to change a task's dates. A failed save puts the bar back where it was.
 - Bars on the Timeline take the colour of their stage.
 

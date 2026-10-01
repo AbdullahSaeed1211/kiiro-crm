@@ -1,6 +1,5 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import { DataTable } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { ListTodo } from 'lucide-react'
@@ -12,11 +11,12 @@ import { listSavedViews } from '../../../server/queries/settings/listSavedViews'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
+import { TaskBulkTable } from './TaskBulkTable'
 import { TaskCreateForm } from './TaskCreateForm'
 import { TaskViewMenu } from './TaskViewMenu'
 import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 import { labelsFor, paginationOf, taskColumns, toRow } from './task-table'
-import { parseTaskView, savedViewSort, taskModeOf } from './task-view-params'
+import { parseTaskView, savedViewSort, taskListHref, taskModeOf } from './task-view-params'
 
 const PAGE_TITLE = 'Tasks'
 
@@ -43,12 +43,7 @@ export default async function TasksPage({
   const selectedSavedView = savedViews.find((savedView) => savedView.id === view)
   const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
   const taskMode = taskModeOf(view, selectedSavedView)
-  const returnToParams = new URLSearchParams({
-    sort: formatTaskSort(sort),
-    page: String(parseTaskPage(firstParam(pageParam))),
-    view,
-  })
-  const returnTo = `/tasks?${returnToParams.toString()}`
+  const returnTo = taskListHref({ sort, page: parseTaskPage(firstParam(pageParam)), view })
   const result = await listTasks(
     {
       page: parseTaskPage(firstParam(pageParam)),
@@ -90,7 +85,8 @@ export default async function TasksPage({
             </div>
           }
         />
-        <DataTable
+        <TaskBulkTable
+          versions={Object.fromEntries(result.items.map((task) => [task.id, task.updatedAt]))}
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
           key={`${formatTaskSort(sort)}:${String(result.page)}`}
           columns={taskColumns({ sort: effectiveSort, view, locale })}

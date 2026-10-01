@@ -1,4 +1,5 @@
 import type { SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
+import { formatTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import type { TaskSort, TaskSortKey } from '../../../server/queries/work/tasks/types'
 
 type TaskMode = 'all' | 'open' | 'mine'
@@ -35,4 +36,9 @@ function savedViewMode(view: SavedViewSummary): TaskMode {
 export function taskModeOf(view: string, savedView: SavedViewSummary | undefined): TaskMode {
   if (savedView !== undefined) return savedViewMode(savedView)
   return view === 'open' || view === 'mine' ? view : 'all'
+}
+
+/** The tasks list address that shows this sort, page and view; a task opened from it returns here. */
+export function taskListHref({ sort, page, view }: Readonly<{ sort: TaskSort; page: number; view: string }>): string {
+  return `/tasks?${new URLSearchParams({ sort: formatTaskSort(sort), page: String(page), view }).toString()}`
 }

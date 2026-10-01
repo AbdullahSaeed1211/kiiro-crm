@@ -24,6 +24,7 @@ export function toTaskListItem(task: TaskRecord, options: TaskItemOptions): Task
   return {
     id: task.id,
     title: task.title,
+    updatedAt: task.updatedAt,
     stage: { name: stage.name, color: stage.color, position: stage.position },
     priority: task.priority,
     assignees,

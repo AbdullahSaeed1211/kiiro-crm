@@ -31,10 +31,11 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Design system. Effort: Structural. Codes: S-01 S-02.
 - There are 32 native `<select>` elements across 18 files, against 26 `Select` and 27 `Combobox` uses. There are 4 native date inputs, while `calendar.tsx` and `popover.tsx` already exist. There are 55 raw `<button>` elements against 72 `Button` uses. The hotspots are the settings forms (`member-forms`, `workflow-editor`, `field-definition-editor`, `intake-forms`), `NewTaskForm`, `DealCreateDialog` and `reports`. Fix: add a `DatePicker`, migrate the call sites, and add a lint rule against raw `<select>` in app code.
 
-### 13. Bulk actions are built but not used
+### 13. Bulk actions on tasks stop at "Mark done"
 
 - Area: Tasks. Effort: Quick. Codes: T-10.
-- `DataTable` supports selection (`selectable`, `getSelectedRowIds`), but no page passes it. Frappe connects `ListSelectBanner` and `ListBulkActions` to its list (`TasksListView.vue:158-184`). Turn it on for tasks, and later for leads and deals, with bulk stage, assignee and delete actions.
+- Status: partly fixed. Leads have bulk assign and stage move, and the task table has a bulk Mark done. Still missing: bulk assignee and priority for tasks, and bulk actions for deals.
+- Fix: add them to `TaskBulkTable` and a deal table the same way, each through the module command so access and version checks apply per record.
 
 ### 16. Tasks can't be rescheduled on the calendar
 
