@@ -24,6 +24,24 @@ It is **white-label by construction**. No tenant is the product: names, domains,
 
 The first tenant, Mirch Media, runs in production. The authoritative product specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
 
+## Screenshots
+
+Taken from the demo workspace, where every name, company and number is fictional. `pnpm docs:screenshots` retakes them from a running app that holds the demo data.
+
+| Dashboard                                                            | Leads board                                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ![Dashboard with the sales pipeline](docs/screenshots/dashboard.png) | ![Lead board by stage](docs/screenshots/leads-board.png)                        |
+| **Deals board**                                                      | **Task board**                                                                  |
+| ![Deal board by stage](docs/screenshots/deals-board.png)             | ![Task board by stage](docs/screenshots/tasks-board.png)                        |
+| **Figures**                                                          | **Task with logged time**                                                       |
+| ![Figures with pipeline charts](docs/screenshots/figures.png)        | ![A task with its properties and logged time](docs/screenshots/task-detail.png) |
+
+<p align="center">
+  <img src="docs/screenshots/mobile-dashboard.png" alt="Dashboard on a phone" width="260">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-leads.png" alt="Leads on a phone" width="260">
+</p>
+
 ## What it does
 
 | Area                | Capabilities                                                                                                                                                                                                                                                            |

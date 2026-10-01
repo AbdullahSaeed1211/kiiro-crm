@@ -32,6 +32,7 @@
     "size": "tsx scripts/check-size.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "docs:screenshots": "tsx scripts/screenshots.ts",
     "seed:purge": "tsx scripts/purge-demo.ts",
     "db:reset:local": "tsx scripts/reset-local-db.ts",
     "tenant:new": "tsx scripts/new-tenant.ts",
