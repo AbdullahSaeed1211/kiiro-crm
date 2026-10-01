@@ -1,3 +1,4 @@
+import { archiveRoute } from '../../../../../server/api/archive-routes'
 import { asId, domainError, err, ok } from '@ops/kernel'
 import { updateProject } from '@ops/module-work'
 import { contractBody } from '../../../../../server/api/contracts'
@@ -5,6 +6,9 @@ import { apiRoute } from '../../../../../server/api/http'
 import { workCommandDeps } from '@/server/container'
 
 export const dynamic = 'force-dynamic'
+
+/** `projects.archive`: archives the record. */
+export const DELETE = archiveRoute('project')
 
 /** `projects.get` */
 export const GET = apiRoute<{ id: string }>(async ({ params, context }) => {

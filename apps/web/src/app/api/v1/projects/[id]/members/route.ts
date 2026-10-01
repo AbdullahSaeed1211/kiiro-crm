@@ -16,4 +16,4 @@ export const POST = apiRoute<{ id: string }>(async ({ request, params, context }
     memberId: asId(memberId),
     expectedUpdatedAt,
   })
-})
+}, 201)

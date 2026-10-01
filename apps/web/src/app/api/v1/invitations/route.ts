@@ -1,3 +1,4 @@
+import { listInvitationRecords } from '../../../../server/api/identity-lists'
 import { inviteMember } from '@ops/module-identity'
 import { ok } from '@ops/kernel'
 import { invitationUrl } from '../../../../server/auth/invitation-url'
@@ -14,3 +15,6 @@ export const POST = apiRoute(async ({ request, context }) => {
   const result = await inviteMember(await identityDeps(context), body.value)
   return result.ok ? ok({ inviteUrl: invitationUrl(result.value.token) }) : result
 }, 201)
+
+/** `invitations.list` */
+export const GET = apiRoute(({ request, context }) => listInvitationRecords(context, new URL(request.url)))

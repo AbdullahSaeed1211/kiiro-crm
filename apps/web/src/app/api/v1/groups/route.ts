@@ -1,3 +1,4 @@
+import { listGroupRecords } from '../../../../server/api/identity-lists'
 import { saveGroup } from '@ops/module-identity'
 import { contractBody } from '../../../../server/api/contracts'
 import { apiRoute } from '../../../../server/api/http'
@@ -10,3 +11,6 @@ export const POST = apiRoute(async ({ request, context }) => {
   const body = await contractBody(request, 'groups.create')
   return body.ok ? saveGroup(await identityDeps(context), body.value) : body
 }, 201)
+
+/** `groups.list` */
+export const GET = apiRoute(({ request, context }) => listGroupRecords(context, new URL(request.url)))

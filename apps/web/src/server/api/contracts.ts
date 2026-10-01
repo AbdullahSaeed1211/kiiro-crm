@@ -12,8 +12,9 @@ import { inviteMemberSchema, saveGroupSchema, saveMemberSchema } from '@ops/modu
 import type { Result } from '@ops/kernel'
 import { z } from 'zod'
 import { readBody, type BodySchema } from './http'
-import type { ApiContract } from './contract-types'
+import type { ApiContract, ApiQueryParam } from './contract-types'
 import { CRM_CONTRACTS } from './contracts-crm'
+import { EXTRA_CONTRACTS, listQuery } from './contracts-extra'
 
 /** One endpoint of the product API: the single source for its route, its body validation and `GET /api/v1`. */
 
@@ -94,7 +95,7 @@ const API_CONTRACTS = {
     path: '/api/v1/projects/:id/members',
     summary: 'Add a member to a project.',
     body: projectMemberSchema,
-    success: 200,
+    success: 201,
   },
   'projects.members.remove': {
     method: 'DELETE',
@@ -144,20 +145,39 @@ const API_CONTRACTS = {
     success: 200,
   },
   ...CRM_CONTRACTS,
+  ...EXTRA_CONTRACTS,
   'groups.delete': { method: 'DELETE', path: '/api/v1/groups/:id', summary: 'Delete a group.', success: 200 },
 } as const satisfies Readonly<Record<string, ApiContract>>
 
 /** A contract id. */
 export type ContractId = keyof typeof API_CONTRACTS
 
+/** One endpoint as `GET /api/v1` and the OpenAPI document describe it. */
+export interface ApiIndexEntry {
+  readonly id: string
+  readonly method: string
+  readonly path: string
+  readonly summary: string
+  readonly success: number
+  readonly query?: readonly ApiQueryParam[]
+  readonly returns?: 'csv' | 'file' | 'calendar'
+  readonly upload?: boolean
+  /** The JSON body as JSON Schema. */
+  readonly body?: Readonly<Record<string, unknown>>
+}
+
 /** The API index served by `GET /api/v1`: every contract with its body as JSON Schema. */
-export function apiIndex(): readonly Record<string, unknown>[] {
+export function apiIndex(): readonly ApiIndexEntry[] {
   return Object.entries(API_CONTRACTS).map(([id, contract]: [string, ApiContract]) => ({
     id,
     method: contract.method,
     path: contract.path,
     summary: contract.summary,
     success: contract.success,
+    ...((contract.query ?? listQuery(id)) === undefined ? {} : { query: contract.query ?? listQuery(id) }),
+    ...(contract.returns === undefined ? {} : { returns: contract.returns }),
+    ...(contract.upload === true ? { upload: true } : {}),
+    ...(contract.bodyJson === undefined ? {} : { body: contract.bodyJson }),
     ...(contract.body === undefined
       ? {}
       : { body: z.toJSONSchema(contract.body, { io: 'input', unrepresentable: 'any' }) }),
