@@ -54,7 +54,7 @@ Settings, Newsletter.
 1. Tick "Newsletter subscriber" on each contact who agreed to receive it (or use the form question above).
 2. Name your lists under Audiences and tick them on contacts. Leave the lists empty to send to everyone subscribed.
 3. Write the message and use "Send test" first; it goes only to you.
-4. Send. A send reaches at most 500 people; larger lists go out in several rounds. Every message carries a one-click unsubscribe link, and the send is recorded on each contact's Email tab.
+4. Send. A send goes to everyone chosen. The first 150 go out at once and the rest follow in rounds of 150 every 15 minutes, so a list of 3,000 finishes in about five hours. Anyone who unsubscribes while it is going out is skipped. Every message carries a one-click unsubscribe link, and the send is recorded on each contact's Email tab.
 
 ## Roles
 

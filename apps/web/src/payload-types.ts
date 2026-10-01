@@ -95,6 +95,7 @@ export interface Config {
     timeEntries: TimeEntry;
     webhookDeliveries: WebhookDelivery;
     demoManifests: DemoManifest;
+    campaignQueue: CampaignQueue;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -130,6 +131,7 @@ export interface Config {
     timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
     webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
     demoManifests: DemoManifestsSelect<false> | DemoManifestsSelect<true>;
+    campaignQueue: CampaignQueueSelect<false> | CampaignQueueSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1023,6 +1025,33 @@ export interface DemoManifest {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "campaignQueue".
+ */
+export interface CampaignQueue {
+  id: string;
+  campaignId: string;
+  subject: string;
+  body: string;
+  origin: string;
+  fromAddress: string;
+  status: 'sending' | 'done';
+  total: number;
+  sent: number;
+  failed: number;
+  pending?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1156,6 +1185,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'demoManifests';
         value: string | DemoManifest;
+      } | null)
+    | ({
+        relationTo: 'campaignQueue';
+        value: string | CampaignQueue;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1699,6 +1732,24 @@ export interface WebhookDeliveriesSelect<T extends boolean = true> {
 export interface DemoManifestsSelect<T extends boolean = true> {
   part?: T;
   entries?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "campaignQueue_select".
+ */
+export interface CampaignQueueSelect<T extends boolean = true> {
+  campaignId?: T;
+  subject?: T;
+  body?: T;
+  origin?: T;
+  fromAddress?: T;
+  status?: T;
+  total?: T;
+  sent?: T;
+  failed?: T;
+  pending?: T;
   updatedAt?: T;
   createdAt?: T;
 }

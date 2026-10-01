@@ -8,7 +8,8 @@ import { actionError, actionFailure, actionOk, type ActionResult } from '../acti
 import { requireRole } from '../auth/context'
 import { getOutboundEmailEnabled, OUTBOUND_EMAIL_DISABLED_MESSAGE } from '../capabilities'
 import { crmDeps } from '../container'
-import { sendCampaign, MAX_RECIPIENTS_PER_SEND } from '../newsletter/campaign'
+import { sendCampaign } from '../newsletter/campaign'
+import { enqueueCampaign, sendNextRound } from '../newsletter/queue'
 import { AUDIENCES_FIELD_KEY, inAudience, listSubscribers, NEWSLETTER_FIELD_KEY } from '../newsletter/subscribers'
 
 const NEWSLETTER_PATH = '/settings/newsletter'
@@ -112,31 +113,46 @@ async function siteOrigin(): Promise<string> {
   return `${list.get('x-forwarded-proto') ?? 'https'}://${host}`
 }
 
-/** Sends the message to the signed-in user only (a test), or to every subscriber. */
-export async function sendNewsletter(input: unknown): Promise<ActionResult<{ sent: number; failed: number }>> {
+type SendOutcome = ActionResult<{ sent: number; failed: number; waiting: number }>
+type Actor = Awaited<ReturnType<typeof requireRole>>
+type Parsed = z.infer<typeof sendSchema>
+
+async function sendTest(context: Actor, parsed: Parsed): Promise<SendOutcome> {
+  const own = await context.payload.findByID({ collection: 'users', id: String(context.actor.id), depth: 0 })
+  const result = await sendCampaign({
+    payload: context.payload,
+    origin: await siteOrigin(),
+    recipients: [{ id: String(context.actor.id), email: own.email, name: own.name, audiences: [] }],
+    message: { subject: parsed.subject, body: parsed.body },
+  })
+  return { ok: true, data: { ...result, waiting: 0 } }
+}
+
+async function queueAndSend(context: Actor, parsed: Parsed): Promise<SendOutcome> {
+  const recipients = inAudience(await listSubscribers(await crmDeps()), parsed.audience)
+  if (recipients.length === 0) return actionError('VALIDATION', 'Nobody is subscribed to receive this.')
+  const { env } = await getCloudflareContext({ async: true })
+  await enqueueCampaign({
+    payload: context.payload,
+    origin: await siteOrigin(),
+    from: env.MAIL_FROM_ADDRESS,
+    message: { subject: parsed.subject, body: parsed.body },
+    recipientIds: recipients.map((recipient) => recipient.id),
+  })
+  const round = await sendNextRound(context.payload)
+  revalidatePath(NEWSLETTER_PATH)
+  return { ok: true, data: { sent: round.sent, failed: round.failed, waiting: round.left } }
+}
+
+/** Sends the message to the signed-in user only (a test), or queues it for every subscriber and sends the first round. */
+export async function sendNewsletter(input: unknown): Promise<SendOutcome> {
   const context = await requireRole('owner', 'manager')
   const parsed = sendSchema.safeParse(input)
   if (!parsed.success) return actionError('VALIDATION', 'Add a subject and a message.')
   if (!(await getOutboundEmailEnabled())) return actionError('UNAVAILABLE', OUTBOUND_EMAIL_DISABLED_MESSAGE)
   try {
-    const own = await context.payload.findByID({ collection: 'users', id: String(context.actor.id), depth: 0 })
-    const recipients = parsed.data.testOnly
-      ? [{ id: String(context.actor.id), email: own.email, name: own.name, audiences: [] }]
-      : inAudience(await listSubscribers(await crmDeps()), parsed.data.audience)
-    const { env } = await getCloudflareContext({ async: true })
-    const result = await sendCampaign({
-      payload: context.payload,
-      origin: await siteOrigin(),
-      recipients,
-      message: { subject: parsed.data.subject, body: parsed.data.body },
-      ...(parsed.data.testOnly ? {} : { record: { campaignId: crypto.randomUUID(), from: env.MAIL_FROM_ADDRESS } }),
-    })
-    return { ok: true, data: result }
+    return parsed.data.testOnly ? await sendTest(context, parsed.data) : await queueAndSend(context, parsed.data)
   } catch (error) {
-    return actionFailure(
-      error,
-      'sendNewsletter',
-      `Unable to send. At most ${String(MAX_RECIPIENTS_PER_SEND)} go out per send.`,
-    )
+    return actionFailure(error, 'sendNewsletter', 'Unable to send the newsletter.')
   }
 }

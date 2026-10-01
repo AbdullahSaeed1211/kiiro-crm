@@ -116,6 +116,11 @@ const audienceCount = ({
 const confirmText = (count: number, audience: string): string =>
   audience === '' ? `Send to ${String(count)} subscribers?` : `Send to ${String(count)} subscribers in ${audience}?`
 
+function sentMessage(data: Readonly<{ sent: number; failed: number; waiting: number }>): string {
+  const now = `${String(data.sent)} sent, ${String(data.failed)} failed`
+  return data.waiting === 0 ? now : `${now}. ${String(data.waiting)} more go out in rounds over the next hours.`
+}
+
 function Composer({
   outboundEnabled,
   total,
@@ -130,7 +135,7 @@ function Composer({
   const send = (testOnly: boolean) => {
     run(async () => {
       const result = await sendNewsletter({ subject, body, testOnly, ...(audience === '' ? {} : { audience }) })
-      return result.ok ? `${String(result.data.sent)} sent, ${String(result.data.failed)} failed` : result.error.message
+      return result.ok ? sentMessage(result.data) : result.error.message
     })
   }
   return (

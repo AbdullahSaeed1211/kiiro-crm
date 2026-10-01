@@ -4,9 +4,6 @@ import { recordSend } from './history'
 import type { CampaignMessage, Subscriber } from './types'
 import { unsubscribeToken } from './token'
 
-/** Sends stop at this many recipients per click; larger lists send in several rounds. */
-export const MAX_RECIPIENTS_PER_SEND = 500
-
 function paragraphs(body: string): string {
   return body
     .split(/\n{2,}/u)
@@ -43,7 +40,7 @@ export async function sendCampaign(input: {
 }): Promise<{ sent: number; failed: number }> {
   let sent = 0
   let failed = 0
-  for (const subscriber of input.recipients.slice(0, MAX_RECIPIENTS_PER_SEND)) {
+  for (const subscriber of input.recipients) {
     try {
       await input.payload.sendEmail(await messageFor({ ...input, subscriber }))
       sent += 1
