@@ -9,7 +9,7 @@ import {
   type TaskSheetTask,
 } from '@ops/ui/composites/TaskSheet'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import { taskSheetLabels } from '../../../../i18n/task-sheet-copy'
 import { changeTask, createSubtask } from '../../../../server/actions/work/tasks/changeTask'
 import { taskHref } from '../../task-navigation'
@@ -21,12 +21,14 @@ export function TaskDetailDrawer({
   returnTo = '/tasks',
   panel = true,
   restoreFocus = false,
+  extra,
 }: Readonly<{
   task: TaskSheetTask
   options: TaskSheetOptions
   returnTo?: string
   panel?: boolean
   restoreFocus?: boolean
+  extra?: ReactNode
 }>) {
   const router = useRouter()
 
@@ -48,13 +50,14 @@ export function TaskDetailDrawer({
   }, [router, returnTo])
 
   const labels = taskSheetLabels(options.locale)
-  if (!panel) return <TaskPage task={task} options={options} actions={actions} labels={labels} />
+  if (!panel) return <TaskPage task={task} options={options} actions={actions} labels={labels} extra={extra} />
   return (
     <TaskSheet
       task={task}
       options={options}
       actions={actions}
       labels={labels}
+      extra={extra}
       onClose={() => {
         if (restoreFocus) router.back()
         else router.replace(returnTo)

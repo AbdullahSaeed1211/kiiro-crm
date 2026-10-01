@@ -9,6 +9,7 @@ import { loadPipelineSummary } from '../../../server/queries/pipeline-insights'
 import { loadReportFigures } from '../../../server/queries/reports'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
+import { TimeReport } from './time-report'
 import { PipelineCharts } from './pipeline-charts'
 
 export const dynamic = 'force-dynamic'
@@ -155,6 +156,7 @@ export default async function ReportsPage({
               ),
           }}
         />
+        <TimeReport context={context} fromDate={range.fromDate} toDate={range.toDate} />
         <section className="ops-surface-card overflow-hidden rounded-lg border bg-card">
           <header className="border-b px-4 py-3">
             <h2 className="text-sm font-semibold">{copy.ownerBreakdown}</h2>

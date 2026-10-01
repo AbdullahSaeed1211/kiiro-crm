@@ -38,6 +38,7 @@ Tick several rows in the lead list to assign an owner or move them to another st
 - In the Table, tick several tasks and press **Mark done** to finish them at once, choose **Set priority**, or press **Assign to me** to add yourself. A task that someone else changed meanwhile, or that you may not edit, is skipped and counted.
 - In the Table, tick several tasks and press **Mark done** to finish them at once, choose **Set priority**, or press **Assign to me** to add yourself. A task that someone else changed meanwhile, or that you may not edit, is skipped and counted.
 - Set **Repeats** on a task with a due date (every day, week, 2 weeks, month, 3 months or year). When you complete it, the next one is created with the same title, people, project and priority, due one step after the one you finished. A finished task stops repeating, so reopening it does not make another copy.
+- Under a task's details, **Time** logs hours: type `1h 30m`, `90`, `1.5h` or `1:30`, pick the day (not in the future), add a note and press Log time. The task shows its total and who logged what; you can delete your own entries.
 - On Timeline, drag a bar to change a task's dates. A failed save puts the bar back where it was.
 - Bars on the Timeline take the colour of their stage.
 

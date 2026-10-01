@@ -2,7 +2,7 @@
 
 import { Button } from '@ops/ui/components/ui/button'
 import { Textarea } from '@ops/ui/components/ui/textarea'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { isTerminalStage } from '../KanbanBoard/board-state'
 import { TaskActionsBar, TaskHeading, TaskMessage } from './task-sheet-parts'
 import { TaskProperties } from './task-properties'
@@ -16,6 +16,8 @@ export type TaskViewProps = Readonly<{
   options: TaskSheetOptions
   actions: TaskSheetActions
   labels: TaskSheetLabels
+  /** Extra content the app adds below the subtasks, such as the time log. */
+  extra?: ReactNode
 }>
 
 function DescriptionSection({
@@ -70,6 +72,7 @@ export function TaskSheetContent({
   options,
   actions,
   labels,
+  extra,
   asPage,
   onClose,
 }: TaskViewProps & Readonly<{ asPage: boolean; onClose: () => void }>) {
@@ -98,6 +101,7 @@ export function TaskSheetContent({
           onSave={(description) => void save({ kind: 'description', description }, labels.saved)}
         />
         <TaskSubtasks task={task} labels={labels} actions={actions} canUpdate={options.canUpdate} />
+        {extra}
       </div>
       <TaskActionsBar
         labels={labels}

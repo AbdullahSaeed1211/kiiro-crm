@@ -19,6 +19,7 @@ export const COLLECTIONS = {
   sources: 'sources',
   lostReasons: 'lostReasons',
   stageTransitions: 'stageTransitions',
+  timeEntries: 'timeEntries',
 } as const
 
 /** One of the spike collection slugs. */

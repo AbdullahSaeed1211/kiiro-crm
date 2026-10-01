@@ -79,7 +79,7 @@ export function ApiTokensCard({ tokens }: Readonly<{ tokens: readonly TokenRow[]
       )}
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          aria-label="Token name"
+          aria-label="New token label"
           placeholder="Name, for example Zapier"
           className="max-w-60"
           value={name}

@@ -92,6 +92,7 @@ export interface Config {
     notifications: Notification;
     emailMessages: EmailMessage;
     jobRuns: JobRun;
+    timeEntries: TimeEntry;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -124,6 +125,7 @@ export interface Config {
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
     jobRuns: JobRunsSelect<false> | JobRunsSelect<true>;
+    timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -959,6 +961,23 @@ export interface JobRun {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "timeEntries".
+ */
+export interface TimeEntry {
+  id: string;
+  task: string | Task;
+  user: string | User;
+  minutes: number;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  day: number;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1080,6 +1099,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'jobRuns';
         value: string | JobRun;
+      } | null)
+    | ({
+        relationTo: 'timeEntries';
+        value: string | TimeEntry;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1582,6 +1605,19 @@ export interface JobRunsSelect<T extends boolean = true> {
   skipped?: T;
   durationMs?: T;
   cursor?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "timeEntries_select".
+ */
+export interface TimeEntriesSelect<T extends boolean = true> {
+  task?: T;
+  user?: T;
+  minutes?: T;
+  day?: T;
+  note?: T;
   updatedAt?: T;
   createdAt?: T;
 }

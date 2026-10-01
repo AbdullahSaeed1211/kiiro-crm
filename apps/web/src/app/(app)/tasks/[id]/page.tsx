@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { loadTaskView } from '../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
+import { TimeLog } from './time-log'
 import { firstParam, safeReturnTo } from '../../search-params'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,13 @@ export default async function TaskPage({
     <>
       <AppHeader breadcrumbs={[{ label: 'Tasks', href: returnTo }, { label: view.task.title }]} />
       <PageContent>
-        <TaskDetailDrawer task={view.task} options={view.options} panel={panel} returnTo={returnTo} />
+        <TaskDetailDrawer
+          task={view.task}
+          options={view.options}
+          panel={panel}
+          returnTo={returnTo}
+          extra={<TimeLog taskId={view.task.id} />}
+        />
       </PageContent>
     </>
   )
