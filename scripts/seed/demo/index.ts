@@ -10,6 +10,7 @@ import { LOCAL, type SeedPayload } from '../payload'
 import { seedAll } from '../steps'
 import type { WriteContext } from './context'
 import { buildDemoDataset } from './model'
+import { findDemoEntries } from './reconcile'
 import { need } from './need'
 import { writeActivityAll } from './write-all'
 import {
@@ -86,18 +87,57 @@ async function writeAll(context: WriteContext, options: DemoOptions): Promise<vo
   if (options.workspace !== true) await applySettings(payload)
 }
 
+const pause = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+/** Saves the list of what was made, trying again when a live database answers with a passing error. */
+async function saveWithRetry(save: () => Promise<void>): Promise<void> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await save()
+      return
+    } catch (error) {
+      if (attempt >= 4) throw error
+      await pause(2000 * attempt)
+    }
+  }
+}
+
+/**
+ * Lists everything the demo made, including a document that was being written when a run stopped, so one purge removes
+ * it all. Entries already on the list are not added again.
+ */
+export async function reconcileDemo(payload: SeedPayload, since: number): Promise<number> {
+  const known = new Set((await readDemoEntries(store(payload))).map((entry) => entry.id))
+  const missing = (await findDemoEntries(payload, since, SENDER)).filter((entry) => !known.has(entry.id))
+  await saveWithRetry(() => appendDemoEntries(store(payload), missing))
+  return missing.length
+}
+
+/** Runs the writers; if one fails, lists what was made so one purge removes it, then raises the real error. */
+async function writeOrRecord(context: WriteContext, input: { options: DemoOptions; started: number }): Promise<void> {
+  try {
+    await writeAll(context, input.options)
+  } catch (error) {
+    await reconcileDemo(context.payload, input.started)
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `The demo run stopped: ${reason}. What it made so far is on the purge list; purge, then run it again.`,
+    )
+  }
+}
+
 /** Adds the rich demo workspace. Refuses to run twice so the data is not doubled. */
 export async function seedDemo(payload: SeedPayload, now: number, options: DemoOptions = {}): Promise<DemoCounts> {
   if ((await readDemoEntries(store(payload))).length > 0)
     throw new Error('Demo data is already present. Run the purge first.')
   if (options.workspace !== true) await seedAll(payload, now)
+  const started = Date.now() - 60_000
   const context = options.workspace === true ? await workspaceContext(payload, now) : await startContext(payload, now)
-  try {
-    await writeAll(context, options)
-  } finally {
-    // Even after a failure the record lists what was created, so a purge can clean up the partial run.
-    await appendDemoEntries(store(payload), context.manifest)
-  }
+  await writeOrRecord(context, { options, started })
+  await saveWithRetry(() => appendDemoEntries(store(payload), context.manifest))
   const counts: Record<string, number> = {}
   for (const entry of context.manifest) counts[entry.collection] = (counts[entry.collection] ?? 0) + 1
   return counts
