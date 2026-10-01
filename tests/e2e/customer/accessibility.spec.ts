@@ -143,13 +143,18 @@ async function auditPrimarySurfaces(page: Page): Promise<void> {
     await page.goto(contactDetail)
     await captureAccessibleSurface(page, 'record')
   }
+  await auditDashboardTaskSheet(page)
+}
+
+async function auditDashboardTaskSheet(page: Page): Promise<void> {
   await page.goto('/')
+  // A link clicked before the page hydrates is a plain navigation to the full task page, not the side sheet.
+  await page.waitForLoadState('networkidle')
   const dashboardTasks = page.locator('a[data-task-link-id]')
-  if ((await dashboardTasks.count()) > 0) {
-    await dashboardTasks.first().click()
-    await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
-    await captureAccessibleSurface(page, 'sheet')
-  }
+  if ((await dashboardTasks.count()) === 0) return
+  await dashboardTasks.first().click()
+  await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible()
+  await captureAccessibleSurface(page, 'sheet')
 }
 
 async function auditCompactTimelineModes(page: Page, chart: Locator): Promise<void> {

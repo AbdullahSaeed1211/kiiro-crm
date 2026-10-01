@@ -2,6 +2,12 @@ import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import type { StageCategory } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
+import type { Where } from 'payload'
+
+/** The most open tasks the calendar loads for one month. */
+/** A whole number of 90-row chunks, the most one D1 statement can bind, so the page is read in a few round trips. */
+const CALENDAR_LIMIT = 540
+const FINISHED: ReadonlySet<string> = new Set(['done_success', 'done_failure', 'cancelled'])
 
 interface CalendarTask {
   readonly id: string
@@ -20,6 +26,8 @@ interface CalendarReadModel {
   readonly locale: Locale
   readonly calendarYear: number
   readonly calendarMonth: number
+  /** True when the month has more open tasks than the calendar loads, so some are not shown. */
+  readonly capped: boolean
 }
 
 const field = (document: object, name: string): unknown => Reflect.get(document, name)
@@ -103,24 +111,31 @@ export async function loadCalendarReadModel(
   // Extra UTC days cover all timezone offsets; the calendar filters returned events by local date.
   const from = Date.UTC(year, month, 1) - 86_400_000
   const to = Date.UTC(year, month + 1, 1) + 86_400_000
-  const request = { depth: 0, limit: 0, pagination: false, overrideAccess: false as const, req: requestContext.req }
-  const [taskPage, workflowPage] = await Promise.all([
-    requestContext.payload.find({
-      collection: 'tasks',
-      ...request,
-      where: { and: [{ dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }] },
-      select: { id: true, title: true, stageId: true, priority: true, dueAt: true, startAt: true, updatedAt: true },
-    }),
-    requestContext.payload.find({
-      collection: 'workflows',
-      ...request,
-      where: { recordType: { equals: 'task' } },
-    }),
-  ])
+  const request = { depth: 0, overrideAccess: false as const, req: requestContext.req }
+  const workflowPage = await requestContext.payload.find({
+    collection: 'workflows',
+    ...request,
+    pagination: false,
+    where: { recordType: { equals: 'task' } },
+  })
   const workflows = workflowPage.docs as readonly object[]
+  const categories = stageCategories(workflows)
+  const finished = [...categories].filter(([, category]) => FINISHED.has(category)).map(([id]) => id)
+  const inMonth: Where[] = [{ dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }]
+  const taskPage = await requestContext.payload.find({
+    collection: 'tasks',
+    ...request,
+    // Finished tasks are not drawn, so they are not read; the total says whether the month was cut short.
+    where: { and: finished.length === 0 ? inMonth : [...inMonth, { stageId: { not_in: finished } }] },
+    // A real page: with `pagination: false` Payload ignores the limit and reads every task in the month.
+    page: 1,
+    limit: CALENDAR_LIMIT,
+    select: { id: true, title: true, stageId: true, priority: true, dueAt: true, startAt: true, updatedAt: true },
+  })
   const locale = normalizeLocale(field(settings, 'locale'))
   return {
-    tasks: mapTasks(taskPage.docs, stageCategories(workflows)),
+    tasks: mapTasks(taskPage.docs, categories),
+    capped: taskPage.totalDocs > CALENDAR_LIMIT,
     timeZone,
     calendarYear: year,
     calendarMonth: month,

@@ -5,6 +5,8 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Metadata } from 'next'
 import { formatDateISO } from '@ops/ui/lib/dates'
 import { TASK_COPY } from '../../../i18n/config'
+import { CALENDAR_COPY } from '../../../i18n/calendar-copy'
+import { catalogFor } from '../../../i18n/locale'
 import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
 import { taskHref } from '../task-navigation'
 import { moveTaskOnCalendar } from './move-task'
@@ -57,6 +59,11 @@ export default async function CalendarPage({
           description={copy.calendarDescription}
           actions={<TaskWorkspaceViews active="calendar" locale={model.locale} />}
         />
+        {model.capped ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            {catalogFor(CALENDAR_COPY, model.locale).capped.replace('{count}', String(events.length))}
+          </p>
+        ) : null}
         <CalendarMonth
           year={year}
           month={month}
