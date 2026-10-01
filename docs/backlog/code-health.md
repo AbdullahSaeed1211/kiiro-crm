@@ -1,6 +1,6 @@
 # Code-health backlog
 
-22 findings are open: 0 high, 9 medium and 13 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+21 findings are open: 0 high, 8 medium and 13 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -117,14 +117,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Effort: S
 
 ## UI package (`packages/ui`)
-
-### UI-05: DRY, medium severity
-
-- Location: `GanttView/gantt-theme.css:8,24-27` vs `StagePill/stage.ts`, `KanbanBoard/stage-dot.ts`
-- Evidence: Gantt bars are themed with `--wx-gantt-task-color/-fill-color/-border-color: var(--primary)`, while every other stage-aware surface (StagePill, StageSelect, KanbanBoard, FilterBar) colors by `--stage-*` tokens via `STAGE_DOT`/`stageDotClass`.
-- Consequence: Gantt bars can never visually match a task's stage color the way Kanban cards and pills do; the theme file re-derives generic colors instead of consuming the shared stage-color system.
-- Fix: Pass the bar's resolved `--stage-*` value through inline style or a `data-stage-color` attribute consumed by `gantt-theme.css`, reusing `stageDotClass`.
-- Effort: M
 
 ### UI-07: ISP, low severity
 

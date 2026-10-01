@@ -4,6 +4,7 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { EmptyValue, paginationFor, type DataTableColumn, type DataTableRow } from '@ops/ui/composites/DataTable'
 import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
+import { StageDot } from '@ops/ui/composites/StagePill'
 import { UserPlus } from 'lucide-react'
 import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
@@ -55,7 +56,7 @@ function row(item: Awaited<ReturnType<typeof listLeads>>['items'][number]): Data
       ),
       stage: (
         <span className="inline-flex items-center gap-1.5">
-          <span className={`size-2 rounded-full bg-stage-${item.stage.color}`} />
+          <StageDot color={item.stage.color} />
           {item.stage.name}
           {item.responseOverdue ? <ResponseOverdueBadge /> : null}
         </span>
