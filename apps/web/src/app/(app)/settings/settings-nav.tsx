@@ -18,6 +18,7 @@ import {
   TrendingUp,
   UserRound,
   UsersRound,
+  Webhook,
   Workflow,
   type LucideIcon,
 } from 'lucide-react'
@@ -69,6 +70,7 @@ const GROUPS: readonly SettingsGroup[] = [
     [
       ['import', '/settings/import', Database, ['owner', 'manager']],
       ['archive', '/settings/archive', Archive, ['owner', 'manager']],
+      ['webhooks', '/settings/webhooks', Webhook, ['owner']],
     ],
   ],
   ['personal', [['profile', '/settings/profile', UserRound, ['owner', 'manager', 'staff']]]],

@@ -67,6 +67,15 @@ Settings, Newsletter.
 
 Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.
 
+## Connect other systems
+
+Settings, Webhooks (owners only) sends an event to another system whenever something happens to a record: a record is created, a lead or deal changes stage, a lead is converted, a note or email is added, and more. Zapier, Make, n8n and your own software can receive them.
+
+1. Add a webhook, give it a name and the public `https://` address the other system gave you, and choose the events.
+2. Save, then press **Send test**. It sends a `webhook.test` event and shows what the other system answered.
+
+Each request is a JSON `POST` with `id`, `event`, `occurredAt`, `recordType`, `recordId` and `data`. The headers `X-Webhook-Timestamp` and `X-Webhook-Signature` let the receiver check the sender: the signature is `sha256=` followed by the HMAC-SHA256 of `timestamp.body`, made with the webhook's signing secret. Receivers should reject old timestamps. A failed delivery is logged and not retried, so treat a webhook as a notification and read the record through the API when it matters.
+
 ## Read the pipeline
 
 Figures shows the team's work for a date range, then the whole pipeline in charts: open pipeline value, revenue won over the last six months, win rate, deals and leads by stage, and where leads come from. The charts cover every deal and lead you can see, not only the date range.
@@ -82,4 +91,4 @@ Figures shows the team's work for a date range, then the whole pipeline in chart
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.
 - Archiving hides a lead, deal, contact or organization from every list and search; Settings, Archive lists them and restores any of them.
-- SMS, calendar sync and outgoing webhooks are not available.
+- SMS and calendar sync are not available. Webhooks are sent once, without retries, and there is no delivery history yet.

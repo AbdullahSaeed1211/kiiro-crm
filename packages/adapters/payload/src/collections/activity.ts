@@ -1,3 +1,4 @@
+import { sendActivityWebhooks } from '../hooks/webhooks'
 import { COLLECTIONS } from '../contracts/names'
 import { ADMIN_GROUPS, epochMs, jsonField, recordReference, relationshipTo, selectOf, spikeCollection } from './fields'
 import { ACTIVITY_VERB_VALUES } from './values'
@@ -15,4 +16,5 @@ export const activityCollection = spikeCollection({
     epochMs('occurredAt', { required: true }),
   ],
   indexes: [{ fields: ['recordType', 'recordId', 'occurredAt'] }],
+  hooks: { afterChange: [sendActivityWebhooks] },
 })

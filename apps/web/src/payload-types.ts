@@ -2073,6 +2073,15 @@ export interface Setting {
     | number
     | boolean
     | null;
+  webhooks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   stalledDays: number;
   email: {
     fromName?: string | null;
@@ -2126,6 +2135,7 @@ export interface SettingsSelect<T extends boolean = true> {
   responseTargetHours?: T;
   emailTemplates?: T;
   automations?: T;
+  webhooks?: T;
   stalledDays?: T;
   email?:
     | T

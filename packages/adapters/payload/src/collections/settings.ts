@@ -1,4 +1,5 @@
-import type { GlobalConfig } from 'payload'
+import type { FieldAccess, GlobalConfig } from 'payload'
+import { resolveActor } from '../access/actor'
 import { SETTINGS_ACCESS } from '../access/spike-access'
 import { SETTINGS_GLOBAL } from '../contracts/names'
 import { ADMIN_GROUPS, currencyField, epochMs, selectOf, textField } from './fields'
@@ -22,6 +23,9 @@ function isTimeZone(value: unknown): boolean {
 function isOptionalHexColor(value: unknown): boolean {
   return value === null || value === undefined || value === '' || (typeof value === 'string' && HEX_COLOR.test(value))
 }
+
+/** Only owners see a field's value; other readers of the settings global get it left out. */
+const ownerFieldRead: FieldAccess = async ({ req }) => (await resolveActor(req))?.role === 'owner'
 
 const moduleToggle = (name: string) => ({ name, type: 'checkbox', defaultValue: true }) as const
 
@@ -72,6 +76,8 @@ export const settingsGlobal: GlobalConfig = {
     { name: 'emailTemplates', type: 'json', defaultValue: [] },
     // Rules run when a lead is created; validated by `leadRulesSchema` in @ops/module-crm before they are saved.
     { name: 'automations', type: 'json', defaultValue: [] },
+    // Where record events are sent; validated by `webhooksSchema` in @ops/module-crm. Secrets stay with owners.
+    { name: 'webhooks', type: 'json', defaultValue: [], access: { read: ownerFieldRead } },
     { name: 'stalledDays', type: 'number', required: true, defaultValue: 14, min: 1, max: 365 },
     {
       name: 'email',

@@ -11,7 +11,13 @@ import {
   DisabledMailSender,
   payloadEmailAdapter,
 } from '@ops/adapter-cloudflare'
-import { COLLECTIONS, installPagedFind, settingsGlobal, spikeCollections } from '@ops/adapter-payload'
+import {
+  COLLECTIONS,
+  installPagedFind,
+  setWebhookScheduler,
+  settingsGlobal,
+  spikeCollections,
+} from '@ops/adapter-payload'
 import { buildConfig } from 'payload'
 import type { Config } from 'payload'
 import type { GetPlatformProxyOptions } from 'wrangler'
@@ -96,7 +102,17 @@ export default buildConfig({
   globals: [settingsGlobal],
   secret: process.env.PAYLOAD_SECRET,
   // Reads that return many rows run in chunks, because D1 allows 100 bound variables per statement.
-  onInit: installPagedFind,
+  // Webhook deliveries outlive the request that caused them through the Worker's `waitUntil`.
+  onInit: (payload) => {
+    installPagedFind(payload)
+    setWebhookScheduler((work) => {
+      try {
+        getCloudflareContext().ctx.waitUntil(work)
+      } catch {
+        void work
+      }
+    })
+  },
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   graphQL: { disable: true },
   defaultDepth: 0,

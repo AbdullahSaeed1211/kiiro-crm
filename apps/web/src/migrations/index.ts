@@ -10,6 +10,7 @@ import * as migration_20260930_090000_lead_next_action from './20260930_090000_l
 import * as migration_20260930_150000_sales_settings from './20260930_150000_sales_settings';
 import * as migration_20260930_190000_intake_form_fields from './20260930_190000_intake_form_fields';
 import * as migration_20261001_090000_record_archive from './20261001_090000_record_archive';
+import * as migration_20261001_120000_webhooks from './20261001_120000_webhooks';
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20261001_090000_record_archive.up,
     down: migration_20261001_090000_record_archive.down,
     name: '20261001_090000_record_archive'
+  },
+  {
+    up: migration_20261001_120000_webhooks.up,
+    down: migration_20261001_120000_webhooks.down,
+    name: '20261001_120000_webhooks'
   },
 ];
