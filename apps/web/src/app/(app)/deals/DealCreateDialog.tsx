@@ -14,7 +14,7 @@ import {
 import { Input } from '@ops/ui/components/ui/input'
 import { Label } from '@ops/ui/components/ui/label'
 import { useState, useTransition } from 'react'
-import { createDealAction } from '../../../server/crm/deals/actions'
+import { createDealAction, loadDealFormOptionsAction } from '../../../server/crm/deals/actions'
 
 type Option = Readonly<{ id: string; name: string }>
 type CreateInput = Readonly<{
@@ -91,11 +91,28 @@ function DealFields({
   )
 }
 
-export function DealCreateDialog({
-  organizations,
-  contacts,
-  currency,
-}: Readonly<{ organizations: readonly Option[]; contacts: readonly Option[]; currency: string }>) {
+/** Reads the pick lists the first time the form opens, so the deal pages never carry the whole client book. */
+function useFormOptions(): {
+  options: { organizations: readonly Option[]; contacts: readonly Option[] }
+  load: () => void
+} {
+  const [options, setOptions] = useState<{ organizations: readonly Option[]; contacts: readonly Option[] }>({
+    organizations: [],
+    contacts: [],
+  })
+  const [loaded, setLoaded] = useState(false)
+  const load = () => {
+    if (loaded) return
+    setLoaded(true)
+    void loadDealFormOptionsAction().then(setOptions, () => {
+      setLoaded(false)
+    })
+  }
+  return { options, load }
+}
+
+export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
+  const { options, load } = useFormOptions()
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -127,7 +144,13 @@ export function DealCreateDialog({
     })
   }
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) load()
+        setOpen(next)
+      }}
+    >
       <DialogTrigger render={<Button>New deal</Button>} />
       <DialogContent>
         <DialogHeader>
@@ -141,7 +164,7 @@ export function DealCreateDialog({
             submit(event.currentTarget)
           }}
         >
-          <DealFields organizations={organizations} contacts={contacts} currency={currency} />
+          <DealFields organizations={options.organizations} contacts={options.contacts} currency={currency} />
           {error === null ? null : (
             <p role="alert" className="text-sm text-destructive">
               {error}

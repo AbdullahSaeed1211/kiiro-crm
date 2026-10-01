@@ -71,14 +71,7 @@ export default async function DealBoardPage() {
                   { id: 'board', label: 'Board', href: '/deals/board' },
                 ]}
               />
-              <DealCreateDialog
-                currency={currency}
-                organizations={data.organizations.map(({ id, name }) => ({ id, name }))}
-                contacts={data.contacts.map((contact) => ({
-                  id: contact.id,
-                  name: [contact.firstName, contact.lastName].filter(Boolean).join(' '),
-                }))}
-              />
+              <DealCreateDialog currency={currency} />
             </div>
           }
         />
