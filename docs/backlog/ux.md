@@ -34,8 +34,8 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ### 13. Bulk actions on tasks stop at "Mark done"
 
 - Area: Tasks. Effort: Quick. Codes: T-10.
-- Status: partly fixed. Leads have bulk assign and stage move, and the task table has a bulk Mark done. Still missing: bulk assignee and priority for tasks, and bulk actions for deals.
-- Fix: add them to `TaskBulkTable` and a deal table the same way, each through the module command so access and version checks apply per record.
+- Status: partly fixed. Leads have bulk assign and stage move, and the task table has a bulk Mark done. Deals now have bulk assign and stage move. Still missing: bulk assignee and priority for tasks.
+- Fix: add them to `TaskBulkTable` the same way, each through the module command so access and version checks apply per record.
 
 ### 16. Tasks can't be rescheduled on the calendar
 

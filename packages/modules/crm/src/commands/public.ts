@@ -2,7 +2,7 @@ export { createContact, createOrganization, updateContact, updateOrganization } 
 export { createDeal, createLead, moveDeal, moveLead, updateDeal, updateLead } from './pipeline'
 export { convertLead, markLost } from './conversion'
 export { setCustomFields } from './custom-fields'
-export { assignLeads, moveLeads } from './bulk'
+export { assignDeals, assignLeads, moveDeals, moveLeads } from './bulk'
 export { archiveRecord, restoreRecord } from './archive'
 export { importRecords, MAX_IMPORT_ROWS, type ImportReport } from './import'
 

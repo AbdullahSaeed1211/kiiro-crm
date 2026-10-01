@@ -10,7 +10,8 @@ import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm
 import { getProductContext } from '../../../server/auth/context'
 import { formatDate } from '../../../i18n/format'
 import { listSavedViews } from '../../../server/queries/settings/listSavedViews'
-import { LeadBulkTable } from './LeadBulkTable'
+import { assignLeadsAction, moveLeadsAction } from '../../../server/crm/leads/actions'
+import { BulkTable } from '../BulkTable'
 import { LeadListControls } from './LeadListControls'
 import { LeadViewControls, type LeadViewLink } from './LeadViewControls'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
@@ -117,8 +118,17 @@ function LeadTable({
   canBulk,
 }: Readonly<{ result: Awaited<ReturnType<typeof listLeads>>; params: SearchParams; canBulk: boolean }>) {
   return (
-    <LeadBulkTable
-      bulk={canBulk ? { owners: result.owners, stages: openStages(result.stages) } : null}
+    <BulkTable
+      bulk={
+        canBulk
+          ? {
+              owners: result.owners,
+              stages: openStages(result.stages),
+              assign: assignLeadsAction,
+              move: moveLeadsAction,
+            }
+          : null
+      }
       key={`${String(result.page)}:${String(result.total)}`}
       columns={TABLE_COLUMNS}
       rows={result.items.map(row)}

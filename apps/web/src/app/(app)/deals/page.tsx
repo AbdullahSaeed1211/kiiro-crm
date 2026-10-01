@@ -1,7 +1,6 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import {
-  DataTable,
   type DataTableColumn,
   type DataTablePaginationState,
   type DataTableRow,
@@ -14,6 +13,12 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { Handshake } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { assignDealsAction, moveDealsAction } from '../../../server/crm/deals/actions'
+import { loadOwnerOptions } from '../../../server/crm/leads/queries'
+import { createCrmRepository } from '@ops/adapter-payload'
+import { getRequestContext } from '../../../server/container'
+import { workflowOrThrow } from '../../../server/workflow-result'
+import { BulkTable } from '../BulkTable'
 import { DealCreateDialog } from './DealCreateDialog'
 import { formatDate, formatMoney } from '../../../server/crm/deals/view-model'
 import { getDealListData } from '../../../server/crm/deals/queries'
@@ -82,6 +87,20 @@ function stageFilter(stages: readonly { id: string; name: string }[], stageId: s
   }
 }
 
+/** Owners and managers can assign and move deals in bulk; the stages offered are the open ones. */
+async function bulkOptions() {
+  const context = await getRequestContext()
+  if (context.actor.role !== 'owner' && context.actor.role !== 'manager') return null
+  const [owners, workflow] = await Promise.all([
+    loadOwnerOptions(context),
+    createCrmRepository(context.req).loadDefaultWorkflow('deal').then(workflowOrThrow),
+  ])
+  const stages = workflow.stages
+    .filter((stage) => !stage.category.startsWith('done') && stage.category !== 'cancelled')
+    .map(({ id, name }) => ({ id, name }))
+  return { owners, stages, assign: assignDealsAction, move: moveDealsAction }
+}
+
 export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
@@ -89,9 +108,10 @@ export default async function DealsPage({
   const rawQuery = firstParam(params.q)?.trim() ?? ''
   const stageId = firstParam(params.stage)
   const page = Math.max(1, Number(firstParam(params.page) ?? 1) || 1)
-  const [data, settings] = await Promise.all([
+  const [data, settings, bulk] = await Promise.all([
     getDealListData({ query: rawQuery, stageId, page }),
     getWorkspaceSettings(),
+    bulkOptions(),
   ])
   const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   return (
@@ -127,7 +147,8 @@ export default async function DealsPage({
           query={firstParam(params.q) ?? ''}
           filters={[stageFilter(data.workflow.stages, stageId)]}
         />
-        <DataTable
+        <BulkTable
+          bulk={bulk}
           key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}
           columns={columns()}
           rows={data.items.map(rowOf)}

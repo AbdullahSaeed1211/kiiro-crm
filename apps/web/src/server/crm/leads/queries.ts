@@ -81,7 +81,7 @@ async function loadLeadPeople(context: RequestContext, leads: readonly LeadRecor
 }
 
 /** The people a lead can be assigned to; only owners and managers assign, and staff may not read who is active. */
-async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestContext>>): Promise<LeadPerson[]> {
+export async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestContext>>): Promise<LeadPerson[]> {
   if (!isManagerUp(context.actor)) return []
   const users = await context.payload.find({
     collection: 'users',

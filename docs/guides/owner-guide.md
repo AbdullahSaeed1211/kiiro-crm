@@ -63,6 +63,10 @@ Settings, Newsletter.
 | Manager | Run the team: Members, Groups, Workflows, Fields, Playbooks, Sales, Newsletter, Intake and Reports |
 | Staff   | Work assigned to them and their groups; no workspace settings except their own profile             |
 
+## Change many deals or leads at once
+
+On Leads and Deals, owners and managers tick several rows and choose either a new owner or an open stage, then press **Apply**. A record that someone changed meanwhile, or that cannot move to that stage, is skipped and counted. Won and lost stages are set from the record page, because they ask for a lost reason or start onboarding.
+
 ## Remove a record
 
 Owners and managers see an **Archive** button on each lead, deal, contact and organization page. Archiving asks for confirmation and hides the record from every list and search; its notes and history stay in the database. Settings, Archive lists everything archived and restores it with one click.

@@ -5,10 +5,19 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { DataTable, type DataTableProps } from '@ops/ui/composites/DataTable'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { assignLeadsAction, moveLeadsAction } from '../../../server/crm/leads/actions'
 
 type Option = Readonly<{ id: string; name: string }>
-type BulkOptions = Readonly<{ owners: readonly Option[]; stages: readonly Option[] }>
+type Outcome =
+  | { readonly ok: true; readonly data: { updated: number; skipped: number } }
+  | { readonly ok: false; readonly error: { readonly message: string } }
+type BulkAction = (input: unknown) => Promise<Outcome>
+/** The people and stages to choose from, and the two server actions that apply the choice to the selected records. */
+type BulkOptions = Readonly<{
+  owners: readonly Option[]
+  stages: readonly Option[]
+  assign: BulkAction
+  move: BulkAction
+}>
 
 function BulkSelect({
   label,
@@ -42,7 +51,7 @@ function BulkSelect({
   )
 }
 
-function BulkBar({ ids, owners, stages }: Readonly<{ ids: readonly string[] } & BulkOptions>) {
+function BulkBar({ ids, owners, stages, assign, move }: Readonly<{ ids: readonly string[] } & BulkOptions>) {
   const router = useRouter()
   const [ownerId, setOwnerId] = useState('')
   const [stageId, setStageId] = useState('')
@@ -52,8 +61,8 @@ function BulkBar({ ids, owners, stages }: Readonly<{ ids: readonly string[] } & 
     startTransition(async () => {
       const result =
         stageId === ''
-          ? await assignLeadsAction({ ids, ownerId: ownerId === 'none' ? null : ownerId })
-          : await moveLeadsAction({ ids, toStageId: stageId })
+          ? await assign({ ids, ownerId: ownerId === 'none' ? null : ownerId })
+          : await move({ ids, toStageId: stageId })
       if (!result.ok) {
         setMessage(result.error.message)
         return
@@ -98,8 +107,8 @@ function BulkBar({ ids, owners, stages }: Readonly<{ ids: readonly string[] } & 
   )
 }
 
-/** The lead table with a bulk-action bar for managers and owners. */
-export function LeadBulkTable({
+/** A record table with a bulk-action bar (assign an owner, move to a stage) for managers and owners. */
+export function BulkTable({
   bulk,
   ...table
 }: Readonly<Omit<DataTableProps, 'bulkActions' | 'selectable'> & { bulk: BulkOptions | null }>) {

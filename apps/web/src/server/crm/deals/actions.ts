@@ -1,13 +1,13 @@
 'use server'
 
 import type { Result } from '@ops/kernel'
-import { createDeal, markLost, moveDeal, updateDeal } from '@ops/module-crm'
+import { assignDeals, createDeal, markLost, moveDeal, moveDeals, updateDeal } from '@ops/module-crm'
 import { revalidatePath } from 'next/cache'
 import { crmDeps } from '../../container'
 import { getWorkspaceSettings } from '../../auth/context'
 import { applyWorkspaceCurrency } from '../workspace-currency'
 import { withDefaultOwner } from './view-model'
-import { actionError, actionOk, type ActionResult } from '../../action-result'
+import { actionError, actionOk, toActionResult, type ActionResult } from '../../action-result'
 
 export type DealActionResult = ActionResult<{ readonly id: string; readonly updatedAt: number }>
 
@@ -48,4 +48,18 @@ export async function markDealLostAction(input: unknown): Promise<DealActionResu
   const result = await markLost(await crmDeps(), input)
   if (result.ok) refresh(result.value.id)
   return resultOf(result)
+}
+
+/** Sets one owner on the selected deals and reports how many changed. */
+export async function assignDealsAction(input: unknown): Promise<ActionResult<{ updated: number; skipped: number }>> {
+  const result = await assignDeals(await crmDeps(), input)
+  if (result.ok) refresh()
+  return toActionResult(result)
+}
+
+/** Moves the selected deals to one open stage and reports how many changed. */
+export async function moveDealsAction(input: unknown): Promise<ActionResult<{ updated: number; skipped: number }>> {
+  const result = await moveDeals(await crmDeps(), input)
+  if (result.ok) refresh()
+  return toActionResult(result)
 }
