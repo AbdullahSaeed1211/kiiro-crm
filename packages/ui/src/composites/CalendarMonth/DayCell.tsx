@@ -2,6 +2,7 @@
 
 import { useState, type DragEvent } from 'react'
 import Link from 'next/link'
+import { Button } from '@ops/ui/components/ui/button'
 import { stagePillClass, type StageColor } from '../StagePill/stage'
 import type { CalendarEvent, CalendarMove } from './types'
 
@@ -29,14 +30,16 @@ function EventCell({ event, movable }: Readonly<{ event: CalendarEvent; movable:
 
 function MoreButton({ count, label, onClick }: Readonly<{ count: number; label: string; onClick: () => void }>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
+      size="xs"
       onClick={onClick}
-      className="text-xs text-muted-foreground hover:underline"
+      className="text-muted-foreground"
       aria-label={`Show ${String(count)} more task${count === 1 ? '' : 's'}`}
     >
       {label.replace('{count}', String(count))}
-    </button>
+    </Button>
   )
 }
 
@@ -101,16 +104,18 @@ function EventList({
         />
       ) : null}
       {isExpanded && hidden > 0 ? (
-        <button
+        <Button
           type="button"
+          variant="link"
+          size="xs"
           onClick={() => {
             setIsExpanded(false)
           }}
-          className="text-xs text-muted-foreground hover:underline"
+          className="text-muted-foreground"
           aria-label="Show fewer tasks"
         >
           − Show less
-        </button>
+        </Button>
       ) : null}
     </div>
   )

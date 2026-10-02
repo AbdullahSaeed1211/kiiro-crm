@@ -6,18 +6,20 @@ import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
 import { insertStage, moveStage } from './stage-moves'
 import { FlowNode } from './workflow-flow-node'
 import { isTerminal, type RequirementOption, type Stage } from './workflow-model'
+import { Button } from '@ops/ui/components/ui/button'
 
 function InsertButton({ label, onClick }: Readonly<{ label: string; onClick: () => void }>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       aria-label={label}
       title={label}
-      className="inline-flex size-10 shrink-0 items-center justify-center self-center rounded-full border border-dashed sm:size-7 text-muted-foreground hover:border-solid hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="size-10 shrink-0 self-center rounded-full border-dashed border-border text-muted-foreground hover:border-solid sm:size-7"
       onClick={onClick}
     >
       <Plus className="size-4" aria-hidden />
-    </button>
+    </Button>
   )
 }
 

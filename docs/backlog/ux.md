@@ -26,10 +26,10 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
 - Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads and tasks onto it, and add a sort to the deals query.
 
-### 12. Some screens skip the design-system components
+### 12. The inbox keeps its own buttons
 
 - Area: Design system. Effort: Moderate. Codes: S-01 S-02.
-- Status: partly fixed. No native `<select>` is left in app code, and the settings, onboarding, report and sign-in forms now use `Button`. Left: 23 hand-styled `<button>` elements in the inbox (CSS modules), the workflow builder nodes, notifications, the copy button and the calendar day cell; four native date inputs (`NewTaskForm`, `DealCreateDialog`, `time-log-form`, reports), which are fine on phones but have no shared `DatePicker`. Fix: finish the inbox, add a `DatePicker`, and add a lint rule against raw `<button>` in app code.
+- Status: mostly fixed. No native `<select>` is left, and settings, onboarding, reports, sign-in, the workflow builder, the copy button and the calendar use `Button`. Date fields stay native on purpose: the phone date picker is better than any custom one. Left: the inbox (CSS modules: folder rail, thread rows, reader tools, compose close) and the notification card, which are bespoke layouts rather than buttons. Fix: move the inbox to `Button` and the shared tokens when the inbox is next redesigned, then add a lint rule against raw `<button>` in app code.
 
 ## Minor
 

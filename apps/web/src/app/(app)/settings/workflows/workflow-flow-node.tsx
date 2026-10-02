@@ -8,6 +8,7 @@ import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
 import { COLORS } from './stage-constants'
 import { StageRequirements } from './workflow-stage-requirements'
 import { isTerminal, type RequirementOption, type Stage } from './workflow-model'
+import { Button } from '@ops/ui/components/ui/button'
 
 const fill = (template: string, name: string): string => template.replace('{name}', name)
 
@@ -44,27 +45,42 @@ function NodeTools({
   copy: WorkflowCopy
   tools: Readonly<{ onEarlier: () => void; onLater: () => void; onRemove: () => void }>
 }>) {
-  const button =
-    'inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  const button = 'text-muted-foreground'
   return (
     <div className="flex items-center gap-0.5">
       <span aria-hidden className="cursor-grab text-muted-foreground" title={fill(copy.dragToMove, name)}>
         <GripVertical className="size-4" />
       </span>
-      <button className={button} type="button" aria-label={fill(copy.moveEarlier, name)} onClick={tools.onEarlier}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={button}
+        type="button"
+        aria-label={fill(copy.moveEarlier, name)}
+        onClick={tools.onEarlier}
+      >
         <ChevronLeft className="size-4 rotate-90 lg:rotate-0" aria-hidden />
-      </button>
-      <button className={button} type="button" aria-label={fill(copy.moveLater, name)} onClick={tools.onLater}>
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={button}
+        type="button"
+        aria-label={fill(copy.moveLater, name)}
+        onClick={tools.onLater}
+      >
         <ChevronRight className="size-4 rotate-90 lg:rotate-0" aria-hidden />
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
         className={`${button} ml-auto hover:text-destructive`}
         type="button"
         aria-label={fill(copy.removeStage, name)}
         onClick={tools.onRemove}
       >
         <Trash2 className="size-4" aria-hidden />
-      </button>
+      </Button>
     </div>
   )
 }
