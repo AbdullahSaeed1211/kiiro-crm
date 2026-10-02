@@ -64,6 +64,7 @@ export function LeadListControls({
       if (query) params.set('q', query)
       else params.delete('q')
       params.delete('stage')
+      params.delete('page')
       stages.forEach((stage) => {
         params.append('stage', stage)
       })
@@ -91,6 +92,7 @@ export function LeadListControls({
         onStagesChange={(value) => {
           navigate({ query: q, stages: value })
         }}
+        showClear={false}
       />
       <FacetSelect
         label="Owner"

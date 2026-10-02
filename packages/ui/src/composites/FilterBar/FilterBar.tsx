@@ -26,6 +26,8 @@ export type FilterBarProps = Readonly<{
   onQueryChange: (query: string) => void
   onStagesChange: (stageIds: readonly string[]) => void
   showStageFilter?: boolean
+  /** False when the page shows its own filter chips and clear-all, so there is one place to clear. */
+  showClear?: boolean
   debounceMs?: number
   className?: string | undefined
 }>
@@ -108,6 +110,7 @@ export function FilterBar({
   onQueryChange,
   onStagesChange,
   showStageFilter = true,
+  showClear = true,
   debounceMs = 300,
   className,
 }: FilterBarProps) {
@@ -146,7 +149,7 @@ export function FilterBar({
       {showStageFilter ? (
         <StageFilter selected={draftStages} options={stageOptions} labels={labels} onToggle={chooseStage} />
       ) : null}
-      {active ? (
+      {active && showClear ? (
         <Button type="button" variant="ghost" size="sm" onClick={clear}>
           <X aria-hidden />
           {labels.clear}

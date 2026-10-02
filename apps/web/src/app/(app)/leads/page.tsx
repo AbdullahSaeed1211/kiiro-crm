@@ -15,6 +15,7 @@ import { listSavedViews } from '../../../server/queries/settings/listSavedViews'
 import { assignLeadsAction, moveLeadsAction } from '../../../server/crm/leads/actions'
 import { BulkTable } from '../BulkTable'
 import { LeadListControls } from './LeadListControls'
+import { LeadFilterChips } from './LeadFilterChips'
 import { LeadViewControls, type LeadViewLink } from './LeadViewControls'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
 import { ListEmpty } from '../ListEmpty'
@@ -196,6 +197,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
           }
         />
         <LeadListControls stages={result.stages} sources={result.sources} />
+        <LeadFilterChips stages={result.stages} sources={result.sources} />
         <LeadViewControls views={[{ id: 'all', label: 'All open leads', query: '' }, ...views]} />
         <LeadTable result={result} params={params} canBulk={canBulk} />
       </PageContent>
