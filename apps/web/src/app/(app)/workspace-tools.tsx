@@ -2,18 +2,13 @@
 
 import { useTheme } from '@ops/ui'
 import { Button } from '@ops/ui/components/ui/button'
-import { useSidebar } from '@ops/ui/components/ui/sidebar'
 import { Moon, Sun } from 'lucide-react'
 import { WorkspaceNotifications } from './workspace-notifications'
 import { WorkspaceSearch } from './workspace-search'
 import type { Locale } from '../../i18n/config'
 
-export function WorkspaceTools({
-  locale,
-  appName,
-  compactLogoUrl,
-}: Readonly<{ locale: Locale; appName: string; compactLogoUrl: string }>) {
-  const { isMobile } = useSidebar()
+/** Search, notifications and the theme switch. The workspace name stays in the sidebar so it never crowds the page title on a phone. */
+export function WorkspaceTools({ locale }: Readonly<{ locale: Locale }>) {
   const { theme, setTheme } = useTheme()
   const toggleTheme = () => {
     const currentlyDark = document.documentElement.classList.contains('dark')
@@ -21,14 +16,6 @@ export function WorkspaceTools({
   }
   return (
     <>
-      {isMobile ? (
-        <span className="mr-auto flex min-w-0 max-w-[9rem] items-center gap-2 truncate text-sm font-semibold">
-          <img className="size-5 shrink-0 object-contain" src={compactLogoUrl} alt="" width={20} height={20} />
-          <span translate="no" className="truncate">
-            {appName}
-          </span>
-        </span>
-      ) : null}
       <WorkspaceSearch locale={locale} />
       <WorkspaceNotifications locale={locale} />
       <Button variant="ghost" size="icon-sm" aria-label="Toggle color theme" onClick={toggleTheme}>

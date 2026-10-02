@@ -183,7 +183,7 @@ export function AppFrame({
   return (
     <AppShell
       defaultOpen={defaultOpen}
-      utilities={<WorkspaceTools locale={locale} appName={appName} compactLogoUrl={compactLogoUrl} />}
+      utilities={<WorkspaceTools locale={locale} />}
       sidebar={
         <AppSidebar
           appName={appName}

@@ -105,7 +105,9 @@ test('customer shell uses the custom login, workspace tools, and contained respo
   await expect(page.getByLabel('Email')).toBeVisible()
 
   await signIn(page)
-  await expect(page.getByText(APP_SETTINGS.appName, { exact: true })).toHaveCount(1)
+  // On a phone the workspace name lives in the closed sidebar, so it is only on screen at desktop width.
+  if (page.viewportSize()?.width !== 390)
+    await expect(page.getByText(APP_SETTINGS.appName, { exact: true })).toHaveCount(1)
   expect(await page.locator('a[href="/projects"]').count()).toBeGreaterThan(0)
   if (page.viewportSize()?.width !== 390)
     expect(await page.locator('a[href="/settings/general"]').count()).toBeGreaterThan(0)

@@ -150,7 +150,7 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
     <>
       <Button
         aria-label={copy.button}
-        className="ops-search-trigger"
+        className="ops-search-trigger max-lg:border-transparent max-lg:bg-transparent max-lg:dark:bg-transparent"
         variant="outline"
         size="sm"
         onClick={() => {
