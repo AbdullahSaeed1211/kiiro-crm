@@ -146,7 +146,6 @@ export function TimelineChart({
         count={tasks.length}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <TaskWorkspaceViews active="gantt" />
             {compact ? (
               <CompactViewToggle
                 value={displayMode}
@@ -164,6 +163,7 @@ export function TimelineChart({
                 if (isZoom(value)) setZoom(value)
               }}
             />
+            <TaskWorkspaceViews active="gantt" />
           </div>
         }
       />
