@@ -115,8 +115,10 @@ function useColumnPicks(type: ImportType, csv: string | null) {
   const [choices, setChoices] = useState<readonly ColumnChoice[]>([])
   const [allowed, setAllowed] = useState<readonly string[]>([])
   const [picks, setPicks] = useState<string[]>([])
+  const [ready, setReady] = useState(false)
   useEffect(() => {
     let current = true
+    setReady(false)
     if (csv === null) {
       setChoices([])
       return
@@ -126,6 +128,7 @@ function useColumnPicks(type: ImportType, csv: string | null) {
       setChoices(found.choices)
       setAllowed(found.allowed)
       setPicks(firstPicks(found.choices))
+      setReady(true)
     })
     return () => {
       current = false
@@ -134,7 +137,12 @@ function useColumnPicks(type: ImportType, csv: string | null) {
   const change = (index: number, pick: string) => {
     setPicks((before) => before.map((value, at) => (at === index ? pick : value)))
   }
-  return { choices, allowed, picks, change, names: choices.length === 0 ? undefined : namesFor(choices, picks) }
+  return { ready, choices, allowed, picks, change, names: choices.length === 0 ? undefined : namesFor(choices, picks) }
+}
+
+/** The check waits for the column match to load, so a file is never checked before its columns are matched. */
+function isReadyToCheck(state: Readonly<{ hasFile: boolean; mappingReady: boolean; pending: boolean }>): boolean {
+  return state.hasFile && state.mappingReady && !state.pending
 }
 
 /** Pick a record type and a CSV file, check it, then import it; every row is reported. */
@@ -144,7 +152,7 @@ export function ImportForm() {
   const mapping = useColumnPicks(type, file.csv)
   const job = useImportRun({ type, csv: file.csv, names: mapping.names })
   const problem = job.error ?? file.problem
-  const canCheck = file.csv !== null && !job.pending
+  const canCheck = isReadyToCheck({ hasFile: file.csv !== null, mappingReady: mapping.ready, pending: job.pending })
   const canImport = canCheck && job.outcome?.dryRun === true
   return (
     <div className="grid gap-4 text-sm">

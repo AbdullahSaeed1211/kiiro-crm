@@ -43,14 +43,25 @@ function dealDeps(context: RequestContext): CrmDeps {
   }
 }
 
-// eslint-disable-next-line complexity -- stage and text filters must be combined before the paginated read.
-function dealWhere(input: Readonly<{ query?: string; stageId?: string }>, organizationIds: readonly string[]): Where {
+/** The stage filter value that means "every stage that is not won, lost or cancelled". */
+const OPEN_DEALS = 'open'
+
+function stageFilter(stageId: string | undefined, terminalStageIds: readonly string[]): Where[] {
+  if (stageId === undefined || stageId === '') return []
+  if (stageId === OPEN_DEALS)
+    return terminalStageIds.length === 0 ? [] : [{ stageId: { not_in: [...terminalStageIds] } }]
+  return [{ stageId: { equals: stageId } }]
+}
+
+function dealWhere(
+  input: Readonly<{ query?: string; stageId?: string }>,
+  parts: Readonly<{ organizationIds: readonly string[]; terminalStageIds: readonly string[] }>,
+): Where {
   const query = input.query?.trim() ?? ''
-  const filters: Where[] = []
-  if (input.stageId !== undefined && input.stageId !== '') filters.push({ stageId: { equals: input.stageId } })
+  const filters: Where[] = stageFilter(input.stageId, parts.terminalStageIds)
   if (query !== '') {
     const search: Where[] = [{ title: { contains: query } }]
-    if (organizationIds.length > 0) search.push({ organization: { in: organizationIds } })
+    if (parts.organizationIds.length > 0) search.push({ organization: { in: [...parts.organizationIds] } })
     filters.push({ or: search })
   }
   if (filters.length === 0) return {}
@@ -113,7 +124,12 @@ export async function getDealListData(
   ])
   const dealsPage = await listCrmPage(context.req, {
     type: 'deal',
-    where: dealWhere(input, organizationIds),
+    where: dealWhere(input, {
+      organizationIds,
+      terminalStageIds: workflow.stages
+        .filter((stage) => ['done_success', 'done_failure', 'cancelled'].includes(stage.category))
+        .map((stage) => stage.id),
+    }),
     page: Math.max(1, input.page ?? 1),
     limit: input.pageSize ?? 50,
   })

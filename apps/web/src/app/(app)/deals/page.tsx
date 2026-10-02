@@ -83,7 +83,10 @@ function stageFilter(stages: readonly { id: string; name: string }[], stageId: s
     label: 'Filter by stage',
     allLabel: 'All stages',
     value: stageId ?? '',
-    options: stages.map((stage) => ({ value: stage.id, label: stage.name })),
+    options: [
+      { value: 'open', label: 'Open deals' },
+      ...stages.map((stage) => ({ value: stage.id, label: stage.name })),
+    ],
   }
 }
 

@@ -69,3 +69,29 @@ test('a deal card dragged to another stage rolls back on a failed save, then sav
   await page.reload()
   await expect(column(page, to).getByText(title)).toBeVisible()
 })
+
+// Rows 22 and 24: the stage menu moves a card, and the column totals follow the move now and after a reload.
+async function totalsOf(page: Page): Promise<Map<string, string>> {
+  const labels = await page
+    .getByRole('region')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('aria-label') ?? ''))
+  return new Map(labels.filter((label) => label.includes(' · ')).map((label) => label.split(' · ') as [string, string]))
+}
+
+test('moving a deal with the stage menu updates both column totals and keeps them after a reload', async ({ page }) => {
+  // The same board component is checked at 390 px with the task board (spike/smoke.spec.ts); only desktop here.
+  test.fixme((page.viewportSize()?.width ?? 0) < 768, 'phone coverage is in the task board tests')
+  test.setTimeout(60_000)
+  await signInAs(page, 'owner')
+  await page.goto('/deals/board', { waitUntil: 'networkidle' })
+  const [from, to] = await firstTwoStages(page)
+  const before = await totalsOf(page)
+  // The first card on the board is in the first stage on both layouts.
+  await page.getByRole('button', { name: 'Move to…' }).first().click()
+  await page.getByRole('menuitem', { name: new RegExp(`^${to}`) }).click()
+  await expect.poll(async () => (await totalsOf(page)).get(from)).not.toBe(before.get(from))
+  const after = await totalsOf(page)
+  expect(after.get(to)).not.toBe(before.get(to))
+  await page.reload()
+  expect(await totalsOf(page)).toEqual(after)
+})

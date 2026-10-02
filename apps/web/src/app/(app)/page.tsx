@@ -124,7 +124,12 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label={copy.myOpenTasks} value={work.mine} detail={copy.assignedToYou} href="/my-tasks" />
           <StatCard label={copy.openLeads} value={stats.openLeads} detail={copy.needsFollowUp} href="/leads" />
-          <StatCard label={copy.openDeals} value={stats.openDeals} detail={copy.activePipeline} href="/deals" />
+          <StatCard
+            label={copy.openDeals}
+            value={stats.openDeals}
+            detail={copy.activePipeline}
+            href="/deals?stage=open"
+          />
           <StatCard
             label={copy.contacts}
             value={stats.contacts}
