@@ -25,13 +25,19 @@ interface TimelineTask {
   readonly mobile: boolean
 }
 
-async function prepareTimeline(page: Page): Promise<TimelineTask> {
+/** The title cell of the task to drag: the named one, or the first row (the last on desktop, see below). */
+function taskCell(rows: Locator, input: { mobile: boolean; only: string | undefined }): Locator {
+  if (input.only !== undefined) return rows.getByRole('gridcell', { name: input.only, exact: true }).first()
+  return (input.mobile ? rows.nth(1) : rows.last()).getByRole('gridcell').first()
+}
+
+async function prepareTimeline(page: Page, only?: string): Promise<TimelineTask> {
   await page.goto(TIMELINE_PATH)
   const mobile = (page.viewportSize()?.width ?? 0) <= 650
   if (mobile) await setTimelineMode(page, 'Grid')
   // Not the first row: when that task starts earliest, moving it moves the chart's own origin and the bar seems not to move.
   const rows = page.getByRole('grid').getByRole('row')
-  const firstTask = (mobile ? rows.nth(1) : rows.last()).getByRole('gridcell').first()
+  const firstTask = taskCell(rows, { mobile, only })
   await expect(firstTask).toBeVisible()
   const title = (await firstTask.innerText()).trim()
   const dates = page.locator('.wx-row', { hasText: title }).locator('[data-col-id=":start"], [data-col-id=":end"]')
@@ -148,12 +154,17 @@ async function touchDragBar(bar: Locator, input: { x: number; y: number; offset:
 
 /** Verifies a rejected timeline save puts the bar back, says why, and leaves the stored dates unchanged. */
 export async function verifyTimelineRollback(page: Page): Promise<void> {
-  const task = await prepareTimeline(page)
+  // A seeded task, so tasks added by other tests cannot change which bar is dragged.
+  const task = await prepareTimeline(page, 'Confirm landing-page brief')
   await page.route(`**${TIMELINE_PATH}`, async (route) => {
     if (route.request().method() === 'POST') await route.fulfill({ status: 500, body: 'rejected by test' })
     else await route.continue()
   })
+  const attempted = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith(TIMELINE_PATH),
+  )
   await dragTimelineBar(page, task.title)
+  await attempted
   await expect(page.getByText('Could not save the dates').first()).toBeVisible()
   await page.unroute(`**${TIMELINE_PATH}`)
   await page.reload()
