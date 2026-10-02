@@ -25,6 +25,8 @@ const localServer = {
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
+  // The local dev server compiles each page on first visit. More than one worker makes sign-in time out.
+  workers: process.env['CI'] || process.env['E2E_BASE_URL'] ? undefined : 1,
   retries: process.env['CI'] ? 1 : 0,
   reporter: 'list',
   use: {
