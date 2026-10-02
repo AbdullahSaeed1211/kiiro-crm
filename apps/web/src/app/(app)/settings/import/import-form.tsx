@@ -3,8 +3,10 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@ops/ui/components/ui/native-select'
 import type { ImportReport } from '@ops/module-crm'
-import { useState, useTransition } from 'react'
-import { importCsvAction } from '../../../../server/crm/import'
+import { useEffect, useState, useTransition } from 'react'
+import { importCsvAction, suggestColumnsAction } from '../../../../server/crm/import'
+import type { ColumnChoice } from '../../../../server/crm/import-mapping'
+import { ColumnMapper, firstPicks, namesFor } from './column-mapper'
 import { describeClientError } from '../../client-errors'
 
 const TYPES = [
@@ -80,17 +82,21 @@ function useCsvFile() {
 }
 
 /** Runs the check or the import and keeps the latest report or error. */
-function useImportRun(input: { readonly type: ImportType; readonly csv: string | null }) {
+function useImportRun(input: {
+  readonly type: ImportType
+  readonly csv: string | null
+  readonly names: (string | null)[] | undefined
+}) {
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const run = (dryRun: boolean) => {
     if (input.csv === null) return
-    const { type, csv } = input
+    const { type, csv, names } = input
     setError(null)
     startTransition(async () => {
       try {
-        const result = await importCsvAction({ type, csv, dryRun })
+        const result = await importCsvAction({ type, csv, dryRun, ...(names === undefined ? {} : { names }) })
         if (result.ok) setOutcome({ dryRun, report: result.data })
         else setError(result.error.message)
       } catch (caught) {
@@ -104,11 +110,39 @@ function useImportRun(input: { readonly type: ImportType; readonly csv: string |
   return { outcome, error, pending, run, reset }
 }
 
+/** The file's columns with our guess for each, and the person's changes to those guesses. */
+function useColumnPicks(type: ImportType, csv: string | null) {
+  const [choices, setChoices] = useState<readonly ColumnChoice[]>([])
+  const [allowed, setAllowed] = useState<readonly string[]>([])
+  const [picks, setPicks] = useState<string[]>([])
+  useEffect(() => {
+    let current = true
+    if (csv === null) {
+      setChoices([])
+      return
+    }
+    void suggestColumnsAction({ type, csv }).then((found) => {
+      if (!current) return
+      setChoices(found.choices)
+      setAllowed(found.allowed)
+      setPicks(firstPicks(found.choices))
+    })
+    return () => {
+      current = false
+    }
+  }, [type, csv])
+  const change = (index: number, pick: string) => {
+    setPicks((before) => before.map((value, at) => (at === index ? pick : value)))
+  }
+  return { choices, allowed, picks, change, names: choices.length === 0 ? undefined : namesFor(choices, picks) }
+}
+
 /** Pick a record type and a CSV file, check it, then import it; every row is reported. */
 export function ImportForm() {
   const [type, setType] = useState<ImportType>('contact')
   const file = useCsvFile()
-  const job = useImportRun({ type, csv: file.csv })
+  const mapping = useColumnPicks(type, file.csv)
+  const job = useImportRun({ type, csv: file.csv, names: mapping.names })
   const problem = job.error ?? file.problem
   const canCheck = file.csv !== null && !job.pending
   const canImport = canCheck && job.outcome?.dryRun === true
@@ -143,6 +177,15 @@ export function ImportForm() {
           />
         </label>
       </div>
+      <ColumnMapper
+        choices={mapping.choices}
+        picks={mapping.picks}
+        allowed={mapping.allowed}
+        onChange={(index, pick) => {
+          job.reset()
+          mapping.change(index, pick)
+        }}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"

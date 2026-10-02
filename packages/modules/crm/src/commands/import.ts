@@ -29,7 +29,8 @@ const importSchema = z
   })
   .strict()
 
-const CORE_COLUMNS: Readonly<Record<ImportType, readonly string[]>> = {
+/** The column names an import file may use for each record type, besides custom field keys. */
+export const CORE_COLUMNS: Readonly<Record<ImportType, readonly string[]>> = {
   organization: ['name', 'website', 'phone', 'email'],
   contact: ['firstName', 'lastName', 'email', 'phone', 'organization'],
   lead: ['title', 'firstName', 'lastName', 'email', 'phone', 'companyName', 'organization', 'source'],

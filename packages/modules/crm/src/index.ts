@@ -16,7 +16,8 @@ export * from './commands/public'
 export { setCustomFieldsSchema } from './schema'
 export { STANDARD_STAGE_FIELDS } from './domain/stage-requirements'
 export { leadMoveDestinationError } from './domain/lead-moves'
-export { formatCsv } from './domain/csv'
+export { formatCsv, parseCsv } from './domain/csv'
+export { CORE_COLUMNS } from './commands/import'
 export { exportTable, type ExportLookups } from './domain/export'
 export {
   pipelineSummary,
