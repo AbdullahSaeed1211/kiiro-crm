@@ -1,1 +1,5 @@
-export { PageLoading as default } from '../page-loading'
+import { PageLoading } from '../page-loading'
+
+export default function Loading() {
+  return <PageLoading />
+}
