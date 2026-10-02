@@ -1,223 +1,154 @@
-/* eslint-disable complexity, max-lines-per-function, no-nested-ternary, sonarjs/no-nested-conditional, @typescript-eslint/no-confusing-void-expression, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unnecessary-condition -- the wizard intentionally keeps seven small steps in one resumable client surface. */
 'use client'
 
-import { NativeSelect } from '@ops/ui/components/ui/native-select'
+import { Button } from '@ops/ui/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { ONBOARDING_COPY, type OnboardingCopy } from '../../../i18n/onboarding-copy'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
-import { TIMEZONE_VALUES } from '@ops/kernel'
-import { SearchableSelect } from '../settings/searchable-select'
-import { CURRENCY_OPTIONS } from '../../../i18n/currencies'
+import { PointerStep, TemplateStep, WorkspaceStep, type WizardValues } from './onboarding-steps'
 import { TeamStep } from './team-step'
-import { Button } from '@ops/ui/components/ui/button'
 
-const STEPS = [
-  ['workspace', 'Workspace'],
-  ['branding', 'Branding'],
-  ['template', 'Business type'],
-  ['team', 'Team'],
-  ['intake', 'Lead intake'],
-  ['import', 'Import'],
-  ['done', 'Done'],
-] as const
+const STEP_KEYS = ['workspace', 'branding', 'template', 'team', 'intake', 'import', 'done'] as const
+const LAST_STEP = STEP_KEYS.length - 1
 
-export function OnboardingWizard({
-  initialStep,
-  appName,
-  timezone,
-  currency,
-  locale,
+interface WizardProps {
+  readonly initialStep: number
+  readonly appName: string
+  readonly timezone: string
+  readonly currency: string
+  readonly locale: string
+  readonly completed: Record<string, boolean>
+  readonly savedValues: Record<string, unknown>
+}
+
+function buttonLabel(copy: OnboardingCopy, state: Readonly<{ busy: boolean; last: boolean }>): string {
+  if (state.busy) return copy.saving
+  return state.last ? copy.finish : copy.saveAndContinue
+}
+
+/** The template the owner already picked, if one was saved. */
+function savedTemplate(savedValues: Record<string, unknown>): string {
+  const value = savedValues.template as { template?: unknown } | null | undefined
+  return typeof value?.template === 'string' ? value.template : 'blank'
+}
+
+function StepList({
+  step,
   completed,
-  savedValues,
+  onPick,
+}: Readonly<{ step: number; completed: Record<string, boolean>; onPick: (index: number) => void }>) {
+  const copy = catalogFor(ONBOARDING_COPY, useLocale())
+  return (
+    <aside className="space-y-1">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">{copy.heading}</p>
+      {STEP_KEYS.map((key, index) => (
+        <Button
+          key={key}
+          type="button"
+          variant="ghost"
+          className={`h-auto w-full justify-start gap-2 rounded-none border-l-2 px-2 py-2 text-left font-normal ${index === step ? 'border-primary font-medium text-foreground' : 'border-transparent text-muted-foreground'}`}
+          onClick={() => {
+            onPick(index)
+          }}
+        >
+          <span className="grid size-5 place-items-center border text-[10px]">
+            {completed[key] || index < step ? '✓' : index + 1}
+          </span>
+          {copy.steps[key]}
+        </Button>
+      ))}
+    </aside>
+  )
+}
+
+function StepBody({
+  stepKey,
+  copy,
+  values,
+  update,
 }: Readonly<{
-  initialStep: number
-  appName: string
-  timezone: string
-  currency: string
-  locale: string
-  completed: Record<string, boolean>
-  savedValues: Record<string, unknown>
+  stepKey: (typeof STEP_KEYS)[number]
+  copy: OnboardingCopy
+  values: WizardValues
+  update: (field: keyof WizardValues, value: string) => void
 }>) {
-  const [step, setStep] = useState(Math.min(Math.max(initialStep, 0), 6))
+  if (stepKey === 'workspace') return <WorkspaceStep copy={copy} values={values} update={update} />
+  if (stepKey === 'template') return <TemplateStep copy={copy} values={values} update={update} />
+  if (stepKey === 'team') return <TeamStep />
+  if (stepKey === 'intake' || stepKey === 'import') return <PointerStep kind={stepKey} copy={copy} />
+  return <p className="text-sm text-muted-foreground">{stepKey === 'done' ? copy.doneHint : copy.brandingHint}</p>
+}
+
+export function OnboardingWizard(props: WizardProps) {
+  const copy = catalogFor(ONBOARDING_COPY, useLocale())
   const router = useRouter()
+  const [step, setStep] = useState(Math.min(Math.max(props.initialStep, 0), LAST_STEP))
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-  const saved = (key: string): Record<string, string> => {
-    const value = savedValues[key]
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (Object.fromEntries(Object.entries(value).filter(([, item]) => typeof item === 'string')) as Record<
-          string,
-          string
-        >)
-      : {}
-  }
-  const [values, setValues] = useState({
-    appName,
-    timezone,
-    currency,
-    locale,
-    template: saved('template').template ?? 'blank',
+  const [values, setValues] = useState<WizardValues>({
+    appName: props.appName,
+    timezone: props.timezone,
+    currency: props.currency,
+    locale: props.locale,
+    template: savedTemplate(props.savedValues),
   })
-  const current = STEPS[step]
-  const update = (key: string, value: string) => setValues((state) => ({ ...state, [key]: value }))
+  const key = STEP_KEYS[step] ?? 'workspace'
+  const update = (field: keyof WizardValues, value: string) => {
+    setValues((state) => ({ ...state, [field]: value }))
+  }
+  const goTo = async (index: number) => {
+    setStep(index)
+    await setOnboardingStep(index)
+  }
   const save = async () => {
     setBusy(true)
     setMessage('')
-    if (current[0] === 'done') {
+    if (key === 'done') {
       await completeOnboarding()
-      setMessage('Setup complete. Your workspace is ready.')
+      setMessage(copy.complete)
       router.push('/')
     } else {
-      const result = await saveOnboardingStep(
-        current[0],
-        current[0] === 'workspace' ? values : { ...values, completed: true },
-      )
-      if (!result.ok) setMessage(result.error.message)
-      else {
-        const next = Math.min(step + 1, 6)
-        setStep(next)
-        await setOnboardingStep(next)
-      }
+      const result = await saveOnboardingStep(key, key === 'workspace' ? values : { ...values, completed: true })
+      if (result.ok) await goTo(Math.min(step + 1, LAST_STEP))
+      else setMessage(result.error.message)
     }
     setBusy(false)
   }
-  const back = async () => {
-    const next = Math.max(step - 1, 0)
-    setStep(next)
-    await setOnboardingStep(next)
-  }
   return (
     <div className="ops-onboarding grid w-full gap-6 md:grid-cols-[13rem_1fr]">
-      <aside className="space-y-1">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Workspace setup</p>
-        {STEPS.map(([key, label], index) => (
-          <button
-            className={`flex w-full items-center gap-2 border-l-2 px-2 py-2 text-left text-sm ${index === step ? 'border-primary font-medium text-foreground' : 'border-transparent text-muted-foreground'}`}
-            key={key}
-            type="button"
-            onClick={() => {
-              setStep(index)
-              void setOnboardingStep(index)
-            }}
-          >
-            <span className="grid size-5 place-items-center border text-[10px]">
-              {completed[key] || index < step ? '✓' : index + 1}
-            </span>
-            {label}
-          </button>
-        ))}
-      </aside>
+      <StepList
+        step={step}
+        completed={props.completed}
+        onPick={(index) => {
+          void goTo(index)
+        }}
+      />
       <section className="ops-onboarding-card space-y-5 border bg-background p-5">
         <div>
           <p className="text-xs text-muted-foreground">
-            Step {step + 1} of {STEPS.length}
+            {copy.stepOf.replace('{step}', String(step + 1)).replace('{total}', String(STEP_KEYS.length))}
           </p>
-          <h1 className="mt-1 text-xl font-semibold">{current[1]}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Save this step and come back any time.</p>
+          <h1 className="mt-1 text-xl font-semibold">{copy.steps[key]}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{copy.saveHint}</p>
         </div>
-        {current[0] === 'workspace' ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm sm:col-span-2">
-              Workspace name
-              <input
-                className="h-9 border px-3"
-                value={values.appName}
-                onChange={(event) => update('appName', event.target.value)}
-                required
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              Time zone
-              <SearchableSelect
-                id="workspace-timezone"
-                label="Time zone"
-                options={TIMEZONE_VALUES.map((value) => ({ value, label: value }))}
-                value={values.timezone}
-                onChange={(value) => update('timezone', value)}
-              />
-            </label>
-            <div className="grid gap-1 text-sm">
-              <span>Currency</span>
-              <SearchableSelect
-                id="workspace-currency"
-                label="Currency"
-                options={CURRENCY_OPTIONS}
-                value={values.currency}
-                onChange={(value) => update('currency', value)}
-              />
-            </div>
-            <label className="grid gap-1 text-sm">
-              Locale
-              <NativeSelect value={values.locale} onChange={(event) => update('locale', event.target.value)}>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </NativeSelect>
-            </label>
-          </div>
-        ) : null}
-        {current[0] === 'branding' ? (
-          <p className="text-sm text-muted-foreground">
-            Branding is optional. You can upload a logo and favicon later from Settings → Branding.
-          </p>
-        ) : null}
-        {current[0] === 'template' ? (
-          <div className="grid max-w-sm gap-2">
-            <label className="grid gap-1 text-sm" htmlFor="business-type">
-              Business type
-            </label>
-            <p className="text-xs text-muted-foreground" id="business-type-help">
-              Choose a starting preset for terminology and workflows. You can refine fields and stages later.
-            </p>
-            <NativeSelect
-              aria-describedby="business-type-help"
-              id="business-type"
-              value={values.template}
-              onChange={(event) => update('template', event.target.value)}
-            >
-              {TEMPLATE_KEYS.map((value) => (
-                <option key={value} value={value}>
-                  {TEMPLATE_LABELS[value]}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-        ) : null}
-        {current[0] === 'team' ? <TeamStep /> : null}
-        {current[0] === 'intake' ? (
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Your website form is ready. Add your site's address and copy the embed code under{' '}
-            <a className="underline" href="/settings/intake">
-              Settings, Intake
-            </a>
-            , and manage where leads come from under{' '}
-            <a className="underline" href="/settings/lists">
-              Settings, Lists
-            </a>
-            .
-          </p>
-        ) : null}
-        {current[0] === 'import' ? (
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Bring in organizations, contacts, leads and deals from a spreadsheet under{' '}
-            <a className="underline" href="/settings/import">
-              Settings, Import &amp; export
-            </a>
-            . Continue when you are ready.
-          </p>
-        ) : null}
-        {current[0] === 'done' ? (
-          <p className="text-sm text-muted-foreground">Review complete. Finish to open the workspace.</p>
-        ) : null}
+        <StepBody stepKey={key} copy={copy} values={values} update={update} />
         <p className="text-xs text-muted-foreground" role="status">
           {message}
         </p>
         <div className="flex justify-between border-t pt-4">
-          <Button variant="outline" size="lg" type="button" disabled={step === 0 || busy} onClick={() => void back()}>
-            Back
+          <Button
+            variant="outline"
+            size="lg"
+            type="button"
+            disabled={step === 0 || busy}
+            onClick={() => void goTo(Math.max(step - 1, 0))}
+          >
+            {copy.back}
           </Button>
           <Button size="lg" type="button" disabled={busy} onClick={() => void save()}>
-            {busy ? 'Saving…' : step === 6 ? 'Finish setup' : 'Save and continue'}
+            {buttonLabel(copy, { busy, last: key === 'done' })}
           </Button>
         </div>
       </section>
