@@ -5,7 +5,8 @@ import { Input } from '@ops/ui/components/ui/input'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { enableNewsletter, sendNewsletter } from '../../../../server/actions/newsletter'
 import { AudienceEditor } from './audience-editor'
 
@@ -41,7 +42,7 @@ type Task = (task: () => Promise<string | null>) => void
 function useTask(): { run: Task; message: string | null; pending: boolean } {
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const run: Task = (task) => {
     startTransition(async () => {
       setMessage(await task())

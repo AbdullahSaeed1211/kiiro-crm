@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { makeApiToken, removeApiToken } from '../../../../server/actions/settings/api-tokens'
 
 export interface TokenRow {
@@ -22,7 +23,7 @@ export function ApiTokensCard({ tokens }: Readonly<{ tokens: readonly TokenRow[]
   const [name, setName] = useState('')
   const [fresh, setFresh] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const make = () => {
     startTransition(async () => {
       const result = await makeApiToken({ name })

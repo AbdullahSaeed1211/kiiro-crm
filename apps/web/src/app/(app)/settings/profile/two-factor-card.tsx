@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { confirmTwoFactorSetup, disableTwoFactor, startTwoFactor } from '../../../../server/actions/settings/two-factor'
 
 interface Setup {
@@ -91,7 +92,7 @@ export function TwoFactorCard({ enabled }: Readonly<{ enabled: boolean }>) {
   const [recovery, setRecovery] = useState<readonly string[] | null>(null)
   const [code, setCode] = useState('')
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const run = (work: () => Promise<void>) => {
     startTransition(async () => {
       await work()

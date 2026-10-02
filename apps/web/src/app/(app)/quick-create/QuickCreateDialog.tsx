@@ -13,7 +13,8 @@ import {
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../use-guarded-transition'
 import type { QuickCreateResult } from '../../../server/actions/crm/quick-create'
 import { QuickCreateFormField, type FormFieldProps } from './QuickCreateFormField'
 
@@ -70,8 +71,8 @@ function QuickCreateFooter({
 export function QuickCreateDialog({ basePath, fields, text, submit, preset, compact = false }: QuickCreateConfig) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useGuardedTransition(setError)
   const [fieldErrors, setFieldErrors] = useState<Readonly<Record<string, string>>>({})
 
   function send(form: HTMLFormElement) {

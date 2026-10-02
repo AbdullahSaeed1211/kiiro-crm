@@ -12,7 +12,8 @@ import {
 } from '@ops/ui/components/ui/dialog'
 import { Input } from '@ops/ui/components/ui/input'
 import { Label } from '@ops/ui/components/ui/label'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../use-guarded-transition'
 import { RecordPicker } from '../RecordPicker'
 import { createDealAction } from '../../../server/crm/deals/actions'
 
@@ -74,8 +75,8 @@ function DealFields({ currency }: Readonly<{ currency: string }>) {
 
 export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
   const [open, setOpen] = useState(false)
-  const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useGuardedTransition(setError)
   function submit(form: HTMLFormElement) {
     const input = readForm(form)
     if ('error' in input) {

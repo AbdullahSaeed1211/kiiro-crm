@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../use-guarded-transition'
 import { inviteMember } from '../../../server/actions/settings/members'
 
 /** Invites a teammate for real: creates the invitation and shows the link to send them. */
@@ -12,7 +13,7 @@ export function TeamStep() {
   const [role, setRole] = useState('manager')
   const [message, setMessage] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const invite = () => {
     startTransition(async () => {
       const result = await inviteMember({ email, role })

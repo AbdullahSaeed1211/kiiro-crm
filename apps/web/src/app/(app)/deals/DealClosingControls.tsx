@@ -11,6 +11,7 @@ function ClosingActions({
   deal,
   won,
   reopen,
+  lost,
   pending,
   run,
   onMarkLost,
@@ -18,6 +19,8 @@ function ClosingActions({
   deal: Deal
   won: StageOption | undefined
   reopen: StageOption | undefined
+  /** True when the deal is already lost or cancelled, so Mark lost would do nothing. */
+  lost: boolean
   pending: boolean
   run: (task: () => Promise<DealActionResult>, onFailure?: () => void) => void
   onMarkLost: () => void
@@ -46,7 +49,7 @@ function ClosingActions({
           Reopen
         </Button>
       )}
-      {!reopen && !won ? null : (
+      {lost || (!reopen && !won) ? null : (
         <Button variant="destructive" onClick={onMarkLost} disabled={pending}>
           Mark lost
         </Button>
@@ -77,7 +80,15 @@ export function ClosingControls({
     : undefined
   return (
     <div className="grid gap-2 border-t border-border pt-4">
-      <ClosingActions deal={deal} won={won} reopen={reopen} pending={pending} run={run} onMarkLost={onMarkLost} />
+      <ClosingActions
+        deal={deal}
+        won={won}
+        reopen={reopen}
+        lost={['done_failure', 'cancelled'].includes(stageCategory)}
+        pending={pending}
+        run={run}
+        onMarkLost={onMarkLost}
+      />
     </div>
   )
 }

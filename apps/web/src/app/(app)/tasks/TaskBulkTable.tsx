@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { DataTable, type DataTableProps } from '@ops/ui/composites/DataTable'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../use-guarded-transition'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { completeTasks } from '../../../server/actions/work/tasks/completeTasks'
 import { updateTasks } from '../../../server/actions/work/tasks/updateTasks'
@@ -24,7 +25,7 @@ function BulkBar({ ids, versions }: Readonly<{ ids: readonly string[]; versions:
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
   const [priority, setPriority] = useState('')
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const tasks = ids.flatMap((id) => {
     const updatedAt = versions.get(id)
     return updatedAt === undefined ? [] : [{ id, updatedAt }]

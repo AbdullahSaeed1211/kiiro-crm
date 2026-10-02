@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 
 type Outcome = { readonly ok: true } | { readonly ok: false; readonly error: { readonly message: string } }
 
@@ -9,7 +10,7 @@ type Outcome = { readonly ok: true } | { readonly ok: false; readonly error: { r
 export function useSave(action: (input: unknown) => Promise<Outcome>) {
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const save = (input: unknown) => {
     startTransition(async () => {
       const result = await action(input)

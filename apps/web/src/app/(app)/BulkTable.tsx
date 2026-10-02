@@ -4,7 +4,8 @@ import { Button } from '@ops/ui/components/ui/button'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { DataTable, type DataTableProps } from '@ops/ui/composites/DataTable'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from './use-guarded-transition'
 
 type Option = Readonly<{ id: string; name: string }>
 type Outcome =
@@ -56,7 +57,7 @@ function BulkBar({ ids, owners, stages, assign, move }: Readonly<{ ids: readonly
   const [ownerId, setOwnerId] = useState('')
   const [stageId, setStageId] = useState('')
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const apply = () => {
     startTransition(async () => {
       const result =

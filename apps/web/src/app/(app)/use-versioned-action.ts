@@ -2,6 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { catalogFor } from '../../i18n/locale'
+import { ERROR_COPY } from '../../i18n/error-copy'
+import { useLocale } from '../../i18n/locale-context'
+import { describeClientError } from './client-errors'
 
 type Outcome =
   { readonly ok: true } | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } }
@@ -13,12 +17,27 @@ type Outcome =
  */
 export function useVersionedAction({ refreshOnSuccess = false }: Readonly<{ refreshOnSuccess?: boolean }> = {}) {
   const router = useRouter()
+  const locale = useLocale()
   const [error, setError] = useState<string | undefined>()
   const [pending, setPending] = useState(false)
   const run = async <R extends Outcome>(action: () => Promise<R>): Promise<Extract<R, { ok: true }> | null> => {
     setError(undefined)
     setPending(true)
-    const result = await action()
+    let result: R
+    try {
+      result = await action()
+    } catch (caught) {
+      // The request failed before the server answered: show why, and let the person try again.
+      setPending(false)
+      setError(
+        describeClientError(caught, {
+          context: 'versioned save',
+          fallback: catalogFor(ERROR_COPY, locale).saveFailed,
+          locale,
+        }),
+      )
+      return null
+    }
     setPending(false)
     if (result.ok) {
       if (refreshOnSuccess) router.refresh()

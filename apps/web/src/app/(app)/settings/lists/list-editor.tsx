@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { addListItem, removeListItem } from '../../../../server/actions/settings/lists'
 
 export interface ListItem {
@@ -21,7 +22,7 @@ export function ListEditor({
   const router = useRouter()
   const [name, setName] = useState('')
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const run = (work: () => Promise<{ ok: boolean; error?: { message: string } }>, after: () => void) => {
     startTransition(async () => {
       const result = await work()

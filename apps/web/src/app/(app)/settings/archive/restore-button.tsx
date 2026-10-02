@@ -2,7 +2,8 @@
 
 import { Button } from '@ops/ui/components/ui/button'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { ARCHIVE_COPY } from '../../../../i18n/archive-copy'
 import { catalogFor } from '../../../../i18n/locale'
 import { useLocale } from '../../../../i18n/locale-context'
@@ -22,7 +23,7 @@ export function RestoreButton({
   const copy = catalogFor(ARCHIVE_COPY, useLocale())
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   return (
     <span className="inline-flex items-center gap-2">
       <Button

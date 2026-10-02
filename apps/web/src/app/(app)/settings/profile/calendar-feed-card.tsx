@@ -2,7 +2,8 @@
 
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { createCalendarFeed, removeCalendarFeed } from '../../../../server/actions/settings/calendar-feed'
 
 const feedUrl = (token: string): string => `${window.location.origin}/api/v1/calendar/${token}.ics`
@@ -12,7 +13,7 @@ export function CalendarFeedCard({ hasFeed }: Readonly<{ hasFeed: boolean }>) {
   const [token, setToken] = useState<string | null>(null)
   const [on, setOn] = useState(hasFeed)
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const make = () => {
     startTransition(async () => {
       const result = await createCalendarFeed()

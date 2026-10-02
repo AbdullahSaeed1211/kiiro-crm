@@ -6,7 +6,8 @@ import { Label } from '@ops/ui/components/ui/label'
 import { StageSelect } from '@ops/ui'
 import type { StageOption } from '@ops/ui/composites/StagePill'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../use-guarded-transition'
 import type { DealActionResult } from '../../../server/crm/deals/actions'
 import { moveDealAction, updateDealAction } from '../../../server/crm/deals/actions'
 import { ClosingControls } from './DealClosingControls'
@@ -24,8 +25,8 @@ type Deal = Readonly<{
 
 function useDealAction() {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useGuardedTransition(setError)
   const run = (task: () => Promise<DealActionResult>, onFailure?: () => void) => {
     startTransition(async () => {
       const result = await task()

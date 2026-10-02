@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { deleteTime, logTime } from '../../../../server/actions/work/tasks/timeEntries'
 
 interface Row {
@@ -57,7 +58,7 @@ export function TimeLogForm({
   const [day, setDay] = useState(today)
   const [note, setNote] = useState('')
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const add = () => {
     startTransition(async () => {
       const result = await logTime({ taskId, duration, day, note })

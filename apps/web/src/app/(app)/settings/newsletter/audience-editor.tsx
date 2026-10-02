@@ -3,7 +3,8 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { saveAudiences } from '../../../../server/actions/newsletter'
 
 /** Audience names, one per line. A contact can be in several; a campaign can go to one audience or to everyone. */
@@ -11,7 +12,7 @@ export function AudienceEditor({ names }: Readonly<{ names: readonly string[] }>
   const router = useRouter()
   const [text, setText] = useState(names.join('\n'))
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   const save = () => {
     startTransition(async () => {
       const lines = text

@@ -1,13 +1,14 @@
 'use client'
 
 import { Button } from '@ops/ui/components/ui/button'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useGuardedTransition } from '../../use-guarded-transition'
 import { resetMemberTwoFactor } from '../../../../server/actions/settings/two-factor'
 
 /** Owners clear a teammate's two-step sign-in after a lost phone. */
 export function ResetTwoFactorButton({ userId, name }: Readonly<{ userId: string; name: string }>) {
   const [message, setMessage] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useGuardedTransition(setMessage)
   return (
     <span className="inline-flex items-center gap-2">
       <Button
