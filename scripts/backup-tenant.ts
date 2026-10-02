@@ -36,6 +36,13 @@ function tablesOf(target: Target): string[] {
   return rows.map((row) => String(row['name'])).filter((name) => !SKIPPED.test(name))
 }
 
+/** The CREATE statements of the exported tables, kept beside the data so a scratch copy can be built from the backup alone. */
+function schemaOf(target: Target, tables: readonly string[]): string {
+  const list = tables.map((name) => `'${name}'`).join(',')
+  const rows = query(target, `SELECT sql FROM sqlite_master WHERE type='table' AND name IN (${list}) ORDER BY name`)
+  return rows.map((row) => `${String(row['sql'])};`).join('\n')
+}
+
 /** Row counts of every exported table, read in small batches (D1 allows at most 5 terms in a union). */
 function countsOf(target: Target, tables: readonly string[]): Record<string, number> {
   const counts: Record<string, number> = {}
@@ -51,6 +58,7 @@ function countsOf(target: Target, tables: readonly string[]): Record<string, num
 function restoredCounts(folder: string, tables: readonly string[]): Record<string, number> {
   const scratch = join(folder, 'restore-check.db')
   rmSync(scratch, { force: true })
+  execFileSync(SQLITE, [scratch], { input: `.read ${join(folder, 'schema.sql')}\n`, encoding: 'utf8' })
   for (const name of tables) {
     const file = join(folder, `${name}.sql`)
     const script = `PRAGMA foreign_keys=OFF;\n.read ${file}\n`
@@ -73,9 +81,22 @@ function backup(target: Target, verify: boolean): string[] {
   const tables = tablesOf(target)
   for (const name of tables) {
     const file = join(folder, `${name}.sql`)
-    wrangler(['d1', 'export', target.database, '--remote', '--env', target.slug, '--table', name, '--output', file])
+    wrangler([
+      'd1',
+      'export',
+      target.database,
+      '--remote',
+      '--env',
+      target.slug,
+      '--table',
+      name,
+      '--no-schema',
+      '--output',
+      file,
+    ])
     chmodSync(file, 0o600)
   }
+  writeFileSync(join(folder, 'schema.sql'), schemaOf(target, tables), { mode: 0o600 })
   const counts = countsOf(target, tables)
   writeFileSync(join(folder, 'manifest.json'), JSON.stringify({ takenAt: new Date().toISOString(), counts }, null, 2))
   console.log(`${String(tables.length)} tables saved to ${folder}`)
