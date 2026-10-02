@@ -144,3 +144,14 @@ test('the task Board and New task links show their own page when clicked from th
   await page.locator('a[href="/tasks/new"]:visible').first().click()
   await expect(page.getByRole('heading', { level: 1, name: 'New task' })).toBeVisible({ timeout: 30_000 })
 })
+
+// Row 12: a missing record or a page the person may not open explains itself and offers a way back.
+test('a missing record page says what happened and links back to the dashboard', async ({ page }) => {
+  for (const path of ['/leads/00000000-0000-4000-8000-000000000000', '/deals/00000000-0000-4000-8000-000000000000']) {
+    const response = await page.goto(path, { waitUntil: 'networkidle' })
+    expect(response?.status(), path).toBe(404)
+    await expect(page.getByText('We could not find that page')).toBeVisible()
+  }
+  await page.getByRole('link', { name: 'Go to the dashboard' }).click()
+  await expect(page).toHaveURL(/\/$/)
+})

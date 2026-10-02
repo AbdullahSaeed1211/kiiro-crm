@@ -28,7 +28,8 @@ export const collaborationAttachmentsCollection = collaborationCollection({
     { name: 'uploadedBy', type: 'relationship', relationTo: COLLECTIONS.users, required: true },
   ],
   indexes: [{ fields: ['recordType', 'recordId'] }],
-  upload: { mimeTypes: [...ATTACHMENT_MIME_TYPES], crop: false, focalPoint: false },
+  // The upload route writes the object to R2 itself and then saves this record, so Payload must not ask for a file.
+  upload: { mimeTypes: [...ATTACHMENT_MIME_TYPES], crop: false, focalPoint: false, filesRequiredOnCreate: false },
   access: { read: parentScopedRead, create: parentScopedCreate, update: () => false, delete: attachmentDelete },
   hooks: {
     afterOperation: [filterToReadableParents],

@@ -29,6 +29,7 @@
     "test": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
+    "test:e2e:mail-off": "tsx scripts/e2e-mail-off.ts",
     "size": "tsx scripts/check-size.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",

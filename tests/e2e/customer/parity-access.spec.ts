@@ -129,23 +129,28 @@ test('a staff member gets no data for another group task or an unknown id', asyn
 })
 
 // Parity row 38: group labels are separate from the security role; joining every group grants no admin access.
-async function setAllGroups(page: Page, checked: boolean): Promise<void> {
-  await page.goto('/settings/members')
+async function groupBoxes(page: Page) {
   const row = page
     .locator(`xpath=//*[not(self::option)][normalize-space(text())='${STAFF_NAME}']/ancestor::*[.//details][1]`)
     .filter({ visible: true })
     .first()
   await row.getByText('Edit access').click()
-  const boxes = row.getByRole('checkbox').filter({ hasNot: page.getByLabel('Account active') })
+  return { row, boxes: row.getByRole('group', { name: 'Groups' }).getByRole('checkbox') }
+}
+
+/** Sets every group box to `checked`, or to the states in `restore`, and returns the states it found. */
+async function setGroups(page: Page, input: { checked: boolean; restore?: readonly boolean[] }): Promise<boolean[]> {
+  await page.goto('/settings/members')
+  const { row, boxes } = await groupBoxes(page)
   const count = await boxes.count()
+  const found: boolean[] = []
   for (let index = 0; index < count; index += 1) {
-    const box = boxes.nth(index)
-    if ((await box.getAttribute('aria-label')) === 'Account active') continue
-    if (checked) await box.check()
-    else await box.uncheck()
+    found.push(await boxes.nth(index).isChecked())
+    await boxes.nth(index).setChecked(input.restore?.[index] ?? input.checked)
   }
   await row.getByRole('button', { name: 'Save access' }).click()
   await expect(row.getByText('Access saved.')).toBeVisible({ timeout: 30_000 })
+  return found
 }
 
 test('joining every group does not grant admin access', async ({ page, browser }) => {
@@ -154,11 +159,11 @@ test('joining every group does not grant admin access', async ({ page, browser }
   const staff = await staffContext.newPage()
   await signInAs(staff, 'staff2')
   await signInAs(page, 'owner')
-  await setAllGroups(page, true)
+  const before = await setGroups(page, { checked: true })
   try {
     expect(await reachOf(staff)).toEqual({ membersPage: 404, exportApi: 403 })
   } finally {
-    await setAllGroups(page, false)
+    await setGroups(page, { checked: false, restore: before })
   }
   await staffContext.close()
 })

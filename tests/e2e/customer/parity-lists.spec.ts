@@ -126,7 +126,8 @@ test('the column menu hides and restores a column and sits above the table', asy
 // Parity row 20: board cards carry the few fields people scan for, and empty lanes still render.
 test('board cards show the title and the key facts for their record', async ({ page }) => {
   await openList(page, '/deals/board')
-  const deal = page.locator('[data-card-id]').first()
+  // Earlier tests add deals without a value, so pick the first card that has one.
+  const deal = page.locator('[data-card-id]', { hasText: /[₹$€]/ }).first()
   await expect(deal).toContainText(/[₹$€]/) // value
   await openList(page, '/tasks/board')
   const task = page.locator('[data-card-id]').first()
@@ -158,4 +159,24 @@ test('a list longer than one page offers a next page and shows the rest there', 
   await page.getByText('Next', { exact: true }).locator(VISIBLE).first().click()
   await expect(page).toHaveURL(/page=2/)
   await expect(page.getByText('51–55 of 55').locator(VISIBLE).first()).toBeVisible()
+})
+
+// Row 19: several records can be selected and given an owner at once; a failed save says so and changes nothing.
+test('bulk assigning owners to selected leads reports a failure, then saves', async ({ page }) => {
+  // Phones list records as cards without row selection; bulk editing is a desktop task.
+  test.skip((page.viewportSize()?.width ?? 0) <= 390, 'bulk selection is a desktop table feature')
+  await openList(page, '/leads')
+  const rows = page.getByRole('row').filter({ has: page.getByRole('checkbox') })
+  await rows.nth(1).getByRole('checkbox').check()
+  await rows.nth(2).getByRole('checkbox').check()
+  await page.getByLabel('Assign owner').selectOption({ label: 'Client Services Lead' })
+  await page.route('**/leads**', async (route) => {
+    if (route.request().method() === 'POST') await route.fulfill({ status: 500, body: 'rejected by test' })
+    else await route.continue()
+  })
+  await page.getByRole('button', { name: /^Apply to 2/ }).click()
+  await expect(page.getByRole('group', { name: 'Bulk actions' }).getByRole('status')).toBeVisible()
+  await page.unroute('**/leads**')
+  await page.getByRole('button', { name: /^Apply to 2/ }).click()
+  await expect(page.getByRole('group', { name: 'Bulk actions' }).getByRole('status')).toContainText('2 updated')
 })

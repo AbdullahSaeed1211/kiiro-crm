@@ -194,7 +194,8 @@ async function auditTimeline(page: Page): Promise<void> {
 }
 
 test('customer shell, list, record and task sheet have no serious accessibility violations', async ({ page }) => {
-  test.setTimeout(120_000)
+  // This is the first test of a run, so every page it opens is compiled for the first time.
+  test.setTimeout(240_000)
   await signIn(page)
   await auditPrimarySurfaces(page)
   await auditTimeline(page)

@@ -97,3 +97,33 @@ test('a deal links to its organization and contact, and expected close saves', a
 
   await followAndComeBack(page, dealUrl)
 })
+
+// Row 11: a file can be attached to a record, shows in its Files tab after a reload, and a failed upload says so.
+async function openLeadFiles(page: Page): Promise<void> {
+  await page.goto('/leads', { waitUntil: 'networkidle' })
+  const link = page.locator('a[href^="/leads/"]:not([href*="board"]):not([href*="follow"]):not([href$="new"])')
+  await link.locator('visible=true').first().click()
+  await page.getByRole('tab', { name: 'Files' }).click()
+}
+
+test('a file can be attached to a lead, a failed upload is reported, and the file is there after a reload', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await openLeadFiles(page)
+  const panel = page.getByRole('tabpanel', { name: 'Files' })
+  const stamp = String(Date.now())
+  const file = { name: `parity-${stamp}.txt`, mimeType: 'text/plain', buffer: Buffer.from('hello') }
+  await page.route('**/api/v1/files', async (route) => {
+    if (route.request().method() === 'POST') await route.fulfill({ status: 500, body: 'rejected by test' })
+    else await route.continue()
+  })
+  await panel.locator('input[type=file]').setInputFiles(file)
+  await expect(panel.getByRole('status')).toContainText(/unable/i)
+  await page.unroute('**/api/v1/files')
+  await panel.locator('input[type=file]').setInputFiles(file)
+  await expect(panel.getByText(file.name)).toBeVisible({ timeout: 30_000 })
+  await page.reload()
+  await page.getByRole('tab', { name: 'Files' }).click()
+  await expect(page.getByRole('tabpanel', { name: 'Files' }).getByText(file.name)).toBeVisible()
+})

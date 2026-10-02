@@ -145,3 +145,18 @@ async function touchDragBar(bar: Locator, input: { x: number; y: number; offset:
   await dispatch('touchmove', input.x + input.offset)
   await dispatch('touchend', input.x + input.offset)
 }
+
+/** Verifies a rejected timeline save puts the bar back, says why, and leaves the stored dates unchanged. */
+export async function verifyTimelineRollback(page: Page): Promise<void> {
+  const task = await prepareTimeline(page)
+  await page.route(`**${TIMELINE_PATH}`, async (route) => {
+    if (route.request().method() === 'POST') await route.fulfill({ status: 500, body: 'rejected by test' })
+    else await route.continue()
+  })
+  await dragTimelineBar(page, task.title)
+  await expect(page.getByText('Could not save the dates').first()).toBeVisible()
+  await page.unroute(`**${TIMELINE_PATH}`)
+  await page.reload()
+  if (task.mobile) await setTimelineMode(page, 'Grid')
+  await expect(task.dates).toHaveText(task.before)
+}

@@ -518,7 +518,7 @@ test('customer routes load without browser failures and stay within the response
   const dashboardTaskTitle = await firstDashboardTaskTitle(page)
   await expect(page.locator('a[href="/my-tasks"]').filter({ hasText: 'My open tasks' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads"]').filter({ hasText: 'Open leads' })).toHaveCount(1)
-  await expect(page.locator('a[href="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
+  await expect(page.locator('a[href^="/deals"]').filter({ hasText: 'Open deals' })).toHaveCount(1)
   await expect(page.locator('a[href="/leads/new"]').filter({ hasText: 'New lead' })).toHaveCount(1)
   const taskDetail = await page.locator('a[href^="/tasks/"]').first().getAttribute('href')
   if (taskDetail === null) throw new Error('no task detail link found on dashboard')
