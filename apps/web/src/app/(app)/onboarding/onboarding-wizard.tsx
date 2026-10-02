@@ -2,6 +2,7 @@
 'use client'
 
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { TEMPLATE_KEYS, TEMPLATE_LABELS } from '@ops/templates'
 import { completeOnboarding, saveOnboardingStep, setOnboardingStep } from '../../../server/actions/onboarding'
@@ -39,6 +40,7 @@ export function OnboardingWizard({
   savedValues: Record<string, unknown>
 }>) {
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 0), 6))
+  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const saved = (key: string): Record<string, string> => {
@@ -65,6 +67,7 @@ export function OnboardingWizard({
     if (current[0] === 'done') {
       await completeOnboarding()
       setMessage('Setup complete. Your workspace is ready.')
+      router.push('/')
     } else {
       const result = await saveOnboardingStep(
         current[0],
@@ -135,6 +138,7 @@ export function OnboardingWizard({
               />
             </label>
             <div className="grid gap-1 text-sm">
+              <span>Currency</span>
               <SearchableSelect
                 id="workspace-currency"
                 label="Currency"

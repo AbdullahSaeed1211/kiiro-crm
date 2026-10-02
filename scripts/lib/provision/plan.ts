@@ -163,7 +163,8 @@ async function executeStep(step: ProvisionStep, context: StepContext): Promise<S
       ? {
           CLOUDFLARE_ENV: tenant.slug,
           PAYLOAD_REMOTE_BINDINGS: '1',
-          PAYLOAD_SECRET: context.secrets?.['PAYLOAD_SECRET'],
+          // A resumed run has no stored secret, and migrations do not use it beyond starting Payload.
+          PAYLOAD_SECRET: context.secrets?.['PAYLOAD_SECRET'] ?? randomBytes(32).toString('base64url'),
         }
       : undefined
   const result = await deps.run(command.value, environment)
