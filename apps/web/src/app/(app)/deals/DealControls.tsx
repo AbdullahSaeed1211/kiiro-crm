@@ -19,6 +19,7 @@ type Deal = Readonly<{
   updatedAt: number
   stageId: string
   value: { amountMinor: number; currency: string } | null
+  expectedCloseAt: number | null
   contactIds: readonly string[]
   primaryContactId: string | null
 }>
@@ -130,6 +131,43 @@ function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & R
   )
 }
 
+const dayOf = (epoch: number | null): string => (epoch === null ? '' : new Date(epoch).toISOString().slice(0, 10))
+
+function ExpectedCloseEditor({ deal, pending, setError, run }: ActionProps) {
+  const [day, setDay] = useState(dayOf(deal.expectedCloseAt))
+  function save() {
+    const epoch = day === '' ? null : new Date(`${day}T00:00:00Z`).getTime()
+    if (epoch !== null && !Number.isFinite(epoch)) {
+      setError('Enter a valid date.')
+      return
+    }
+    run(
+      () => updateDealAction({ id: deal.id, expectedUpdatedAt: deal.updatedAt, patch: { expectedCloseAt: epoch } }),
+      () => {
+        setDay(dayOf(deal.expectedCloseAt))
+      },
+    )
+  }
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="deal-close-detail">Expected close</Label>
+      <div className="flex gap-2">
+        <Input
+          id="deal-close-detail"
+          type="date"
+          value={day}
+          onChange={(event) => {
+            setDay(event.target.value)
+          }}
+        />
+        <Button size="sm" variant="outline" onClick={save} disabled={pending}>
+          Save date
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function DealControls({
   deal,
   stages,
@@ -150,6 +188,7 @@ export function DealControls({
     <div className="grid gap-5">
       <StagePicker key={deal.stageId} deal={deal} stages={stages} pending={pending} setError={setError} run={run} />
       <ValueEditor deal={deal} currency={currency} pending={pending} setError={setError} run={run} />
+      <ExpectedCloseEditor deal={deal} pending={pending} setError={setError} run={run} />
       <ContactPicker deal={deal} contacts={contacts} pending={pending} run={run} />
       <ClosingControls
         deal={deal}

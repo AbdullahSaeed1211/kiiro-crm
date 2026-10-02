@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@ops/ui/components/ui/button'
 import { Label } from '@ops/ui/components/ui/label'
 import { useState } from 'react'
@@ -26,12 +27,14 @@ type Run = (task: () => Promise<DealActionResult>, onFailure?: () => void) => vo
 type Copy = (typeof DEAL_CONTACTS_COPY)['en']
 
 function ContactRow({
+  id,
   name,
   isPrimary,
   pending,
   copy,
   actions,
 }: Readonly<{
+  id: string
   name: string
   isPrimary: boolean
   pending: boolean
@@ -40,7 +43,9 @@ function ContactRow({
 }>) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="min-w-0 flex-1 truncate">{name}</span>
+      <Link href={`/contacts/${id}`} className="min-w-0 flex-1 truncate hover:underline">
+        {name}
+      </Link>
       <label className="flex items-center gap-1 text-xs text-muted-foreground">
         <input
           aria-label={copy.primaryFor.replace('{name}', name)}
@@ -129,6 +134,7 @@ export function ContactPicker({
         {selected.map((id) => (
           <ContactRow
             key={id}
+            id={id}
             name={names.get(id) ?? id}
             isPrimary={primary === id}
             pending={pending}

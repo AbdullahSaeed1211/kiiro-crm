@@ -27,7 +27,8 @@ export default defineConfig({
   fullyParallel: true,
   // The local dev server compiles each page on first visit. More than one worker makes sign-in time out.
   workers: process.env['CI'] || process.env['E2E_BASE_URL'] ? undefined : 1,
-  retries: process.env['CI'] ? 1 : 0,
+  // One retry for both: the dev server compiles pages on first visit, which can race a navigation once.
+  retries: 1,
   reporter: 'list',
   use: {
     baseURL: process.env['E2E_BASE_URL'] ?? LOCAL_URL,

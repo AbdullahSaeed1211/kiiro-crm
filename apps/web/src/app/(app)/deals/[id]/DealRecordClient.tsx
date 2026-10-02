@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { RecordPageLayout, type RecordPageTab } from '@ops/ui'
 import { Badge } from '@ops/ui/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
@@ -32,8 +33,22 @@ function DetailsCard({ data }: Readonly<{ data: DealDetailData }>) {
           <span>{formatDate(deal.closedAt)}</span>
         </div>
         <div className="flex justify-between gap-3">
+          <span className="text-muted-foreground">Expected close</span>
+          <span>{deal.expectedCloseAt === null ? '—' : formatDate(deal.expectedCloseAt)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-muted-foreground">Owner</span>
+          <span>{data.ownerName ?? 'Unassigned'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">Organization</span>
-          <span>{organization?.name ?? '—'}</span>
+          {organization === null ? (
+            <span>—</span>
+          ) : (
+            <Link href={`/organizations/${organization.id}`} className="font-medium hover:underline">
+              {organization.name}
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>

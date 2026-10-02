@@ -22,6 +22,8 @@ export interface DealDetailData {
   readonly workflow: Workflow
   readonly stage: Workflow['stages'][number]
   readonly organization: OrganizationRecord | null
+  /** The owner's display name, or null for an unassigned deal. */
+  readonly ownerName: string | null
   /** The deal's own contacts; the pick list for adding more is searched, not loaded. */
   readonly contacts: readonly ContactRecord[]
   readonly lostReasons: readonly { readonly id: string; readonly name: string }[]
@@ -157,6 +159,11 @@ async function loadDealDetailParts({
   ])
 }
 
+async function ownerNameOf(context: RequestContext, ownerId: string | null): Promise<string | null> {
+  if (ownerId === null) return null
+  return (await loadPeople(context, [ownerId])).get(ownerId)?.name ?? null
+}
+
 export async function getDealDetailData(id: string): Promise<DealDetailData | null> {
   const context = await getRequestContext()
   const deps = dealDeps(context)
@@ -165,11 +172,13 @@ export async function getDealDetailData(id: string): Promise<DealDetailData | nu
   const [workflow, organization, contacts, lostReasons, activity, emailMessages, relatedTasks, attachments] =
     await loadDealDetailParts({ context, deps, deal, id })
   if (workflow === undefined) return null
+  const ownerName = await ownerNameOf(context, deal.ownerId)
   return {
     deal,
     workflow,
     stage: stageForDeal(deal, workflow),
     organization: organization ?? null,
+    ownerName,
     contacts,
     lostReasons,
     activity,

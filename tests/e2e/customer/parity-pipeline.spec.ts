@@ -4,6 +4,10 @@ import { signInAs } from '../helpers/session'
 // Parity rows 08, 29 and 31: create, convert and close records in the browser, with a failed save in between.
 test.describe.configure({ mode: 'serial' })
 
+const CREATE_LEAD = 'Create lead'
+const CONVERT_LEAD = 'Convert lead'
+const LINKED_EMAIL = 'maria.lopez@sterlingjewelers.example.test'
+
 function unique(label: string): string {
   return `${label} ${String(Date.now())}`
 }
@@ -30,9 +34,9 @@ async function submitFailThenRetry(page: Page, dialog: Locator, input: { pattern
 
 async function createLead(page: Page, title: string): Promise<void> {
   await page.goto('/leads')
-  await page.getByRole('button', { name: 'Create lead' }).click()
+  await page.getByRole('button', { name: CREATE_LEAD }).click()
   await page.getByLabel('Title').fill(title)
-  await page.getByRole('dialog').getByRole('button', { name: 'Create lead' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: CREATE_LEAD }).click()
   await expect(page).toHaveURL(/\/leads\/[^/]+$/, { timeout: 30_000 })
   await expect(page.getByRole('heading', { level: 1 })).toContainText(title)
 }
@@ -43,15 +47,18 @@ test('a lead converts to a deal, survives a failed save, and shows as converted 
   await createLead(page, title)
   const leadUrl = page.url()
   await page.getByRole('button', { name: 'Convert', exact: true }).click()
-  const dialog = page.getByRole('dialog', { name: 'Convert lead' })
+  const dialog = page.getByRole('dialog', { name: CONVERT_LEAD })
   await dialog.getByRole('spinbutton').fill('4200')
-  await submitFailThenRetry(page, dialog, { pattern: '**/leads/**', button: 'Convert lead' })
+  await submitFailThenRetry(page, dialog, { pattern: '**/leads/**', button: CONVERT_LEAD })
   // The page refreshes itself after the save; wait for that before the reload so the two do not collide.
   await expect(page.getByText('Converted').first()).toBeVisible({ timeout: 30_000 })
+  await page.waitForLoadState('networkidle')
   await page.goto(leadUrl)
   await expect(page.getByText('Converted').first()).toBeVisible()
   await page.goto('/deals')
-  await expect(page.getByRole('link', { name: title })).toBeVisible()
+  await page.getByRole('link', { name: title }).locator('visible=true').first().click()
+  // The workspace currency (INR here) is the one stored and shown, formatted for the locale.
+  await expect(page.getByText('₹4,200.00').first()).toBeVisible()
 })
 
 async function createDeal(page: Page, title: string): Promise<void> {
@@ -77,12 +84,47 @@ test('a deal is created, marked lost with a reason, reopened, and each step surv
     .last()
     .click()
   await expect(dialog).toBeHidden({ timeout: 30_000 })
+  await page.waitForLoadState('networkidle')
   await page.goto(dealUrl)
   await expect(page.getByText('Lost').first()).toBeVisible()
-  // A lost deal can be reopened, but cannot be marked lost again.
+  await reopenAndCheck(page, dealUrl)
+})
+
+/** A lost deal can be reopened but not marked lost again; the reopened deal can be marked lost once more. */
+async function reopenAndCheck(page: Page, dealUrl: string): Promise<void> {
   await expect(page.getByRole('button', { name: 'Mark lost' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Reopen' }).click()
   await expect(page.getByRole('button', { name: 'Reopen' })).toBeHidden({ timeout: 30_000 })
+  await page.waitForLoadState('networkidle')
   await page.goto(dealUrl)
   await expect(page.getByRole('button', { name: 'Mark lost' })).toBeVisible()
+}
+
+async function createKnownLead(page: Page, title: string): Promise<void> {
+  await page.goto('/leads', { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: CREATE_LEAD }).click()
+  const quick = page.getByRole('dialog')
+  await quick.getByLabel('Title').fill(title)
+  await quick.getByLabel('Email').fill(LINKED_EMAIL)
+  await quick.getByLabel('Company').fill('Sterling Jewelers')
+  await quick.getByRole('button', { name: CREATE_LEAD }).click()
+  await expect(page).toHaveURL(/\/leads\/[^/]+$/, { timeout: 30_000 })
+}
+
+// Row 29: converting a lead whose company and email already exist links them instead of making duplicates.
+test('converting a lead with a known company and email links the existing records', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInAs(page, 'owner')
+  await createKnownLead(page, unique('Parity link'))
+  await page.getByRole('button', { name: 'Convert', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: CONVERT_LEAD })
+  await expect(dialog.getByRole('button', { name: 'Use existing', pressed: true }).first()).toBeVisible({
+    timeout: 30_000,
+  })
+  await dialog.getByRole('button', { name: CONVERT_LEAD }).click()
+  await expect(dialog).toBeHidden({ timeout: 30_000 })
+  await expect(page.getByText('Converted').first()).toBeVisible({ timeout: 30_000 })
+  await page.goto('/organizations?q=Sterling', { waitUntil: 'networkidle' })
+  const link = page.getByRole('link', { name: 'Sterling Jewelers', exact: true })
+  await expect(link.locator('visible=true')).toHaveCount(1)
 })
