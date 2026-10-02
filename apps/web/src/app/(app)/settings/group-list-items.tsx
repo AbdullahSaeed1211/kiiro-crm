@@ -1,4 +1,5 @@
 'use client'
+import { Button } from '@ops/ui/components/ui/button'
 
 function GroupItemName({
   editing,
@@ -44,8 +45,9 @@ function GroupItemActions({
     <span className="flex items-center gap-3">
       {editing ? (
         <>
-          <button
-            className="text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          <Button
+            variant="link"
+            size="sm"
             type="button"
             disabled={pending}
             onClick={() => {
@@ -53,30 +55,35 @@ function GroupItemActions({
             }}
           >
             Save
-          </button>
-          <button
-            className="text-xs text-muted-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="text-muted-foreground"
             type="button"
             onClick={() => {
               onCancel()
             }}
           >
             Cancel
-          </button>
+          </Button>
         </>
       ) : (
-        <button
-          className="text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        <Button
+          variant="link"
+          size="sm"
           type="button"
           onClick={() => {
             onEdit(groupId, groupName)
           }}
         >
           Edit
-        </button>
+        </Button>
       )}
-      <button
-        className="text-xs text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      <Button
+        variant="link"
+        size="sm"
+        className="text-destructive"
         type="button"
         disabled={pending || editing}
         onClick={() => {
@@ -84,7 +91,7 @@ function GroupItemActions({
         }}
       >
         Delete
-      </button>
+      </Button>
     </span>
   )
 }

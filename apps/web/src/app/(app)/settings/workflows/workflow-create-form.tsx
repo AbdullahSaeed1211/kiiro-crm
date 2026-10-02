@@ -4,6 +4,7 @@ import { Input } from '@ops/ui/components/ui/input'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
 import { RECORD_TYPES } from './workflow-model'
+import { Button } from '@ops/ui/components/ui/button'
 
 interface WorkflowCreateFormProps {
   copy: WorkflowCopy
@@ -68,8 +69,8 @@ export function WorkflowCreateForm({
           }}
         />
       </label>
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      <Button
+        size="lg"
         disabled={pending}
         type="button"
         onClick={() => {
@@ -77,7 +78,7 @@ export function WorkflowCreateForm({
         }}
       >
         {pending ? copy.creating : copy.create}
-      </button>
+      </Button>
       {message ? (
         <p className="text-sm text-muted-foreground" role="status">
           {message}

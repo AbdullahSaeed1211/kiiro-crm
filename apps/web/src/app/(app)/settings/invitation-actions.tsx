@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@ops/ui/composites/ConfirmDialog'
 import { CopyButton } from '../copy-button'
 import { describeClientError } from '../client-errors'
 import type { ResendAction, RevokeAction } from './form-utils'
+import { Button } from '@ops/ui/components/ui/button'
 
 function InvitationMessage({ message, inviteUrl }: Readonly<{ message: string | undefined; inviteUrl: string }>) {
   if (message === undefined) return null
@@ -71,8 +72,9 @@ export function InvitationActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        className="text-xs font-medium text-primary hover:underline"
+      <Button
+        variant="link"
+        size="sm"
         type="button"
         disabled={pending !== null}
         onClick={() => {
@@ -80,7 +82,7 @@ export function InvitationActions({
         }}
       >
         {pending === 'resend' ? 'Resending…' : 'Resend'}
-      </button>
+      </Button>
       {canRevoke ? (
         <ConfirmDialog
           title="Revoke invitation?"
@@ -89,13 +91,9 @@ export function InvitationActions({
           destructive
           onConfirm={revoke}
           trigger={
-            <button
-              className="text-xs font-medium text-destructive hover:underline"
-              type="button"
-              disabled={pending !== null}
-            >
+            <Button variant="link" size="sm" className="text-destructive" type="button" disabled={pending !== null}>
               {pending === 'revoke' ? 'Revoking…' : 'Revoke'}
-            </button>
+            </Button>
           }
         />
       ) : null}

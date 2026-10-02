@@ -6,6 +6,7 @@ import { emptyField } from './field-constants'
 import { useFieldDelete } from './use-field-delete'
 import { FieldForm } from './field-form'
 import { FieldList } from './field-list'
+import { Button } from '@ops/ui/components/ui/button'
 
 interface FieldDefinitionEditorProps {
   fields: readonly FieldDefinition[]
@@ -59,13 +60,9 @@ export function FieldDefinitionEditor({ fields, action, deleteAction }: Readonly
           }}
         />
       ) : (
-        <button
-          className="h-9 rounded-md border px-3 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          type="button"
-          onClick={handleAddClick}
-        >
+        <Button variant="outline" size="lg" type="button" onClick={handleAddClick}>
           Add custom field
-        </button>
+        </Button>
       )}
       {displayMessage ? (
         <p className="text-sm text-muted-foreground" role="status">

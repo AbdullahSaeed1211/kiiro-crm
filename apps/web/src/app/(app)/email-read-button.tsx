@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 
 export function EmailReadButton({
   messageId,
@@ -14,12 +15,8 @@ export function EmailReadButton({
     if (response.ok) setRead(true)
   }
   return (
-    <button
-      className="rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      type="button"
-      onClick={() => void markRead()}
-    >
+    <Button variant="outline" size="lg" type="button" onClick={() => void markRead()}>
       {label}
-    </button>
+    </Button>
   )
 }

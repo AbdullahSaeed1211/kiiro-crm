@@ -7,6 +7,7 @@ import { type ConfigAction, type Workflow, type RequirementOptions } from './wor
 import { WorkflowCard } from './workflow-card'
 import { useWorkflowCreate } from './use-workflow-create'
 import { WorkflowCreateForm } from './workflow-create-form'
+import { Button } from '@ops/ui/components/ui/button'
 
 interface WorkflowEditorProps {
   workflows: readonly Workflow[]
@@ -51,13 +52,9 @@ export function WorkflowEditor({ workflows, action, deleteAction, requirementOpt
         />
       ))}
       <div className="rounded-lg border border-dashed p-4">
-        <button
-          className="text-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          type="button"
-          onClick={handleToggleAdding}
-        >
+        <Button variant="link" size="sm" type="button" onClick={handleToggleAdding}>
           {adding ? copy.cancelNew : copy.addWorkflow}
-        </button>
+        </Button>
         {adding ? (
           <WorkflowCreateForm
             copy={copy}

@@ -757,6 +757,7 @@ textarea::placeholder {
 @media (pointer: coarse) {
   [data-slot='button'],
   button[data-size^='icon'],
+  [data-slot='tabs-trigger'],
   .ops-app-header button,
   [data-slot='input'],
   [data-slot='native-select'] {

@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ActionResult } from '../../../../server/actions/settings'
+import { Button } from '@ops/ui/components/ui/button'
 
 interface ChannelState {
   inApp: boolean
@@ -126,8 +127,8 @@ export function NotificationSettingsForm({
         />
       </label>
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+        <Button
+          size="lg"
           type="button"
           onClick={() => {
             void save()
@@ -135,7 +136,7 @@ export function NotificationSettingsForm({
           disabled={pending}
         >
           {pending ? 'Saving…' : 'Save preferences'}
-        </button>
+        </Button>
         {message ? (
           <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
             {message}

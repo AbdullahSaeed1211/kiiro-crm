@@ -1,6 +1,7 @@
 'use client'
 
 import type { IntakeFormView, IntakeSubmissionView } from './intake-types'
+import { Button } from '@ops/ui/components/ui/button'
 
 const inputClass = 'h-10 rounded-md border bg-background px-3 text-sm'
 const textAreaClass = 'min-h-24 rounded-md border bg-background px-3 py-2 text-sm'
@@ -44,14 +45,9 @@ export function EmailAliasAndCredentialsSection({
           {form.serverKeyCount} active key{form.serverKeyCount === 1 ? '' : 's'}. Keys are stored as hashes and shown
           only once.
         </p>
-        <button
-          className="mt-3 rounded-md border px-3 py-2 text-sm font-medium disabled:opacity-50"
-          disabled={rotating}
-          onClick={onGenerateKey}
-          type="button"
-        >
+        <Button variant="outline" size="lg" disabled={rotating} onClick={onGenerateKey} type="button">
           {rotating ? 'Generating...' : 'Generate new server key'}
-        </button>
+        </Button>
         {generatedKey && (
           <p className="mt-2 break-all rounded bg-background p-2 font-mono text-xs" role="status">
             {generatedKey}

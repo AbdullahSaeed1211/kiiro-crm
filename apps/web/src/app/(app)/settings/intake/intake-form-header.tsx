@@ -1,4 +1,5 @@
 'use client'
+import { Button } from '@ops/ui/components/ui/button'
 
 type ActionResult = { ok: boolean; error?: { message: string } } | undefined
 
@@ -51,12 +52,8 @@ export function ResultMessage({ result }: Readonly<{ result: ActionResult }>) {
 
 export function SubmitButton({ pending }: Readonly<{ pending: boolean }>) {
   return (
-    <button
-      className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
-      disabled={pending}
-      type="submit"
-    >
+    <Button size="lg" disabled={pending} type="submit">
       {pending ? 'Saving...' : 'Save intake settings'}
-    </button>
+    </Button>
   )
 }

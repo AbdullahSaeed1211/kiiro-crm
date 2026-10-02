@@ -3,6 +3,7 @@
 import { useState, type SyntheticEvent } from 'react'
 import { describeClientError } from '../client-errors'
 import { formText, type GroupAction } from './form-utils'
+import { Button } from '@ops/ui/components/ui/button'
 
 export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
   const [name, setName] = useState('')
@@ -48,13 +49,9 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
         value={name}
         disabled={pending}
       />
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        type="submit"
-        disabled={pending}
-      >
+      <Button size="lg" type="submit" disabled={pending}>
         {pending ? 'Saving…' : 'Create group'}
-      </button>
+      </Button>
       {message !== undefined && (
         <p className="text-sm text-muted-foreground sm:col-span-2" role="status" aria-live="polite">
           {message}

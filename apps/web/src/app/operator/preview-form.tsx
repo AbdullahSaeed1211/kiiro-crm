@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 
 export function OperatorPreviewForm() {
   const [slug, setSlug] = useState('')
@@ -54,9 +55,9 @@ export function OperatorPreviewForm() {
             required
           />
         </label>
-        <button className="h-9 bg-primary px-3 text-sm font-medium text-primary-foreground" type="submit">
+        <Button size="lg" type="submit">
           Preview plan
-        </button>
+        </Button>
         <p className="text-xs text-muted-foreground" role="status">
           {message}
         </p>

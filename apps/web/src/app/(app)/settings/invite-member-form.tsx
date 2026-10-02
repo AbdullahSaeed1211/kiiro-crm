@@ -5,6 +5,7 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { CopyButton } from '../copy-button'
 import { describeClientError } from '../client-errors'
 import { formText, type InviteAction } from './form-utils'
+import { Button } from '@ops/ui/components/ui/button'
 
 function InviteFormMessage({ message, inviteUrl }: Readonly<{ message: string | undefined; inviteUrl: string }>) {
   if (message === undefined) return null
@@ -71,13 +72,9 @@ function InviteFormFields({
         <option value="manager">Manager</option>
         <option value="owner">Owner</option>
       </NativeSelect>
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        type="submit"
-        disabled={pending}
-      >
+      <Button size="lg" type="submit" disabled={pending}>
         {pending ? 'Inviting…' : 'Invite'}
-      </button>
+      </Button>
     </>
   )
 }

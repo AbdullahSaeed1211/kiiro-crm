@@ -9,6 +9,7 @@ import { TIMEZONE_VALUES } from '@ops/kernel'
 import { SearchableSelect } from '../settings/searchable-select'
 import { CURRENCY_OPTIONS } from '../../../i18n/currencies'
 import { TeamStep } from './team-step'
+import { Button } from '@ops/ui/components/ui/button'
 
 const STEPS = [
   ['workspace', 'Workspace'],
@@ -167,7 +168,6 @@ export function OnboardingWizard({
             <NativeSelect
               aria-describedby="business-type-help"
               id="business-type"
-
               value={values.template}
               onChange={(event) => update('template', event.target.value)}
             >
@@ -209,22 +209,12 @@ export function OnboardingWizard({
           {message}
         </p>
         <div className="flex justify-between border-t pt-4">
-          <button
-            className="h-9 border px-3 text-sm"
-            type="button"
-            disabled={step === 0 || busy}
-            onClick={() => void back()}
-          >
+          <Button variant="outline" size="lg" type="button" disabled={step === 0 || busy} onClick={() => void back()}>
             Back
-          </button>
-          <button
-            className="h-9 bg-primary px-4 text-sm font-medium text-primary-foreground"
-            type="button"
-            disabled={busy}
-            onClick={() => void save()}
-          >
+          </Button>
+          <Button size="lg" type="button" disabled={busy} onClick={() => void save()}>
             {busy ? 'Saving…' : step === 6 ? 'Finish setup' : 'Save and continue'}
-          </button>
+          </Button>
         </div>
       </section>
     </div>

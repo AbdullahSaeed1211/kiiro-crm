@@ -1,7 +1,7 @@
 'use client'
-/* eslint-disable max-lines-per-function -- password form keeps validation, request state, and feedback together. */
 
 import { useState, type SyntheticEvent } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 
 type PasswordField = 'currentPassword' | 'newPassword' | 'confirmPassword'
 
@@ -87,13 +87,9 @@ export function ChangePasswordForm() {
           {message}
         </p>
       )}
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={pending}
-        type="submit"
-      >
+      <Button size="lg" disabled={pending} type="submit">
         {pending ? 'Changing…' : 'Change password'}
-      </button>
+      </Button>
     </form>
   )
 }

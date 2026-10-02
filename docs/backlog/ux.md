@@ -26,10 +26,10 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
 - Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads and tasks onto it, and add a sort to the deals query.
 
-### 12. Many screens skip the design-system components
+### 12. Some screens skip the design-system components
 
-- Area: Design system. Effort: Structural. Codes: S-01 S-02.
-- There are 32 native `<select>` elements across 18 files, against 26 `Select` and 27 `Combobox` uses. There are 4 native date inputs, while `calendar.tsx` and `popover.tsx` already exist. There are 55 raw `<button>` elements against 72 `Button` uses. The hotspots are the settings forms (`member-forms`, `workflow-editor`, `field-definition-editor`, `intake-forms`), `NewTaskForm`, `DealCreateDialog` and `reports`. Fix: add a `DatePicker`, migrate the call sites, and add a lint rule against raw `<select>` in app code.
+- Area: Design system. Effort: Moderate. Codes: S-01 S-02.
+- Status: partly fixed. No native `<select>` is left in app code, and the settings, onboarding, report and sign-in forms now use `Button`. Left: 23 hand-styled `<button>` elements in the inbox (CSS modules), the workflow builder nodes, notifications, the copy button and the calendar day cell; four native date inputs (`NewTaskForm`, `DealCreateDialog`, `time-log-form`, reports), which are fine on phones but have no shared `DatePicker`. Fix: finish the inbox, add a `DatePicker`, and add a lint rule against raw `<button>` in app code.
 
 ## Minor
 

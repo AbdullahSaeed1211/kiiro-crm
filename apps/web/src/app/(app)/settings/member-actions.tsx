@@ -5,6 +5,7 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { CheckboxGroup } from './checkbox-group'
 import { describeClientError } from '../client-errors'
 import type { MemberAction } from './form-utils'
+import { Button } from '@ops/ui/components/ui/button'
 
 function ReportsToSelect({
   value,
@@ -40,8 +41,8 @@ function ReportsToSelect({
 
 function SaveAccessButton({ pending, onSave }: Readonly<{ pending: boolean; onSave: () => void }>) {
   return (
-    <button
-      className="h-9 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+    <Button
+      size="lg"
       type="button"
       onClick={() => {
         onSave()
@@ -49,7 +50,7 @@ function SaveAccessButton({ pending, onSave }: Readonly<{ pending: boolean; onSa
       disabled={pending}
     >
       {pending ? 'Saving…' : 'Save access'}
-    </button>
+    </Button>
   )
 }
 

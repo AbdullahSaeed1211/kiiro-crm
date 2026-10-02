@@ -1,5 +1,6 @@
 import type { FieldDefinition } from './field-constants'
 import { capitalize } from './field-constants'
+import { Button } from '@ops/ui/components/ui/button'
 
 interface FieldListItemProps {
   readonly field: FieldDefinition
@@ -25,15 +26,13 @@ export function FieldListItem({ field, isEditing, isPendingDelete, onEdit, onDel
         </p>
       </div>
       <div className="flex shrink-0 gap-3">
-        <button
-          className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          type="button"
-          onClick={onEdit}
-        >
+        <Button variant="link" size="sm" type="button" onClick={onEdit}>
           Edit
-        </button>
-        <button
-          className="text-xs text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        </Button>
+        <Button
+          variant="link"
+          size="sm"
+          className="text-destructive"
           type="button"
           disabled={isPendingDelete}
           onClick={() => {
@@ -41,7 +40,7 @@ export function FieldListItem({ field, isEditing, isPendingDelete, onEdit, onDel
           }}
         >
           Delete
-        </button>
+        </Button>
       </div>
     </li>
   )

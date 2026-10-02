@@ -11,6 +11,7 @@ import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
 import { TimeReport } from './time-report'
 import { PipelineCharts } from './pipeline-charts'
+import { Button } from '@ops/ui/components/ui/button'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Figures' }
@@ -111,12 +112,9 @@ export default async function ReportsPage({
               className="h-9 rounded-md border bg-background px-2 text-sm"
             />
           </label>
-          <button
-            type="submit"
-            className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
+          <Button size="lg" type="submit">
             {copy.apply}
-          </button>
+          </Button>
           <output className="text-xs text-muted-foreground" aria-live="polite">
             {range.fromDate} – {range.toDate}
           </output>

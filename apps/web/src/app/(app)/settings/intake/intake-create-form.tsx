@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 import type { ActionResult } from '../../../../server/actions/settings'
+import { Button } from '@ops/ui/components/ui/button'
 
 const inputClass = 'h-10 rounded-md border bg-background px-3 text-sm'
 
@@ -61,13 +62,9 @@ export function IntakeCreateForm({ action }: Readonly<{ action: Action }>) {
           value={key}
         />
       </label>
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        disabled={pending}
-        type="submit"
-      >
+      <Button size="lg" disabled={pending} type="submit">
         {pending ? 'Creating...' : 'Create form'}
-      </button>
+      </Button>
       {resultMessage(result) && (
         <p
           className={`text-sm sm:col-span-3 ${result?.ok === false ? 'text-destructive' : 'text-muted-foreground'}`}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { unsubscribeContact } from '../../../../../server/actions/unsubscribe'
+import { Button } from '@ops/ui/components/ui/button'
 
 export const metadata: Metadata = { title: 'Unsubscribe' }
 export const dynamic = 'force-dynamic'
@@ -19,12 +20,9 @@ export default async function UnsubscribePage({
       <input type="hidden" name="contactId" value={contactId} />
       <input type="hidden" name="token" value={token} />
       <p>Stop receiving our newsletter?</p>
-      <button
-        type="submit"
-        className="h-10 w-fit rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
-      >
+      <Button size="lg" type="submit">
         Unsubscribe
-      </button>
+      </Button>
     </form>
   )
 }

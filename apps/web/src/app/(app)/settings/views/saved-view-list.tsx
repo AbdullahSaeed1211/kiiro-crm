@@ -8,6 +8,7 @@ import {
 } from '../../../../server/actions/settings/configuration'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 
 function recordTypeLabel(value: string): string {
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}s`
@@ -74,8 +75,10 @@ export function SavedViewList({
               {view.isDefault ? (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default</span>
               ) : null}
-              <button
-                className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              <Button
+                variant="link"
+                size="sm"
+                className="text-muted-foreground"
                 disabled={pendingId !== null || editingId !== null}
                 type="button"
                 aria-pressed={view.pinned}
@@ -90,9 +93,11 @@ export function SavedViewList({
                 }}
               >
                 {view.pinned ? 'Unpin' : 'Pin'}
-              </button>
-              <button
-                className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
+                className="text-muted-foreground"
                 disabled={pendingId !== null || editingId !== null || view.isDefault}
                 type="button"
                 aria-pressed={view.isDefault}
@@ -107,11 +112,12 @@ export function SavedViewList({
                 }}
               >
                 {view.isDefault ? 'Default' : 'Set default'}
-              </button>
+              </Button>
               {editingId === view.id ? (
                 <>
-                  <button
-                    className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  <Button
+                    variant="link"
+                    size="sm"
                     disabled={pendingId !== null || draftName.trim() === ''}
                     type="button"
                     onClick={() => {
@@ -132,9 +138,11 @@ export function SavedViewList({
                     }}
                   >
                     {pendingId === view.id ? 'Saving…' : 'Save'}
-                  </button>
-                  <button
-                    className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  </Button>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-muted-foreground"
                     disabled={pendingId !== null}
                     type="button"
                     onClick={() => {
@@ -143,11 +151,12 @@ export function SavedViewList({
                     }}
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
-                  className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                <Button
+                  variant="link"
+                  size="sm"
                   disabled={pendingId !== null || editingId !== null}
                   type="button"
                   onClick={() => {
@@ -157,10 +166,12 @@ export function SavedViewList({
                   }}
                 >
                   Edit
-                </button>
+                </Button>
               )}
-              <button
-                className="text-xs text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              <Button
+                variant="link"
+                size="sm"
+                className="text-destructive"
                 disabled={pendingId !== null || editingId !== null}
                 type="button"
                 onClick={() => {
@@ -174,7 +185,7 @@ export function SavedViewList({
                 }}
               >
                 {pendingId === view.id ? 'Deleting…' : 'Delete'}
-              </button>
+              </Button>
             </span>
           </li>
         ))}

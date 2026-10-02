@@ -1,7 +1,8 @@
-/* eslint-disable max-lines-per-function, sonarjs/no-nested-conditional -- compact asset labels intentionally share one render branch. */
+/* eslint-disable sonarjs/no-nested-conditional -- compact asset labels intentionally share one render branch. */
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 
 type AssetName = 'logo' | 'favicon'
 
@@ -64,14 +65,9 @@ export function BrandingSettingsForm({
           />
         </label>
         {key ? (
-          <button
-            className="h-9 border px-3 text-xs hover:bg-muted"
-            type="button"
-            disabled={busy !== null}
-            onClick={() => void remove(name)}
-          >
+          <Button variant="outline" size="lg" type="button" disabled={busy !== null} onClick={() => void remove(name)}>
             Remove
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>

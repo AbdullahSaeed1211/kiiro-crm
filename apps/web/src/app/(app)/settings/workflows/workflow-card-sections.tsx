@@ -1,4 +1,5 @@
 import type { WorkflowCopy } from '../../../../i18n/workflow-copy'
+import { Button } from '@ops/ui/components/ui/button'
 
 interface ActionButtonsProps {
   pending: 'save' | 'delete' | null
@@ -10,8 +11,8 @@ interface ActionButtonsProps {
 export function ActionButtons({ pending, copy, onSave, onRemove }: Readonly<ActionButtonsProps>) {
   return (
     <div className="flex items-center gap-3">
-      <button
-        className="h-10 rounded-md px-3 text-sm text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      <Button
+        variant="destructive"
         type="button"
         disabled={pending !== null}
         onClick={() => {
@@ -19,9 +20,9 @@ export function ActionButtons({ pending, copy, onSave, onRemove }: Readonly<Acti
         }}
       >
         {pending === 'delete' ? copy.deleting : copy.delete}
-      </button>
-      <button
-        className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      </Button>
+      <Button
+        size="lg"
         type="button"
         disabled={pending !== null}
         onClick={() => {
@@ -29,7 +30,7 @@ export function ActionButtons({ pending, copy, onSave, onRemove }: Readonly<Acti
         }}
       >
         {pending === 'save' ? copy.saving : copy.save}
-      </button>
+      </Button>
     </div>
   )
 }
