@@ -9,9 +9,7 @@ import {
   type DataTableColumn,
   type DataTableRow,
 } from '@ops/ui/composites/DataTable'
-import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import { FolderKanban } from 'lucide-react'
 import type { Metadata } from 'next'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { formatDate } from '../../../i18n/format'
@@ -20,6 +18,7 @@ import { loadProjectProgress, type Progress } from '../../../server/queries/work
 import { getRequestContext } from '@/server/container'
 import { ListViewBar, type ListSort } from '../list-view-bar'
 import { firstParam } from '../search-params'
+import { ListEmpty } from '../ListEmpty'
 
 export const metadata: Metadata = { title: 'Projects' }
 export const dynamic = 'force-dynamic'
@@ -186,17 +185,7 @@ export default async function ProjectsPage({ searchParams }: Readonly<{ searchPa
           })}
           labels={DATA_TABLE_LABELS}
           mobileCard={{ cells: ['name', 'stage', 'progress', 'target'] }}
-          emptyState={
-            <EmptyState
-              icon={FolderKanban}
-              title={model.projects.length === 0 ? 'No projects yet' : 'No projects match'}
-              description={
-                model.projects.length === 0
-                  ? 'Projects you create or join appear here.'
-                  : 'Change the search or the stage filter.'
-              }
-            />
-          }
+          emptyState={<ListEmpty kind="projects" filtered={model.projects.length > 0} clearHref="/projects" />}
         />
       </PageContent>
     </>

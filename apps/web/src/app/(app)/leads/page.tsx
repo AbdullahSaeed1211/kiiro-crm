@@ -2,10 +2,8 @@ import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { EmptyValue, paginationFor, type DataTableColumn, type DataTableRow } from '@ops/ui/composites/DataTable'
-import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { StageDot } from '@ops/ui/composites/StagePill'
-import { UserPlus } from 'lucide-react'
 import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
 import { getProductContext } from '../../../server/auth/context'
@@ -16,6 +14,7 @@ import { BulkTable } from '../BulkTable'
 import { LeadListControls } from './LeadListControls'
 import { LeadViewControls, type LeadViewLink } from './LeadViewControls'
 import { LeadCreateDialogClient } from '../quick-create/LeadCreateDialogClient'
+import { ListEmpty } from '../ListEmpty'
 
 type SearchParams = Record<string, string | string[] | undefined>
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -137,18 +136,11 @@ function LeadTable({
       labels={DATA_TABLE_LABELS}
       mobileCard={{ cells: ['title', 'stage', 'owner', 'created'] }}
       emptyState={
-        <EmptyState
-          icon={UserPlus}
-          title="No leads yet"
-          description="Create a lead or connect a website form to start your pipeline."
-          action={
-            <a
-              className="ops-action-button inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground"
-              href="/leads/new"
-            >
-              New lead
-            </a>
-          }
+        <ListEmpty
+          kind="leads"
+          filtered={['q', 'stage', 'source', 'owner'].some((name) => params[name] !== undefined && params[name] !== '')}
+          clearHref="/leads"
+          createHref="/leads/new"
         />
       }
     />

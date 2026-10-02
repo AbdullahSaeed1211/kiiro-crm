@@ -45,7 +45,7 @@ export function parseTaskPage(value: string | undefined): number {
   return Number.isInteger(page) && page > 0 ? page : 1
 }
 
-function taskWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {
+function viewWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {
   if (query.view === 'mine') return { assignees: { in: [actorId] } }
   if (query.view !== 'open') return {}
   return {
@@ -58,6 +58,12 @@ function taskWhere(query: TaskListQuery, workflow: Workflow, actorId: string): W
       { stageId: { exists: false } },
     ],
   }
+}
+
+function taskWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {
+  const view = viewWhere(query, workflow, actorId)
+  const search = query.search?.trim() ?? ''
+  return search === '' ? view : { and: [view, { title: { contains: search } }] }
 }
 
 async function listDueTasks({
@@ -103,7 +109,9 @@ async function listSortedTaskPage({
 }>): Promise<TaskListResult> {
   const stageCategories = new Map(workflow.stages.map((stage) => [stage.id, stage.category]))
   const people = await loadPeople(context, [...new Set(records.flatMap((task) => task.assigneeIds))])
+  const search = query.search?.trim().toLowerCase() ?? ''
   const visibleRecords = records.filter((task) => {
+    if (search !== '' && !task.title.toLowerCase().includes(search)) return false
     if (query.view === 'mine') return task.assigneeIds.some((id) => String(id) === String(context.actor.id))
     if (query.view !== 'open') return true
     const category = stageCategories.get(task.stageId)

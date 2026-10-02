@@ -6,11 +6,9 @@ import {
   type DataTableRow,
   paginationFor,
 } from '@ops/ui/composites/DataTable'
-import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import { Handshake } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { assignDealsAction, moveDealsAction } from '../../../server/crm/deals/actions'
@@ -26,6 +24,7 @@ import { getWorkspaceSettings } from '../../../server/auth/context'
 import { firstParam } from '../search-params'
 import { ListViewBar, type ListFilter } from '../list-view-bar'
 import { StagePill, toStageColor } from '@ops/ui/composites/StagePill'
+import { ListEmpty } from '../ListEmpty'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deals' }
@@ -101,6 +100,11 @@ async function bulkOptions() {
   return { owners, stages, assign: assignDealsAction, move: moveDealsAction }
 }
 
+/** True when a search or stage filter is on. */
+function isFiltered(query: string, stageId: string | undefined): boolean {
+  return query !== '' || stageId !== undefined
+}
+
 export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
@@ -148,13 +152,7 @@ export default async function DealsPage({
           mobileCard={{ cells: ['title', 'stage', 'value', 'organization'] }}
           pagination={pagination({ page, total: data.total, query: rawQuery, stageId })}
           labels={DATA_TABLE_LABELS}
-          emptyState={
-            <EmptyState
-              icon={Handshake}
-              title="No deals yet"
-              description="Create a deal to start tracking your pipeline."
-            />
-          }
+          emptyState={<ListEmpty kind="deals" filtered={isFiltered(rawQuery, stageId)} clearHref="/deals" />}
         />
       </PageContent>
     </>

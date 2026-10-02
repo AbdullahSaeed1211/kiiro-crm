@@ -4,17 +4,15 @@ import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { ListTodo } from 'lucide-react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { TASK_COPY } from '../../../i18n/config'
 import { formatTaskSort, listTasks, parseTaskPage, parseTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import { listSavedViews } from '../../../server/queries/settings/listSavedViews'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
+import { ListViewBar } from '../list-view-bar'
 import { TaskBulkTable } from './TaskBulkTable'
-import { TaskCreateForm } from './TaskCreateForm'
-import { TaskViewMenu } from './TaskViewMenu'
-import { TaskWorkspaceViews } from './TaskWorkspaceViews'
+import { TasksHeaderActions } from './TasksHeaderActions'
 import { labelsFor, paginationOf, taskColumns, toRow } from './task-table'
 import { parseTaskView, savedViewSort, taskListHref, taskModeOf } from './task-view-params'
 
@@ -34,6 +32,7 @@ export default async function TasksPage({
     relatedType,
     relatedId,
     title: titleParam,
+    q: queryParam,
   } = await searchParams
   const context = await getRequestContext()
   const [savedViews, locale] = await Promise.all([listSavedViews('task', context), loadWorkspaceLocale()])
@@ -44,15 +43,19 @@ export default async function TasksPage({
   const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
   const taskMode = taskModeOf(view, selectedSavedView)
   const title = selectedSavedView?.name ?? { all: copy.allTasks, mine: copy.myTasks, open: copy.openTasks }[taskMode]
-  const returnTo = taskListHref({ sort, page: parseTaskPage(firstParam(pageParam)), view })
+  const search = firstParam(queryParam)?.trim() ?? ''
+  const returnTo = taskListHref({ sort, page: parseTaskPage(firstParam(pageParam)), view, search })
   const result = await listTasks(
     {
       page: parseTaskPage(firstParam(pageParam)),
       sort: effectiveSort,
       view: taskMode,
+      search,
     },
     context,
   )
+  const emptyTitle = search === '' ? copy.noTasks : copy.noTasksMatch
+  const emptyBody = search === '' ? copy.noTasksDescription : copy.noTasksMatchDescription
   return (
     <>
       <AppHeader breadcrumbs={[{ label: title }]} />
@@ -61,41 +64,29 @@ export default async function TasksPage({
           title={title}
           count={result.total}
           actions={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <TaskWorkspaceViews active="table" locale={locale} />
-              <Link
-                href="/tasks/new"
-                className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                New task
-              </Link>
-              <TaskViewMenu
-                selectedId={view}
-                locale={locale}
-                customViews={savedViews.map((savedView) => ({
-                  id: savedView.id,
-                  label: savedView.name,
-                  pinned: savedView.pinned,
-                }))}
-              />
-              <TaskCreateForm
-                relatedType={firstParam(relatedType)}
-                relatedId={firstParam(relatedId)}
-                initialTitle={firstParam(titleParam)}
-              />
-            </div>
+            <TasksHeaderActions
+              view={view}
+              locale={locale}
+              savedViews={savedViews}
+              initial={{
+                relatedType: firstParam(relatedType),
+                relatedId: firstParam(relatedId),
+                title: firstParam(titleParam),
+              }}
+            />
           }
         />
+        <ListViewBar searchLabel={copy.searchTasks} query={search} />
         <TaskBulkTable
           versions={Object.fromEntries(result.items.map((task) => [task.id, task.updatedAt]))}
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
-          key={`${formatTaskSort(sort)}:${String(result.page)}`}
-          columns={taskColumns({ sort: effectiveSort, view, locale })}
+          key={`${formatTaskSort(sort)}:${String(result.page)}:${search}`}
+          columns={taskColumns({ sort: effectiveSort, view, locale, search })}
           rows={result.items.map((task) => toRow({ task, returnTo, locale }))}
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
-          pagination={paginationOf({ result, sort: effectiveSort, view })}
+          pagination={paginationOf({ result, sort: effectiveSort, view, search })}
           labels={labelsFor(locale)}
-          emptyState={<EmptyState icon={ListTodo} title={copy.noTasks} description={copy.noTasksDescription} />}
+          emptyState={<EmptyState icon={ListTodo} title={emptyTitle} description={emptyBody} />}
           mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees'] }}
         />
       </PageContent>

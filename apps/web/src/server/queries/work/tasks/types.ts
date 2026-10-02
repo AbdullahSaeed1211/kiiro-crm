@@ -43,6 +43,8 @@ export interface TaskListQuery {
   readonly page: number
   readonly sort: TaskSort
   readonly view?: 'all' | 'open' | 'mine'
+  /** Only tasks whose title has this text, ignoring case. */
+  readonly search?: string
 }
 
 /** One page of tasks plus the total across all pages. */

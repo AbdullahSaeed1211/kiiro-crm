@@ -120,16 +120,22 @@ export function toRow({
   }
 }
 
+/** A list address that keeps the sort, view and search; an empty search is left out. */
+function listQuery({ search, ...params }: Readonly<Record<string, string>>): string {
+  return `?${new URLSearchParams(search === '' ? params : { ...params, q: search }).toString()}`
+}
+
 /** Columns with sort links that keep the selected view. */
 export function taskColumns({
   sort,
   view,
   locale,
-}: Readonly<{ sort: TaskSort; view: string; locale: Locale }>): DataTableColumn[] {
+  search = '',
+}: Readonly<{ sort: TaskSort; view: string; locale: Locale; search?: string }>): DataTableColumn[] {
   const copy = TASK_COPY[locale]
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
-    `?${new URLSearchParams({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view }).toString()}`
+    listQuery({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view, search })
   return [
     { id: 'title', header: copy.title, sortHref: sortHref('title'), hideable: false },
     { id: 'stage', header: copy.stage, sortHref: sortHref('stage') },
@@ -145,9 +151,10 @@ export function paginationOf({
   result,
   sort,
   view,
-}: Readonly<{ result: TaskListResult; sort: TaskSort; view: string }>): DataTablePaginationState {
+  search = '',
+}: Readonly<{ result: TaskListResult; sort: TaskSort; view: string; search?: string }>): DataTablePaginationState {
   return paginationFor({
     ...result,
-    href: (page) => `?${new URLSearchParams({ sort: formatTaskSort(sort), page: String(page), view }).toString()}`,
+    href: (page) => listQuery({ sort: formatTaskSort(sort), page: String(page), view, search }),
   })
 }

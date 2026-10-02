@@ -1,6 +1,5 @@
 import { DATA_TABLE_LABELS } from '../../i18n/table-labels'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
-import { Button } from '@ops/ui/components/ui/button'
 import {
   DataTable,
   type DataTableColumn,
@@ -9,8 +8,7 @@ import {
   EmptyValue,
   paginationFor,
 } from '@ops/ui/composites/DataTable'
-import { EmptyState } from '@ops/ui/composites/EmptyState'
-import { ArrowUpRight, Building2, Contact } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import type {
   ContactListItem,
@@ -24,6 +22,7 @@ import { safeExternalHref } from '../../server/crm/directory/utils'
 import { formatDate } from '../../i18n/format'
 import { ListViewBar, type ListSort } from './list-view-bar'
 import { initials } from '@ops/ui/lib/initials'
+import { ListEmpty } from './ListEmpty'
 
 function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
   if (owner === null) return <span className="text-muted-foreground">Unassigned</span>
@@ -140,15 +139,11 @@ export function OrganizationsTable({
       pagination={pagination(result, { path: '/organizations', query, sort })}
       labels={DATA_TABLE_LABELS}
       emptyState={
-        <EmptyState
-          icon={Building2}
-          title="No organizations yet"
-          description="Add the companies your team is building relationships with."
-          action={
-            <Button nativeButton={false} render={<Link href="/organizations/new">New organization</Link>}>
-              New organization
-            </Button>
-          }
+        <ListEmpty
+          kind="organizations"
+          filtered={query !== ''}
+          clearHref="/organizations"
+          createHref="/organizations/new"
         />
       }
     />
@@ -222,16 +217,7 @@ export function ContactsTable({
       pagination={pagination(result, { path: '/contacts', query, sort })}
       labels={DATA_TABLE_LABELS}
       emptyState={
-        <EmptyState
-          icon={Contact}
-          title="No contacts yet"
-          description="Add the people who help your organizations move forward."
-          action={
-            <Button nativeButton={false} render={<Link href="/contacts/new">New contact</Link>}>
-              New contact
-            </Button>
-          }
-        />
+        <ListEmpty kind="contacts" filtered={query !== ''} clearHref="/contacts" createHref="/contacts/new" />
       }
     />
   )
