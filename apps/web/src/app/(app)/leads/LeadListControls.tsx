@@ -1,16 +1,10 @@
 'use client'
 
 import { FilterBar } from '@ops/ui'
-import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
-import { leadViews } from './lead-views'
-
-function hrefWithQuery(path: string, query: string): string {
-  return query === '' ? path : `${path}?${query}`
-}
 
 const OWNER_OPTIONS = [
   { value: '', label: 'Any owner' },
@@ -47,10 +41,6 @@ function FacetSelect({
   )
 }
 
-function ViewLinks({ boardHref, tableHref }: Readonly<{ boardHref: string; tableHref: string }>) {
-  return <ViewSwitcher label="Lead views" active="table" views={leadViews({ tableHref, boardHref })} />
-}
-
 export function LeadListControls({
   stages,
   sources,
@@ -60,10 +50,6 @@ export function LeadListControls({
   const search = useSearchParams()
   const q = search.get('q') ?? ''
   const selected = search.getAll('stage')
-  const queryParams = new URLSearchParams(search.toString())
-  queryParams.delete('view')
-  const query = queryParams.toString()
-  const boardHref = hrefWithQuery('/leads/board', query)
   const setFacet = (name: 'source' | 'owner', value: string) => {
     const params = new URLSearchParams(search.toString())
     if (value) params.set(name, value)
@@ -122,7 +108,6 @@ export function LeadListControls({
           setFacet('source', value)
         }}
       />
-      <ViewLinks boardHref={boardHref} tableHref={hrefWithQuery('/leads', query)} />
     </div>
   )
 }

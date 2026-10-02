@@ -3,6 +3,8 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { EmptyValue, paginationFor, type DataTableColumn, type DataTableRow } from '@ops/ui/composites/DataTable'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { leadViews } from './lead-views'
 import { StageDot } from '@ops/ui/composites/StagePill'
 import type { Metadata } from 'next'
 import { listLeads, parseLeadSearch, parseLeadStages } from '../../../server/crm/leads/queries'
@@ -84,6 +86,24 @@ function pageHref(params: SearchParams, page: number): string {
   return `/leads?${next.toString()}`
 }
 
+/** The table and board share the search and stage filters; the board has no source or owner filter. */
+function viewSwitcher(params: SearchParams) {
+  const query = new URLSearchParams()
+  const q = parseLeadSearch(params.q)
+  if (q) query.set('q', q)
+  parseLeadStages(params.stage).forEach((stage) => {
+    query.append('stage', stage)
+  })
+  const suffix = query.toString() === '' ? '' : `?${query.toString()}`
+  return (
+    <ViewSwitcher
+      label="Lead views"
+      active="table"
+      views={leadViews({ tableHref: `/leads${suffix}`, boardHref: `/leads/board${suffix}` })}
+    />
+  )
+}
+
 function openStages(stages: Awaited<ReturnType<typeof listLeads>>['stages']) {
   return stages.filter((stage) => !['done_success', 'done_failure', 'cancelled'].includes(stage.category))
 }
@@ -163,7 +183,16 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
     <>
       <AppHeader breadcrumbs={[{ label: 'Leads' }]} />
       <PageContent>
-        <PageHeader title="Leads" count={result.total} actions={<LeadCreateDialogClient />} />
+        <PageHeader
+          title="Leads"
+          count={result.total}
+          actions={
+            <>
+              <LeadCreateDialogClient />
+              {viewSwitcher(params)}
+            </>
+          }
+        />
         <LeadListControls stages={result.stages} sources={result.sources} />
         <LeadViewControls views={[{ id: 'all', label: 'All open leads', query: '' }, ...views]} />
         <LeadTable result={result} params={params} canBulk={canBulk} />
