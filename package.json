@@ -44,7 +44,7 @@
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",
     "tenants:deploy": "tsx scripts/deploy-tenants.ts",
     "verify:fast": "pnpm format:check && pnpm typecheck && pnpm lint && vitest run --project unit --changed",
-    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm test && pnpm test:integration && pnpm build && pnpm size"
+    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm check:isolation && pnpm test && pnpm test:integration && pnpm build && pnpm size"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

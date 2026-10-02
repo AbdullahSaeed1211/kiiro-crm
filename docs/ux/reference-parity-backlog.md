@@ -1,5 +1,7 @@
 # Mirch CRM reference-parity backlog
 
+Current acceptance status of every row: [parity ledger](./parity-ledger.md).
+
 This is the durable entry point for local reference-parity work. The atomic source of truth is the 50-row inventory in [Next-wave UX reference checklist](./next-wave-checklist.md#atomic-reference-parity-backlog), with the per-row browser status ledger directly below it. Rows are intentionally atomic: a green sub-flow never marks a whole product area complete.
 
 ## Operating rules

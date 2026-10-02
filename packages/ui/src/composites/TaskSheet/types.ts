@@ -88,6 +88,7 @@ export type TaskSheetLabels = Readonly<{
   saveDescription: string
   saving: string
   saved: string
+  saveFailed: string
   subtasks: string
   noSubtasks: string
   addSubtask: string
@@ -97,4 +98,7 @@ export type TaskSheetLabels = Readonly<{
   reopen: string
   reopening: string
   close: string
+  unsavedChanges: string
+  keepEditing: string
+  discard: string
 }>

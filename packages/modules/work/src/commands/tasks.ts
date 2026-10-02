@@ -13,9 +13,10 @@ const resource = (task: WorkTaskRecord) => ({
 export const canUpdateTask = (deps: Pick<WorkDeps, 'actor' | 'can'>, task: WorkTaskRecord) =>
   deps.can(deps.actor, 'update', resource(task))
 const canUpdate = canUpdateTask
+/** Owners and managers may assign anyone in any group; staff may only assign themselves, inside their own groups. */
 const assignmentAllowed = (deps: WorkDeps, ids: readonly Id[], groupId: Id | null) =>
-  (isManagerUp(deps.actor) || ids.every((id) => id === deps.actor.id)) &&
-  (groupId === null || deps.actor.groupIds.includes(groupId))
+  isManagerUp(deps.actor) ||
+  (ids.every((id) => id === deps.actor.id) && (groupId === null || deps.actor.groupIds.includes(groupId)))
 async function relatedAllowed(deps: WorkDeps, type: string | null, id: Id | null): Promise<boolean> {
   return (
     (type === null && id === null) ||

@@ -10,7 +10,9 @@ const worker: ExportedHandler<InternalForwardEnv> = {
       return withSecurityHeaders(new Response('Not Found', { status: 404 }))
     }
     // `.open-next/worker.js` is untyped JavaScript once built, so its response type is declared here.
-    const response: Response = await openNext.fetch(request, env, ctx)
+    const handled: unknown = await openNext.fetch(request, env, ctx)
+    if (!(handled instanceof Response)) throw new TypeError('OpenNext did not return a Response')
+    const response = handled
     return withSecurityHeaders(response, new URL(request.url).pathname)
   },
   scheduled: (controller, env, ctx) => {

@@ -33,6 +33,7 @@ const TASK_SHEET_COPY: Readonly<Record<Locale, TaskSheetLabels>> = {
     saveDescription: 'Save description',
     saving: 'Saving…',
     saved: 'Saved.',
+    saveFailed: 'The save did not work. Try again.',
     subtasks: 'Subtasks',
     noSubtasks: 'No subtasks yet.',
     addSubtask: 'Add subtask',
@@ -42,6 +43,9 @@ const TASK_SHEET_COPY: Readonly<Record<Locale, TaskSheetLabels>> = {
     reopen: 'Reopen',
     reopening: 'Reopening…',
     close: 'Close',
+    unsavedChanges: 'You have a description that is not saved. Close and lose it?',
+    keepEditing: 'Keep editing',
+    discard: 'Close without saving',
   },
   es: {
     task: 'Tarea',
@@ -74,6 +78,7 @@ const TASK_SHEET_COPY: Readonly<Record<Locale, TaskSheetLabels>> = {
     saveDescription: 'Guardar descripción',
     saving: 'Guardando…',
     saved: 'Guardado.',
+    saveFailed: 'No se pudo guardar. Inténtalo de nuevo.',
     subtasks: 'Subtareas',
     noSubtasks: 'Aún no hay subtareas.',
     addSubtask: 'Añadir subtarea',
@@ -83,6 +88,9 @@ const TASK_SHEET_COPY: Readonly<Record<Locale, TaskSheetLabels>> = {
     reopen: 'Reabrir',
     reopening: 'Reabriendo…',
     close: 'Cerrar',
+    unsavedChanges: 'Tienes una descripción sin guardar. ¿Cerrar y perderla?',
+    keepEditing: 'Seguir editando',
+    discard: 'Cerrar sin guardar',
   },
 }
 

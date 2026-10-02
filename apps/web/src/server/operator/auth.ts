@@ -4,7 +4,9 @@ import { getProductContext, type ProductContext } from '../auth/context'
 /** Operator access is an explicit allow-list, separate from tenant role checks. */
 export async function requireOperator(): Promise<ProductContext> {
   const context = await getProductContext()
-  const allowed = (process.env.OPERATOR_EMAILS ?? '')
+  // The generated environment types say this is always set, but a tenant that has no operators leaves it out.
+  const configured: unknown = Reflect.get(process.env, 'OPERATOR_EMAILS')
+  const allowed = (typeof configured === 'string' ? configured : '')
     .split(',')
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean)
