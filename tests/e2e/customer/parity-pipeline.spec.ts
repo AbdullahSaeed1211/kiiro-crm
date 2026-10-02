@@ -46,6 +46,8 @@ test('a lead converts to a deal, survives a failed save, and shows as converted 
   const dialog = page.getByRole('dialog', { name: 'Convert lead' })
   await dialog.getByRole('spinbutton').fill('4200')
   await submitFailThenRetry(page, dialog, { pattern: '**/leads/**', button: 'Convert lead' })
+  // The page refreshes itself after the save; wait for that before the reload so the two do not collide.
+  await expect(page.getByText('Converted').first()).toBeVisible({ timeout: 30_000 })
   await page.goto(leadUrl)
   await expect(page.getByText('Converted').first()).toBeVisible()
   await page.goto('/deals')
