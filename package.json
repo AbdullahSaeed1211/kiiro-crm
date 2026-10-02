@@ -37,6 +37,7 @@
     "seed:purge": "tsx scripts/purge-demo.ts",
     "db:reset:local": "tsx scripts/reset-local-db.ts",
     "tenant:backup": "tsx scripts/backup-tenant.ts",
+    "tenant:restore": "tsx scripts/restore-tenant.ts",
     "tenant:new": "tsx scripts/new-tenant.ts",
     "tenant:owner-invite": "tsx scripts/owner-invite.ts",
     "tenant:provision": "tsx scripts/provision-tenant.ts",
