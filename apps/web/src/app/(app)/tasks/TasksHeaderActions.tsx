@@ -15,12 +15,11 @@ interface TasksHeaderActionsProps {
   readonly initial: { readonly relatedType?: string; readonly relatedId?: string; readonly title?: string }
 }
 
-/** The buttons beside the tasks title: view switcher, New task, saved views and quick add. */
+/** The buttons beside the tasks title: New task, saved views, quick add and the view switcher (last, so it stays put between views). */
 export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksHeaderActionsProps) {
   const copy = TASK_COPY[locale]
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <TaskWorkspaceViews active="table" locale={locale} />
       <Button nativeButton={false} size="lg" render={<Link href="/tasks/new">{copy.newTask}</Link>}>
         {copy.newTask}
       </Button>
@@ -34,6 +33,7 @@ export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksH
         }))}
       />
       <TaskCreateForm relatedType={initial.relatedType} relatedId={initial.relatedId} initialTitle={initial.title} />
+      <TaskWorkspaceViews active="table" locale={locale} />
     </div>
   )
 }

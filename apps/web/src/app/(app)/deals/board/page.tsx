@@ -63,6 +63,7 @@ export default async function DealBoardPage() {
           count={data.total}
           actions={
             <div className="flex items-center gap-2">
+              <DealCreateDialog currency={currency} />
               <ViewSwitcher
                 label="Deal views"
                 active="board"
@@ -71,7 +72,6 @@ export default async function DealBoardPage() {
                   { id: 'board', label: 'Board', href: '/deals/board' },
                 ]}
               />
-              <DealCreateDialog currency={currency} />
             </div>
           }
         />

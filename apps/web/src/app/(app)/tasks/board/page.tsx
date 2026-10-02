@@ -132,8 +132,8 @@ export default async function TaskBoardPage() {
           }
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <TaskWorkspaceViews active="board" locale={locale} />
               <TaskCreateForm />
+              <TaskWorkspaceViews active="board" locale={locale} />
             </div>
           }
         />
