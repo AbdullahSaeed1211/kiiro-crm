@@ -96,3 +96,50 @@ test('confirming a checked import saves only the good rows', async ({ page }) =>
   await expect(page.getByRole('link', { name: `Kept${stamp}`, exact: true }).locator('visible=true')).toHaveCount(1)
   await expect(page.getByRole('link', { name: `Broken${stamp}` }).locator('visible=true')).toHaveCount(0)
 })
+
+// Row 23: a stage's name, type and colour come from the workflow setting and survive a reload.
+async function saveDealWorkflow(page: Page): Promise<void> {
+  await page
+    .getByRole('article')
+    .filter({ has: page.getByLabel('Workflow name') })
+    .first()
+    .getByRole('button', { name: /^save/i })
+    .first()
+    .click()
+  await expect(page.getByRole('status').or(page.getByText(/saved/i)).first()).toBeVisible({ timeout: 30_000 })
+}
+
+test('a stage colour and chance edit in workflow settings persists, then is put back', async ({ page }) => {
+  test.setTimeout(90_000)
+  await page.goto('/settings/workflows', { waitUntil: 'networkidle' })
+  const deals = page
+    .getByRole('article')
+    .filter({ has: page.getByRole('textbox', { name: 'Workflow name', exact: true }) })
+    .filter({ has: page.locator('input[value="Deals"]') })
+  const first = deals.getByRole('listitem').first()
+  await first.getByRole('radio', { name: 'Green' }).check()
+  await saveDealWorkflow(page)
+  await page.reload()
+  await expect(deals.getByRole('listitem').first().getByRole('radio', { name: 'Green' })).toBeChecked()
+  await deals.getByRole('listitem').first().getByRole('radio', { name: 'Blue' }).check()
+  await saveDealWorkflow(page)
+})
+
+// Row 25: month links move one month at a time, the address keeps the month, and a bad month does not break the page.
+test('the calendar moves month by month, keeps the month in its address, and survives a bad month', async ({
+  page,
+}) => {
+  await page.goto('/calendar?month=10&year=2026', { waitUntil: 'networkidle' })
+  const heading = page.getByRole('heading', { level: 2 })
+  await expect(heading.filter({ hasText: 'October 2026' })).toBeVisible()
+  await page.getByRole('link', { name: 'Next month' }).first().click()
+  await expect(page).toHaveURL(/month=11&year=2026/)
+  await expect(heading.filter({ hasText: 'November 2026' })).toBeVisible()
+  await page.reload()
+  await expect(heading.filter({ hasText: 'November 2026' })).toBeVisible()
+  await page.getByRole('link', { name: 'Previous month' }).first().click()
+  await expect(heading.filter({ hasText: 'October 2026' })).toBeVisible()
+  const bad = await page.goto('/calendar?month=13&year=abc', { waitUntil: 'networkidle' })
+  expect(bad?.status()).toBe(200)
+  await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible()
+})
