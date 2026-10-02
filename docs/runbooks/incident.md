@@ -24,3 +24,7 @@ Stop traffic or deployment for the affected tenant when safe, preserve logs with
 ## Closure
 
 Close the incident only after the affected tenant passes all smoke checks, later tenants are either deployed from the same tag or intentionally held, and the evidence identifies the cause, containment, recovery, and follow-up check.
+
+## Uptime watch
+
+`.github/workflows/uptime.yml` runs `scripts/uptime-check.sh` every hour for every host in `tenants/*.jsonc`. It fails when the health route is not `ok`, the sign-in page does not load, or either takes longer than 6 seconds (`UPTIME_LIMIT_SECONDS`). GitHub emails the repository owner when a scheduled run fails. Run the script by hand from `ops-platform` to see the same result.
