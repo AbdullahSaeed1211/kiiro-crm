@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ExportLink } from '../ExportLink'
 import { DirectoryListHeader, OrganizationsTable } from '../directory-view'
 import {
   listOrganizations,
@@ -19,7 +20,16 @@ export default async function OrganizationsPage({
   const sort = parseDirectorySort(queryValue(params.sort))
   const result = await listOrganizations({ query, sort, page: parseDirectoryPage(queryValue(params.page)) })
   return (
-    <DirectoryListHeader kind="organizations" total={result.total} actions={<OrganizationCreateDialogClient />}>
+    <DirectoryListHeader
+      kind="organizations"
+      total={result.total}
+      actions={
+        <>
+          <ExportLink kind="organizations" />
+          <OrganizationCreateDialogClient />
+        </>
+      }
+    >
       <OrganizationsTable result={result} query={query} sort={sort} />
     </DirectoryListHeader>
   )

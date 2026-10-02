@@ -1,4 +1,5 @@
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
+import { ExportLink } from '../ExportLink'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { EmptyValue, paginationFor, type DataTableColumn, type DataTableRow } from '@ops/ui/composites/DataTable'
@@ -188,6 +189,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
           count={result.total}
           actions={
             <>
+              <ExportLink kind="leads" />
               <LeadCreateDialogClient />
               {viewSwitcher(params)}
             </>

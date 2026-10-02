@@ -1,4 +1,5 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { ExportLink } from '../ExportLink'
 import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
 import {
   type DataTableColumn,
@@ -128,6 +129,7 @@ export default async function DealsPage({
           actions={
             <div className="flex items-center gap-2">
               <DealCreateDialog currency={currency} />
+              <ExportLink kind="deals" />
               <ViewSwitcher
                 label="Deal views"
                 active="table"
