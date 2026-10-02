@@ -12,6 +12,7 @@ import { getRequestContext } from '@/server/container'
 import { DashboardPipeline } from './dashboard-pipeline'
 import { taskHref } from './task-navigation'
 import Link from 'next/link'
+import { DashboardFollowUps } from './DashboardFollowUps'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 export const dynamic = 'force-dynamic'
@@ -135,6 +136,7 @@ export default async function DashboardPage() {
           <DashboardPipeline context={context} locale={work.locale} />
         ) : null}
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <DashboardFollowUps locale={work.locale} />
           <WorkCard
             title={copy.myOverdue}
             count={work.overdue.count}
