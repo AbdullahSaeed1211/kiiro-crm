@@ -121,6 +121,8 @@ Settings, Activity (owners and managers) lists the changes anyone made to record
 
 The Security tab on the same page lists who invited or cancelled an invitation, changed a person's access, saved or deleted a group, changed settings, made or revoked an API token, and downloaded data. It has the same filters and export.
 
+Billing (owners and managers) holds quotes and invoices. Choose a company, add items (quantity, price, tax %), and save a draft. A draft can be edited; once you mark it sent it is fixed. A quote moves from sent to accepted or declined; an accepted quote becomes a draft invoice with the same items, and an invoice moves from sent to paid. Numbers run QUO-0001 and INV-0001. A sent invoice past its due date shows as Overdue, and a sent quote past its valid-until date shows as Expired. Print or save as PDF prints only the document. Each step is written to the Security tab. Taking payment online is not part of this version.
+
 ## Routines that keep it honest
 
 - **Daily.** Open Leads and clear the overdue markers. Every lead needs a next-action date.

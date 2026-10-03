@@ -1,6 +1,6 @@
 # Quotes, invoices, client portal, automation rules and audit log
 
-Status: the audit log is built (Settings, Activity). Quotes, invoices, the client portal and automation rules are proposals; nothing of them is built.
+Status: the audit log, quotes and invoices are built (Settings, Activity; Billing). The client portal and automation rules are proposals; nothing of them is built.
 
 ## Why
 

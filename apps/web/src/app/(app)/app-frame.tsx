@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListTodo,
   Mail,
+  ReceiptText,
   Settings,
   UserPlus,
   type LucideIcon,
@@ -88,7 +89,9 @@ function navGroups({
       label: label('workGroup', copy.work),
       items: [
         ...WORK.map(item),
-        ...(role === 'owner' || role === 'manager' ? [item(['reports', '/reports', ChartNoAxesCombined])] : []),
+        ...(role === 'owner' || role === 'manager'
+          ? [item(['reports', '/reports', ChartNoAxesCombined]), item(['billing', '/billing', ReceiptText])]
+          : []),
       ],
     })
   return groups
