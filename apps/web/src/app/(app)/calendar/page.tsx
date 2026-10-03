@@ -69,7 +69,7 @@ export default async function CalendarPage({
           month={month}
           weekStartsOn={model.weekStartsOn}
           locale={model.locale}
-          labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore }}
+          labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore, today: copy.today }}
           events={events}
           onMove={moveTaskOnCalendar}
         />

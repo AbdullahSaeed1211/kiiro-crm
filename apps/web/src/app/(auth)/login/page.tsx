@@ -15,12 +15,12 @@ export default async function LoginPage({
       fields={['email', 'password']}
       hidden={{ next }}
       footer={
-        <Link
-          className="block text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-          href="/forgot-password"
-        >
-          Forgot password?
-        </Link>
+        <div className="grid gap-1 text-center text-sm text-muted-foreground">
+          <Link className="underline-offset-4 hover:underline" href="/forgot-password">
+            Forgot password?
+          </Link>
+          <p>Have an invitation? Open the link from your email.</p>
+        </div>
       }
     />
   )

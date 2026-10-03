@@ -18,6 +18,43 @@ function monthHref(input: { readonly year: number; readonly month: number; reado
   return `?month=${String(next.getUTCMonth() + 1)}&year=${String(next.getUTCFullYear())}`
 }
 
+function MonthHeader({
+  monthLabel,
+  year,
+  month,
+  labels,
+}: Readonly<{
+  monthLabel: string
+  year: number
+  month: number
+  labels: Readonly<{ previous: string; next: string; today: string }>
+}>) {
+  return (
+    <header className="flex items-center justify-between border-b px-4 py-3">
+      <Link
+        className="text-sm text-muted-foreground hover:text-foreground"
+        href={monthHref({ year, month, delta: -1 })}
+        aria-label={labels.previous}
+      >
+        ←
+      </Link>
+      <div className="flex items-center gap-3">
+        <h2 className="text-sm font-semibold">{monthLabel}</h2>
+        <Link className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted" href="?">
+          {labels.today}
+        </Link>
+      </div>
+      <Link
+        className="text-sm text-muted-foreground hover:text-foreground"
+        href={monthHref({ year, month, delta: 1 })}
+        aria-label={labels.next}
+      >
+        →
+      </Link>
+    </header>
+  )
+}
+
 /** A compact month grid with deterministic event placement. */
 export function CalendarMonth({
   year,
@@ -25,7 +62,7 @@ export function CalendarMonth({
   events,
   weekStartsOn = 1,
   locale = 'en',
-  labels = { previous: 'Previous month', next: 'Next month', more: '+{count} more' },
+  labels = { previous: 'Previous month', next: 'Next month', more: '+{count} more', today: 'Today' },
   onMove,
 }: Readonly<{
   year: number
@@ -33,7 +70,7 @@ export function CalendarMonth({
   events: readonly CalendarEvent[]
   weekStartsOn?: 0 | 1
   locale?: string
-  labels?: Readonly<{ previous: string; next: string; more: string }>
+  labels?: Readonly<{ previous: string; next: string; more: string; today: string }>
   /** When given, events can be dragged to another day. */
   onMove?: CalendarMove
 }>) {
@@ -50,23 +87,7 @@ export function CalendarMonth({
   const weekdays = weekStartsOn === 1 ? [...sunday.slice(1), sunday[0]] : sunday
   return (
     <section aria-label={monthLabel} className="ops-surface-card min-w-0 overflow-hidden rounded-lg border bg-card">
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <Link
-          className="text-sm text-muted-foreground hover:text-foreground"
-          href={monthHref({ year, month, delta: -1 })}
-          aria-label={labels.previous}
-        >
-          ←
-        </Link>
-        <h2 className="text-sm font-semibold">{monthLabel}</h2>
-        <Link
-          className="text-sm text-muted-foreground hover:text-foreground"
-          href={monthHref({ year, month, delta: 1 })}
-          aria-label={labels.next}
-        >
-          →
-        </Link>
-      </header>
+      <MonthHeader monthLabel={monthLabel} year={year} month={month} labels={labels} />
       <div className="grid min-w-0 grid-cols-7 border-b bg-muted/30">
         {weekdays.map((day) => (
           <div

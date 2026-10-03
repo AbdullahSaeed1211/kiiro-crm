@@ -44,6 +44,11 @@ function Report({ outcome }: Readonly<{ outcome: Outcome }>) {
   return (
     <div className="grid gap-2 rounded-lg border p-4 text-sm" role="status">
       <p className="font-medium">{summary(outcome)}</p>
+      {outcome.dryRun && report.errors.length > 0 ? (
+        <p className="text-muted-foreground">
+          Rows with problems are skipped when you import. Fix the file and check it again to include them.
+        </p>
+      ) : null}
       {report.ignoredColumns.length > 0 ? (
         <p className="text-muted-foreground">
           Columns not recognised and left out: {report.ignoredColumns.join(', ')}.

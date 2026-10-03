@@ -143,3 +143,12 @@ test('the calendar moves month by month, keeps the month in its address, and sur
   expect(bad?.status()).toBe(200)
   await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible()
 })
+
+// Row 25: Today takes the calendar back to the current month from any other month.
+test('the calendar Today link returns to the current month', async ({ page }) => {
+  await page.goto('/calendar?month=1&year=2030', { waitUntil: 'networkidle' })
+  await expect(page.getByRole('heading', { level: 2 }).filter({ hasText: 'January 2030' })).toBeVisible()
+  await page.getByRole('link', { name: 'Today' }).click()
+  const now = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(new Date())
+  await expect(page.getByRole('heading', { level: 2 }).filter({ hasText: now })).toBeVisible()
+})

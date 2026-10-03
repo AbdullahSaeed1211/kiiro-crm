@@ -181,3 +181,13 @@ test('bulk assigning owners to selected leads reports a failure, then saves', as
   await page.getByRole('button', { name: /^Apply to 2/ }).click()
   await expect(page.getByRole('group', { name: 'Bulk actions' }).getByRole('status')).toContainText('2 updated')
 })
+
+// Row 17: the deal search stays when switching between the table and the board.
+test('switching between the deal table and board keeps the search', async ({ page }) => {
+  await openList(page, '/deals?q=Keystone')
+  await page.getByRole('navigation', { name: 'Deal views' }).getByRole('link', { name: 'Board' }).click()
+  await expect(page).toHaveURL(/\/deals\/board\?q=Keystone/)
+  await expect(page.getByRole('searchbox', { name: 'Search deals' })).toHaveValue('Keystone')
+  await page.getByRole('navigation', { name: 'Deal views' }).getByRole('link', { name: 'Table' }).click()
+  await expect(page).toHaveURL(/\/deals\?q=Keystone/)
+})

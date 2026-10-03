@@ -29,6 +29,13 @@ const SHIFT_ROUTES = [
   '/settings/general',
   '/settings/members',
   '/settings/import',
+  '/settings/workflows',
+  '/settings/branding',
+  '/leads/new',
+  '/projects/new',
+  '/leads?q=a&owner=me',
+  '/deals/board?q=Keystone',
+  '/deals?stage=open',
 ] as const
 
 /** The most a page may shift while loading and settling (Google rates under 0.1 as good). */
@@ -97,6 +104,16 @@ test.describe('layout stability', () => {
   for (const route of SHIFT_ROUTES) {
     test(`${route} does not shift while loading`, async ({ page }) => {
       expect(await layoutShift(page, route)).toBeLessThan(MAX_SHIFT)
+    })
+  }
+
+  // Record pages: the first record of each kind.
+  for (const kind of ['leads', 'deals', 'contacts', 'organizations', 'projects']) {
+    test(`the first ${kind} record does not shift while loading`, async ({ page }) => {
+      await page.goto(`/${kind}`, { waitUntil: 'networkidle' })
+      const link = page.locator(`a[href^="/${kind}/"]:not([href$="new"]):not([href*="board"]):not([href*="follow"])`)
+      const href = await link.locator('visible=true').first().getAttribute('href')
+      expect(await layoutShift(page, href ?? `/${kind}`)).toBeLessThan(MAX_SHIFT)
     })
   }
 })

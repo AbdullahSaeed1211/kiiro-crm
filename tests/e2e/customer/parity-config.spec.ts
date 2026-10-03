@@ -69,3 +69,31 @@ test('turning the mail module off removes the inbox and turning it back on resto
     await expect(page.locator('[data-slot="sidebar"] a[href="/inbox"]')).toHaveCount(1)
   } else expect((await page.goto('/inbox'))?.status()).toBe(200)
 })
+
+// Row 44: a logo uploaded in Branding shows at once, persists across a reload, and can be removed again.
+const PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)
+const LOGO_URL = '/api/v1/brand/logo'
+
+test('a logo can be uploaded, persists, and can be removed', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInAs(page, 'owner')
+  await page.goto('/settings/branding', { waitUntil: 'networkidle' })
+  const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith(LOGO_URL))
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: PIXEL })
+  expect((await saved).ok()).toBe(true)
+  // The form shows the new logo and its Remove button by itself, without a reload.
+  const remove = page.getByRole('button', { name: /remove/i }).first()
+  await expect(remove).toBeVisible({ timeout: 30_000 })
+  await page.reload({ waitUntil: 'networkidle' })
+  await expect(remove).toBeVisible()
+  const removed = page.waitForResponse((r) => r.request().method() === 'DELETE' && r.url().endsWith(LOGO_URL))
+  await remove.click()
+  expect((await removed).ok()).toBe(true)
+  await expect(page.getByRole('button', { name: /remove/i })).toHaveCount(0, { timeout: 30_000 })
+})

@@ -155,3 +155,19 @@ test('a missing record page says what happened and links back to the dashboard',
   await page.getByRole('link', { name: 'Go to the dashboard' }).click()
   await expect(page).toHaveURL(/\/$/)
 })
+
+// Row 01: the sign-in page tells a new person where invitations come from.
+test('the sign-in page points invited people to their email link', async ({ browser }) => {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  await page.goto('/login', { waitUntil: 'networkidle' })
+  await expect(page.getByText('Have an invitation? Open the link from your email.')).toBeVisible()
+  await context.close()
+})
+
+// Row 03: the command menu can copy the link to the current page.
+test('the command menu copies the link to the page and closes', async ({ page }) => {
+  await openSearch(page)
+  await page.getByRole('option', { name: 'Copy link to this page' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})

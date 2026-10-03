@@ -126,6 +126,8 @@ export const SEARCH_COPY: Readonly<Record<Locale, Readonly<Record<string, string
     newLead: 'New lead',
     newContact: 'New contact',
     newOrganization: 'New organization',
+    actions: 'Actions',
+    copyLink: 'Copy link to this page',
     enter: '↵',
   },
   es: {
@@ -142,6 +144,8 @@ export const SEARCH_COPY: Readonly<Record<Locale, Readonly<Record<string, string
     newLead: 'Nuevo prospecto',
     newContact: 'Nuevo contacto',
     newOrganization: 'Nueva organización',
+    actions: 'Acciones',
+    copyLink: 'Copiar el enlace de esta página',
     enter: '↵',
   },
 }

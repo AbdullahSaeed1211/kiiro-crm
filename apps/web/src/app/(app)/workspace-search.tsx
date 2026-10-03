@@ -17,6 +17,7 @@ import {
   Contact,
   FolderKanban,
   Handshake,
+  Link2,
   LayoutDashboard,
   ListTodo,
   Search,
@@ -205,6 +206,18 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
                       <span>{copy[key]}</span>
                     </CommandItem>
                   ))}
+                </CommandGroup>
+                <CommandGroup heading={copy.actions}>
+                  <CommandItem
+                    value={copy.copyLink}
+                    onSelect={() => {
+                      void navigator.clipboard.writeText(window.location.href)
+                      setOpen(false)
+                    }}
+                  >
+                    <Link2 aria-hidden />
+                    <span>{copy.copyLink}</span>
+                  </CommandItem>
                 </CommandGroup>
               </>
             ) : null}

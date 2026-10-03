@@ -109,6 +109,11 @@ function isFiltered(query: string, stageId: string | undefined): boolean {
   return query !== '' || stageId !== undefined
 }
 
+/** The board keeps the search text, so switching views does not lose it. */
+function boardHref(query: string): string {
+  return query === '' ? '/deals/board' : `/deals/board?q=${encodeURIComponent(query)}`
+}
+
 export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
@@ -138,7 +143,11 @@ export default async function DealsPage({
                 active="table"
                 views={[
                   { id: 'table', label: 'Table', href: '/deals' },
-                  { id: 'board', label: 'Board', href: '/deals/board' },
+                  {
+                    id: 'board',
+                    label: 'Board',
+                    href: boardHref(rawQuery),
+                  },
                 ]}
               />
             </div>

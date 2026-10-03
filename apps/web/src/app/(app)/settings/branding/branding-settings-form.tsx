@@ -1,6 +1,7 @@
 /* eslint-disable sonarjs/no-nested-conditional -- compact asset labels intentionally share one render branch. */
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
 
@@ -10,6 +11,7 @@ export function BrandingSettingsForm({
   logoKey,
   faviconKey,
 }: Readonly<{ logoKey?: string | null; faviconKey?: string | null }>) {
+  const router = useRouter()
   const [version, setVersion] = useState(() => String(Date.now()))
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState<AssetName | null>(null)
@@ -32,6 +34,8 @@ export function BrandingSettingsForm({
     }
     setVersion(String(Date.now()))
     setStatus(`${asset === 'logo' ? 'Logo' : 'Favicon'} updated.`)
+    // Shows the new picture and the Remove button without a reload.
+    router.refresh()
   }
   const remove = async (asset: AssetName) => {
     setBusy(asset)
@@ -39,6 +43,7 @@ export function BrandingSettingsForm({
     setBusy(null)
     setVersion(String(Date.now()))
     setStatus(response.ok ? `${asset === 'logo' ? 'Logo' : 'Favicon'} removed.` : 'Unable to remove asset.')
+    if (response.ok) router.refresh()
   }
   const asset = (name: AssetName, key?: string | null) => (
     <div className="grid gap-3 border-t pt-4 sm:grid-cols-[8rem_1fr_auto] sm:items-center">

@@ -4,6 +4,8 @@ import { signInAs } from '../helpers/session'
 // Parity row 21: dragging a deal card between stages saves, survives a reload, and rolls back with a message on failure.
 test.describe.configure({ mode: 'serial' })
 
+const BOARD_PATH = '/deals/board'
+
 async function createDeal(page: Page, title: string): Promise<void> {
   await page.goto('/deals')
   await page.getByRole('button', { name: 'New deal' }).click()
@@ -48,7 +50,7 @@ async function dragFailsThenSaves(page: Page, input: { title: string; from: stri
   await expect(page.getByText('Could not move the deal').filter({ visible: true }).first()).toBeVisible()
   await expect(column(page, input.from).getByText(input.title)).toBeVisible()
   await restore()
-  const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/deals/board'))
+  const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith(BOARD_PATH))
   await dragCardTo(card, column(page, input.to))
   expect((await saved).ok()).toBe(true)
   await expect(column(page, input.to).getByText(input.title)).toBeVisible({ timeout: 30_000 })
@@ -63,7 +65,7 @@ test('a deal card dragged to another stage rolls back on a failed save, then sav
   await signInAs(page, 'owner')
   const title = `Parity drag ${String(Date.now())}`
   await createDeal(page, title)
-  await page.goto('/deals/board')
+  await page.goto(BOARD_PATH)
   const [from, to] = await firstTwoStages(page)
   await dragFailsThenSaves(page, { title, from, to })
   await page.reload()
@@ -83,7 +85,7 @@ test('moving a deal with the stage menu updates both column totals and keeps the
   test.fixme((page.viewportSize()?.width ?? 0) < 768, 'phone coverage is in the task board tests')
   test.setTimeout(60_000)
   await signInAs(page, 'owner')
-  await page.goto('/deals/board', { waitUntil: 'networkidle' })
+  await page.goto(BOARD_PATH, { waitUntil: 'networkidle' })
   const [from, to] = await firstTwoStages(page)
   const before = await totalsOf(page)
   // The first card on the board is in the first stage on both layouts.
@@ -94,4 +96,21 @@ test('moving a deal with the stage menu updates both column totals and keeps the
   expect(after.get(to)).not.toBe(before.get(to))
   await page.reload()
   expect(await totalsOf(page)).toEqual(after)
+})
+
+// Row 24: a stage that holds deals in two currencies says so instead of adding them together.
+test('a stage with two currencies is labelled mixed, not summed', async ({ page }) => {
+  test.setTimeout(60_000)
+  await signInAs(page, 'owner')
+  const stamp = String(Date.now())
+  for (const currency of ['USD', 'EUR']) {
+    const response = await page.request.post('/api/v1/deals', {
+      data: { title: `Mixed ${currency} ${stamp}`, value: { amountMinor: 5000, currency } },
+    })
+    expect(response.status(), await response.text()).toBeLessThan(300)
+  }
+  await page.goto(BOARD_PATH, { waitUntil: 'networkidle' })
+  const totals = await totalsOf(page)
+  const first = [...totals.entries()][0]
+  expect(first?.[1]).toMatch(/mixed|currencies/i)
 })
