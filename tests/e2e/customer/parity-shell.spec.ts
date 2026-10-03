@@ -115,6 +115,13 @@ test('main pages do not scroll sideways at phone width', async ({ page }) => {
     await page.goto(route, { waitUntil: 'domcontentloaded' })
     const widths = await page.evaluate(() => ({ page: document.documentElement.scrollWidth, window: innerWidth }))
     expect(widths.page, `${route} is wider than the screen`).toBeLessThanOrEqual(widths.window)
+    // Header buttons and view switchers wrap onto a new line instead of running off the screen edge.
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll('.ops-page-header *')]
+        .filter((node) => node.getBoundingClientRect().width > 0 && node.getBoundingClientRect().right > innerWidth + 1)
+        .map((node) => (node.getAttribute('aria-label') ?? node.textContent).trim().slice(0, 30)),
+    )
+    expect(clipped, `${route} has header controls cut off at the screen edge`).toEqual([])
   }
 })
 

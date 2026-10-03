@@ -23,7 +23,9 @@ export function PageHeader({ title, count, description, actions }: PageHeaderPro
         </h1>
         {description === undefined ? null : <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
-      {actions === undefined ? null : <div className="flex items-center gap-2">{actions}</div>}
+      {actions === undefined ? null : (
+        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">{actions}</div>
+      )}
     </div>
   )
 }
