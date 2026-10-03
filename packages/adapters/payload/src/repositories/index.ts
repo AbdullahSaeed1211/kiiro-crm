@@ -1,5 +1,4 @@
 /** Payload Local API repositories implementing platform, module and Cloudflare adapter ports. */
-export { createBillingRepository, listBillingPage } from './billing-repository'
 export { createCrmRepository, listCrmPage, type CrmPageQuery, type CrmPageResult } from './crm'
 export { createDueItemSource } from './due-item-source'
 export { createEmailMessageSink } from './email-message-sink'

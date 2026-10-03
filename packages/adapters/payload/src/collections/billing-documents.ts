@@ -11,8 +11,8 @@ import {
   textField,
 } from './fields'
 
-export const BILLING_KINDS = ['quote', 'invoice'] as const
-export const BILLING_STATUSES = ['draft', 'sent', 'accepted', 'declined', 'paid', 'void'] as const
+const BILLING_KINDS = ['quote', 'invoice'] as const
+const BILLING_STATUSES = ['draft', 'sent', 'accepted', 'declined', 'paid', 'void'] as const
 
 /** Quotes and invoices. The number is unique, so two documents made at once cannot share one. */
 export const billingDocumentsCollection = spikeCollection({

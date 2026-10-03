@@ -10,7 +10,7 @@ const optionalText = z
   .optional()
 
 /** One line of a quote or invoice. Quantity is in thousandths so 1.5 hours is 1500. */
-export const lineSchema = z
+const lineSchema = z
   .object({
     description: text,
     quantityMilli: z.number().int().min(1).max(1_000_000_000),
@@ -19,7 +19,7 @@ export const lineSchema = z
   })
   .strict()
 
-export const documentKindSchema = z.enum(['quote', 'invoice'])
+const documentKindSchema = z.enum(['quote', 'invoice'])
 
 const currency = z
   .string()

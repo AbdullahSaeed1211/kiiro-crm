@@ -7,7 +7,7 @@ import { billingDeps } from './deps'
 
 export const BILLING_PAGE_SIZE = 25
 
-export interface BillingRow {
+interface BillingRow {
   readonly id: string
   readonly number: string
   readonly kind: DocumentKind
@@ -26,7 +26,7 @@ export interface BillingPage {
 }
 
 /** The state to show: overdue and expired are worked out from the dates and never stored. */
-export function shownStatus(document: Pick<BillingDocument, 'kind' | 'status' | 'dueAt'>, now: number): string {
+function shownStatus(document: Pick<BillingDocument, 'kind' | 'status' | 'dueAt'>, now: number): string {
   if (isOverdue(document, now)) return 'overdue'
   return isExpired(document, now) ? 'expired' : document.status
 }
