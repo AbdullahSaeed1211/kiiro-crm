@@ -148,6 +148,8 @@ async function addContactBack(page: Page): Promise<void> {
   const picker = page.locator('#deal-add-contact')
   // With many contacts the list is long and a search box narrows it.
   const search = page.getByLabel('Search contacts')
+  // The list loads first; the search box appears only when more than a page of contacts match.
+  await expect(picker.locator('option')).not.toHaveCount(1, { timeout: 30_000 })
   if ((await search.count()) > 0) await search.fill('Grace')
   await expect(picker.locator('option', { hasText: OPEN_CONTACT })).toHaveCount(1, { timeout: 30_000 })
   await picker.selectOption({ label: OPEN_CONTACT })
