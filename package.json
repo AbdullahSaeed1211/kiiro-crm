@@ -25,6 +25,7 @@
     "check:disables": "tsx scripts/check-disables.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "check:isolation": "tsx scripts/check-isolation.ts",
+    "check:ste": "tsx scripts/check-ste.ts",
     "gen:wrangler": "tsx scripts/gen-wrangler.ts && prettier --write apps/web/wrangler.jsonc apps/mail-router/wrangler.jsonc",
     "test": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",
@@ -45,7 +46,7 @@
     "tenant:smoke": "tsx scripts/smoke-tenant.ts",
     "tenants:deploy": "tsx scripts/deploy-tenants.ts",
     "verify:fast": "pnpm format:check && pnpm typecheck && pnpm lint && vitest run --project unit --changed",
-    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm check:isolation && pnpm test && pnpm test:integration && pnpm build && pnpm size"
+    "verify": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm depcruise && pnpm knip && pnpm jscpd && pnpm check:brand && pnpm check:vocab && pnpm check:disables && pnpm check:docs && pnpm check:isolation && pnpm check:ste && pnpm test && pnpm test:integration && pnpm build && pnpm size"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

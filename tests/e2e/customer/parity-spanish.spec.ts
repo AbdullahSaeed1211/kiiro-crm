@@ -48,7 +48,7 @@ async function checkSpanishTaskPanel(page: Page): Promise<void> {
   await expect(box).toBeVisible({ timeout: 30_000 })
   await box.fill(`${await box.inputValue()} borrador`)
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('alertdialog')).toContainText('Tienes una descripción sin guardar')
+  await expect(page.getByRole('alertdialog')).toContainText('No guardaste tu descripción')
   await page.getByRole('button', { name: 'Cerrar sin guardar' }).click()
 }
 

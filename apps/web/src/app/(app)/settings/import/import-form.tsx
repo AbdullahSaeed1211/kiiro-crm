@@ -46,7 +46,7 @@ function Report({ outcome }: Readonly<{ outcome: Outcome }>) {
       <p className="font-medium">{summary(outcome)}</p>
       {outcome.dryRun && report.errors.length > 0 ? (
         <p className="text-muted-foreground">
-          Rows with problems are skipped when you import. Fix the file and check it again to include them.
+          The import skips rows with problems. Fix the file and check it again to include them.
         </p>
       ) : null}
       {report.ignoredColumns.length > 0 ? (
