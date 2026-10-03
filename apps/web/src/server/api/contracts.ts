@@ -13,6 +13,7 @@ import type { Result } from '@ops/kernel'
 import { z } from 'zod'
 import { readBody, type BodySchema } from './http'
 import type { ApiContract, ApiQueryParam } from './contract-types'
+import { BILLING_CONTRACTS } from './contracts-billing'
 import { CRM_CONTRACTS } from './contracts-crm'
 import { EXPORT_CONTRACTS } from './contracts-export'
 import { EXTRA_CONTRACTS, listQuery } from './contracts-extra'
@@ -148,6 +149,7 @@ const API_CONTRACTS = {
   ...CRM_CONTRACTS,
   ...EXTRA_CONTRACTS,
   ...EXPORT_CONTRACTS,
+  ...BILLING_CONTRACTS,
   'groups.delete': { method: 'DELETE', path: '/api/v1/groups/:id', summary: 'Delete a group.', success: 200 },
 } as const satisfies Readonly<Record<string, ApiContract>>
 

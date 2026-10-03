@@ -15,6 +15,7 @@ import { fieldDefinitionsCollection } from './config'
 import { jobRunsCollection } from './job-runs'
 import { timeEntriesCollection } from './time-entries'
 import { auditEventsCollection } from './audit-events'
+import { billingDocumentsCollection } from './billing-documents'
 import { campaignQueueCollection } from './campaign-queue'
 import { demoManifestsCollection } from './demo-manifests'
 import { webhookDeliveriesCollection } from './webhook-deliveries'
@@ -65,5 +66,6 @@ export const spikeCollections: readonly CollectionConfig[] = [
   webhookDeliveriesCollection,
   demoManifestsCollection,
   auditEventsCollection,
+  billingDocumentsCollection,
   campaignQueueCollection,
 ]

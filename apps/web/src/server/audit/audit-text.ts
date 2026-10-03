@@ -9,6 +9,15 @@ const PHRASES: Readonly<Record<string, string>> = {
   'token.revoked': 'Revoked an API token',
   'settings.changed': 'Changed settings',
   'export.downloaded': 'Downloaded data',
+  'quote.created': 'Made a quote',
+  'quote.sent': 'Sent a quote',
+  'quote.accepted': 'Marked a quote accepted',
+  'quote.declined': 'Marked a quote declined',
+  'quote.void': 'Voided a quote',
+  'invoice.created': 'Made an invoice',
+  'invoice.sent': 'Sent an invoice',
+  'invoice.paid': 'Marked an invoice paid',
+  'invoice.void': 'Voided an invoice',
 }
 
 /** Every event the security log can show, for its filter list. */

@@ -96,6 +96,7 @@ export interface Config {
     webhookDeliveries: WebhookDelivery;
     demoManifests: DemoManifest;
     auditEvents: AuditEvent;
+    billingDocuments: BillingDocument;
     campaignQueue: CampaignQueue;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -133,6 +134,7 @@ export interface Config {
     webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
     demoManifests: DemoManifestsSelect<false> | DemoManifestsSelect<true>;
     auditEvents: AuditEventsSelect<false> | AuditEventsSelect<true>;
+    billingDocuments: BillingDocumentsSelect<false> | BillingDocumentsSelect<true>;
     campaignQueue: CampaignQueueSelect<false> | CampaignQueueSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1054,6 +1056,54 @@ export interface AuditEvent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingDocuments".
+ */
+export interface BillingDocument {
+  id: string;
+  kind: 'quote' | 'invoice';
+  number: string;
+  status: 'draft' | 'sent' | 'accepted' | 'declined' | 'paid' | 'void';
+  organization: string | Organization;
+  deal?: (string | null) | Deal;
+  contact?: (string | null) | Contact;
+  currency: string;
+  lines:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  note?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  dueAt?: number | null;
+  paymentLink?: string | null;
+  sourceQuoteId?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  sentAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  decidedAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  paidAt?: number | null;
+  subtotalMinor?: number | null;
+  taxMinor?: number | null;
+  totalMinor?: number | null;
+  createdBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "campaignQueue".
  */
 export interface CampaignQueue {
@@ -1218,6 +1268,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'auditEvents';
         value: string | AuditEvent;
+      } | null)
+    | ({
+        relationTo: 'billingDocuments';
+        value: string | BillingDocument;
       } | null)
     | ({
         relationTo: 'campaignQueue';
@@ -1780,6 +1834,33 @@ export interface AuditEventsSelect<T extends boolean = true> {
   summary?: T;
   data?: T;
   occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingDocuments_select".
+ */
+export interface BillingDocumentsSelect<T extends boolean = true> {
+  kind?: T;
+  number?: T;
+  status?: T;
+  organization?: T;
+  deal?: T;
+  contact?: T;
+  currency?: T;
+  lines?: T;
+  note?: T;
+  dueAt?: T;
+  paymentLink?: T;
+  sourceQuoteId?: T;
+  sentAt?: T;
+  decidedAt?: T;
+  paidAt?: T;
+  subtotalMinor?: T;
+  taxMinor?: T;
+  totalMinor?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

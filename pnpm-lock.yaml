@@ -84,6 +84,9 @@ importers:
       '@ops/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@ops/module-billing':
+        specifier: workspace:*
+        version: link:../../packages/modules/billing
       '@ops/module-crm':
         specifier: workspace:*
         version: link:../../packages/modules/crm
@@ -182,6 +185,9 @@ importers:
       '@ops/kernel':
         specifier: workspace:*
         version: link:../../kernel
+      '@ops/module-billing':
+        specifier: workspace:*
+        version: link:../../modules/billing
       '@ops/module-crm':
         specifier: workspace:*
         version: link:../../modules/crm

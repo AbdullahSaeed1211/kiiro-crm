@@ -41,6 +41,7 @@ export {
 } from './collections/people'
 export { createIntakeStore, findIntakeForm, toIntakeForm } from './repositories/intake-store'
 export { createJobRunStore, createJobSources } from './repositories/job-store'
+export { createBillingRepository, listBillingPage } from './repositories/billing-repository'
 export {
   createCrmRepository,
   listCrmPage,

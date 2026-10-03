@@ -21,6 +21,7 @@ import * as migration_20261002_090000_demo_manifests from './20261002_090000_dem
 import * as migration_20261002_150000_campaign_queue from './20261002_150000_campaign_queue';
 import * as migration_20261002_180000_work_archive from './20261002_180000_work_archive';
 import * as migration_20261003_090000_audit_events from './20261003_090000_audit_events';
+import * as migration_20261003_130000_billing_documents from './20261003_130000_billing_documents';
 
 export const migrations = [
   {
@@ -137,5 +138,10 @@ export const migrations = [
     up: migration_20261003_090000_audit_events.up,
     down: migration_20261003_090000_audit_events.down,
     name: '20261003_090000_audit_events'
+  },
+  {
+    up: migration_20261003_130000_billing_documents.up,
+    down: migration_20261003_130000_billing_documents.down,
+    name: '20261003_130000_billing_documents'
   },
 ];

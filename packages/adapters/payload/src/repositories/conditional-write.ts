@@ -46,7 +46,9 @@ function columnOf(table: Table, key: string): Column {
 }
 
 function tableOf(db: DrizzleAdapter, collection: CollectionSlug): Table {
-  const table = db.tables[db.tableNameMap.get(collection) ?? collection]
+  // Payload keys its table names by the snake_case form of a slug such as billingDocuments.
+  const snake = collection.replace(/[A-Z]/gu, (letter) => `_${letter.toLowerCase()}`)
+  const table = db.tables[db.tableNameMap.get(collection) ?? db.tableNameMap.get(snake) ?? collection]
   if (table === undefined) throw new Error(`No table for collection ${collection}`)
   return table
 }

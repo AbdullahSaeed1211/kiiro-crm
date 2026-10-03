@@ -11,6 +11,7 @@ export const COLLECTIONS = {
   notifications: 'notifications',
   emailMessages: 'emailMessages',
   auditEvents: 'auditEvents',
+  billingDocuments: 'billingDocuments',
   jobRuns: 'jobRuns',
   intakeForms: 'intakeForms',
   intakeSubmissions: 'intakeSubmissions',

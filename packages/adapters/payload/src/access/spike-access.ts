@@ -44,6 +44,7 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.projects]: scopedRecord(RECORD_TYPES.projects),
   [COLLECTIONS.tasks]: scopedRecord(RECORD_TYPES.tasks),
   [COLLECTIONS.workflows]: { read: anyActive, ...managedByLeads },
+  [COLLECTIONS.billingDocuments]: { read: managerUp, create: managerUp, update: managerUp, delete: managerUp },
   [COLLECTIONS.activity]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.attachments]: {
     read: managerUp,
