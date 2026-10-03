@@ -67,8 +67,8 @@ async function createDeal(page: Page, title: string): Promise<void> {
   const dialog = page.getByRole('dialog', { name: 'Create deal' })
   await dialog.getByLabel('Title').fill(title)
   await submitFailThenRetry(page, dialog, { pattern: '**/deals', button: 'Create deal' })
-  await page.reload()
-  await page.getByRole('link', { name: title }).click()
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.getByRole('link', { name: title }).locator('visible=true').first().click()
   await expect(page).toHaveURL(/\/deals\/[^/]+$/)
 }
 
