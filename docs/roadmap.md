@@ -96,3 +96,11 @@ Depends on: wave 5. Audiences: name lists on the newsletter page, tick them on c
 Features the reference products have that this product lacks. Each is marked "decide before building": custom record types; automation rules (when X, do Y); Gmail and two-way calendar sync; email templates; call logs; response-time targets (SLAs); task labels, task relations (blocks/blocked by), cycles, estimates.
 
 Done when: each feature has a yes/no/defer decision recorded in an ADR or spec section, or is assigned to a wave.
+
+## 11. Quotes, invoices, portal, rules and audit log
+
+Design: [quotes, invoices, portal, rules, audit log](design/quotes-invoices-portal-rules-audit.md). Owner priority: bill the work and show it to the client.
+
+- Order: audit log, then quotes and invoices, then the client portal, then automation rules. Payments through a processor wait for the tenant's account.
+
+Depends on: wave 10. Done when: each feature is verified signed in on production, and the portal has passing scope and token tests.

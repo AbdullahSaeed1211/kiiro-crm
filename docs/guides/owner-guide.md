@@ -117,7 +117,9 @@ The dashboard shows owners and managers a Sales pipeline card: open pipeline val
 
 ## See who changed what
 
-Settings, Activity (owners and managers) lists the last hundred changes anyone made to records: who did it, what happened (created, edited, moved to another stage, assigned, note added, email sent, archived, restored), when, and a link to the record. The same wording appears on each organization and contact page.
+Settings, Activity (owners and managers) lists the changes anyone made to records, newest first, 50 to a page: who did it, what happened (created, edited, moved to another stage, assigned, note added, email sent, archived, restored), when, and a link to the record. Narrow it by person, record type, kind of change and dates, and use Export CSV to download what is shown (up to 5000 rows). The same wording appears on each organization and contact page.
+
+The Security tab on the same page lists who invited or cancelled an invitation, changed a person's access, saved or deleted a group, changed settings, made or revoked an API token, and downloaded data. It has the same filters and export.
 
 ## Routines that keep it honest
 

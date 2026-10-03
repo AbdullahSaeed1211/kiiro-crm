@@ -2,6 +2,7 @@ import { isManagerUp } from '@ops/platform'
 import { findProductContext } from '../../../../auth/context'
 import { exportCsv } from '../../../../crm/export'
 import { failure } from '../../../respond'
+import { recordAuditEvent } from '../../../../audit/record'
 
 const TYPES = { organizations: 'organization', contacts: 'contact', leads: 'lead', deals: 'deal' } as const
 
@@ -13,6 +14,7 @@ export async function GET(_request: Request, route: { params: Promise<{ recordTy
   const { recordType } = await route.params
   if (!Object.hasOwn(TYPES, recordType)) return failure('NOT_FOUND', 'Unknown record type.')
   const csv = await exportCsv(context, TYPES[recordType as keyof typeof TYPES])
+  await recordAuditEvent(context, { verb: 'export.downloaded', summary: recordType })
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

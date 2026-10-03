@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { actionError, actionFailure, actionOk, type ActionResult } from '../../action-result'
 import { createApiToken, revokeApiToken } from '../../auth/api-tokens'
 import { requireRole } from '../../auth/context'
+import { recordAuditEvent } from '../../audit/record'
 
 const createSchema = z.object({ name: z.string().trim().min(1).max(60) }).strict()
 const revokeSchema = z.object({ tokenId: z.string().min(1).max(64) }).strict()
@@ -16,9 +17,9 @@ export async function makeApiToken(input: unknown): Promise<ActionResult<{ token
   if (!parsed.success) return actionError('VALIDATION', 'Give the token a name of up to 60 characters.')
   try {
     const token = await createApiToken(context.payload, { userId: String(context.user.id), name: parsed.data.name })
-    return token === null
-      ? actionError('VALIDATION', 'You have 10 tokens already. Revoke one first.')
-      : actionOk({ token })
+    if (token === null) return actionError('VALIDATION', 'You have 10 tokens already. Revoke one first.')
+    await recordAuditEvent(context, { verb: 'token.created', summary: parsed.data.name })
+    return actionOk({ token })
   } catch (error) {
     return actionFailure(error, 'makeApiToken', 'Unable to make the token.')
   }
@@ -31,6 +32,7 @@ export async function removeApiToken(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return actionError('VALIDATION', 'Choose a token.')
   try {
     await revokeApiToken(context.payload, { userId: String(context.user.id), tokenId: parsed.data.tokenId })
+    await recordAuditEvent(context, { verb: 'token.revoked', summary: parsed.data.tokenId })
     return actionOk()
   } catch (error) {
     return actionFailure(error, 'removeApiToken', 'Unable to revoke the token.')

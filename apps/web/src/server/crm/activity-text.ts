@@ -19,3 +19,6 @@ const PHRASES: Readonly<Record<string, string>> = {
 export function describeActivity(verb: string | null): string {
   return (verb === null ? undefined : PHRASES[verb]) ?? 'Updated'
 }
+
+/** Every verb the log can show, for the filter list. */
+export const ACTIVITY_VERBS: readonly string[] = Object.keys(PHRASES)

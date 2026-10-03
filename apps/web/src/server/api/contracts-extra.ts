@@ -177,17 +177,6 @@ export const EXTRA_CONTRACTS = {
     returns: 'csv',
     success: 200,
   },
-  'export.time': {
-    method: 'GET',
-    path: '/api/v1/export/time',
-    summary: 'Download logged time as CSV. Owners and managers only.',
-    query: [
-      { name: 'from', description: 'First day, YYYY-MM-DD.' },
-      { name: 'to', description: 'Last day, YYYY-MM-DD.' },
-    ],
-    returns: 'csv',
-    success: 200,
-  },
   'import.template': {
     method: 'GET',
     path: '/api/v1/import/template/:recordType',

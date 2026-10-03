@@ -3,6 +3,7 @@ import { isManagerUp } from '@ops/platform'
 import { findProductContext } from '../../../../auth/context'
 import { loadTimeRows } from '../../../../time/report'
 import { failure } from '../../../respond'
+import { recordAuditEvent } from '../../../../audit/record'
 
 const DAY_MS = 86_400_000
 const DATE = /^\d{4}-\d{2}-\d{2}$/u
@@ -23,6 +24,7 @@ export async function GET(request: Request): Promise<Response> {
     fromMs: Date.parse(`${from}T00:00:00.000Z`),
     toMs: Date.parse(`${to}T00:00:00.000Z`) + DAY_MS - 1,
   })
+  await recordAuditEvent(context, { verb: 'export.downloaded', summary: 'time', data: { from, to } })
   const csv = formatCsv([
     ['day', 'person', 'project', 'task', 'hours', 'minutes', 'note'],
     ...rows.map((row) => [

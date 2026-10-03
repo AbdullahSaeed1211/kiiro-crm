@@ -10,6 +10,7 @@ export const COLLECTIONS = {
   attachments: 'attachments',
   notifications: 'notifications',
   emailMessages: 'emailMessages',
+  auditEvents: 'auditEvents',
   jobRuns: 'jobRuns',
   intakeForms: 'intakeForms',
   intakeSubmissions: 'intakeSubmissions',

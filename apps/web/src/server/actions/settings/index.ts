@@ -5,6 +5,7 @@ import { can } from '@ops/platform'
 import { actionError, actionFailure, actionOk } from '../../action-result'
 import { getProductContext, requireRole } from '../../auth/context'
 import { recordOf, stringValue } from './input'
+import { recordAuditEvent } from '../../audit/record'
 import { restampDealCurrency } from '../../crm/restamp-deal-currency'
 import { isSupportedCurrency } from '../../../i18n/currencies'
 import type { ActionResult } from '../../action-result'
@@ -35,6 +36,7 @@ export async function updateSettings(input: unknown): Promise<ActionResult> {
   try {
     await context.payload.updateGlobal({ slug: 'settings', data, overrideAccess: true, req: context.req })
     await followCurrency(context.payload, data.currency)
+    await recordAuditEvent(context, { verb: 'settings.changed', summary: keys.join(', '), data: { keys } })
     revalidatePath('/settings')
     return actionOk()
   } catch (error) {

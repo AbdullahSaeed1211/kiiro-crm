@@ -95,6 +95,7 @@ export interface Config {
     timeEntries: TimeEntry;
     webhookDeliveries: WebhookDelivery;
     demoManifests: DemoManifest;
+    auditEvents: AuditEvent;
     campaignQueue: CampaignQueue;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -131,6 +132,7 @@ export interface Config {
     timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
     webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
     demoManifests: DemoManifestsSelect<false> | DemoManifestsSelect<true>;
+    auditEvents: AuditEventsSelect<false> | AuditEventsSelect<true>;
     campaignQueue: CampaignQueueSelect<false> | CampaignQueueSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1027,6 +1029,31 @@ export interface DemoManifest {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auditEvents".
+ */
+export interface AuditEvent {
+  id: string;
+  verb: string;
+  actor?: (string | null) | User;
+  summary?: string | null;
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  occurredAt: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "campaignQueue".
  */
 export interface CampaignQueue {
@@ -1187,6 +1214,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'demoManifests';
         value: string | DemoManifest;
+      } | null)
+    | ({
+        relationTo: 'auditEvents';
+        value: string | AuditEvent;
       } | null)
     | ({
         relationTo: 'campaignQueue';
@@ -1736,6 +1767,19 @@ export interface WebhookDeliveriesSelect<T extends boolean = true> {
 export interface DemoManifestsSelect<T extends boolean = true> {
   part?: T;
   entries?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auditEvents_select".
+ */
+export interface AuditEventsSelect<T extends boolean = true> {
+  verb?: T;
+  actor?: T;
+  summary?: T;
+  data?: T;
+  occurredAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
