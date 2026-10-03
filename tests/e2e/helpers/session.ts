@@ -59,3 +59,12 @@ export async function sessionCookies(browser: Browser, key: UserKey): Promise<Co
   await context.close()
   return cookies
 }
+
+/** Opens a page and waits for it to settle; a save that is still refreshing can cut the first try short, so it retries once. */
+export async function gotoSettled(page: Page, path: string): Promise<void> {
+  try {
+    await page.goto(path, { waitUntil: 'networkidle' })
+  } catch {
+    await page.goto(path, { waitUntil: 'networkidle' })
+  }
+}

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { signInAs } from '../helpers/session'
+import { gotoSettled, signInAs } from '../helpers/session'
 
 // Parity rows 43, 44 and 46: settings follow the person's role, show the tenant's brand, and switches change behavior.
 test.describe.configure({ mode: 'serial' })
@@ -52,18 +52,21 @@ async function saveModules(page: Page): Promise<void> {
 test('turning the mail module off removes the inbox and turning it back on restores it', async ({ page }) => {
   test.setTimeout(90_000)
   await signInAs(page, 'owner')
-  await page.goto('/settings/modules', { waitUntil: 'networkidle' })
+  await gotoSettled(page, '/settings/modules')
   await page.getByRole('checkbox', { name: MAIL_MODULE }).uncheck()
   await saveModules(page)
   try {
-    await page.goto('/settings/modules', { waitUntil: 'networkidle' })
-    await expect(page.getByRole('checkbox', { name: MAIL_MODULE })).not.toBeChecked()
+    // Reload until the saved setting shows; a reload that meets the page's own refresh is simply tried again.
+    await expect(async () => {
+      await page.reload({ waitUntil: 'networkidle' })
+      await expect(page.getByRole('checkbox', { name: MAIL_MODULE })).not.toBeChecked({ timeout: 3000 })
+    }).toPass({ timeout: 30_000 })
     await expect(page.locator('[data-slot="sidebar"] a[href="/inbox"]')).toHaveCount(0)
   } finally {
     await page.getByRole('checkbox', { name: MAIL_MODULE }).check()
     await saveModules(page)
   }
-  await page.goto('/', { waitUntil: 'networkidle' })
+  await gotoSettled(page, '/')
   // The phone drawer is not on the page until opened, so there the inbox page itself is the check.
   if ((page.viewportSize()?.width ?? 0) > 650) {
     await expect(page.locator('[data-slot="sidebar"] a[href="/inbox"]')).toHaveCount(1)
