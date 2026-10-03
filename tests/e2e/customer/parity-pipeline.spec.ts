@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { signInAs } from '../helpers/session'
+import { gotoSettled, signInAs } from '../helpers/session'
 
 // Parity rows 08, 29 and 31: create, convert and close records in the browser, with a failed save in between.
 test.describe.configure({ mode: 'serial' })
@@ -53,7 +53,7 @@ test('a lead converts to a deal, survives a failed save, and shows as converted 
   // The page refreshes itself after the save; wait for that before the reload so the two do not collide.
   await expect(page.getByText('Converted').first()).toBeVisible({ timeout: 30_000 })
   await page.waitForLoadState('networkidle')
-  await page.goto(leadUrl)
+  await gotoSettled(page, leadUrl)
   await expect(page.getByText('Converted').first()).toBeVisible()
   await page.goto('/deals')
   await page.getByRole('link', { name: title }).locator('visible=true').first().click()
@@ -85,7 +85,7 @@ test('a deal is created, marked lost with a reason, reopened, and each step surv
     .click()
   await expect(dialog).toBeHidden({ timeout: 30_000 })
   await page.waitForLoadState('networkidle')
-  await page.goto(dealUrl)
+  await gotoSettled(page, dealUrl)
   await expect(page.getByText('Lost').first()).toBeVisible()
   await reopenAndCheck(page, dealUrl)
 })
@@ -96,7 +96,7 @@ async function reopenAndCheck(page: Page, dealUrl: string): Promise<void> {
   await page.getByRole('button', { name: 'Reopen' }).click()
   await expect(page.getByRole('button', { name: 'Reopen' })).toBeHidden({ timeout: 30_000 })
   await page.waitForLoadState('networkidle')
-  await page.goto(dealUrl)
+  await gotoSettled(page, dealUrl)
   await expect(page.getByRole('button', { name: 'Mark lost' })).toBeVisible()
 }
 

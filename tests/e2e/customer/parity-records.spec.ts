@@ -145,8 +145,10 @@ async function openKeystoneDeal(page: Page): Promise<void> {
 
 async function addContactBack(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Add a contact' }).click()
-  // With few contacts the picker is a plain list; a search box appears only when there are many.
   const picker = page.locator('#deal-add-contact')
+  // With many contacts the list is long and a search box narrows it.
+  const search = page.getByLabel('Search contacts')
+  if ((await search.count()) > 0) await search.fill('Grace')
   await expect(picker.locator('option', { hasText: OPEN_CONTACT })).toHaveCount(1, { timeout: 30_000 })
   await picker.selectOption({ label: OPEN_CONTACT })
   const added = page.waitForResponse((r) => r.request().method() === 'POST')
