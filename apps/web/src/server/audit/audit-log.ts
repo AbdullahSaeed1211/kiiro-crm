@@ -8,8 +8,8 @@ import { describeAudit } from './audit-text'
 const DAY_MS = 86_400_000
 const DATE = /^\d{4}-\d{2}-\d{2}$/u
 
-export const AUDIT_PAGE_SIZE = 50
-export const AUDIT_EXPORT_LIMIT = 5000
+const AUDIT_PAGE_SIZE = 50
+const AUDIT_EXPORT_LIMIT = 5000
 
 /** What the security log is narrowed to. A blank value means "any". */
 export interface AuditFilters {

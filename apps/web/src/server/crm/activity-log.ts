@@ -8,9 +8,9 @@ import { refId, text } from './directory/normalize'
 const DAY_MS = 86_400_000
 const DATE = /^\d{4}-\d{2}-\d{2}$/u
 
-export const ACTIVITY_PAGE_SIZE = 50
+const ACTIVITY_PAGE_SIZE = 50
 /** The most rows one export holds, so a download stays quick and small. */
-export const ACTIVITY_EXPORT_LIMIT = 5000
+const ACTIVITY_EXPORT_LIMIT = 5000
 
 /** What the log is narrowed to. Every field is optional; a blank value means "any". */
 export interface ActivityFilters {
