@@ -87,7 +87,11 @@ export async function purgeDemoRecords(store: DemoStore): Promise<Record<string,
   for (const collection of PURGE_ORDER) {
     const ids = entries.filter((entry) => entry.collection === collection).map((entry) => entry.id)
     for (let at = 0; at < ids.length; at += ID_CHUNK) {
-      await store.db.deleteMany({ collection, where: { id: { in: ids.slice(at, at + ID_CHUNK) } } })
+      const chunk = ids.slice(at, at + ID_CHUNK)
+      // A person's notifications cannot outlive them: their user column is required, so it cannot be cleared.
+      if (collection === 'users')
+        await store.db.deleteMany({ collection: 'notifications', where: { user: { in: chunk } } })
+      await store.db.deleteMany({ collection, where: { id: { in: chunk } } })
     }
     if (ids.length > 0) removed[collection] = ids.length
   }
