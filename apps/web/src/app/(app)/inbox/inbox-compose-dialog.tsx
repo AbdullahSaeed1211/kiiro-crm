@@ -1,27 +1,11 @@
 'use client'
 
-import { Search, X } from 'lucide-react'
-import Link from 'next/link'
+import { X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState, type SyntheticEvent } from 'react'
 import type { InboxCopy } from '../../../i18n/inbox-copy'
 import styles from './inbox.module.css'
 import { readApi } from '../api-client'
-
-interface Match {
-  readonly recordType: string
-  readonly id: string
-  readonly title: string
-  readonly subtitle: string
-}
-
-const ROUTES: Readonly<Record<string, string>> = {
-  contact: 'contacts',
-  lead: 'leads',
-  deal: 'deals',
-  organization: 'organizations',
-}
-const MIN_QUERY = 2
 
 /** True for text shaped like name@host.tld; checked by position, not a pattern, so odd input cannot make it slow. */
 function looksLikeEmail(text: string): boolean {
@@ -29,43 +13,14 @@ function looksLikeEmail(text: string): boolean {
   const dot = text.lastIndexOf('.')
   return at > 0 && at === text.lastIndexOf('@') && dot > at + 1 && dot < text.length - 1 && !/\s/u.test(text)
 }
-const SEARCH_DELAY_MS = 180
 
-async function searchRecords(query: string, signal: AbortSignal): Promise<readonly Match[]> {
-  const response = await fetch(`/api/v1/search?q=${encodeURIComponent(query)}`, { signal })
-  const result = await readApi<{ records?: readonly Match[] }>(response, 'Search failed.')
-  return ((result.ok ? result.data.records : undefined) ?? []).filter((match) => match.recordType in ROUTES)
-}
-
-/** Records a message can be written from that match the query; empty while the query is too short. */
-function useRecordSearch(query: string): { readonly matches: readonly Match[]; readonly loading: boolean } {
-  const [matches, setMatches] = useState<readonly Match[]>([])
-  const [loading, setLoading] = useState(false)
-  useEffect(() => {
-    const trimmed = query.trim()
-    if (trimmed.length < MIN_QUERY) {
-      setMatches([])
-      setLoading(false)
-      return undefined
-    }
-    const controller = new AbortController()
-    setLoading(true)
-    const timer = window.setTimeout(() => {
-      searchRecords(trimmed, controller.signal)
-        .then(setMatches)
-        .catch(() => {
-          if (!controller.signal.aborted) setMatches([])
-        })
-        .finally(() => {
-          setLoading(false)
-        })
-    }, SEARCH_DELAY_MS)
-    return () => {
-      controller.abort()
-      window.clearTimeout(timer)
-    }
-  }, [query])
-  return { matches, loading }
+/** The addresses typed in the To box, split on commas, semicolons and spaces, lower-cased, without repeats. */
+function addressesOf(text: string): string[] {
+  const parts = text
+    .split(/[\s,;]+/u)
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean)
+  return [...new Set(parts)]
 }
 
 /** A first name made from the part of an address before the @, such as "Abdullah Saeed" for abdullah.saeed@example.com. */
@@ -89,82 +44,87 @@ async function contactIdFor(address: string): Promise<string | undefined> {
   return result.ok ? result.data.id : undefined
 }
 
-/** Offers to write to an address that is not on any record yet, by adding it as a contact first. */
-function WriteToAddress({
-  address,
-  copy,
-  onClose,
-}: Readonly<{ address: string; copy: InboxCopy; onClose: () => void }>) {
+interface Draft {
+  readonly to: string
+  readonly subject: string
+  readonly message: string
+}
+
+/** Sends to any address. The message is kept on the first recipient's contact, which is made if it does not exist. */
+async function sendDraft(draft: Draft, copy: InboxCopy): Promise<string> {
+  const to = addressesOf(draft.to)
+  const [first = ''] = to
+  if (to.length === 0 || draft.subject.trim() === '' || draft.message.trim() === '') return copy.composeNeedAll
+  if (!to.every(looksLikeEmail)) return copy.composeBadAddress
+  const recordId = await contactIdFor(first)
+  if (recordId === undefined) return copy.composeSendFailed
+  const response = await fetch('/api/v1/email/send', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      recordType: 'contact',
+      recordId,
+      to,
+      subject: draft.subject.trim(),
+      textBody: draft.message.trim(),
+    }),
+  })
+  const result = await readApi(response, copy.composeSendFailed)
+  return result.ok ? '' : result.message
+}
+
+function ComposeForm({ copy, onClose }: Readonly<{ copy: InboxCopy; onClose: () => void }>) {
   const router = useRouter()
-  const [pending, setPending] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const go = async () => {
-    setPending(true)
-    setFailed(false)
-    const id = await contactIdFor(address)
-    setPending(false)
-    if (id === undefined) {
-      setFailed(true)
-      return
-    }
+  const [draft, setDraft] = useState<Draft>({ to: '', subject: '', message: '' })
+  const [error, setError] = useState('')
+  const [sending, setSending] = useState(false)
+  const set = (field: keyof Draft) => (event: { target: { value: string } }) => {
+    setDraft({ ...draft, [field]: event.target.value })
+  }
+  const submit = async (event: SyntheticEvent) => {
+    event.preventDefault()
+    setSending(true)
+    const failure = await sendDraft(draft, copy)
+    setSending(false)
+    setError(failure)
+    if (failure !== '') return
     onClose()
-    router.push(`/contacts/${id}?tab=email`)
+    router.refresh()
   }
   return (
-    <li>
-      <button
-        disabled={pending}
-        onClick={() => {
-          void go()
-        }}
-        type="button"
-      >
-        <strong>{copy.composeWriteTo.replace('{email}', address)}</strong>
-        <span>{failed ? copy.composeWriteToFailed : copy.composeWriteToHelp}</span>
-      </button>
-    </li>
+    <form
+      className={styles.composeForm}
+      onSubmit={(event) => {
+        void submit(event)
+      }}
+    >
+      <label>
+        <span>{copy.composeTo}</span>
+        <input autoFocus onChange={set('to')} placeholder={copy.composeToPlaceholder} type="text" value={draft.to} />
+      </label>
+      <label>
+        <span>{copy.composeSubject}</span>
+        <input onChange={set('subject')} type="text" value={draft.subject} />
+      </label>
+      <label>
+        <span>{copy.composeMessage}</span>
+        <textarea onChange={set('message')} rows={8} value={draft.message} />
+      </label>
+      {error === '' ? null : (
+        <p className={styles.composeError} role="alert">
+          {error}
+        </p>
+      )}
+      <footer>
+        <button disabled={sending} type="submit">
+          {sending ? copy.composeSending : copy.composeSend}
+        </button>
+      </footer>
+    </form>
   )
 }
 
-/** The records that match the search, plus the offer to write to a typed address that is on no record yet. */
-function ComposeResults({
-  copy,
-  loading,
-  matches,
-  onClose,
-  query,
-}: Readonly<{
-  copy: InboxCopy
-  loading: boolean
-  matches: readonly Match[]
-  onClose: () => void
-  query: string
-}>) {
-  const address = query.trim().toLowerCase()
-  const offersAddress =
-    looksLikeEmail(address) &&
-    !matches.some(
-      (match) => match.title.toLowerCase().includes(address) || match.subtitle.toLowerCase().includes(address),
-    )
-  return (
-    <ul className={styles.composeResults}>
-      {offersAddress ? <WriteToAddress address={address} copy={copy} onClose={onClose} /> : null}
-      {matches.map((match) => (
-        <li key={`${match.recordType}:${match.id}`}>
-          <Link href={`/${ROUTES[match.recordType] ?? ''}/${match.id}?tab=email`} onClick={onClose}>
-            <strong>{match.title}</strong>
-            <span>{match.subtitle === '' ? match.recordType : match.subtitle}</span>
-          </Link>
-        </li>
-      ))}
-      {query.trim().length >= MIN_QUERY && matches.length === 0 && !offersAddress ? (
-        <li className={styles.composeEmpty}>{loading ? copy.composeSearching : copy.composeNoMatches}</li>
-      ) : null}
-    </ul>
-  )
-}
-
-/** "Compose" in the inbox: pick the record to write from, then continue on its Email tab where the message is sent and kept. */
+/** "Compose" in the inbox: write to anyone with To, Subject and Message. A new address is added as a contact so the message is kept. */
 export function InboxComposeDialog({
   open,
   outboundEmailEnabled,
@@ -176,8 +136,6 @@ export function InboxComposeDialog({
   copy: InboxCopy
   onClose: () => void
 }>) {
-  const [query, setQuery] = useState('')
-  const { matches, loading } = useRecordSearch(query)
   if (!open) return null
   return (
     <div
@@ -196,22 +154,7 @@ export function InboxComposeDialog({
         <p className={styles.composeNotice} role="status">
           {outboundEmailEnabled ? copy.composeHelp : copy.composeUnavailable}
         </p>
-        {outboundEmailEnabled ? (
-          <>
-            <label className={styles.composeSearch}>
-              <Search size={15} aria-hidden="true" />
-              <input
-                autoFocus
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                }}
-                placeholder={copy.composeSearch}
-                value={query}
-              />
-            </label>
-            <ComposeResults copy={copy} loading={loading} matches={matches} onClose={onClose} query={query} />
-          </>
-        ) : null}
+        {outboundEmailEnabled ? <ComposeForm copy={copy} onClose={onClose} /> : null}
       </section>
     </div>
   )

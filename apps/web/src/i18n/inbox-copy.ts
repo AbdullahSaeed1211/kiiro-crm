@@ -34,13 +34,16 @@ export interface InboxCopy {
   readonly composeTitle: string
   readonly composeUnavailable: string
   readonly composeHelp: string
-  readonly composeSearch: string
-  readonly composeSearching: string
-  readonly composeNoMatches: string
+  readonly composeTo: string
+  readonly composeToPlaceholder: string
+  readonly composeSubject: string
+  readonly composeMessage: string
+  readonly composeSend: string
+  readonly composeSending: string
+  readonly composeNeedAll: string
+  readonly composeBadAddress: string
+  readonly composeSendFailed: string
   /** `{email}` is the address typed in the search box. */
-  readonly composeWriteTo: string
-  readonly composeWriteToHelp: string
-  readonly composeWriteToFailed: string
   readonly close: string
   readonly openFolders: string
   readonly closeFolders: string
@@ -81,13 +84,17 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     unlinked: 'No linked record',
     composeTitle: 'New message',
     composeUnavailable: 'Outbound sending is not enabled yet. You can still review your inbox and linked records.',
-    composeHelp: 'Choose who to write to. The message is sent from their record, so it stays in their history.',
-    composeSearch: 'Search contacts, leads, deals and organizations',
-    composeSearching: 'Searching…',
-    composeNoMatches: 'No matching records',
-    composeWriteTo: 'Write to {email}',
-    composeWriteToHelp: 'Adds them as a contact, so the message stays in their history.',
-    composeWriteToFailed: 'Unable to add that address. Try again.',
+    composeHelp: 'Write to anyone. A new address is added as a contact, so the message stays in their history.',
+    composeTo: 'To',
+    composeToPlaceholder: 'name@example.com, separate several with commas',
+    composeSubject: 'Subject',
+    composeMessage: 'Message',
+    composeSend: 'Send',
+    composeSending: 'Sending…',
+    composeNeedAll: 'Add an address, a subject and a message.',
+    composeBadAddress: 'Check the addresses. Each one needs a name, an @ and a domain.',
+    composeSendFailed: 'The message was not sent. Try again.',
+
     close: 'Close',
     openFolders: 'Open mail folders',
     closeFolders: 'Close mail folders',
@@ -127,13 +134,17 @@ export const INBOX_COPY: Readonly<Record<Locale, InboxCopy>> = {
     composeTitle: 'Nuevo mensaje',
     composeUnavailable:
       'El envío de correo aún no está habilitado. Puedes revisar la bandeja y los registros vinculados.',
-    composeHelp: 'Elige a quién escribir. El mensaje se envía desde su registro, así queda en su historial.',
-    composeSearch: 'Buscar contactos, leads, negocios y organizaciones',
-    composeSearching: 'Buscando…',
-    composeNoMatches: 'Sin registros coincidentes',
-    composeWriteTo: 'Escribir a {email}',
-    composeWriteToHelp: 'Se añade como contacto para que el mensaje quede en su historial.',
-    composeWriteToFailed: 'No se pudo añadir esa dirección. Inténtalo de nuevo.',
+    composeHelp:
+      'Escriba a cualquiera. Una dirección nueva se añade como contacto, así el mensaje queda en su historial.',
+    composeTo: 'Para',
+    composeToPlaceholder: 'nombre@ejemplo.com, separe varios con comas',
+    composeSubject: 'Asunto',
+    composeMessage: 'Mensaje',
+    composeSend: 'Enviar',
+    composeSending: 'Enviando…',
+    composeNeedAll: 'Añada una dirección, un asunto y un mensaje.',
+    composeBadAddress: 'Revise las direcciones. Cada una necesita un nombre, una @ y un dominio.',
+    composeSendFailed: 'No se envió el mensaje. Inténtelo de nuevo.',
     close: 'Cerrar',
     openFolders: 'Abrir carpetas de correo',
     closeFolders: 'Cerrar carpetas de correo',
