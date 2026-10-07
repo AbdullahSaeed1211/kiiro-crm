@@ -33,8 +33,18 @@ function nameFromAddress(address: string): string {
     .join(' ')
 }
 
-/** Adds the address as a contact, or finds the one that has it, and returns the contact's id. */
+/** The id of the contact that already has this exact address, or `undefined`. */
+async function existingContactId(address: string): Promise<string | undefined> {
+  const response = await fetch(`/api/v1/contacts?limit=20&q=${encodeURIComponent(address)}`)
+  const result = await readApi<{ records?: readonly { id: string; email?: string | null }[] }>(response, '')
+  if (!result.ok) return undefined
+  return result.data.records?.find((record) => record.email?.toLowerCase() === address)?.id
+}
+
+/** Finds the contact with this address, or adds one, and returns its id. */
 async function contactIdFor(address: string): Promise<string | undefined> {
+  const existing = await existingContactId(address)
+  if (existing !== undefined) return existing
   const response = await fetch('/api/v1/contacts', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
