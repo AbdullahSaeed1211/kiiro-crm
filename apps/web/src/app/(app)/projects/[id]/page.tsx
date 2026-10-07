@@ -9,6 +9,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getOrganizationLabel } from '../../../../server/crm/directory/data'
 import { loadWorkReadModel, type WorkListTask } from '../../../../server/queries/work/read-models'
+import { CLIENT_DASHBOARD_COPY, type ClientDashboardCopy } from '../../../../i18n/client-dashboard-copy'
+import { catalogFor } from '../../../../i18n/locale'
+import { loadClientBilling } from '../../../../server/billing/client-summary'
+import { buildClientDashboard } from '../../../../server/work/client-dashboard'
+import { getRequestContext } from '@/server/container'
+import { ClientDashboardView } from './client-dashboard'
 import ProjectBoard from './ProjectBoard'
 import { ArchiveWorkControl } from '../../archive-work-control'
 import ProjectActions from './ProjectActions'
@@ -103,13 +109,16 @@ function projectTabs({
   description,
   stages,
   projectId,
+  dashboard,
 }: Readonly<{
   tasks: readonly WorkListTask[]
   description: string | null
   stages: readonly ProjectStage[]
   projectId: string
+  dashboard: { readonly label: string; readonly content: React.ReactNode }
 }>) {
   return [
+    { id: 'dashboard', label: dashboard.label, content: dashboard.content },
     {
       id: 'overview',
       label: 'Overview',
@@ -128,6 +137,30 @@ function projectTabs({
   ]
 }
 
+/** The dashboard tab: task counts for everyone, and billing for owners and managers when the project has a company. */
+async function dashboardFor(input: {
+  readonly tasks: readonly WorkListTask[]
+  readonly organizationId: string | null
+  readonly locale: string
+}): Promise<{ label: string; content: React.ReactNode }> {
+  const context = await getRequestContext()
+  const copy: ClientDashboardCopy = catalogFor(CLIENT_DASHBOARD_COPY, input.locale === 'es' ? 'es' : 'en')
+  const canSeeBilling = context.actor.role === 'owner' || context.actor.role === 'manager'
+  const billing =
+    canSeeBilling && input.organizationId !== null ? await loadClientBilling(context, input.organizationId) : null
+  return {
+    label: copy.tab,
+    content: (
+      <ClientDashboardView
+        copy={copy}
+        dashboard={buildClientDashboard(input.tasks, Date.now())}
+        billing={billing}
+        locale={input.locale === 'es' ? 'es-ES' : 'en-US'}
+      />
+    ),
+  }
+}
+
 /** Project record with overview, board, and list tabs. */
 export default async function ProjectPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
@@ -136,6 +169,7 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
   if (project === undefined) notFound()
   const tasks = model.tasks.filter((task) => task.projectId === project.id)
   const organizationName = project.organizationId === null ? null : await getOrganizationLabel(project.organizationId)
+  const dashboard = await dashboardFor({ tasks, organizationId: project.organizationId, locale: model.locale })
   return (
     <>
       <AppHeader breadcrumbs={[{ label: 'Projects', href: '/projects' }]} />
@@ -144,7 +178,13 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
           title={project.name}
           labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
           stage={<Badge variant="secondary">{project.stage}</Badge>}
-          tabs={projectTabs({ tasks, description: project.description, stages: model.stages, projectId: project.id })}
+          tabs={projectTabs({
+            tasks,
+            description: project.description,
+            stages: model.stages,
+            projectId: project.id,
+            dashboard,
+          })}
           actions={
             <div className="grid gap-2">
               <Link
