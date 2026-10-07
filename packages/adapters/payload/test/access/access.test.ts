@@ -39,7 +39,11 @@ describe('spike access', () => {
     expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager')))).toBe(true)
     const staff = request(user('s1', 'staff', { groups: [{ id: 'g1' }] }))
     expect(await SPIKE_ACCESS.tasks.read(staff)).toEqual({
-      or: [{ assignees: { in: ['s1'] } }, { group: { in: ['g1'] } }, { 'project.members': { in: ['s1'] } }],
+      or: [
+        { assignees: { in: ['s1'] } },
+        { group: { in: ['g1'] } },
+        { and: [{ 'project.members': { in: ['s1'] } }, { ownerOnly: { not_equals: true } }] },
+      ],
     })
   })
 
@@ -54,7 +58,9 @@ describe('spike access', () => {
     await SPIKE_ACCESS.projects.update(staff)
     expect(staff.queries()).toBe(2)
   })
+})
 
+describe('spike access for people', () => {
   it('applies the user update rules per role', async () => {
     expect(await SPIKE_ACCESS.users.update(request(user('o1', 'owner')))).toBe(true)
     expect(await SPIKE_ACCESS.users.update(request(user('m1', 'manager')))).toEqual({

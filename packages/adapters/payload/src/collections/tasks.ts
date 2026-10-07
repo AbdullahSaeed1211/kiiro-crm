@@ -35,6 +35,8 @@ export const tasksCollection = spikeCollection({
     textField('rank', { maxLength: 64 }),
     selectOf('priority', PRIORITY_VALUES, { required: true, defaultValue: 'none' }),
     selectOf('repeat', TASK_REPEAT_VALUES, { required: true, defaultValue: 'none' }),
+    // Owner-only tasks, such as collections, are hidden from staff who see the rest of the project.
+    { name: 'ownerOnly', type: 'checkbox', defaultValue: false },
     hasManyTo(FIELDS.assignees, COLLECTIONS.users),
     relationshipTo(FIELDS.group, COLLECTIONS.groups),
     epochMs('startAt'),

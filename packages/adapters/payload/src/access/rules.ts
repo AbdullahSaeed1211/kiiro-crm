@@ -11,6 +11,11 @@ const memberOf =
   (field: string): ScopeExtension =>
   (actor) => ({ field, op: 'in', value: [actor.id] })
 
+/** Project members see the project's tasks, except the ones marked owner only. */
+const visibleProjectTask: ScopeExtension = (actor) => ({
+  and: [memberOf(`${FIELDS.project}.${FIELDS.members}`)(actor), { field: 'ownerOnly', op: 'neq', value: true }],
+})
+
 /** Staff scope of the spike record types (spec §9.10): project members also see the project's tasks. */
 export const SPIKE_SCOPES: Readonly<Record<string, ScopeDefinition>> = {
   [RECORD_TYPES.organizations]: { ownerField: FIELDS.owner },
@@ -18,7 +23,7 @@ export const SPIKE_SCOPES: Readonly<Record<string, ScopeDefinition>> = {
   [RECORD_TYPES.tasks]: {
     assigneesField: FIELDS.assignees,
     groupField: FIELDS.group,
-    extensions: [memberOf(`${FIELDS.project}.${FIELDS.members}`)],
+    extensions: [visibleProjectTask],
   },
   [RECORD_TYPES.contacts]: { ownerField: FIELDS.owner },
   [RECORD_TYPES.leads]: { ownerField: FIELDS.owner, assigneesField: FIELDS.assignees },

@@ -514,6 +514,7 @@ export interface Task {
   rank?: string | null;
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
   repeat: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+  ownerOnly?: boolean | null;
   assignees?: (string | User)[] | null;
   group?: (string | null) | Group;
   /**
@@ -1506,6 +1507,7 @@ export interface TasksSelect<T extends boolean = true> {
   rank?: T;
   priority?: T;
   repeat?: T;
+  ownerOnly?: T;
   assignees?: T;
   group?: T;
   startAt?: T;

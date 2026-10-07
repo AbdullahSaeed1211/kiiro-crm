@@ -22,6 +22,7 @@ import * as migration_20261002_150000_campaign_queue from './20261002_150000_cam
 import * as migration_20261002_180000_work_archive from './20261002_180000_work_archive';
 import * as migration_20261003_090000_audit_events from './20261003_090000_audit_events';
 import * as migration_20261003_130000_billing_documents from './20261003_130000_billing_documents';
+import * as migration_20261007_090000_task_owner_only from './20261007_090000_task_owner_only';
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20261003_130000_billing_documents.up,
     down: migration_20261003_130000_billing_documents.down,
     name: '20261003_130000_billing_documents'
+  },
+  {
+    up: migration_20261007_090000_task_owner_only.up,
+    down: migration_20261007_090000_task_owner_only.down,
+    name: '20261007_090000_task_owner_only'
   },
 ];
