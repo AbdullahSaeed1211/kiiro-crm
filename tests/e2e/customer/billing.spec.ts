@@ -39,6 +39,19 @@ test('a quote becomes an invoice and the totals follow the items', async ({ page
   await expect(page.getByRole('button', { name: 'Mark as sent' })).toBeVisible()
 })
 
+test('a saved quote is emailed to the client and marked sent', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInAs(page, 'owner')
+  await startDocument(page, 'quote', '100')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page).toHaveURL(SAVED_URL, { timeout: 30_000 })
+  await page.getByRole('button', { name: 'Email to client' }).click()
+  await page.getByLabel('To', { exact: true }).fill(`quote-${String(Date.now())}@example.test`)
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
+  await expect(page.getByRole('status')).toHaveText('Sent.', { timeout: 30_000 })
+  await expect(page.getByText('Sent', { exact: true })).toBeVisible()
+})
+
 test('a bad price is refused and a sent document cannot be edited', async ({ page }) => {
   test.setTimeout(90_000)
   await signInAs(page, 'owner')

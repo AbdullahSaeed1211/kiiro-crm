@@ -6,22 +6,7 @@ import { useState, type SyntheticEvent } from 'react'
 import type { InboxCopy } from '../../../i18n/inbox-copy'
 import styles from './inbox.module.css'
 import { readApi } from '../api-client'
-
-/** True for text shaped like name@host.tld; checked by position, not a pattern, so odd input cannot make it slow. */
-function looksLikeEmail(text: string): boolean {
-  const at = text.indexOf('@')
-  const dot = text.lastIndexOf('.')
-  return at > 0 && at === text.lastIndexOf('@') && dot > at + 1 && dot < text.length - 1 && !/\s/u.test(text)
-}
-
-/** The addresses typed in the To box, split on commas, semicolons and spaces, lower-cased, without repeats. */
-function addressesOf(text: string): string[] {
-  const parts = text
-    .split(/[\s,;]+/u)
-    .map((part) => part.trim().toLowerCase())
-    .filter(Boolean)
-  return [...new Set(parts)]
-}
+import { addressesOf, looksLikeEmail } from '../email-addresses'
 
 /** A first name made from the part of an address before the @, such as "Abdullah Saeed" for abdullah.saeed@example.com. */
 function nameFromAddress(address: string): string {

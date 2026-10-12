@@ -74,6 +74,8 @@ export interface BillingView {
   readonly shown: string
   readonly company: string
   readonly contact: string
+  /** The contact's email, or '' when there is no contact or no email. */
+  readonly contactEmail: string
   readonly sourceNumber: string
 }
 
@@ -90,14 +92,22 @@ export async function loadBillingView(context: RequestContext, id: string): Prom
     document,
     shown: shownStatus(document, Date.now()),
     company: names.get(document.organizationId) ?? '',
-    contact: document.contactId === null ? '' : await contactName(context, document.contactId),
+    ...(await contactFields(context, document.contactId)),
     sourceNumber: source?.number ?? '',
   }
 }
 
-async function contactName(context: RequestContext, id: string): Promise<string> {
+/** The contact's name and email for a document; both are '' when it has no contact. */
+async function contactFields(context: RequestContext, contactId: string | null) {
+  const contact = contactId === null ? undefined : await contactOf(context, contactId)
+  return { contact: contact?.name ?? '', contactEmail: contact?.email ?? '' }
+}
+
+/** The name and email of one contact, read in a single query; both are '' when it cannot be read. */
+async function contactOf(context: RequestContext, id: string): Promise<Readonly<{ name: string; email: string }>> {
   const doc = await context.payload
     .findByID({ collection: 'contacts', id, depth: 0, overrideAccess: false, user: context.req.user, req: context.req })
     .catch(() => undefined)
-  return doc === undefined ? '' : [doc.firstName, doc.lastName].filter(Boolean).join(' ')
+  if (doc === undefined) return { name: '', email: '' }
+  return { name: [doc.firstName, doc.lastName].filter(Boolean).join(' '), email: doc.email ?? '' }
 }

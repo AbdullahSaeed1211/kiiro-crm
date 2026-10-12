@@ -9,6 +9,8 @@ import { loadBillingView, type BillingView } from '../../../../server/billing/qu
 import { getRequestContext } from '@/server/container'
 import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 import { BillingActions } from '../billing-actions'
+import { BillingEmail } from '../billing-email'
+import { emailDraftFor } from '../billing-email-draft'
 import { formatMoney } from '../money'
 import { StatusChip } from '../status-chip'
 
@@ -102,6 +104,7 @@ export default async function BillingDetailPage({ params }: Readonly<{ params: P
   const copy = catalogFor(BILLING_COPY, workspace)
   const locale = workspace === 'es' ? 'es-ES' : 'en-US'
   const { document } = view
+  const draft = emailDraftFor({ document, copy, locale })
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.title, href: '/billing' }, { label: document.number }]} />
@@ -111,6 +114,16 @@ export default async function BillingDetailPage({ params }: Readonly<{ params: P
           {copy.back}
         </Link>
         <BillingActions target={{ id, kind: document.kind, status: document.status, updatedAt: document.updatedAt }} />
+        <BillingEmail
+          target={{
+            id,
+            organizationId: document.organizationId,
+            status: document.status,
+            updatedAt: document.updatedAt,
+            defaultTo: view.contactEmail,
+            draft,
+          }}
+        />
         <article className="billing-print grid max-w-3xl gap-4 rounded-lg border bg-card p-4">
           <Summary copy={copy} view={view} locale={locale} />
           <Lines copy={copy} view={view} locale={locale} />

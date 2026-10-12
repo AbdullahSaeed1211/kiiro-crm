@@ -38,6 +38,25 @@ export interface BillingCopy {
   readonly actions: Readonly<Record<string, string>>
   readonly makeInvoice: string
   readonly lineTotal: string
+  readonly emailButton: string
+  readonly emailTo: string
+  readonly emailSubject: string
+  readonly emailMessage: string
+  readonly emailSend: string
+  readonly emailSending: string
+  readonly emailCancel: string
+  readonly emailSent: string
+  readonly emailBadAddress: string
+  readonly emailNeedAll: string
+  readonly emailSendFailed: string
+  readonly emailStatusFailed: string
+  readonly emailSubjectQuote: string
+  readonly emailSubjectInvoice: string
+  readonly emailIntroQuote: string
+  readonly emailIntroInvoice: string
+  readonly emailGreeting: string
+  readonly emailLine: string
+  readonly emailClosing: string
 }
 
 export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
@@ -97,6 +116,25 @@ export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
     },
     makeInvoice: 'Make an invoice',
     lineTotal: 'Amount',
+    emailButton: 'Email to client',
+    emailTo: 'To',
+    emailSubject: 'Subject',
+    emailMessage: 'Message',
+    emailSend: 'Send',
+    emailSending: 'Sending…',
+    emailCancel: 'Cancel',
+    emailSent: 'Sent.',
+    emailBadAddress: 'Enter one or more email addresses, such as name@example.com.',
+    emailNeedAll: 'Add an address, a subject and a message.',
+    emailSendFailed: 'The email could not be sent. Try again.',
+    emailStatusFailed: 'The email was sent, but the status was not changed.',
+    emailSubjectQuote: 'Quote {number}',
+    emailSubjectInvoice: 'Invoice {number}',
+    emailIntroQuote: 'Here is quote {number}.',
+    emailIntroInvoice: 'Here is invoice {number}.',
+    emailGreeting: 'Hello,',
+    emailLine: '{description}: {quantity} x {price} = {amount}',
+    emailClosing: 'Thank you.',
   },
   es: {
     title: 'Cotizaciones y facturas',
@@ -154,5 +192,24 @@ export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
     },
     makeInvoice: 'Crear una factura',
     lineTotal: 'Importe',
+    emailButton: 'Enviar por correo al cliente',
+    emailTo: 'Para',
+    emailSubject: 'Asunto',
+    emailMessage: 'Mensaje',
+    emailSend: 'Enviar',
+    emailSending: 'Enviando…',
+    emailCancel: 'Cancelar',
+    emailSent: 'Enviado.',
+    emailBadAddress: 'Escriba una o más direcciones de correo, como nombre@ejemplo.com.',
+    emailNeedAll: 'Añada una dirección, un asunto y un mensaje.',
+    emailSendFailed: 'No se pudo enviar el correo. Inténtelo de nuevo.',
+    emailStatusFailed: 'El correo se envió, pero no se cambió el estado.',
+    emailSubjectQuote: 'Cotización {number}',
+    emailSubjectInvoice: 'Factura {number}',
+    emailIntroQuote: 'Le envío la cotización {number}.',
+    emailIntroInvoice: 'Le envío la factura {number}.',
+    emailGreeting: 'Hola,',
+    emailLine: '{description}: {quantity} x {price} = {amount}',
+    emailClosing: 'Gracias.',
   },
 }
