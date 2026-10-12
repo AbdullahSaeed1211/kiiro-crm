@@ -25,6 +25,7 @@ const TASK_PATCH_FIELDS: FieldMap = {
   groupId: ['group', orNull],
   relatedType: ['relatedType'],
   relatedId: ['relatedId'],
+  ownerOnly: ['ownerOnly'],
 }
 
 /** Maps each key present on `patch` to its persisted field; absent keys are left untouched. */
@@ -69,6 +70,7 @@ export function taskData(draft: TaskDraft): Record<string, unknown> {
     startAt: orNull(draft.startAt),
     dueAt: orNull(draft.dueAt),
     completedAt: orNull(draft.completedAt),
+    ownerOnly: draft.ownerOnly ?? false,
   }
 }
 

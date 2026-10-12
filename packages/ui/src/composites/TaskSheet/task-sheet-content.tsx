@@ -103,7 +103,7 @@ export function TaskSheetContent({
   const terminal = stage !== undefined && isTerminalStage(stage)
   return (
     <>
-      <TaskHeading title={task.title} labels={labels} asPage={asPage} />
+      <TaskHeading title={task.title} labels={labels} asPage={asPage} ownerOnly={task.ownerOnly} />
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-3">
         <TaskProperties
           task={task}

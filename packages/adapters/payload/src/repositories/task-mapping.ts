@@ -91,6 +91,7 @@ export function toWorkTaskRecord(doc: Doc, stageCategory: StageCategory): WorkTa
     createdAt: msOf(fieldOf(doc, 'createdAt')) ?? state.updatedAt,
     stageCategory,
     repeat: repeatOf(doc),
+    ownerOnly: fieldOf(doc, 'ownerOnly') === true,
   }
 }
 

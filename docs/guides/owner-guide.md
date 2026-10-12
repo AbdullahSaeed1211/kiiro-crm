@@ -130,6 +130,10 @@ Billing (owners and managers) holds quotes and invoices. Choose a company, add i
 - **On each won deal.** Check that the onboarding project started and assign its tasks.
 - **Monthly.** Read Reports (owners and managers), prune subscribers who asked to leave, and review who still needs access under Members.
 
+## Automatic backups
+
+Once a day, a copy of the workspace's data is saved to the workspace's own storage. Each copy sits under `backups/<date>/` and is kept for 14 days, then removed. The copy is not on your computer, so it survives a lost laptop. It is in the same Cloudflare account as the workspace, so it does not protect you if the account itself is lost. To restore a copy, ask the operator.
+
 ## Known limits
 
 - The newsletter has no scheduling, pause or retry; a send is one click and one pass.

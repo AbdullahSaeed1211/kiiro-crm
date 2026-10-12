@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { StageSelect } from '../StageSelect/StageSelect'
 import { DateField } from '../DateField/DateField'
+import { OwnerOnlyToggle } from './task-owner-only'
 import {
   TASK_PRIORITIES,
   TASK_REPEATS,
@@ -16,6 +17,8 @@ import {
   type TaskSheetOptions,
   type TaskSheetTask,
 } from './types'
+
+type ControlProps = Readonly<Omit<PropertiesProps, 'options' | 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>
 
 type PropertiesProps = Readonly<{
   task: TaskSheetTask
@@ -47,12 +50,7 @@ function Property({
   )
 }
 
-function PrioritySelect({
-  task,
-  labels,
-  disabled,
-  onSave,
-}: Readonly<Omit<PropertiesProps, 'options' | 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>) {
+function PrioritySelect({ task, labels, disabled, onSave }: ControlProps) {
   return (
     <Select
       value={task.priority}
@@ -76,12 +74,7 @@ function PrioritySelect({
   )
 }
 
-function RepeatSelect({
-  task,
-  labels,
-  disabled,
-  onSave,
-}: Readonly<Omit<PropertiesProps, 'options' | 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>) {
+function RepeatSelect({ task, labels, disabled, onSave }: ControlProps) {
   return (
     <Select
       value={task.repeat}
@@ -105,13 +98,7 @@ function RepeatSelect({
   )
 }
 
-function AssigneeSelect({
-  task,
-  options,
-  labels,
-  disabled,
-  onSave,
-}: Readonly<Omit<PropertiesProps, 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>) {
+function AssigneeSelect({ task, options, labels, disabled, onSave }: ControlProps & Pick<PropertiesProps, 'options'>) {
   const names = new Map(options.members.map((member) => [member.id, member.name]))
   return (
     <Select
@@ -142,13 +129,7 @@ function AssigneeSelect({
 
 const NO_GROUP = '__none__'
 
-function GroupSelect({
-  task,
-  options,
-  labels,
-  disabled,
-  onSave,
-}: Readonly<Omit<PropertiesProps, 'taskHref' | 'fields' | 'busy'> & { disabled: boolean }>) {
+function GroupSelect({ task, options, labels, disabled, onSave }: ControlProps & Pick<PropertiesProps, 'options'>) {
   const names = new Map(options.groups.map((group) => [group.id, group.name]))
   return (
     <Select
@@ -232,6 +213,9 @@ export function TaskProperties({ task, options, labels, taskHref, busy, fields, 
           }}
         />
       </Property>
+      {options.canMarkOwnerOnly ? (
+        <OwnerOnlyToggle task={task} labels={labels} disabled={disabled} onSave={onSave} />
+      ) : null}
       <Property label={labels.parent}>
         {task.parent === null ? (
           <span className="block pt-1.5 text-muted-foreground">{labels.noParent}</span>

@@ -2,6 +2,7 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { asId } from '@ops/kernel'
+import { canMarkTaskOwnerOnly } from '@ops/module-work'
 import type { Metadata } from 'next'
 import { NewTaskForm } from './NewTaskForm'
 import { loadTaskContexts } from '../../../../server/queries/work/tasks/task-contexts'
@@ -62,6 +63,7 @@ export default async function NewTaskPage({
           relatedId={recordContext.id}
           relatedLabel={recordContext.label?.label ?? null}
           initialTitle={firstParam(query.title) ?? ''}
+          canMarkOwnerOnly={canMarkTaskOwnerOnly(context.actor)}
           cancelHref={recordContext.label?.href ?? (projectId === '' ? '/tasks' : `/projects/${projectId}`)}
         />
       </PageContent>

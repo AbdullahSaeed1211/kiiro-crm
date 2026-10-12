@@ -129,6 +129,25 @@ describe('updateTask rejects protected patches and stale updates', () => {
     expect(writes).toBe(0)
   })
 })
+describe('owner-only tasks', () => {
+  it('lets only owners and managers set the mark, and staff never change it', async () => {
+    const staffCreate = await createTask(depsFor(), { title: 'secret', ownerOnly: true })
+    expect(!staffCreate.ok && staffCreate.error.code).toBe('FORBIDDEN')
+    const managerCreate = await createTask(depsFor({ actor: actor('manager', 'manager') }), {
+      title: 'collections',
+      ownerOnly: true,
+    })
+    expect(managerCreate.ok).toBe(true)
+    const marked = task('marked', { updatedAt: 5, ownerOnly: true })
+    const repo = { ...createMemoryRepo(), getTask: () => Promise.resolve(marked) }
+    const clear = await updateTask(depsFor({ repo }), {
+      taskId: marked.id,
+      expectedUpdatedAt: 5,
+      patch: { ownerOnly: false },
+    })
+    expect(!clear.ok && clear.error.code).toBe('FORBIDDEN')
+  })
+})
 describe('updateTask allows manager cross-group edits', () => {
   it('allows a manager to edit task details outside their assignment group without changing assignment', async () => {
     const current = task('cross-group', { updatedAt: 5, groupId: asId('other-group') })

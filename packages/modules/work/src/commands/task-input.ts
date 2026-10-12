@@ -14,6 +14,7 @@ export type ParsedTaskDraft = TaskDraft & {
   readonly relatedId: Id | null
   readonly startAt: number | null
   readonly dueAt: number | null
+  readonly ownerOnly: boolean
 }
 
 /** A validated `updateTask` input. */
@@ -44,6 +45,7 @@ const schedule = (value: CreateInput) => ({
   repeat: value.repeat ?? 'none',
   startAt: value.startAt ?? null,
   dueAt: value.dueAt ?? null,
+  ownerOnly: value.ownerOnly ?? false,
 })
 
 /** Parses untrusted task-create input; a failure names each invalid field. */
@@ -59,7 +61,7 @@ function taskPatch(patch: TaskPatchInput): TaskPatch {
   const { assigneeIds, groupId, relatedId, ...plain } = patch
   const copied = Object.fromEntries(Object.entries(plain).filter(([, value]) => value !== undefined))
   return {
-    ...(copied as Pick<TaskPatch, 'title' | 'description' | 'priority' | 'relatedType' | 'repeat'>),
+    ...(copied as Pick<TaskPatch, 'title' | 'description' | 'priority' | 'relatedType' | 'repeat' | 'ownerOnly'>),
     ...(assigneeIds === undefined ? {} : { assigneeIds: assigneeIds.map(asId) }),
     ...(groupId === undefined ? {} : { groupId: idOrNull(groupId) }),
     ...(relatedId === undefined ? {} : { relatedId: idOrNull(relatedId) }),

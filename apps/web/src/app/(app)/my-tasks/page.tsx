@@ -36,6 +36,8 @@ export default async function MyTasksPage() {
       groupId: null,
       startAt: null,
       createdAt: 0,
+      // The read model does not carry the mark; this view only buckets tasks by date and stage.
+      ownerOnly: false,
     })),
     actor: { id: asId(model.actorId) },
     timeZone: model.timeZone,

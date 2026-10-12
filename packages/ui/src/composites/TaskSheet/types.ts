@@ -24,6 +24,8 @@ export interface TaskSheetTask {
   readonly dueAt: number | null
   readonly description: string | null
   readonly parent: Readonly<{ id: string; title: string }> | null
+  /** Only owners and managers can see it; the sheet shows a badge. */
+  readonly ownerOnly: boolean
   readonly subtasks: readonly Readonly<{ id: string; title: string; complete: boolean; updatedAt: number }>[]
 }
 
@@ -34,6 +36,8 @@ export interface TaskSheetOptions {
   readonly groups: readonly Readonly<{ id: string; name: string }>[]
   /** False renders every property as text and hides the save controls. */
   readonly canUpdate: boolean
+  /** True for owners and managers, who may set the owner-only mark. */
+  readonly canMarkOwnerOnly: boolean
   /** BCP 47 locale for dates. */
   readonly locale: string
 }
@@ -45,6 +49,7 @@ export type TaskChange =
   | Readonly<{ kind: 'repeat'; repeat: TaskRepeat }>
   | Readonly<{ kind: 'assignees'; assigneeIds: readonly string[] }>
   | Readonly<{ kind: 'group'; groupId: string | null }>
+  | Readonly<{ kind: 'ownerOnly'; ownerOnly: boolean }>
   | Readonly<{ kind: 'dates'; startAt: number | null; dueAt: number | null }>
   | Readonly<{ kind: 'description'; description: string }>
   | Readonly<{ kind: 'complete'; reopen: boolean }>
@@ -77,6 +82,8 @@ export type TaskSheetLabels = Readonly<{
   unassigned: string
   group: string
   noGroup: string
+  ownerOnly: string
+  ownerOnlyBadge: string
   startDate: string
   dueDate: string
   noDate: string

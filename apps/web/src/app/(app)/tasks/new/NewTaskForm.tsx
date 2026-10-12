@@ -2,11 +2,14 @@
 
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Button } from '@ops/ui/components/ui/button'
+import { Checkbox } from '@ops/ui/components/ui/checkbox'
 import { Input } from '@ops/ui/components/ui/input'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { createTask } from '../../../../server/actions/work/tasks/createTask'
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
+import { taskFormLabels } from '../../../../i18n/task-form-copy'
+import { useLocale } from '../../../../i18n/locale-context'
 
 type Option = Readonly<{ value: string; label: string }>
 type FormProps = Readonly<{ projects: readonly Option[]; projectId: string; initialTitle: string }>
@@ -87,6 +90,24 @@ function TaskScheduleFields() {
   )
 }
 
+function OwnerOnlyField({
+  label,
+  checked,
+  onChange,
+}: Readonly<{ label: string; checked: boolean; onChange: (checked: boolean) => void }>) {
+  return (
+    <label className="flex items-center gap-2 text-sm font-medium">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(next: boolean) => {
+          onChange(next)
+        }}
+      />
+      {label}
+    </label>
+  )
+}
+
 function TaskFormActions({ pending, cancel }: Readonly<{ pending: boolean; cancel: () => void }>) {
   return (
     <div className="flex flex-wrap justify-end gap-2">
@@ -115,6 +136,7 @@ export function NewTaskForm({
   relatedLabel,
   initialTitle,
   cancelHref,
+  canMarkOwnerOnly,
 }: Readonly<{
   projects: readonly Option[]
   projectId: string
@@ -123,17 +145,21 @@ export function NewTaskForm({
   relatedLabel: string | null
   initialTitle: string
   cancelHref: string
+  canMarkOwnerOnly: boolean
 }>) {
   const router = useRouter()
+  const copy = taskFormLabels(useLocale())
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [ownerOnly, setOwnerOnly] = useState(false)
   const submit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPending(true)
     setError(null)
     const form = new FormData(event.currentTarget)
+    const input = { ...taskInput(form, { relatedType, relatedId }), ...(canMarkOwnerOnly ? { ownerOnly } : {}) }
     try {
-      const result = await createTask(taskInput(form, { relatedType, relatedId }))
+      const result = await createTask(input)
       if (!result.ok) {
         setError(result.error.message)
         return
@@ -160,6 +186,7 @@ export function NewTaskForm({
       )}
       <TaskCoreFields projects={projects} projectId={projectId} initialTitle={initialTitle} />
       <TaskScheduleFields />
+      {canMarkOwnerOnly ? <OwnerOnlyField label={copy.ownerOnly} checked={ownerOnly} onChange={setOwnerOnly} /> : null}
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-description">
         Description
         <Textarea id="task-description" name="description" maxLength={20000} rows={5} />

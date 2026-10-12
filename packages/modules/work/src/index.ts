@@ -18,6 +18,7 @@ export type {
 export { archiveWork, restoreWork } from './commands/archive'
 export { createProject, updateProject, addProjectMember, removeProjectMember } from './commands/projects'
 export {
+  canMarkTaskOwnerOnly,
   canUpdateTask,
   completeTask,
   createTask,

@@ -1,3 +1,4 @@
+import { Badge } from '@ops/ui/components/ui/badge'
 import { Button } from '@ops/ui/components/ui/button'
 import { SheetFooter, SheetHeader, SheetTitle } from '@ops/ui/components/ui/sheet'
 import type { TaskSheetLabels } from './types'
@@ -7,18 +8,30 @@ export function TaskHeading({
   title,
   labels,
   asPage,
-}: Readonly<{ title: string; labels: TaskSheetLabels; asPage: boolean }>) {
+  ownerOnly = false,
+}: Readonly<{ title: string; labels: TaskSheetLabels; asPage: boolean; ownerOnly?: boolean }>) {
+  const badge = ownerOnly ? (
+    <Badge variant="secondary" className="ml-2 align-middle">
+      {labels.ownerOnlyBadge}
+    </Badge>
+  ) : null
   if (!asPage) {
     return (
       <SheetHeader>
-        <SheetTitle>{title}</SheetTitle>
+        <SheetTitle>
+          {title}
+          {badge}
+        </SheetTitle>
       </SheetHeader>
     )
   }
   return (
     <div className="border-b px-4 py-3">
       <p className="mb-1 text-xs font-medium text-muted-foreground">{labels.task}</p>
-      <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
+      <h1 className="font-heading text-xl font-semibold text-foreground">
+        {title}
+        {badge}
+      </h1>
     </div>
   )
 }

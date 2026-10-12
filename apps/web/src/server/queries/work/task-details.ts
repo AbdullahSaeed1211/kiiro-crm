@@ -1,5 +1,5 @@
 import { asId } from '@ops/kernel'
-import { canUpdateTask } from '@ops/module-work'
+import { canMarkTaskOwnerOnly, canUpdateTask } from '@ops/module-work'
 import type { TaskSheetOptions, TaskSheetTask } from '@ops/ui/composites/TaskSheet'
 import { getRequestContext, workCommandDeps, type RequestContext } from '@/server/container'
 import { loadWorkspaceLocale, mapTask, workflowStages, type StageLabel } from './read-models'
@@ -45,6 +45,7 @@ const DETAIL_FIELDS = {
   assignees: true,
   parentTask: true,
   group: true,
+  ownerOnly: true,
 } as const
 
 function readTaskDocuments(context: RequestContext, idValue: string) {
@@ -132,6 +133,7 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
       dueAt: task.dueAt,
       description: task.description,
       parent,
+      ownerOnly: doc.ownerOnly === true,
       subtasks,
     },
     options: {
@@ -139,6 +141,7 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
       members: memberPage.docs.map(({ id, name }) => ({ id, name })),
       groups: groupPage.docs.map(({ id, name }) => ({ id, name })),
       canUpdate,
+      canMarkOwnerOnly: canMarkTaskOwnerOnly(context.actor),
       locale,
     },
   }

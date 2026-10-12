@@ -36,6 +36,7 @@ export const createTaskSchema = z
     relatedId: optionalRef,
     startAt: date.optional(),
     dueAt: date.optional(),
+    ownerOnly: z.boolean().optional(),
   })
   .refine(startNotAfterDue, { message: 'The start date must not be after the due date.', path: ['startAt'] })
 
@@ -50,6 +51,7 @@ export const taskPatchSchema = z
     groupId: nonEmptyId.nullable().optional(),
     relatedType: z.string().nullable().optional(),
     relatedId: nonEmptyId.nullable().optional(),
+    ownerOnly: z.boolean().optional(),
   })
   .refine((patch) => Object.keys(patch).length > 0, { message: 'Change at least one field.' })
 

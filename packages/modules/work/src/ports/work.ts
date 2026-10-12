@@ -29,6 +29,8 @@ export interface WorkTaskRecord extends TaskPortRecord {
   readonly completedAt: number | null
   readonly createdAt: number
   readonly stageCategory: StageCategory
+  /** Hidden from staff; only owners and managers may set it. */
+  readonly ownerOnly: boolean
   /** Completing a task with a due date and a repeat creates the next one. */
   readonly repeat: TaskRepeat
 }
@@ -62,6 +64,7 @@ export interface TaskDraft {
   readonly dueAt?: number | null
   readonly completedAt?: number | null
   readonly repeat?: TaskRepeat
+  readonly ownerOnly?: boolean
 }
 
 export interface ProjectPatch {
@@ -83,6 +86,7 @@ export interface TaskPatch {
   readonly relatedType?: string | null
   readonly relatedId?: Id | null
   readonly repeat?: TaskRepeat
+  readonly ownerOnly?: boolean
 }
 
 export interface TaskDatePatch {

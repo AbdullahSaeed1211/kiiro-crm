@@ -9,6 +9,7 @@ import {
   SETTINGS_GLOBAL,
 } from '@ops/adapter-payload'
 import { getPayload } from 'payload'
+import { runDailyBackup } from '../../../../backup/daily-backup'
 import { sendNextRound } from '../../../../newsletter/queue'
 
 /** Receives the cron trigger the Worker entry forwards and runs the background jobs (spec §13). */
@@ -39,6 +40,10 @@ export async function POST(request: Request): Promise<Response> {
   // A newsletter to a long list goes out a round at a time; a failure here must not stop the other jobs.
   await sendNextRound(payload).catch((error: unknown) => {
     console.error('[newsletter.round]', error)
+  })
+  // The daily copy of the database goes to the workspace's own bucket; it skips the day when it already ran.
+  await runDailyBackup(env, Date.now()).catch((error: unknown) => {
+    console.error('[backup.daily]', error)
   })
   return handleCronRequest(request, { secret: env.INTERNAL_SECRET, jobs })
 }

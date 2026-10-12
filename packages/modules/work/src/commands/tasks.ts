@@ -1,9 +1,25 @@
 import { ok, type Id } from '@ops/kernel'
+import type { Actor } from '@ops/platform'
 import type { TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
 import { fail, isManagerUp } from './input'
 import { parseCreate, parseUpdate, type ParsedTaskDraft } from './task-input'
 import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
 export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
+const OWNER_ONLY_FORBIDDEN = 'Only owners and managers can mark a task owner only.'
+
+/** Whether the actor may create or edit a task so that only owners and managers can see it. */
+export const canMarkTaskOwnerOnly = (actor: Actor): boolean => isManagerUp(actor)
+
+/** A new task is owner only only when an owner or manager says so. */
+const createOwnerOnlyAllowed = (deps: WorkDeps, value: boolean): boolean => !value || canMarkTaskOwnerOnly(deps.actor)
+
+/**
+ * Staff may not change the mark in either direction: clearing it would let a staff assignee show an owner-only task to
+ * every member of the project. `undefined` means the update did not touch the field.
+ */
+const updateOwnerOnlyAllowed = (deps: WorkDeps, value: boolean | undefined): boolean =>
+  value === undefined || canMarkTaskOwnerOnly(deps.actor)
+
 const resource = (task: WorkTaskRecord) => ({
   type: 'task',
   assigneeIds: task.assigneeIds,
@@ -91,6 +107,8 @@ async function validateTaskCreation(
   const assigneeIds = authorizeAssignment(deps, draft)
   if (!assigneeIds.ok) return assigneeIds
 
+  if (!createOwnerOnlyAllowed(deps, draft.ownerOnly)) return fail('FORBIDDEN', OWNER_ONLY_FORBIDDEN)
+
   if (!(await relatedAllowed(deps, draft.relatedType, draft.relatedId)))
     return fail('FORBIDDEN', 'related record is outside your scope')
 
@@ -135,6 +153,7 @@ function checkAssignment(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord)
 
 async function authorizeTaskUpdate(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<WorkResult<null>> {
   if (!checkAssignment(deps, patch, task)) return fail('FORBIDDEN', 'cannot assign task outside your scope')
+  if (!updateOwnerOnlyAllowed(deps, patch.ownerOnly)) return fail('FORBIDDEN', OWNER_ONLY_FORBIDDEN)
   if (!(await checkRelated(deps, patch, task))) return fail('FORBIDDEN', 'related record is outside your scope')
   return ok(null)
 }

@@ -78,6 +78,7 @@ describe('createTaskRepository listTasks', () => {
         createdAt: Date.parse(CREATED),
         stageCategory: 'open',
         repeat: 'none',
+        ownerOnly: false,
       },
     ])
     expect(calls).toHaveLength(2)

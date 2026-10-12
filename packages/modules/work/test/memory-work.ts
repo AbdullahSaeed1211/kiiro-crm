@@ -18,6 +18,7 @@ export const task = (id: string, extra: Partial<WorkTaskRecord> = {}): WorkTaskR
   priority: 'none',
   assigneeIds: [asId('staff')],
   groupId: null,
+  ownerOnly: false,
   startAt: null,
   dueAt: null,
   completedAt: null,
