@@ -1,12 +1,12 @@
 import { EmptyValue } from '@ops/ui/composites/DataTable'
-import type { MyTaskBuckets } from '@ops/module-work'
+import { missedPeriods, type MyTaskBuckets } from '@ops/module-work'
 import { StagePill } from '@ops/ui/composites/StagePill'
 import { toStageColor } from '@ops/ui/composites/StagePill/stage'
 import { CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { Locale } from '../../../i18n/config'
 import { catalogFor } from '../../../i18n/locale'
-import { MY_TASKS_COPY } from '../../../i18n/my-tasks-copy'
+import { MY_TASKS_COPY, type MyTasksCopy } from '../../../i18n/my-tasks-copy'
 import { formatDate } from '../../../i18n/format'
 import type { MyTaskModel } from '../../../server/queries/work/my-task-model'
 import { taskHref } from '../task-navigation'
@@ -84,7 +84,19 @@ function TeamTaskRow({ task, model }: Readonly<{ task: MyTaskModel['teamTasks'][
   )
 }
 
-function TaskRow({ task, model, overdue }: Readonly<{ task: Task; model: MyTaskModel; overdue: boolean }>) {
+/** "3 periods missed" beside the due date of a repeating task that was left for more than one period. */
+function MissedPeriods({ task, copy }: Readonly<{ task: Task; copy: MyTasksCopy }>) {
+  const count = task.dueAt === null ? 0 : missedPeriods(task.dueAt, task.repeat, Date.now())
+  if (count < 2) return null
+  return <span className="text-destructive">{copy.missedPeriods.replace('{count}', String(count))}</span>
+}
+
+function TaskRow({
+  task,
+  model,
+  overdue,
+  copy,
+}: Readonly<{ task: Task; model: MyTaskModel; overdue: boolean; copy: MyTasksCopy }>) {
   const stageInfo = model.stages.find((s) => s.id === task.stageId)
   const project = task.projectId === null ? undefined : model.projectNames[task.projectId]
   return (
@@ -105,6 +117,7 @@ function TaskRow({ task, model, overdue }: Readonly<{ task: Task; model: MyTaskM
             <span className={overdue ? 'text-destructive' : undefined}>
               <DueCell dueAt={task.dueAt} locale={model.locale} />
             </span>
+            <MissedPeriods task={task} copy={copy} />
           </div>
         </div>
         <TaskCompleteButton taskId={task.id} updatedAt={task.updatedAt} />
@@ -132,7 +145,7 @@ export function MyTasksContent({
           </header>
           <ul className="divide-y">
             {buckets[key].map((task) => (
-              <TaskRow key={task.id} task={task} model={model} overdue={key === 'overdue'} />
+              <TaskRow key={task.id} task={task} model={model} overdue={key === 'overdue'} copy={copy} />
             ))}
           </ul>
         </section>

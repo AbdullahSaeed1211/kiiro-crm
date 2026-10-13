@@ -1,5 +1,6 @@
 import { getWorkspaceSettings } from '../../auth/context'
 import { getRequestContext, type RequestContext } from '@/server/container'
+import { TASK_REPEATS, type TaskRepeat } from '@ops/module-work'
 import type { StageCategory } from '@ops/platform'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import { loadWorkPages, type ReadPurpose } from './read-pages'
@@ -18,6 +19,7 @@ export interface WorkListTask {
   readonly dueAt: number | null
   readonly completedAt: number | null
   readonly updatedAt: number
+  readonly repeat: TaskRepeat
 }
 interface WorkListProject {
   readonly id: string
@@ -104,6 +106,11 @@ export function workflowStages(workflows: readonly object[]): WorkReadModel['sta
   }
   return [...result.values()]
 }
+/** The task's repeat setting; anything unknown reads as not repeating. */
+function repeatOf(doc: object): TaskRepeat {
+  return TASK_REPEATS.find((item) => item === value(doc, 'repeat')) ?? 'none'
+}
+
 export function mapTask(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListTask {
   const stageId = text(doc, 'stageId')
   const priorities = ['none', 'low', 'medium', 'high', 'urgent'] as const
@@ -121,6 +128,7 @@ export function mapTask(doc: object, stages: ReadonlyMap<string, StageLabel>): W
     dueAt: number(doc, 'dueAt'),
     completedAt: number(doc, 'completedAt'),
     updatedAt: date(doc, 'updatedAt'),
+    repeat: repeatOf(doc),
   }
 }
 function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListProject {

@@ -15,6 +15,24 @@ function addMonths(time: number, months: number): number {
   return Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), day) + (time % DAY_MS)
 }
 
+/** The most periods counted, so a very old due date cannot loop for long. */
+const MAX_PERIODS = 366
+
+/**
+ * How many periods of a repeating task have gone by unfinished: the task's own due date counts as one, and each
+ * later step that is also in the past counts again. Zero when the task is not overdue or does not repeat.
+ */
+export function missedPeriods(dueAt: number, repeat: TaskRepeat, now: number): number {
+  if (repeat === 'none' || dueAt > now) return 0
+  let count = 1
+  let next = nextOccurrence(dueAt, repeat)
+  while (next <= now && count < MAX_PERIODS) {
+    count += 1
+    next = nextOccurrence(next, repeat)
+  }
+  return count
+}
+
 /** The next occurrence after `time` (epoch ms), counted from that time and not from when the task was completed. */
 export function nextOccurrence(time: number, repeat: TaskRepeat): number {
   const months = MONTHS[repeat]

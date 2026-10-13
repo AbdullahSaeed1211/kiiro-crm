@@ -27,7 +27,6 @@ export default async function MyTasksPage() {
       stageId: asId(task.stageId),
       assigneeIds: task.assigneeIds.map(asId),
       description: null,
-      repeat: 'none' as const,
       relatedType: null,
       relatedId: null,
       parentTaskId: null,

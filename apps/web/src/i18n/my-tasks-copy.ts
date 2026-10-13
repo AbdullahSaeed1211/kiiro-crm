@@ -8,6 +8,8 @@ export interface MyTasksCopy {
   readonly next7Days: string
   readonly later: string
   readonly noDueDate: string
+  /** Shown on an overdue repeating task; `{count}` is how many periods went by. */
+  readonly missedPeriods: string
   readonly team: string
   readonly teamHelp: string
   readonly emptyTitle: string
@@ -23,6 +25,7 @@ export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
     next7Days: 'Next 7 days',
     later: 'Later',
     noDueDate: 'No due date',
+    missedPeriods: '{count} periods missed',
     team: 'Open for your team',
     teamHelp: 'Nobody has taken these yet. Open one and add yourself.',
     emptyTitle: 'Nothing assigned to you',
@@ -36,6 +39,7 @@ export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
     next7Days: 'Próximos 7 días',
     later: 'Más adelante',
     noDueDate: 'Sin fecha',
+    missedPeriods: '{count} periodos sin hacer',
     team: 'Abiertas para tu equipo',
     teamHelp: 'Nadie las ha tomado aún. Abre una y asígnatela.',
     emptyTitle: 'No tienes nada asignado',
