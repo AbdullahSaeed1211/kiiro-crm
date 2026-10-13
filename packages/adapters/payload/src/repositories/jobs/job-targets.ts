@@ -12,6 +12,8 @@ export interface JobTarget {
   readonly ownerId?: Id
   readonly assigneeIds?: readonly Id[]
   readonly updatedAt?: number
+  /** Due time of a task, so a repeating task's overdue periods can be told apart. */
+  readonly dueAt?: number
   readonly digestLocalTime?: string
 }
 
@@ -53,6 +55,7 @@ export function target(doc: Doc, type: string): JobTarget[] {
   const ownerId = idOf(fieldOf(doc, FIELDS.owner))
   const assigneeIds = idsOf(fieldOf(doc, FIELDS.assignees))
   const updatedAt = msOf(fieldOf(doc, 'updatedAt'))
+  const dueAt = msOf(fieldOf(doc, 'dueAt'))
   return [
     {
       record: { type, id },
@@ -60,6 +63,7 @@ export function target(doc: Doc, type: string): JobTarget[] {
       ...(ownerId === undefined ? {} : { ownerId }),
       ...(assigneeIds.length === 0 ? {} : { assigneeIds }),
       ...(updatedAt === undefined ? {} : { updatedAt }),
+      ...(dueAt === undefined ? {} : { dueAt }),
     },
   ]
 }

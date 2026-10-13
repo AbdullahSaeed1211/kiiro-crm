@@ -3,7 +3,7 @@ import type { StageColor } from '@ops/ui/composites/StagePill'
 export type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
 
 /** Columns the tasks list can sort by. */
-export type TaskSortKey = 'title' | 'stage' | 'priority' | 'dueAt'
+export type TaskSortKey = 'title' | 'stage' | 'priority' | 'dueAt' | 'project'
 
 /** Sort order requested through the `sort` URL key. */
 export interface TaskSort {

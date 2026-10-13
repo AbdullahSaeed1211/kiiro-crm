@@ -100,6 +100,7 @@ export function createOverdueJob(deps: ScheduledJobsDeps): CronJob {
         type: 'overdue',
         date: localDate(deps.timeZone, window.end),
         notifications: deps.notifications,
+        timeZone: deps.timeZone,
       })
       await saveCursor({ deps, name: 'tasks.overdue', rows: page.rows, next: page.nextCursor })
       return ok({ processed: page.rows.length, ...counts })

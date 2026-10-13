@@ -124,6 +124,8 @@ export async function notificationCount(input: {
   readonly date: string
   readonly notifications: NotificationStore
   readonly digestMinutes?: number
+  /** Tenant time zone; with it an overdue notice names the day the task was due. */
+  readonly timeZone?: string
 }): Promise<{ readonly created: number; readonly skipped: number }> {
   let created = 0
   let attempted = 0
@@ -141,12 +143,23 @@ export async function notificationCount(input: {
         type: input.type,
         dedupeKey,
         record: target.record,
-        data: { title: target.title },
+        data: notificationData(input, target),
       })
       if (result === 'created') created += 1
     }
   }
   return { created, skipped: attempted - created }
+}
+
+/** The notice's data; an overdue task also carries its due day in the message, so each missed period reads apart. */
+function notificationData(
+  input: { readonly type: string; readonly timeZone?: string },
+  target: JobTarget,
+): Record<string, unknown> {
+  const { dueAt } = target
+  const { timeZone } = input
+  if (input.type !== 'overdue' || dueAt === undefined || timeZone === undefined) return { title: target.title }
+  return { title: target.title, message: `${target.title} · ${localDate(timeZone, dueAt)}` }
 }
 
 function recipientsOf(target: JobTarget): readonly Id[] {

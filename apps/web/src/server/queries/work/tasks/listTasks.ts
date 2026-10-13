@@ -13,7 +13,7 @@ import { workflowOrThrow } from '@/server/workflow-result'
 // Every list page shows 50 rows with server pagination (decision D-34).
 const PAGE_SIZE = 50
 const DEFAULT_SORT: TaskSort = { key: 'dueAt', desc: false }
-const SORT_KEYS: readonly TaskSortKey[] = ['title', 'stage', 'priority', 'dueAt']
+const SORT_KEYS: readonly TaskSortKey[] = ['title', 'stage', 'priority', 'dueAt', 'project']
 const TERMINAL_CATEGORIES = new Set(['done_success', 'done_failure', 'cancelled'])
 
 /** Parses the `sort` URL value (`key` ascending, `-key` descending); unknown values fall back to due date ascending. */
@@ -102,6 +102,18 @@ async function listTitleTasks(args: PageArgs & Readonly<{ where: Where }>): Prom
   return toListResult(args, page)
 }
 
+/** Tasks of one client together (the project), soonest due first within each, so a client's work reads as a block. */
+async function listProjectTasks(args: PageArgs & Readonly<{ where: Where }>): Promise<TaskListResult> {
+  const { context, query, where } = args
+  const page = await listTaskPage(context.req, {
+    where,
+    sort: query.sort.desc ? ['-project', 'dueAt', 'id'] : ['project', 'dueAt', 'id'],
+    page: query.page,
+    limit: PAGE_SIZE,
+  })
+  return toListResult(args, page)
+}
+
 /** Priority and stage rank by a fixed order, so each value is read as its own run and the runs are joined in that order. */
 async function listRankedTasks(args: PageArgs & Readonly<{ where: Where }>): Promise<TaskListResult> {
   const { context, query, workflow, where } = args
@@ -125,5 +137,6 @@ export async function listTasks(query: TaskListQuery, requestContext?: RequestCo
   const args = { context, workflow, query, where }
   if (query.sort.key === 'dueAt') return listDueTasks(args)
   if (query.sort.key === 'title') return listTitleTasks(args)
+  if (query.sort.key === 'project') return listProjectTasks(args)
   return listRankedTasks(args)
 }

@@ -110,10 +110,10 @@ Depends on: wave 10. Done when: each feature is verified signed in on production
 
 Source: the owner's walkthrough on 2026-10-13. Staff should open the app and know what to do today, and nothing should be missed silently.
 
-- Missed periods on repeating tasks: UX 36. First, because it is the owner's headline scenario (attendance missed for August, September and October).
+- Done (v0.9.72–v0.9.75): missed periods on repeating tasks. A cron run gives each elapsed period its own task, My tasks shows "N periods missed", and the overdue notice names the due day.
 - A home view of the last, today's and pending tasks, and group by client on All tasks: UX 37.
 - Done: a "mine" filter (`?view=mine`) across table, board, calendar and timeline, with a My tasks tab on every task view.
 - Open, not yet findings: a dated activity timeline per client (task events, emails, files, meeting notes), and a client files section for brand guidelines, do's and don'ts, creative assets, UTM details and work orders, as typed attachments on the organization.
-- Findings: UX 36, 37.
+- Findings: UX 37.
 
-Depends on: nothing. Done when: UX 36 and 37 are fixed and verified signed in on production.
+Depends on: nothing. Done when: UX 37 is fixed and verified signed in on production.

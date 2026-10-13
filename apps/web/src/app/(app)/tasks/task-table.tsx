@@ -142,7 +142,7 @@ export function taskColumns({
     { id: 'priority', header: copy.priority, sortHref: sortHref('priority') },
     { id: 'assignees', header: copy.assignees },
     { id: 'dueAt', header: copy.due, sortHref: sortHref('dueAt') },
-    { id: 'context', header: copy.project },
+    { id: 'context', header: copy.project, sortHref: sortHref('project') },
   ]
 }
 

@@ -53,5 +53,7 @@ export interface JobTarget {
   readonly stageName?: string
   readonly stalledDays?: number
   readonly updatedAt?: number
+  /** Due time of a task, so a repeating task's overdue periods can be told apart. */
+  readonly dueAt?: number
   readonly digestLocalTime?: string
 }

@@ -1,6 +1,6 @@
 # UX backlog
 
-8 findings are open: 1 critical, 4 major and 3 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+7 findings are open: 1 critical, 3 major and 3 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -31,20 +31,11 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Design system. Effort: Moderate. Codes: S-01 S-02.
 - Status: mostly fixed. No native `<select>` is left, and settings, onboarding, reports, sign-in, the workflow builder, the copy button and the calendar use `Button`. Date fields stay native on purpose: the phone date picker is better than any custom one. Left: the inbox (CSS modules: folder rail, thread rows, reader tools, compose close) and the notification card, which are bespoke layouts rather than buttons. Fix: move the inbox to `Button` and the shared tokens when the inbox is next redesigned, then add a lint rule against raw `<button>` in app code.
 
-### 36. A repeating task hides missed periods
-
-- Area: Tasks. Effort: Moderate. Reported by the owner on 2026-10-13: attendance was assigned in August and is still not done in October.
-- Now: `packages/modules/work/src/commands/task-stage.ts:137-163` creates the next occurrence only when the current one is completed. A task nobody finishes stays one overdue task; August, September and October are not three missed periods, and nothing says a period was skipped.
-- Evidence (2026-10-13, Mirch live): My tasks lists 70 overdue and 140 later tasks. "TikTok: publish posts (3 a week)" and the other weekly template tasks are one task each, all due Oct 9, and the monthly ones are all due Oct 31 (Collections on Nov 1). On the calendar they pile onto three days, past the four-per-day limit (`MAX_VISIBLE_EVENTS` in `CalendarMonth.tsx`), and a weekly task never appears on its other weeks.
-- Fix: Create occurrences on schedule (a job, not completion), so each period exists and shows overdue on its own. Show "N missed" on the task and in the overdue notification. Completing an old occurrence must not spawn a duplicate for a period that already exists.
-- Status: mostly fixed in v0.9.74. The 15-minute cron (`apps/web/src/server/work/repeat-catch-up.ts`) gives every elapsed period of an open repeating task its own task on its own due date, up to 12 per task per run, and skips a period that already has a task with the same title, project and due date. My tasks also shows "N periods missed" for a repeating task that is still behind. Left: name the missed count in the overdue notification and the digest, and verify the job against a live tenant's repeating tasks.
-- Done when: a task repeating monthly and left untouched for three months shows three overdue occurrences, and the assignee gets one notification naming the count.
-
 ### 37. No "today" home view and no group by client
 
 - Area: Tasks. Effort: Moderate. Reported by the owner on 2026-10-13.
 - Now: My tasks has the overdue, today, next 7 days and later buckets, but the signed-in person lands on the dashboard cards, and All tasks cannot be grouped by client.
-- Status: partly fixed in v0.9.73. My tasks has a Group by toggle (due date or client; `?group=client`). Left: group by client on All tasks, and a today-first home view.
+- Status: partly fixed in v0.9.75. My tasks has a Group by toggle (due date or client; `?group=client`), and the Project column on All tasks sorts, which puts each client's tasks together. Left: a today-first home view.
 - Fix: A home view of the last task, today's tasks and pending tasks for the signed-in person, and a group-by toggle (client, person, project) on All tasks. The owner chose "by client" as the first grouping. Both reuse existing queries (`myTasksBuckets`).
 
 ## Minor
