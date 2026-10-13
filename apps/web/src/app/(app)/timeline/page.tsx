@@ -19,8 +19,11 @@ export const metadata: Metadata = { title: PAGE_TITLE }
 export const dynamic = 'force-dynamic'
 
 /** Dated tasks the signed-in user can see, coloured by their stage. */
-export default async function TimelinePage() {
-  const { rows: tasks, total, locale } = await loadTimelineTasks(await getRequestContext())
+export default async function TimelinePage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly view?: string }> }>) {
+  const mine = (await searchParams).view === 'mine'
+  const { rows: tasks, total, locale } = await loadTimelineTasks(await getRequestContext(), mine)
   const copy = TASK_COPY[locale]
   return (
     <>
@@ -34,11 +37,14 @@ export default async function TimelinePage() {
                 rest.
               </p>
             ) : null}
-            <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} />
+            <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} mine={mine} />
           </>
         ) : (
           <>
-            <PageHeader title={copy.gantt} actions={<TaskWorkspaceViews active="gantt" locale={locale} />} />
+            <PageHeader
+              title={copy.gantt}
+              actions={<TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />}
+            />
             <EmptyState
               icon={ChartGantt}
               title={copy.noDatedTasks}

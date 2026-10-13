@@ -102,5 +102,18 @@ Done when: each feature has a yes/no/defer decision recorded in an ADR or spec s
 Design: [quotes, invoices, portal, rules, audit log](design/quotes-invoices-portal-rules-audit.md). Owner priority: bill the work and show it to the client.
 
 - Order: audit log, then quotes and invoices, then the client portal, then automation rules. Payments through a processor wait for the tenant's account.
+- Status (2026-10-13): audit log, quotes and invoices are built. The client portal is not built; the design's token login and scope are unchanged. Automation rules are not built.
 
 Depends on: wave 10. Done when: each feature is verified signed in on production, and the portal has passing scope and token tests.
+
+## 12. Owner's daily view
+
+Source: the owner's walkthrough on 2026-10-13. Staff should open the app and know what to do today, and nothing should be missed silently.
+
+- Missed periods on repeating tasks: UX 36. First, because it is the owner's headline scenario (attendance missed for August, September and October).
+- A home view of the last, today's and pending tasks, and group by client on All tasks: UX 37.
+- Done: a "mine" filter (`?view=mine`) across table, board, calendar and timeline, with a My tasks tab on every task view.
+- Open, not yet findings: a dated activity timeline per client (task events, emails, files, meeting notes), and a client files section for brand guidelines, do's and don'ts, creative assets, UTM details and work orders, as typed attachments on the organization.
+- Findings: UX 36, 37.
+
+Depends on: nothing. Done when: UX 36 and 37 are fixed and verified signed in on production.

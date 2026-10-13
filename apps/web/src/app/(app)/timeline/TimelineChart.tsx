@@ -105,7 +105,8 @@ export function TimelineChart({
   title,
   tasks,
   locale,
-}: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale }>) {
+  mine = false,
+}: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale; mine?: boolean }>) {
   const router = useRouter()
   const copy = TASK_COPY[locale]
   const compact = useSyncExternalStore(subscribeCompact, compactMatches, desktopDefault)
@@ -163,7 +164,7 @@ export function TimelineChart({
                 if (isZoom(value)) setZoom(value)
               }}
             />
-            <TaskWorkspaceViews active="gantt" />
+            <TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />
           </div>
         }
       />

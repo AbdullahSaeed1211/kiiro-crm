@@ -10,6 +10,7 @@ import { loadMyTaskModel } from '../../../server/queries/work/my-task-model'
 import { catalogFor } from '../../../i18n/locale'
 import { MY_TASKS_COPY } from '../../../i18n/my-tasks-copy'
 import { MyTasksContent } from './MyTasksContent'
+import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
 export const metadata: Metadata = { title: 'My tasks' }
 export const dynamic = 'force-dynamic'
@@ -56,7 +57,11 @@ export default async function MyTasksPage() {
     <>
       <AppHeader breadcrumbs={[{ label: copy.title }]} />
       <PageContent>
-        <PageHeader title={copy.title} description={copy.description} />
+        <PageHeader
+          title={copy.title}
+          description={copy.description}
+          actions={<TaskWorkspaceViews active="mine" locale={model.locale} mine />}
+        />
         {isEmpty ? (
           <EmptyState icon={CircleCheckBig} title={copy.emptyTitle} description={copy.emptyDescription} />
         ) : (

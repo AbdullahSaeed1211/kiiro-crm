@@ -1,9 +1,10 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { TASK_COPY, type Locale } from '../../../i18n/config'
 
-export type TaskWorkspaceView = 'table' | 'board' | 'calendar' | 'gantt'
+export type TaskWorkspaceView = 'mine' | 'table' | 'board' | 'calendar' | 'gantt'
 
 const HREFS: Readonly<Record<TaskWorkspaceView, string>> = {
+  mine: '/my-tasks',
   table: '/tasks',
   board: '/tasks/board',
   calendar: '/calendar',
@@ -14,12 +15,13 @@ const HREFS: Readonly<Record<TaskWorkspaceView, string>> = {
 export function TaskWorkspaceViews({
   active,
   locale = 'en',
-}: Readonly<{ active: TaskWorkspaceView; locale?: Locale }>) {
+  mine = false,
+}: Readonly<{ active: TaskWorkspaceView; locale?: Locale; mine?: boolean }>) {
   const copy = TASK_COPY[locale]
-  const views = (['table', 'board', 'calendar', 'gantt'] as const).map((id) => ({
+  const views = (['mine', 'table', 'board', 'calendar', 'gantt'] as const).map((id) => ({
     id,
-    label: copy[id],
-    href: HREFS[id],
+    label: id === 'mine' ? copy.myTasks : copy[id],
+    href: mine && id !== 'mine' ? `${HREFS[id]}?view=mine` : HREFS[id],
   }))
   return <ViewSwitcher label={copy.views} views={views} active={active} />
 }

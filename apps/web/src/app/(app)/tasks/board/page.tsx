@@ -108,13 +108,16 @@ function toCard(
 }
 
 /** Task board (spec §17.5). */
-export default async function TaskBoardPage() {
+export default async function TaskBoardPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly view?: string }> }>) {
+  const mine = (await searchParams).view === 'mine'
   const context = await getRequestContext()
   const { tasks } = await workDeps(context)
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const workflow = await tasks.loadTaskWorkflow().then(workflowOrThrow)
-  const page = await loadBoardTasks(context, workflow)
+  const page = await loadBoardTasks(context, workflow, mine)
   const records = page.records
   const assigneeIds = [...new Set(records.flatMap((task) => task.assigneeIds.map(String)))]
   const people = await loadTaskPeople(assigneeIds)
@@ -133,7 +136,7 @@ export default async function TaskBoardPage() {
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <TaskCreateForm />
-              <TaskWorkspaceViews active="board" locale={locale} />
+              <TaskWorkspaceViews active="board" locale={locale} mine={mine} />
             </div>
           }
         />

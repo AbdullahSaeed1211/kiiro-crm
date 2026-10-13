@@ -13,9 +13,15 @@ function firstWeekday(input: { readonly year: number; readonly month: number; re
   const day = new Date(Date.UTC(input.year, input.month, 1)).getUTCDay()
   return (day - input.weekStartsOn + 7) % 7
 }
-function monthHref(input: { readonly year: number; readonly month: number; readonly delta: number }): string {
+function monthHref(input: {
+  readonly year: number
+  readonly month: number
+  readonly delta: number
+  readonly query: string
+}): string {
   const next = new Date(Date.UTC(input.year, input.month + input.delta, 1))
-  return `?month=${String(next.getUTCMonth() + 1)}&year=${String(next.getUTCFullYear())}`
+  const extra = input.query === '' ? '' : `&${input.query}`
+  return `?month=${String(next.getUTCMonth() + 1)}&year=${String(next.getUTCFullYear())}${extra}`
 }
 
 function MonthHeader({
@@ -23,7 +29,9 @@ function MonthHeader({
   year,
   month,
   labels,
+  query,
 }: Readonly<{
+  query: string
   monthLabel: string
   year: number
   month: number
@@ -33,20 +41,20 @@ function MonthHeader({
     <header className="flex items-center justify-between border-b px-4 py-3">
       <Link
         className="text-sm text-muted-foreground hover:text-foreground"
-        href={monthHref({ year, month, delta: -1 })}
+        href={monthHref({ year, month, delta: -1, query })}
         aria-label={labels.previous}
       >
         ←
       </Link>
       <div className="flex items-center gap-3">
         <h2 className="text-sm font-semibold">{monthLabel}</h2>
-        <Link className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted" href="?">
+        <Link className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted" href={query === '' ? '?' : `?${query}`}>
           {labels.today}
         </Link>
       </div>
       <Link
         className="text-sm text-muted-foreground hover:text-foreground"
-        href={monthHref({ year, month, delta: 1 })}
+        href={monthHref({ year, month, delta: 1, query })}
         aria-label={labels.next}
       >
         →
@@ -64,7 +72,10 @@ export function CalendarMonth({
   locale = 'en',
   labels = { previous: 'Previous month', next: 'Next month', more: '+{count} more', today: 'Today' },
   onMove,
+  query = '',
 }: Readonly<{
+  /** Extra query parameters (such as `view=mine`) that month links keep. */
+  query?: string
   year: number
   month: number
   events: readonly CalendarEvent[]
@@ -87,7 +98,7 @@ export function CalendarMonth({
   const weekdays = weekStartsOn === 1 ? [...sunday.slice(1), sunday[0]] : sunday
   return (
     <section aria-label={monthLabel} className="ops-surface-card min-w-0 overflow-hidden rounded-lg border bg-card">
-      <MonthHeader monthLabel={monthLabel} year={year} month={month} labels={labels} />
+      <MonthHeader monthLabel={monthLabel} year={year} month={month} labels={labels} query={query} />
       <div className="grid min-w-0 grid-cols-7 border-b bg-muted/30">
         {weekdays.map((day) => (
           <div

@@ -17,6 +17,8 @@ function boardWhere(workflow: Workflow): Where {
 }
 
 /** The tasks the board shows (up to the board limit) and how many there are in all. */
-export function loadBoardTasks(context: RequestContext, workflow: Workflow) {
-  return listTaskPage(context.req, { where: boardWhere(workflow), sort: ['rank', 'id'], page: 1, limit: BOARD_LIMIT })
+export function loadBoardTasks(context: RequestContext, workflow: Workflow, mine = false) {
+  const open = boardWhere(workflow)
+  const where: Where = mine ? { and: [open, { assignees: { in: [String(context.actor.id)] } }] } : open
+  return listTaskPage(context.req, { where, sort: ['rank', 'id'], page: 1, limit: BOARD_LIMIT })
 }

@@ -33,7 +33,7 @@ export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksH
         }))}
       />
       <TaskCreateForm relatedType={initial.relatedType} relatedId={initial.relatedId} initialTitle={initial.title} />
-      <TaskWorkspaceViews active="table" locale={locale} />
+      <TaskWorkspaceViews active="table" locale={locale} mine={view === 'mine'} />
     </div>
   )
 }

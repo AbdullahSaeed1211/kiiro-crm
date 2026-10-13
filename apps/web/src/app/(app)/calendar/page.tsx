@@ -23,9 +23,12 @@ function eventColor(priority: string): CalendarEvent['color'] {
 /** Month calendar for scoped tasks, grouped by due date. */
 export default async function CalendarPage({
   searchParams,
-}: Readonly<{ searchParams: Promise<{ readonly month?: string; readonly year?: string }> }>) {
+}: Readonly<{
+  searchParams: Promise<{ readonly month?: string; readonly year?: string; readonly view?: string }>
+}>) {
   const query = await searchParams
-  const model = await loadCalendarReadModel(query.year, query.month)
+  const mine = query.view === 'mine'
+  const model = await loadCalendarReadModel({ year: query.year, month: query.month, mine })
   const year = model.calendarYear
   const month = model.calendarMonth
   const copy = TASK_COPY[model.locale]
@@ -57,7 +60,7 @@ export default async function CalendarPage({
         <PageHeader
           title={copy.calendar}
           description={copy.calendarDescription}
-          actions={<TaskWorkspaceViews active="calendar" locale={model.locale} />}
+          actions={<TaskWorkspaceViews active="calendar" locale={model.locale} mine={mine} />}
         />
         {model.capped ? (
           <p role="status" className="text-sm text-muted-foreground">
@@ -72,6 +75,7 @@ export default async function CalendarPage({
           labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore, today: copy.today }}
           events={events}
           onMove={moveTaskOnCalendar}
+          query={mine ? 'view=mine' : ''}
         />
       </PageContent>
     </>

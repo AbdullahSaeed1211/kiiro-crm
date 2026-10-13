@@ -99,18 +99,24 @@ function mapTasks(documents: readonly object[], categories: ReadonlyMap<string, 
   })
 }
 
+/** The month's due-date window, plus the assignee when only one person's tasks are wanted. */
+function monthClauses(year: number, month: number, assigneeId: string | null): Where[] {
+  // Extra UTC days cover all timezone offsets; the calendar filters returned events by local date.
+  const from = Date.UTC(year, month, 1) - 86_400_000
+  const to = Date.UTC(year, month + 1, 1) + 86_400_000
+  const clauses: Where[] = [{ dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }]
+  if (assigneeId !== null) clauses.push({ assignees: { in: [assigneeId] } })
+  return clauses
+}
+
 /** Reads only tasks in the selected calendar month, plus workflow labels and calendar settings. */
 export async function loadCalendarReadModel(
-  yearInput: unknown,
-  monthInput: unknown,
+  input: Readonly<{ year: unknown; month: unknown; mine?: boolean }>,
   context?: RequestContext,
 ): Promise<CalendarReadModel> {
   const [requestContext, settings] = await Promise.all([context ?? getRequestContext(), getWorkspaceSettings()])
   const timeZone = text(settings, 'timezone') || 'UTC'
-  const { year, month } = selectedMonth(yearInput, monthInput, timeZone)
-  // Extra UTC days cover all timezone offsets; the calendar filters returned events by local date.
-  const from = Date.UTC(year, month, 1) - 86_400_000
-  const to = Date.UTC(year, month + 1, 1) + 86_400_000
+  const { year, month } = selectedMonth(input.year, input.month, timeZone)
   const request = { depth: 0, overrideAccess: false as const, req: requestContext.req }
   const workflowPage = await requestContext.payload.find({
     collection: 'workflows',
@@ -121,7 +127,7 @@ export async function loadCalendarReadModel(
   const workflows = workflowPage.docs as readonly object[]
   const categories = stageCategories(workflows)
   const finished = [...categories].filter(([, category]) => FINISHED.has(category)).map(([id]) => id)
-  const inMonth: Where[] = [{ dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }]
+  const inMonth = monthClauses(year, month, input.mine === true ? String(requestContext.actor.id) : null)
   const taskPage = await requestContext.payload.find({
     collection: 'tasks',
     ...request,
