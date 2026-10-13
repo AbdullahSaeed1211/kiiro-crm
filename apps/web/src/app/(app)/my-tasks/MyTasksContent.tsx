@@ -126,18 +126,72 @@ function TaskRow({
   )
 }
 
+/** Switches between the due-date groups and one group per client. */
+function GroupToggle({ group, copy }: Readonly<{ group: 'date' | 'client'; copy: MyTasksCopy }>) {
+  const link = (active: boolean) =>
+    active ? 'font-medium text-foreground' : 'text-muted-foreground hover:text-foreground hover:underline'
+  return (
+    <nav aria-label={copy.groupBy} className="flex items-center gap-3 text-sm">
+      <span className="text-muted-foreground">{copy.groupBy}</span>
+      <Link className={link(group === 'date')} href="/my-tasks">
+        {copy.byDate}
+      </Link>
+      <Link className={link(group === 'client')} href="/my-tasks?group=client">
+        {copy.byClient}
+      </Link>
+    </nav>
+  )
+}
+
+/** One section per client (project), the soonest due first, so a client's whole backlog is read in one place. */
+function ClientSections({
+  buckets,
+  model,
+  copy,
+}: Readonly<{ buckets: MyTaskBuckets; model: MyTaskModel; copy: MyTasksCopy }>) {
+  const overdueIds = new Set(buckets.overdue.map((task) => task.id))
+  const groups = new Map<string, Task[]>()
+  for (const key of SECTIONS) {
+    for (const task of buckets[key]) {
+      const name = task.projectId === null ? copy.noProject : (model.projectNames[task.projectId] ?? copy.noProject)
+      groups.set(name, [...(groups.get(name) ?? []), task])
+    }
+  }
+  const names = [...groups.keys()].toSorted((a, b) => {
+    if (a === copy.noProject || b === copy.noProject) return a === copy.noProject ? 1 : -1
+    return a.localeCompare(b)
+  })
+  return names.map((name) => (
+    <section className="ops-dashboard-card" key={name}>
+      <header className="flex items-center justify-between border-b px-4 py-3">
+        <h2 className="font-medium">{name}</h2>
+        <span className="text-sm text-muted-foreground">{groups.get(name)?.length ?? 0}</span>
+      </header>
+      <ul className="divide-y">
+        {(groups.get(name) ?? []).map((task) => (
+          <TaskRow key={task.id} task={task} model={model} overdue={overdueIds.has(task.id)} copy={copy} />
+        ))}
+      </ul>
+    </section>
+  ))
+}
+
 /** The signed-in person's open tasks in due-date groups, then their team's untaken tasks; empty groups are left out. */
 export function MyTasksContent({
   buckets,
   model,
+  group = 'date',
 }: Readonly<{
   buckets: MyTaskBuckets
   model: MyTaskModel
+  group?: 'date' | 'client'
 }>) {
   const copy = catalogFor(MY_TASKS_COPY, model.locale)
   return (
     <div className="space-y-4">
-      {SECTIONS.filter((key) => buckets[key].length > 0).map((key) => (
+      <GroupToggle group={group} copy={copy} />
+      {group === 'client' ? <ClientSections buckets={buckets} model={model} copy={copy} /> : null}
+      {SECTIONS.filter((key) => group === 'date' && buckets[key].length > 0).map((key) => (
         <section className="ops-dashboard-card" key={key}>
           <header className="flex items-center justify-between border-b px-4 py-3">
             <h2 className={key === 'overdue' ? 'font-medium text-destructive' : 'font-medium'}>{copy[key]}</h2>

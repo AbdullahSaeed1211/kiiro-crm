@@ -16,7 +16,10 @@ export const metadata: Metadata = { title: 'My tasks' }
 export const dynamic = 'force-dynamic'
 
 /** Scoped task buckets for the signed-in staff member. */
-export default async function MyTasksPage() {
+export default async function MyTasksPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly group?: string }> }>) {
+  const group = (await searchParams).group === 'client' ? 'client' : 'date'
   const model = await loadMyTaskModel()
   const copy = catalogFor(MY_TASKS_COPY, model.locale)
   const buckets = myTasksBuckets({
@@ -64,7 +67,7 @@ export default async function MyTasksPage() {
         {isEmpty ? (
           <EmptyState icon={CircleCheckBig} title={copy.emptyTitle} description={copy.emptyDescription} />
         ) : (
-          <MyTasksContent buckets={buckets} model={model} />
+          <MyTasksContent buckets={buckets} model={model} group={group} />
         )}
       </PageContent>
     </>
