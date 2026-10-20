@@ -1,6 +1,9 @@
 'use client'
 
 import { useVersionedAction } from '../use-versioned-action'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { LEAD_CONVERT_COPY, type LeadConvertCopy } from '../../../i18n/lead-convert-copy'
 import { Button } from '@ops/ui/components/ui/button'
 import {
   Dialog,
@@ -78,17 +81,18 @@ function buildContactInput(state: DialogState): ContactInput {
 }
 
 function ConvertFooter({
+  copy,
   pending,
   onCancel,
   onSubmit,
-}: Readonly<{ pending: boolean; onCancel: () => void; onSubmit: () => void }>) {
+}: Readonly<{ copy: LeadConvertCopy; pending: boolean; onCancel: () => void; onSubmit: () => void }>) {
   return (
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onCancel}>
-        Cancel
+        {copy.cancel}
       </Button>
       <Button type="button" disabled={pending} onClick={onSubmit}>
-        {pending ? 'Converting…' : 'Convert lead'}
+        {pending ? copy.submitting : copy.submit}
       </Button>
     </DialogFooter>
   )
@@ -104,6 +108,7 @@ function DialogContent_(
     currency: string
     pending: boolean
     error: string | undefined
+    copy: LeadConvertCopy
   }>,
 ) {
   return (
@@ -161,6 +166,7 @@ function DialogContent_(
         </p>
       )}
       <ConvertFooter
+        copy={props.copy}
         pending={props.pending}
         onCancel={() => {
           props.onOpenChange(false)
@@ -172,6 +178,7 @@ function DialogContent_(
 }
 
 export function ConvertDialog(props: DialogProps) {
+  const copy = catalogFor(LEAD_CONVERT_COPY, useLocale())
   const { run, error, pending } = useVersionedAction({ refreshOnSuccess: true })
   const lead = props.data.item.lead
   const [state, setState] = useState<DialogState>(initialState(lead.title, lead.companyName))
@@ -228,8 +235,8 @@ export function ConvertDialog(props: DialogProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Convert lead</DialogTitle>
-          <DialogDescription>Create a contact and deal from this lead. Organization is optional.</DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         <DialogContent_
           state={state}
@@ -244,6 +251,7 @@ export function ConvertDialog(props: DialogProps) {
           currency={props.currency}
           pending={pending}
           error={error}
+          copy={copy}
         />
       </DialogContent>
     </Dialog>

@@ -6,6 +6,9 @@ import { Input } from '@ops/ui/components/ui/input'
 import { Label } from '@ops/ui/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@ops/ui/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@ops/ui/components/ui/toggle-group'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { LEAD_CONVERT_COPY, type LeadConvertCopy } from '../../../i18n/lead-convert-copy'
 import type { ConversionOption } from '../../../server/actions/crm/conversion-options'
 
 export type OrgSelection = 'create' | 'existing' | 'none'
@@ -46,17 +49,18 @@ function ExistingPicker(
     onSearch: (query: string) => void
   }>,
 ) {
+  const copy = catalogFor(LEAD_CONVERT_COPY, useLocale())
   const selected = props.options.find((option) => option.id === props.selectedId)
   const suggested = props.options.find((option) => option.id === props.suggestedId)
   return (
     <div className="grid gap-2">
       <Popover>
         <PopoverTrigger render={<Button variant="outline" className="justify-start" />}>
-          {selected?.name ?? `Select ${props.noun}`}
+          {selected?.name ?? copy.selectNoun.replace('{noun}', props.noun)}
         </PopoverTrigger>
         <PopoverContent className="w-72 p-1">
           <Command>
-            <CommandInput placeholder={`Search ${props.noun}s`} onValueChange={props.onSearch} />
+            <CommandInput placeholder={copy.searchNoun.replace('{noun}', props.noun)} onValueChange={props.onSearch} />
             <CommandList>
               {props.options.map((option) => (
                 <CommandItem
@@ -74,7 +78,7 @@ function ExistingPicker(
         </PopoverContent>
       </Popover>
       {suggested !== undefined && props.selectedId === undefined && (
-        <p className="text-xs text-amber-600">Possible match: {suggested.name}</p>
+        <p className="text-xs text-amber-600">{copy.possibleMatch.replace('{name}', suggested.name)}</p>
       )}
     </div>
   )
@@ -88,15 +92,14 @@ type PickerProps = Readonly<{
   onSearch: (query: string) => void
 }>
 
-const ORG_CHOICES: readonly Choice<OrgSelection>[] = [
-  { value: 'create', label: 'Create new' },
-  { value: 'existing', label: 'Use existing' },
-  { value: 'none', label: 'Skip' },
+const contactChoices = (copy: LeadConvertCopy): readonly Choice<ContactSelection>[] => [
+  { value: 'create', label: copy.createNew },
+  { value: 'existing', label: copy.useExisting },
 ]
 
-const CONTACT_CHOICES: readonly Choice<ContactSelection>[] = [
-  { value: 'create', label: 'Create new' },
-  { value: 'existing', label: 'Use existing' },
+const orgChoices = (copy: LeadConvertCopy): readonly Choice<OrgSelection>[] => [
+  ...contactChoices(copy),
+  { value: 'none', label: copy.skip },
 ]
 
 export function OrganizationField(
@@ -108,20 +111,21 @@ export function OrganizationField(
       onName: (value: string) => void
     }>,
 ) {
+  const copy = catalogFor(LEAD_CONVERT_COPY, useLocale())
   return (
     <div className="grid gap-2">
-      <Label>Organization</Label>
-      <ChoiceToggle value={props.selection} choices={ORG_CHOICES} onChange={props.onSelection} />
+      <Label>{copy.organization}</Label>
+      <ChoiceToggle value={props.selection} choices={orgChoices(copy)} onChange={props.onSelection} />
       {props.selection === 'create' && (
         <Input
           value={props.name}
           onChange={(event) => {
             props.onName(event.target.value)
           }}
-          placeholder="Organization name"
+          placeholder={copy.organizationName}
         />
       )}
-      {props.selection === 'existing' && <ExistingPicker noun="organization" {...props} />}
+      {props.selection === 'existing' && <ExistingPicker noun={copy.nounOrganization} {...props} />}
     </div>
   )
 }
@@ -129,11 +133,12 @@ export function OrganizationField(
 export function ContactField(
   props: PickerProps & Readonly<{ selection: ContactSelection; onSelection: (value: ContactSelection) => void }>,
 ) {
+  const copy = catalogFor(LEAD_CONVERT_COPY, useLocale())
   return (
     <div className="grid gap-2">
-      <Label>Contact</Label>
-      <ChoiceToggle value={props.selection} choices={CONTACT_CHOICES} onChange={props.onSelection} />
-      {props.selection === 'existing' && <ExistingPicker noun="contact" {...props} />}
+      <Label>{copy.contact}</Label>
+      <ChoiceToggle value={props.selection} choices={contactChoices(copy)} onChange={props.onSelection} />
+      {props.selection === 'existing' && <ExistingPicker noun={copy.nounContact} {...props} />}
     </div>
   )
 }
@@ -147,10 +152,11 @@ export function DealFields(
     onValue: (value: string) => void
   }>,
 ) {
+  const copy = catalogFor(LEAD_CONVERT_COPY, useLocale())
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="convert-deal">Deal title</Label>
+        <Label htmlFor="convert-deal">{copy.dealTitle}</Label>
         <Input
           id="convert-deal"
           value={props.dealTitle}
@@ -160,7 +166,7 @@ export function DealFields(
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="convert-value">Deal value ({props.currency})</Label>
+        <Label htmlFor="convert-value">{copy.dealValue.replace('{currency}', props.currency)}</Label>
         <Input
           id="convert-value"
           type="number"
