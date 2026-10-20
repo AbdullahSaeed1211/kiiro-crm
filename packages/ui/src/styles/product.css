@@ -310,6 +310,16 @@ select:focus {
   outline: none;
 }
 
+/* An input inside an input group is flat: the group draws the border, background and focus ring, and the rules above
+   would otherwise paint a second background and shadow over the group's rounded corners. */
+input[data-slot='input-group-control']:not([type='checkbox']):not([type='radio']),
+input[data-slot='input-group-control']:not([type='checkbox']):not([type='radio']):focus,
+input[data-slot='command-input']:not([type='checkbox']):not([type='radio']),
+input[data-slot='command-input']:not([type='checkbox']):not([type='radio']):focus {
+  background: transparent;
+  box-shadow: none;
+}
+
 [data-slot='dialog-content'],
 [data-slot='sheet-content'],
 [data-slot='popover-content'],
@@ -546,6 +556,11 @@ select:focus {
   border-color: var(--input);
   border-radius: 0.35rem;
   background: var(--card);
+}
+
+[data-slot='command-input-wrapper'] [data-slot='input-group']:focus-within {
+  border-color: color-mix(in oklch, var(--primary) 70%, var(--input));
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 18%, transparent);
 }
 
 [data-slot='command-input'] {
