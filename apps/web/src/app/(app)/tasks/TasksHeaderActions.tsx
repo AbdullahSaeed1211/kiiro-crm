@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { TASK_COPY } from '../../../i18n/config'
 import type { Locale } from '../../../i18n/locale'
 import type { SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
-import { TaskCreateForm } from './TaskCreateForm'
 import { TaskViewMenu } from './TaskViewMenu'
 import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 
@@ -15,12 +14,21 @@ interface TasksHeaderActionsProps {
   readonly initial: { readonly relatedType?: string; readonly relatedId?: string; readonly title?: string }
 }
 
-/** The buttons beside the tasks title: New task, saved views, quick add and the view switcher (last, so it stays put between views). */
+/** The new-task page address, carrying the record or title a link from elsewhere asked to start from. */
+function newTaskHref(initial: TasksHeaderActionsProps['initial']): string {
+  const params = new URLSearchParams()
+  const entries: [string, string | undefined][] = Object.entries(initial)
+  for (const [name, value] of entries) if (value !== undefined && value !== '') params.set(name, value)
+  const query = params.toString()
+  return query === '' ? '/tasks/new' : `/tasks/new?${query}`
+}
+
+/** The buttons beside the tasks title: New task, saved views and the view switcher (last, so it stays put between views). */
 export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksHeaderActionsProps) {
   const copy = TASK_COPY[locale]
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <Button nativeButton={false} size="lg" render={<Link href="/tasks/new">{copy.newTask}</Link>}>
+      <Button nativeButton={false} size="lg" render={<Link href={newTaskHref(initial)}>{copy.newTask}</Link>}>
         {copy.newTask}
       </Button>
       <TaskViewMenu
@@ -32,7 +40,6 @@ export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksH
           pinned: savedView.pinned,
         }))}
       />
-      <TaskCreateForm relatedType={initial.relatedType} relatedId={initial.relatedId} initialTitle={initial.title} />
       <TaskWorkspaceViews active="table" locale={locale} mine={view === 'mine'} />
     </div>
   )

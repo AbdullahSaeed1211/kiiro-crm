@@ -1,6 +1,6 @@
 # UX backlog
 
-9 findings are open: 1 critical, 4 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+8 findings are open: 1 critical, 3 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -19,24 +19,17 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Status (2026-09-27, local dev server): four `route-health.spec.ts` runs fail at `v0.2.0` before any change: "workspace settings reopen" (desktop; two `Time zone` comboboxes match), "settings IA and command palette" (mobile; no `Workspace` heading in the settings navigation), and UX 34 and 35. The suite stops at the first failure per project, so later tests only run with `--grep-invert`.
 
-### 8. Two lists still have their own search row
+### 8. Leads still have their own search row
 
 - Area: Design system. Effort: Moderate. Codes: T-04 R-06.
-- Now: Contacts, organizations, deals and projects share `ListViewBar` (search, filters, sort; the state lives in the URL). Leads keep `LeadListControls` because they filter by several stages at once, owner and source and save views; tasks keep their view menu. Deals have no sort because the deals query does not sort yet.
+- Now: Contacts, organizations, deals, projects and tasks share `ListViewBar` (search, filters, sort; the state lives in the URL). Leads keep `LeadListControls` because they filter by several stages at once, owner and source and save views. Deals have no sort because the deals query does not sort yet.
 - Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
-- Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads and tasks onto it, and add a sort to the deals query.
+- Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads onto it, and add a sort to the deals query.
 
 ### 12. The inbox keeps its own buttons
 
 - Area: Design system. Effort: Moderate. Codes: S-01 S-02.
 - Status: mostly fixed. No native `<select>` is left, and settings, onboarding, reports, sign-in, the workflow builder, the copy button and the calendar use `Button`. Date fields stay native on purpose: the phone date picker is better than any custom one. Left: the inbox (CSS modules: folder rail, thread rows, reader tools, compose close) and the notification card, which are bespoke layouts rather than buttons. Fix: move the inbox to `Button` and the shared tokens when the inbox is next redesigned, then add a lint rule against raw `<button>` in app code.
-
-### 37. All tasks cannot be grouped by person
-
-- Area: Tasks. Effort: Moderate. Reported by the owner on 2026-10-13.
-- Now: All tasks has a Group by control (None or Related record) that shows one heading per project, lead or deal, sorted by name. My tasks groups by due date or client, and the dashboard leads with a Due today card.
-- Status: partly fixed. Left: grouping All tasks by assignee.
-- Fix: Add an assignee sort to the tasks list query, then a third Group by option in `TaskGroupToggle` that sets `group` on each row from the assignee name. A task with several assignees needs a rule for which one it groups under.
 
 ### 39. Due dates shift a day in time zones behind UTC
 

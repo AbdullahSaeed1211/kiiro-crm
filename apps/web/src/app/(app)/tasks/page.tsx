@@ -88,11 +88,13 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
           }
         />
         <TaskListFilters search={search} assignee={assignee} people={people} locale={locale} />
-        <TaskGroupToggle grouped={grouped} view={view} search={search} assignee={assignee} locale={locale} />
         <TaskBulkTable
           versions={Object.fromEntries(result.items.map((task) => [task.id, task.updatedAt]))}
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
           key={`${formatTaskSort(sort)}:${String(result.page)}:${search}:${assignee}`}
+          toolbarStart={
+            <TaskGroupToggle grouped={grouped} view={view} search={search} assignee={assignee} locale={locale} />
+          }
           columns={taskColumns({ sort: effectiveSort, view, locale, search, assignee })}
           rows={result.items.map((task) =>
             toRow({ task, returnTo, locale, ...(grouped && { group: projectName(task) ?? copy.noProject }) }),
