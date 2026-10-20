@@ -10,13 +10,14 @@ import {
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import { Fragment, useCallback, useMemo, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ops/ui/components/ui/table'
 import { cn } from '@ops/ui/lib/utils'
 import { buildColumns, dataTableFeatures, type DataTableFeatures, type DataTableInstance } from './columns'
 import { DataTableFooter } from './DataTableFooter'
 import { DataTableViewOptions } from './DataTableViewOptions'
+import { useColumnVisibility } from './use-column-visibility'
 import { DataTableMobileCards } from './DataTableMobileCards'
 import { isInteractiveElement } from './row-click'
 import type {
@@ -206,6 +207,7 @@ export function DataTable({
   mobileCard,
 }: DataTableProps) {
   const router = useRouter()
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(usePathname())
   const columnDefs = useMemo(() => buildColumns({ columns, labels, selectable }), [columns, labels, selectable])
   const sorting = useMemo<SortingState>(
     () => (sort === undefined ? NO_SORTING : [{ id: sort.id, desc: sort.desc }]),
@@ -218,7 +220,8 @@ export function DataTable({
     getRowId: (row) => row.id,
     // Sorting happens on the server through each column's sortHref; the table only reflects it.
     manualSorting: true,
-    state: { sorting },
+    state: { sorting, columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
   })
   const handleNavigate = useCallback(
     (href: string) => {
