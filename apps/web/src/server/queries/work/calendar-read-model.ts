@@ -99,14 +99,22 @@ function mapTasks(documents: readonly object[], categories: ReadonlyMap<string, 
   })
 }
 
-/** The month's due-date window, plus the assignee when only one person's tasks are wanted. */
-function monthClauses(year: number, month: number, assigneeId: string | null): Where[] {
+/** The month's due-date window, plus each person whose tasks are required; several people narrow it further. */
+function monthClauses(year: number, month: number, assigneeIds: readonly string[]): Where[] {
   // Extra UTC days cover all timezone offsets; the calendar filters returned events by local date.
   const from = Date.UTC(year, month, 1) - 86_400_000
   const to = Date.UTC(year, month + 1, 1) + 86_400_000
   const clauses: Where[] = [{ dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }]
-  if (assigneeId !== null) clauses.push({ assignees: { in: [assigneeId] } })
+  for (const assigneeId of assigneeIds) clauses.push({ assignees: { in: [assigneeId] } })
   return clauses
+}
+
+/** "My tasks" and a chosen person both narrow the month, as they do on the board and the timeline. */
+function requiredPeople(input: Readonly<{ mine?: boolean; assignee?: string }>, actorId: string): string[] {
+  return [
+    ...(input.mine === true ? [actorId] : []),
+    ...(input.assignee === undefined || input.assignee === '' ? [] : [input.assignee]),
+  ]
 }
 
 /** Reads only tasks in the selected calendar month, plus workflow labels and calendar settings. */
@@ -127,8 +135,7 @@ export async function loadCalendarReadModel(
   const workflows = workflowPage.docs as readonly object[]
   const categories = stageCategories(workflows)
   const finished = [...categories].filter(([, category]) => FINISHED.has(category)).map(([id]) => id)
-  const person = input.assignee ?? (input.mine === true ? String(requestContext.actor.id) : '')
-  const inMonth = monthClauses(year, month, person === '' ? null : person)
+  const inMonth = monthClauses(year, month, requiredPeople(input, String(requestContext.actor.id)))
   const taskPage = await requestContext.payload.find({
     collection: 'tasks',
     ...request,

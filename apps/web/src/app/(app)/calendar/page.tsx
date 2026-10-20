@@ -10,7 +10,7 @@ import { catalogFor } from '../../../i18n/locale'
 import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
 import { loadTaskPeople } from '../../../server/queries/work/task-details'
 import { AssigneeFilter } from '../tasks/AssigneeFilter'
-import { assigneeOptions } from '../tasks/assignee-options'
+import { assigneeOptions, validAssignee } from '../tasks/assignee-options'
 import { taskHref } from '../task-navigation'
 import { moveTaskOnCalendar } from './move-task'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
@@ -43,11 +43,9 @@ export default async function CalendarPage({
 }>) {
   const query = await searchParams
   const mine = query.view === 'mine'
-  const assignee = query.assignee ?? ''
-  const [model, people] = await Promise.all([
-    loadCalendarReadModel({ year: query.year, month: query.month, mine, assignee }),
-    loadTaskPeople(),
-  ])
+  const people = await loadTaskPeople()
+  const assignee = validAssignee(query.assignee, people)
+  const model = await loadCalendarReadModel({ year: query.year, month: query.month, mine, assignee })
   const year = model.calendarYear
   const month = model.calendarMonth
   const copy = TASK_COPY[model.locale]

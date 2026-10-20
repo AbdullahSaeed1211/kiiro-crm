@@ -27,12 +27,18 @@ export function TaskCreateForm({
     event.preventDefault()
     if (title.trim() === '' || pending) return
     setPending(true)
-    const result = await createTask({ title, relatedType: relatedType ?? null, relatedId: relatedId ?? null })
-    setPending(false)
-    setMessage({ text: result.ok ? copy.created : result.error.message, failed: !result.ok })
-    if (result.ok) {
-      setTitle('')
-      router.refresh()
+    try {
+      const result = await createTask({ title, relatedType: relatedType ?? null, relatedId: relatedId ?? null })
+      setMessage({ text: result.ok ? copy.created : result.error.message, failed: !result.ok })
+      if (result.ok) {
+        setTitle('')
+        router.refresh()
+      }
+    } catch {
+      // The request never got an answer (offline, or the server action threw); say so and let the person retry.
+      setMessage({ text: copy.failed, failed: true })
+    } finally {
+      setPending(false)
     }
   }
   return (

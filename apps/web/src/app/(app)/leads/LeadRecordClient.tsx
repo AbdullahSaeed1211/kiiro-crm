@@ -14,9 +14,10 @@ import { LeadNextAction } from './LeadNextAction'
 import { RecordActionLinks } from '../record-action-links'
 import { recordTabs } from '../record-view-primitives'
 import { formatDate as formatLocaleDate } from '../../../i18n/format'
+import { useLocale } from '../../../i18n/locale-context'
 
-const formatDate = (value: number): string =>
-  formatLocaleDate(value, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+const formatDate = (value: number, locale: string): string =>
+  formatLocaleDate(value, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 function AsideField({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
@@ -33,10 +34,11 @@ function optionalValue(value: string | null): string {
 
 function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
   const lead = data.item.lead
+  const locale = useLocale()
   if (lead.convertedAt !== null)
     return (
       <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
-        Converted {formatDate(lead.convertedAt)}
+        Converted {formatDate(lead.convertedAt, locale)}
         {lead.convertedDealId === null ? null : (
           <>
             {' · '}
@@ -64,11 +66,12 @@ function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
 
 function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
   const lead = data.item.lead
+  const locale = useLocale()
   const details = [['Source', optionalValue(data.item.source?.name ?? null)]] as const
   const meta = [
-    ['Created', formatDate(lead.createdAt)],
-    ['Updated', formatDate(lead.updatedAt)],
-    ['Stage entered', formatDate(lead.stageEnteredAt)],
+    ['Created', formatDate(lead.createdAt, locale)],
+    ['Updated', formatDate(lead.updatedAt, locale)],
+    ['Stage entered', formatDate(lead.stageEnteredAt, locale)],
   ] as const
   return (
     <div className="flex flex-col gap-4">

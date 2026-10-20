@@ -12,6 +12,7 @@ import { loadTaskPeople } from '../../../server/queries/work/task-details'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
 import { TaskBulkTable } from './TaskBulkTable'
+import { validAssignee } from './assignee-options'
 import { TaskGroupToggle } from './TaskGroupToggle'
 import { TaskListFilters } from './TaskListFilters'
 import { TasksHeaderActions } from './TasksHeaderActions'
@@ -25,6 +26,11 @@ export const metadata: Metadata = { title: PAGE_TITLE }
 
 type Params = Record<string, string | string[] | undefined>
 
+/** The project a task belongs to; a task linked to a lead or deal has none, so it groups under "No project". */
+function projectName(task: Readonly<{ context: { label: string; href: string } | null }>): string | undefined {
+  return task.context?.href.startsWith('/projects/') === true ? task.context.label : undefined
+}
+
 /** What narrows the list, read from the address: the search text, the chosen assignee and the page. */
 function readFilters(params: Params) {
   return {
@@ -37,13 +43,14 @@ function readFilters(params: Params) {
 /** Tasks list (spec §17.5). */
 export default async function TasksPage({ searchParams }: Readonly<{ searchParams: Promise<Params> }>) {
   const params = await searchParams
-  const { search, assignee, page } = readFilters(params)
+  const { search, assignee: requested, page } = readFilters(params)
   const context = await getRequestContext()
   const [savedViews, locale, people] = await Promise.all([
     listSavedViews('task', context),
     loadWorkspaceLocale(),
     loadTaskPeople(),
   ])
+  const assignee = validAssignee(requested, people)
   const copy = TASK_COPY[locale]
   const sort = parseTaskSort(firstParam(params.sort))
   const view = parseTaskView(firstParam(params.view), savedViews)
@@ -85,7 +92,7 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
           key={`${formatTaskSort(sort)}:${String(result.page)}:${search}:${assignee}`}
           columns={taskColumns({ sort: effectiveSort, view, locale, search, assignee })}
           rows={result.items.map((task) =>
-            toRow({ task, returnTo, locale, ...(grouped && { group: task.context?.label ?? copy.noRelated }) }),
+            toRow({ task, returnTo, locale, ...(grouped && { group: projectName(task) ?? copy.noProject }) }),
           )}
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
           pagination={paginationOf({ result, sort: effectiveSort, view, search, assignee })}

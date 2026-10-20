@@ -9,7 +9,7 @@ import { getRequestContext } from '@/server/container'
 import { loadTimelineTasks } from '../../../server/queries/work/timeline-tasks'
 import { loadTaskPeople } from '../../../server/queries/work/task-details'
 import { AssigneeFilter } from '../tasks/AssigneeFilter'
-import { assigneeOptions } from '../tasks/assignee-options'
+import { assigneeOptions, validAssignee } from '../tasks/assignee-options'
 import { TimelineChart } from './TimelineChart'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
@@ -27,11 +27,9 @@ export default async function TimelinePage({
 }: Readonly<{ searchParams: Promise<{ readonly view?: string; readonly assignee?: string }> }>) {
   const params = await searchParams
   const mine = params.view === 'mine'
-  const assignee = params.assignee ?? ''
-  const [{ rows: tasks, total, locale }, people] = await Promise.all([
-    loadTimelineTasks(await getRequestContext(), { mine, assignee }),
-    loadTaskPeople(),
-  ])
+  const people = await loadTaskPeople()
+  const assignee = validAssignee(params.assignee, people)
+  const { rows: tasks, total, locale } = await loadTimelineTasks(await getRequestContext(), { mine, assignee })
   const copy = TASK_COPY[locale]
   const filter = (
     <AssigneeFilter

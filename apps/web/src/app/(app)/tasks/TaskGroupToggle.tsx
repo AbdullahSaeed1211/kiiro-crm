@@ -33,7 +33,7 @@ export function TaskGroupToggle({
         aria-current={grouped ? 'true' : undefined}
         href={taskListHref({ sort: BY_RELATED, page: 1, view, search, assignee })}
       >
-        {copy.project}
+        {copy.groupProject}
       </Link>
     </nav>
   )

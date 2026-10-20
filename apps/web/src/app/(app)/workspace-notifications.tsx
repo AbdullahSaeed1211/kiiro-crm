@@ -39,13 +39,14 @@ const RECORD_ROUTES: Readonly<Record<string, string>> = {
 /** How often the bell re-reads the unread count while the tab is visible. */
 const UNREAD_POLL_MS = 60_000
 
-async function loadUnreadCount(signal: AbortSignal): Promise<number> {
+/** The unread count, or null when it could not be read, so one failed check does not clear a real badge. */
+async function loadUnreadCount(signal: AbortSignal): Promise<number | null> {
   try {
     const response = await fetch('/api/v1/notifications/unread-count', { credentials: 'same-origin', signal })
     const result = await readApi<{ count?: number }>(response, 'Could not count notifications.')
-    return result.ok ? (result.data.count ?? 0) : 0
+    return result.ok ? (result.data.count ?? 0) : null
   } catch {
-    return 0
+    return null
   }
 }
 
@@ -91,7 +92,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
     const refresh = () => {
       if (document.visibilityState === 'hidden') return
       void loadUnreadCount(controller.signal).then((next) => {
-        if (!controller.signal.aborted) setCount(next)
+        if (!controller.signal.aborted && next !== null) setCount(next)
       })
     }
     refresh()

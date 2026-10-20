@@ -5,6 +5,10 @@ import { useEffect, useState } from 'react'
 type Visibility = Record<string, boolean>
 
 const PREFIX = 'ops-columns:'
+const ID_SEGMENT = /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
+
+/** The page's route pattern, so every record under `/projects/<id>` shares one saved choice instead of one key each. */
+const routeOf = (path: string): string => path.replace(ID_SEGMENT, '/:id')
 
 function read(key: string): Visibility {
   try {
@@ -22,7 +26,7 @@ function read(key: string): Visibility {
  * Storage can be unavailable (private windows, blocked site data); the table then simply forgets on reload.
  */
 export function useColumnVisibility(path: string) {
-  const key = `${PREFIX}${path}`
+  const key = `${PREFIX}${routeOf(path)}`
   const [visibility, setVisibility] = useState<Visibility>({})
   const [loadedKey, setLoadedKey] = useState<string | null>(null)
 

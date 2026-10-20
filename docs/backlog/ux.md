@@ -1,6 +1,6 @@
 # UX backlog
 
-8 findings are open: 1 critical, 3 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+9 findings are open: 1 critical, 4 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -37,6 +37,12 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Now: All tasks has a Group by control (None or Related record) that shows one heading per project, lead or deal, sorted by name. My tasks groups by due date or client, and the dashboard leads with a Due today card.
 - Status: partly fixed. Left: grouping All tasks by assignee.
 - Fix: Add an assignee sort to the tasks list query, then a third Group by option in `TaskGroupToggle` that sets `group` on each row from the assignee name. A task with several assignees needs a rule for which one it groups under.
+
+### 39. Due dates shift a day in time zones behind UTC
+
+- Area: Tasks. Effort: Moderate. Codes: T-07.
+- Now: A due date picked in the task form is stored as that day at 00:00 UTC (`NewTaskForm.tsx`), and screens show it with `timeZone: 'UTC'`, so the date reads as picked. The Overdue, Today and Next 7 days buckets (`myTasksBuckets`) and the dashboard cards instead take the workspace-zone date of that timestamp. In a zone ahead of UTC, such as Asia/Kolkata, the two agree. In a zone behind UTC, such as America/New_York, a task due Oct 20 (Oct 20 00:00 UTC) falls on Oct 19 locally, so it counts as due a day early and is overdue on the morning it is due.
+- Fix: Pick one rule and apply it everywhere. Either bucket by the UTC date of `dueAt`, which matches how the date is shown, or store the due date as local midnight in the workspace zone and show it in that zone, which matches decision D-09. Then check every place that decides what is overdue against the chosen rule: `myTasksBuckets`, `dashboard-work.ts`, `report-task-counts.ts` and `client-dashboard.ts`.
 
 ## Minor
 

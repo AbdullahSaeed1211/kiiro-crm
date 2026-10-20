@@ -14,7 +14,7 @@ import { loadTaskPeople } from '../../../../server/queries/work/task-details'
 import type { TaskRecord } from '../../../../server/work/task-repository'
 import { taskHref } from '../../task-navigation'
 import { AssigneeFilter } from '../AssigneeFilter'
-import { assigneeOptions } from '../assignee-options'
+import { assigneeOptions, validAssignee } from '../assignee-options'
 import { TaskCreateForm } from '../TaskCreateForm'
 import { TaskWorkspaceViews } from '../TaskWorkspaceViews'
 import { TaskBoard } from './TaskBoard'
@@ -101,16 +101,16 @@ export default async function TaskBoardPage({
 }: Readonly<{ searchParams: Promise<{ readonly view?: string; readonly assignee?: string }> }>) {
   const params = await searchParams
   const mine = params.view === 'mine'
-  const assignee = params.assignee ?? ''
   const context = await getRequestContext()
   const { tasks } = await workDeps(context)
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const workflow = await tasks.loadTaskWorkflow().then(workflowOrThrow)
-  const [page, everyone] = await Promise.all([loadBoardTasks(context, workflow, { mine, assignee }), loadTaskPeople()])
+  const everyone = await loadTaskPeople()
+  const assignee = validAssignee(params.assignee, everyone)
+  const page = await loadBoardTasks(context, workflow, { mine, assignee })
   const records = page.records
-  const assigneeIds = [...new Set(records.flatMap((task) => task.assigneeIds.map(String)))]
-  const people = await loadTaskPeople(assigneeIds)
+  const people = everyone
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.table, href: '/tasks' }, { label: copy.board }]} />
