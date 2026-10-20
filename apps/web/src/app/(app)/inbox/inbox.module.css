@@ -186,6 +186,13 @@
   font-size: 0.8rem;
 }
 
+/* The global input rules paint a background and inset shadow that would show as a box inside the rounded field. */
+.searchBox input:not([type='checkbox']):not([type='radio']),
+.searchBox input:not([type='checkbox']):not([type='radio']):focus {
+  background: transparent;
+  box-shadow: none;
+}
+
 .searchBox input::placeholder {
   color: color-mix(in oklch, var(--inbox-muted) 78%, transparent);
 }
