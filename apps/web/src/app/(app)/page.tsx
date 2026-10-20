@@ -27,10 +27,18 @@ function WorkCard({
   title,
   count,
   viewAll,
+  className = '',
   children,
-}: Readonly<{ title: string; count: number; viewAll: { href: string; label: string }; children: ReactNode }>) {
+}: Readonly<{
+  title: string
+  count: number
+  viewAll: { href: string; label: string }
+  /** Extra classes for the card, such as a column span. */
+  className?: string
+  children: ReactNode
+}>) {
   return (
-    <section className="ops-dashboard-card p-4">
+    <section className={`ops-dashboard-card p-4 ${className}`}>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium">{title}</h2>
         <div className="flex items-center gap-2">
@@ -183,6 +191,7 @@ export default async function DashboardPage() {
           </WorkCard>
           <WorkCard
             title={copy.activeProjects}
+            className="lg:col-span-2"
             count={work.projects.count}
             viewAll={{ href: '/projects', label: copy.viewAll }}
           >
