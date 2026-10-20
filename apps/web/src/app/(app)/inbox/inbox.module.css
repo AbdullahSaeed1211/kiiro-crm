@@ -862,9 +862,9 @@
     font-size: 0.7rem;
   }
 
+  /* Four tabs share the phone width, so the label and count get the room instead of the icon. */
   .folderButton > svg {
-    width: 1rem;
-    height: 1rem;
+    display: none;
   }
 
   .folderButton > span:first-of-type {
