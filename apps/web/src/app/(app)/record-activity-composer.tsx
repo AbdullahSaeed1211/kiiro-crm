@@ -49,6 +49,12 @@ export function RecordActivityComposer({
           setBody(event.target.value)
           setMessage(null)
         }}
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !submitting && body.trim() !== '') {
+            event.preventDefault()
+            void submit()
+          }
+        }}
         placeholder="Write an update for your team…"
         disabled={submitting}
       />

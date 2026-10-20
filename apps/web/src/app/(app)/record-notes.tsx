@@ -46,6 +46,12 @@ function RecordNotesComposer({
         onChange={(event) => {
           onBodyChange(event.target.value)
         }}
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !submitting && body.trim() !== '') {
+            event.preventDefault()
+            onSubmit()
+          }
+        }}
         placeholder={copy.placeholder}
         disabled={submitting}
       />
