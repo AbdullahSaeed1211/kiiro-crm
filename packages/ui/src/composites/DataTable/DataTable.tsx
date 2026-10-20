@@ -9,7 +9,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
-import { useCallback, useMemo, type ReactNode } from 'react'
+import { Fragment, useCallback, useMemo, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ops/ui/components/ui/table'
@@ -136,6 +136,17 @@ function BodyRow({
   )
 }
 
+/** The heading row above a run of rows that share a group. */
+function GroupHeading({ label, span }: Readonly<{ label: string; span: number }>) {
+  return (
+    <TableRow className="bg-muted/40 hover:bg-muted/40">
+      <TableCell colSpan={span} className="h-9 text-xs font-semibold text-muted-foreground">
+        {label}
+      </TableCell>
+    </TableRow>
+  )
+}
+
 function Body({
   table,
   emptyState,
@@ -149,14 +160,22 @@ function Body({
   if (rows.length > 0) {
     return (
       <TableBody>
-        {rows.map((row) => {
+        {rows.map((row, index) => {
           const href = row.original.href
+          const group = row.original.group
           const rowProps = {
             row,
             ...(href !== undefined && { href }),
             ...(onNavigate !== undefined && { onNavigate }),
           }
-          return <BodyRow key={row.id} {...rowProps} />
+          return (
+            <Fragment key={row.id}>
+              {group !== undefined && group !== rows[index - 1]?.original.group ? (
+                <GroupHeading label={group} span={table.getVisibleLeafColumns().length} />
+              ) : null}
+              <BodyRow {...rowProps} />
+            </Fragment>
+          )
         })}
       </TableBody>
     )

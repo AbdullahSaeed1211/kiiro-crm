@@ -107,7 +107,7 @@ async function listProjectTasks(args: PageArgs & Readonly<{ where: Where }>): Pr
   const { context, query, where } = args
   const page = await listTaskPage(context.req, {
     where,
-    sort: query.sort.desc ? ['-project', 'dueAt', 'id'] : ['project', 'dueAt', 'id'],
+    sort: query.sort.desc ? ['-project.name', 'dueAt', 'id'] : ['project.name', 'dueAt', 'id'],
     page: query.page,
     limit: PAGE_SIZE,
   })

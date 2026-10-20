@@ -12,6 +12,7 @@ import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
 import { ListViewBar } from '../list-view-bar'
 import { TaskBulkTable } from './TaskBulkTable'
+import { TaskGroupToggle } from './TaskGroupToggle'
 import { TasksHeaderActions } from './TasksHeaderActions'
 import { labelsFor, paginationOf, taskColumns, toRow } from './task-table'
 import { parseTaskView, savedViewSort, taskListHref, taskModeOf } from './task-view-params'
@@ -54,6 +55,7 @@ export default async function TasksPage({
     },
     context,
   )
+  const grouped = effectiveSort.key === 'project'
   const emptyTitle = search === '' ? copy.noTasks : copy.noTasksMatch
   const emptyBody = search === '' ? copy.noTasksDescription : copy.noTasksMatchDescription
   return (
@@ -77,12 +79,15 @@ export default async function TasksPage({
           }
         />
         <ListViewBar searchLabel={copy.searchTasks} query={search} />
+        <TaskGroupToggle grouped={grouped} view={view} search={search} locale={locale} />
         <TaskBulkTable
           versions={Object.fromEntries(result.items.map((task) => [task.id, task.updatedAt]))}
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
           key={`${formatTaskSort(sort)}:${String(result.page)}:${search}`}
           columns={taskColumns({ sort: effectiveSort, view, locale, search })}
-          rows={result.items.map((task) => toRow({ task, returnTo, locale }))}
+          rows={result.items.map((task) =>
+            toRow({ task, returnTo, locale, ...(grouped && { group: task.context?.label ?? copy.noRelated }) }),
+          )}
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
           pagination={paginationOf({ result, sort: effectiveSort, view, search })}
           labels={labelsFor(locale)}

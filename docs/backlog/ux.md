@@ -31,12 +31,12 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Design system. Effort: Moderate. Codes: S-01 S-02.
 - Status: mostly fixed. No native `<select>` is left, and settings, onboarding, reports, sign-in, the workflow builder, the copy button and the calendar use `Button`. Date fields stay native on purpose: the phone date picker is better than any custom one. Left: the inbox (CSS modules: folder rail, thread rows, reader tools, compose close) and the notification card, which are bespoke layouts rather than buttons. Fix: move the inbox to `Button` and the shared tokens when the inbox is next redesigned, then add a lint rule against raw `<button>` in app code.
 
-### 37. No "today" home view and no group by client
+### 37. All tasks cannot be grouped by person
 
 - Area: Tasks. Effort: Moderate. Reported by the owner on 2026-10-13.
-- Now: My tasks has the overdue, today, next 7 days and later buckets, but the signed-in person lands on the dashboard cards, and All tasks cannot be grouped by client.
-- Status: partly fixed in v0.9.75. My tasks has a Group by toggle (due date or client; `?group=client`), and the Project column on All tasks sorts, which puts each client's tasks together. The dashboard now leads with a Due today card, then overdue and this week, above the pipeline. Left: a group-by toggle on All tasks.
-- Fix: A home view of the last task, today's tasks and pending tasks for the signed-in person, and a group-by toggle (client, person, project) on All tasks. The owner chose "by client" as the first grouping. Both reuse existing queries (`myTasksBuckets`).
+- Now: All tasks has a Group by control (None or Related record) that shows one heading per project, lead or deal, sorted by name. My tasks groups by due date or client, and the dashboard leads with a Due today card.
+- Status: partly fixed. Left: grouping All tasks by assignee.
+- Fix: Add an assignee sort to the tasks list query, then a third Group by option in `TaskGroupToggle` that sets `group` on each row from the assignee name. A task with several assignees needs a rule for which one it groups under.
 
 ## Minor
 

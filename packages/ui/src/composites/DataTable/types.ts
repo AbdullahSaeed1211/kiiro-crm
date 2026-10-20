@@ -19,6 +19,8 @@ export type DataTableRow = Readonly<{
   cells: Readonly<Record<string, ReactNode>>
   /** Where a click on a non-interactive part of the row, or Enter on the focused row, navigates. */
   href?: string
+  /** Heading this row falls under. A heading is drawn above each run of consecutive rows that share the value. */
+  group?: string
 }>
 
 /** Sort applied by the server to the current rows. */

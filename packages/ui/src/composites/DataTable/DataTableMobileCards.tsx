@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { Fragment, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { isInteractiveElement } from './row-click'
 import type { DataTableMobileCard, DataTableRow } from './types'
@@ -25,26 +25,30 @@ export function DataTableMobileCards({
 
   return (
     <div className="flex flex-col gap-3">
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          onClick={(e) => {
-            if (row.href) handleCardClick(e, row.href)
-          }}
-          className={row.href !== undefined ? 'cursor-pointer' : undefined}
-        >
-          <div className="space-y-2 rounded-lg border bg-card p-3">
-            {mobileCard.cells.map((cellId, idx) => {
-              const content = row.cells[cellId]
-              if (content === undefined) return null
-              return (
-                <div key={cellId} className={idx === 0 ? 'font-medium text-base' : 'text-sm text-muted-foreground'}>
-                  {content}
-                </div>
-              )
-            })}
+      {rows.map((row, index) => (
+        <Fragment key={row.id}>
+          {row.group !== undefined && row.group !== rows[index - 1]?.group ? (
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">{row.group}</p>
+          ) : null}
+          <div
+            onClick={(e) => {
+              if (row.href) handleCardClick(e, row.href)
+            }}
+            className={row.href !== undefined ? 'cursor-pointer' : undefined}
+          >
+            <div className="space-y-2 rounded-lg border bg-card p-3">
+              {mobileCard.cells.map((cellId, idx) => {
+                const content = row.cells[cellId]
+                if (content === undefined) return null
+                return (
+                  <div key={cellId} className={idx === 0 ? 'font-medium text-base' : 'text-sm text-muted-foreground'}>
+                    {content}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </Fragment>
       ))}
     </div>
   )

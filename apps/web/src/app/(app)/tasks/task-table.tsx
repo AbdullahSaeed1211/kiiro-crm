@@ -62,10 +62,12 @@ export function toRow({
   task,
   returnTo,
   locale,
-}: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale }>): DataTableRow {
+  group,
+}: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale; group?: string }>): DataTableRow {
   return {
     id: task.id,
     href: taskHref(task.id, returnTo),
+    ...(group === undefined ? {} : { group }),
     cells: {
       title: (
         <Link
