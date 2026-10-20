@@ -10,6 +10,7 @@ import {
   type SubmitIntakeDeps,
 } from './contracts'
 import { intakeDedupeKey, isAllowedOrigin, mappedLead, sha256Hex, text, titleOf, validateIntakePayload } from './domain'
+import { checkedFormAnswers } from './form-answers'
 
 const failure = (code: DomainError['code'], message: string): IntakeResult => err(domainError(code, message))
 async function checkChannel(
@@ -118,7 +119,7 @@ async function prepare(
   if (!limited) return { ok: false, result: failure('RATE_LIMITED', 'too many intake submissions') }
   const channel = await checkChannel(deps)
   if (!channel.ok) return channel
-  const parsed = validateIntakePayload(payload)
+  const parsed = validateAnswers(deps, payload, channel.channel)
   if (!parsed.ok) return { ok: false, result: err(parsed.error) }
   return {
     ok: true,
@@ -126,6 +127,15 @@ async function prepare(
     payload: parsed.value,
     dedupeKey: await intakeDedupeKey(deps.form.id, parsed.value, deps.localDate),
   }
+}
+
+function validateAnswers(deps: SubmitIntakeDeps, payload: unknown, channel: string) {
+  const parsed = validateIntakePayload(payload)
+  if (!parsed.ok || channel !== 'web') return parsed
+  const answers = checkedFormAnswers(deps.form.formFields ?? [], parsed.value)
+  return answers === undefined
+    ? err(domainError('VALIDATION', 'Complete the required form questions with valid answers.'))
+    : ok(answers)
 }
 
 function duplicate(

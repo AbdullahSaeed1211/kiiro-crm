@@ -21,6 +21,14 @@ const isBlank = (value: CustomFieldValue): boolean =>
 
 const FORMATTERS: Partial<Record<CustomFieldView['type'], (value: CustomFieldValue, format: Format) => string>> = {
   checkbox: (value, { labels }) => (value === true ? labels.yes : labels.no),
+  datetime: (value, { locale }) =>
+    typeof value === 'number'
+      ? new Intl.DateTimeFormat(locale, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }).format(value)
+      : String(value),
   date: (value, { locale }) =>
     typeof value === 'number'
       ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(value)

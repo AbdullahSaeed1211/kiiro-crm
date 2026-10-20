@@ -23,6 +23,7 @@ export const TYPES = [
   'number',
   'currency',
   'date',
+  'datetime',
   'select',
   'multiSelect',
   'checkbox',

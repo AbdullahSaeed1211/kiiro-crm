@@ -12,6 +12,7 @@ const FIELD_TYPES = [
   'number',
   'currency',
   'date',
+  'datetime',
   'select',
   'multiSelect',
   'checkbox',

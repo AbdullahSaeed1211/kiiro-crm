@@ -1,4 +1,5 @@
 import type { DomainError, Result } from '@ops/kernel'
+import type { FormField } from './form-fields'
 
 export { domainError, err, ok } from '@ops/kernel'
 export type { DomainError }
@@ -11,6 +12,7 @@ export interface IntakeForm {
   readonly active: boolean
   readonly targetRecordType: 'lead'
   readonly fieldMap: Readonly<Record<string, string>>
+  readonly formFields?: readonly FormField[]
   readonly allowedOrigins: readonly string[]
   readonly requireTurnstile: boolean
   readonly serverKeyHashes: readonly string[]

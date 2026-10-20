@@ -1,5 +1,6 @@
 import { domainError, err, ok } from '@ops/kernel'
 import type { IntakeForm, IntakeStore, IntakeSubmission } from '@ops/module-intake'
+import { formFieldsSchema } from '@ops/module-intake'
 import type { Payload } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import { fieldOf, idOf, idsOf, numberOf, textOf, type Doc } from './documents'
@@ -42,6 +43,8 @@ export function toIntakeForm(doc: Doc): IntakeForm | undefined {
   const defaultSourceId = relationId(fieldOf(doc, 'defaultSource'))
   const redirectUrl = optional('redirectUrl')
   const emailAlias = optional('emailAlias')
+  const questions = formFieldsSchema.safeParse(fieldOf(doc, 'formFields') ?? [])
+  if (!questions.success) return undefined
   return {
     id,
     key,
@@ -49,6 +52,7 @@ export function toIntakeForm(doc: Doc): IntakeForm | undefined {
     active: fieldOf(doc, 'active') === true,
     targetRecordType: 'lead',
     fieldMap: stringMap(fieldOf(doc, 'fieldMap')),
+    formFields: questions.data,
     allowedOrigins: stringList(fieldOf(doc, 'allowedOrigins')),
     requireTurnstile: fieldOf(doc, 'requireTurnstile') === true,
     serverKeyHashes: stringList(fieldOf(doc, 'serverKeyHashes')),

@@ -8,7 +8,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } }
 export default function PublicLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className="font-sans antialiased">
-      <body>
+      <body style={{ fontFamily: 'system-ui, sans-serif' }}>
         <main className="mx-auto w-full max-w-lg p-4">{children}</main>
       </body>
     </html>

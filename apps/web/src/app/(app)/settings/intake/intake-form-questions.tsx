@@ -8,17 +8,12 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { saveIntakeFormFields } from '../../../../server/actions/settings/intake'
 import { TargetSelect, type IntakeTarget } from './intake-field-map'
+import type { Question } from './intake-question'
+import { ConditionalQuestion } from './conditional-question'
 
-export type Question = Readonly<{
-  key: string
-  label: string
-  type: 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'checkbox'
-  required: boolean
-  options: readonly string[]
-  target: string
-}>
+export type { Question } from './intake-question'
 
-const TYPES = ['text', 'email', 'phone', 'textarea', 'select', 'checkbox'] as const
+const TYPES = ['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'datetime'] as const
 
 /** A short camelCase key from a label, such as "Phone number" to "phoneNumber". */
 function keyFromLabel(label: string): string {
@@ -34,11 +29,13 @@ function QuestionRow({
   targets,
   onChange,
   onRemove,
+  previous,
 }: Readonly<{
   question: Question
   targets: readonly IntakeTarget[]
   onChange: (next: Question) => void
   onRemove: () => void
+  previous: readonly Question[]
 }>) {
   return (
     <div className="grid gap-2 rounded-md border p-3">
@@ -88,6 +85,7 @@ function QuestionRow({
           onChange({ ...question, target })
         }}
       />
+      <ConditionalQuestion question={question} previous={previous} onChange={onChange} />
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -163,6 +161,7 @@ export function IntakeFormQuestions({
         <QuestionRow
           key={index}
           question={question}
+          previous={questions.slice(0, index)}
           targets={targets}
           onChange={(next) => {
             setQuestions(questions.map((entry, at) => (at === index ? next : entry)))

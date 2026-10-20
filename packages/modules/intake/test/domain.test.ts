@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { sha256Hex, submitIntake } from '../src'
+import { sha256Hex, submitIntake, checkedFormAnswers, zonedMinuteToUnix, type FormField } from '../src'
 import type { IntakeForm, IntakeStore } from '../src'
 
 const form: IntakeForm = {
@@ -45,6 +45,38 @@ function store(): IntakeStore & { leads: number; submissions: number } {
   }
 }
 const allowed = { check: () => Promise.resolve(true) }
+
+const BOOKED = 'Booking arranged'
+
+const bookingFields: readonly FormField[] = [
+  { key: 'outcome', label: 'Outcome', type: 'select', required: true, options: ['Interested', BOOKED] },
+  {
+    key: 'bookingAt',
+    label: 'Booking',
+    type: 'datetime',
+    required: true,
+    options: [],
+    showWhen: { field: 'outcome', equals: BOOKED },
+  },
+]
+
+it('rejects a missing booking instant and discards a hidden stale booking', () => {
+  expect(checkedFormAnswers(bookingFields, { outcome: BOOKED })).toBeUndefined()
+  expect(checkedFormAnswers(bookingFields, { outcome: BOOKED, bookingAt: '2026-10-22' })).toBeUndefined()
+  expect(checkedFormAnswers(bookingFields, { outcome: 'Interested', bookingAt: 1792663200000 })).toEqual({
+    outcome: 'Interested',
+  })
+  expect(checkedFormAnswers(bookingFields, { outcome: BOOKED, bookingAt: 1792663200000 })?.['bookingAt']).toBe(
+    1792663200000,
+  )
+})
+
+it('resolves booking wall-clock time to Unix milliseconds without guessing DST gaps or folds', () => {
+  expect(zonedMinuteToUnix('2026-10-22T15:30', 'Asia/Kolkata')).toBe(Date.UTC(2026, 9, 22, 10))
+  expect(zonedMinuteToUnix('2026-10-22T09:00', 'America/New_York')).toBe(Date.UTC(2026, 9, 22, 13))
+  expect(zonedMinuteToUnix('2026-03-08T02:30', 'America/New_York')).toBeUndefined()
+  expect(zonedMinuteToUnix('2026-11-01T01:30', 'America/New_York')).toBeUndefined()
+})
 
 it('fails closed for an unlisted origin before Turnstile', async () => {
   let verified = false

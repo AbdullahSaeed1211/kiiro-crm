@@ -9,6 +9,7 @@ export const CUSTOM_FIELD_TYPES = [
   'number',
   'currency',
   'date',
+  'datetime',
   'select',
   'multiSelect',
   'checkbox',
@@ -80,6 +81,10 @@ const CHECKS: Readonly<Record<CustomFieldType, Check>> = {
   number: numeric,
   currency: numeric,
   date: (value) => (typeof value === 'number' && Number.isFinite(value) ? valid(value) : invalid('Choose a date.')),
+  datetime: (value) =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= 8_640_000_000_000_000
+      ? valid(value)
+      : invalid('Choose a date and time.'),
   checkbox: (value) => (typeof value === 'boolean' ? valid(value) : invalid('Choose yes or no.')),
   email: (value) =>
     typeof value === 'string' && looksLikeEmail(value.trim())

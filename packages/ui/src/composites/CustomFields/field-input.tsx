@@ -83,6 +83,23 @@ function DateInput({ field, value, labels, locale, onChange }: InputProps) {
   )
 }
 
+function InstantInput({ field, value, onChange }: InputProps) {
+  const date = typeof value === 'number' ? new Date(value) : null
+  const local =
+    date === null ? '' : new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+  return (
+    <Input
+      type="datetime-local"
+      aria-label={`${field.label} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`}
+      value={local}
+      onChange={(event) => {
+        const next = event.target.value
+        onChange(next === '' ? null : new Date(next).getTime())
+      }}
+    />
+  )
+}
+
 const asText = (value: CustomFieldValue): string =>
   typeof value === 'string' || typeof value === 'number' ? String(value) : ''
 
@@ -118,6 +135,7 @@ const INPUTS: Partial<Record<CustomFieldView['type'], (props: InputProps) => Rea
   multiSelect: OptionSelect,
   checkbox: CheckboxInput,
   date: DateInput,
+  datetime: InstantInput,
   textarea: TextareaInput,
 }
 

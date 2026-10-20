@@ -3,7 +3,17 @@ export interface CustomFieldView {
   readonly key: string
   readonly label: string
   readonly type:
-    'text' | 'textarea' | 'number' | 'currency' | 'date' | 'select' | 'multiSelect' | 'checkbox' | 'email' | 'url'
+    | 'text'
+    | 'textarea'
+    | 'number'
+    | 'currency'
+    | 'date'
+    | 'datetime'
+    | 'select'
+    | 'multiSelect'
+    | 'checkbox'
+    | 'email'
+    | 'url'
   readonly required: boolean
   readonly options: readonly string[]
 }
