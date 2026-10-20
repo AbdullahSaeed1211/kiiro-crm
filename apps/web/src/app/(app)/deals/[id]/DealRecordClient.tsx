@@ -11,37 +11,45 @@ import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model
 import { RecordActionLinks } from '../../record-action-links'
 import { markDealLostAction } from '../../../../server/crm/deals/actions'
 import { LostReasonDialog } from '../../LostReasonDialog'
+import { DEAL_RECORD_COPY, type DealRecordCopy } from '../../../../i18n/deal-record-copy'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
 
-function DetailsCard({ data }: Readonly<{ data: DealDetailData }>) {
+function DetailRow({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      {children}
+    </div>
+  )
+}
+
+function DetailsCard({ data, copy }: Readonly<{ data: DealDetailData; copy: DealRecordCopy }>) {
   const { deal, organization } = data
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Deal details</CardTitle>
+        <CardTitle>{copy.detailsTitle}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3 text-sm">
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Value</span>
+        <DetailRow label={copy.value}>
           <span className="font-medium tabular-nums">{formatMoney(deal.value)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Created</span>
+        </DetailRow>
+        <DetailRow label={copy.created}>
           <span>{formatDate(deal.createdAt)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Closed</span>
-          <span>{formatDate(deal.closedAt)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Expected close</span>
+        </DetailRow>
+        {deal.closedAt === null ? null : (
+          <DetailRow label={copy.closed}>
+            <span>{formatDate(deal.closedAt)}</span>
+          </DetailRow>
+        )}
+        <DetailRow label={copy.expectedClose}>
           <span>{deal.expectedCloseAt === null ? '—' : formatDate(deal.expectedCloseAt)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Owner</span>
-          <span>{data.ownerName ?? 'Unassigned'}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Organization</span>
+        </DetailRow>
+        <DetailRow label={copy.owner}>
+          <span>{data.ownerName ?? copy.unassigned}</span>
+        </DetailRow>
+        <DetailRow label={copy.organization}>
           {organization === null ? (
             <span>—</span>
           ) : (
@@ -49,7 +57,7 @@ function DetailsCard({ data }: Readonly<{ data: DealDetailData }>) {
               {organization.name}
             </Link>
           )}
-        </div>
+        </DetailRow>
       </CardContent>
     </Card>
   )
@@ -59,11 +67,12 @@ function ControlsCard({
   data,
   currency,
   onMarkLost,
-}: Readonly<{ data: DealDetailData; currency: string; onMarkLost: () => void }>) {
+  copy,
+}: Readonly<{ data: DealDetailData; currency: string; onMarkLost: () => void; copy: DealRecordCopy }>) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Controls</CardTitle>
+        <CardTitle>{copy.controlsTitle}</CardTitle>
       </CardHeader>
       <CardContent>
         <DealControls
@@ -97,11 +106,12 @@ export function DealRecordClient({
   customFields: ReactNode
   archive: ReactNode
 }>) {
+  const copy = catalogFor(DEAL_RECORD_COPY, useLocale())
   const [lostOpen, setLostOpen] = useState(false)
   return (
     <>
       <RecordPageLayout
-        labels={{ breadcrumb: 'Deal', saveTitle: 'Save title', cancelTitle: 'Cancel' }}
+        labels={{ breadcrumb: copy.breadcrumb, saveTitle: copy.saveTitle, cancelTitle: copy.cancelTitle }}
         title={data.deal.title}
         stage={<Badge variant="outline">{data.stage.name}</Badge>}
         actions={
@@ -119,11 +129,12 @@ export function DealRecordClient({
             <ControlsCard
               data={data}
               currency={currency}
+              copy={copy}
               onMarkLost={() => {
                 setLostOpen(true)
               }}
             />
-            <DetailsCard data={data} />
+            <DetailsCard data={data} copy={copy} />
             {customFields}
           </div>
         }
