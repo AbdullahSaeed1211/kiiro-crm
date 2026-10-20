@@ -998,12 +998,10 @@ Priority icons: none `lucide:Minus`, low `lucide:SignalLow`, medium `lucide:Sign
 | CRM | Contacts | `lucide:Contact` | `/contacts` | module crm | — |
 | Work | Projects | `lucide:FolderKanban` | `/projects` | module work | — |
 | Work | Tasks | `lucide:ListTodo` | `/tasks` | module work | — |
-| Work | Calendar | `lucide:CalendarDays` | `/calendar` | module work | — |
-| Work | Timeline | `lucide:ChartGantt` | `/timeline` | module work, Phase 3 | — |
 | Pinned | pinned SavedViews (≤ 8) | table `lucide:Table2`, board `lucide:Columns3`, calendar `lucide:CalendarDays`, timeline `lucide:ChartGantt` | view route | has pinned views | — |
 **SidebarFooter:** Settings (`lucide:Settings`, `/settings/general`, manager_up) · user menu trigger (`UserAvatar`, name, email, `lucide:ChevronsUpDown`) opening a DropdownMenu:
 Profile (`lucide:User`, `/settings/profile`), Notifications (`lucide:Bell`, `/settings/notifications`), Theme submenu (`lucide:Sun` Light, `lucide:Moon` Dark, `lucide:Monitor` System), Language (`lucide:Languages`: en, es), Keyboard shortcuts (`lucide:Keyboard`, dialog), Log out (`lucide:LogOut`).
-`SidebarRail` enabled. Active item: exact match, or prefix match for detail routes. All labels via terminology/i18n.
+`SidebarRail` enabled. Active item: exact match, or prefix match for detail routes. All labels via terminology/i18n. Calendar (`/calendar`) and Timeline (`/timeline`) are views of Tasks, reached from the Tasks view tabs, the command menu and `g` then `c`; Tasks stays active while either is open.
 
 ### 16.3 Header (`AppHeader`: h-12, sticky top-0, border-b, bg-background)
 Left: `SidebarTrigger` · vertical `Separator` · `Breadcrumb` (section › record title; ≤ 3 levels; titles truncated at 32 chars).

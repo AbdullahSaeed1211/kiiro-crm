@@ -4,8 +4,6 @@ import { AppShell } from '@ops/ui/composites/AppShell'
 import { AppSidebar, type NavGroup } from '@ops/ui/composites/AppSidebar'
 import {
   Building2,
-  CalendarDays,
-  ChartGantt,
   ChartNoAxesCombined,
   CircleCheckBig,
   Contact,
@@ -42,13 +40,16 @@ const CRM: readonly NavLink[] = [
 const WORK: readonly NavLink[] = [
   ['projects', '/projects', FolderKanban],
   ['tasks', '/tasks', ListTodo],
-  ['calendar', '/calendar', CalendarDays],
-  ['timeline', '/timeline', ChartGantt],
 ]
 
 // Exact match for the dashboard, prefix match for sections with detail routes (spec §16.2).
+// Calendar and Timeline are views of Tasks, so Tasks stays lit while either is open.
+const TASK_VIEW_PATHS = ['/calendar', '/timeline']
+
 function isActive(pathname: string, href: string): boolean {
-  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
+  if (href === '/') return pathname === '/'
+  if (href === '/tasks' && TASK_VIEW_PATHS.some((path) => pathname.startsWith(path))) return true
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 function navGroups({
