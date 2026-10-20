@@ -5,6 +5,7 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { REPORT_COPY } from '../../../i18n/config'
+import { formatDate } from '../../../i18n/format'
 import { loadPipelineSummary } from '../../../server/queries/pipeline-insights'
 import { loadReportFigures } from '../../../server/queries/reports'
 import { getRequestContext } from '@/server/container'
@@ -15,6 +16,11 @@ import { Button } from '@ops/ui/components/ui/button'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Figures' }
+
+/** A `YYYY-MM-DD` day as "Oct 16, 2026" in the workspace language. */
+function day(value: string, locale: string): string {
+  return formatDate(Date.parse(`${value}T00:00:00Z`), locale, { dateStyle: 'medium', timeZone: 'UTC' })
+}
 
 function number(value: number, locale: string): string {
   return new Intl.NumberFormat(locale).format(value)
@@ -86,7 +92,7 @@ export default async function ReportsPage({
         <form method="get" className="ops-surface-card flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
           <label className="grid gap-1 text-xs font-medium">
             <span>{copy.range}</span>
-            <NativeSelect name="range" defaultValue={range.key} className="min-w-40">
+            <NativeSelect name="range" defaultValue={range.key} className="h-9 min-w-40">
               {options.map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -116,7 +122,7 @@ export default async function ReportsPage({
             {copy.apply}
           </Button>
           <output className="text-xs text-muted-foreground" aria-live="polite">
-            {range.fromDate} – {range.toDate}
+            {day(range.fromDate, locale)} – {day(range.toDate, locale)}
           </output>
         </form>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
