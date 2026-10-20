@@ -1,6 +1,6 @@
 import type { StageColor } from '@ops/ui/composites/StagePill'
 /** Task priority levels, shown with the icons of spec §15.4. */
-export type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
+type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
 
 /** Columns the tasks list can sort by. */
 export type TaskSortKey = 'title' | 'stage' | 'priority' | 'dueAt' | 'project'

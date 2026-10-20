@@ -1,7 +1,6 @@
 import { missedPeriods, type MyTaskBuckets } from '@ops/module-work'
 import { StagePill } from '@ops/ui/composites/StagePill'
 import { toStageColor } from '@ops/ui/composites/StagePill/stage'
-import { CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { Locale } from '../../../i18n/config'
 import { catalogFor } from '../../../i18n/locale'
@@ -9,49 +8,10 @@ import { MY_TASKS_COPY, type MyTasksCopy } from '../../../i18n/my-tasks-copy'
 import { formatDate } from '../../../i18n/format'
 import type { MyTaskModel } from '../../../server/queries/work/my-task-model'
 import { taskHref } from '../task-navigation'
+import { PriorityCell } from '../tasks/priority-cell'
 import { TaskCompleteButton } from './TaskCompleteButton'
 
 const SECTIONS = ['overdue', 'today', 'next7Days', 'later', 'noDueDate'] as const
-
-const PRIORITY_ICON: Record<string, LucideIcon> = {
-  none: Minus,
-  low: SignalLow,
-  medium: SignalMedium,
-  high: SignalHigh,
-  urgent: CircleAlert,
-}
-
-/** The priority icon and name; a task with no priority shows nothing, since there is nothing to tell. */
-function PriorityCell({ priority, locale }: Readonly<{ priority: string; locale: Locale }>) {
-  if (priority === 'none') return null
-  const Icon = PRIORITY_ICON[priority] ?? Minus
-  const labels: Record<Locale, Record<string, string>> = {
-    en: {
-      none: 'No priority',
-      low: 'Low',
-      medium: 'Medium',
-      high: 'High',
-      urgent: 'Urgent',
-    },
-    es: {
-      none: 'Sin prioridad',
-      low: 'Baja',
-      medium: 'Media',
-      high: 'Alta',
-      urgent: 'Urgente',
-    },
-  }
-  const label = labels[locale][priority] ?? priority
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <Icon
-        aria-hidden
-        className={priority === 'urgent' ? 'size-4 text-destructive' : 'size-4 text-muted-foreground'}
-      />
-      {label}
-    </span>
-  )
-}
 
 function DueCell({ dueAt, locale }: Readonly<{ dueAt: number | null; locale: Locale }>) {
   if (dueAt === null) return null

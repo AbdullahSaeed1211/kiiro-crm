@@ -185,6 +185,7 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
   en: {
     title: 'Dashboard',
     description: '{mine} open tasks assigned to you · {open} across the workspace',
+    descriptionOne: '1 open task assigned to you · {open} across the workspace',
     newTask: 'New task',
     newLead: 'New lead',
     myOpenTasks: 'My open tasks',
@@ -218,6 +219,7 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
   es: {
     title: 'Inicio',
     description: '{mine} tareas abiertas asignadas a ti · {open} en el espacio',
+    descriptionOne: '1 tarea abierta asignada a ti · {open} en el espacio',
     newTask: 'Nueva tarea',
     newLead: 'Nuevo prospecto',
     myOpenTasks: 'Mis tareas abiertas',

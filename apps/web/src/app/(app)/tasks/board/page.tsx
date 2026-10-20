@@ -3,16 +3,7 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import type { KanbanBoardLabels, KanbanCard, KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Workflow } from '@ops/platform'
-import {
-  CalendarDays,
-  CircleAlert,
-  Minus,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
-  Users,
-  type LucideIcon,
-} from 'lucide-react'
+import { CalendarDays, Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import { TASK_COPY, type Locale } from '../../../../i18n/config'
 import { workDeps } from '@/server/container'
@@ -20,11 +11,12 @@ import { loadBoardTasks } from '../../../../server/queries/work/board-tasks'
 import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 import { getRequestContext } from '@/server/container'
 import { loadTaskPeople } from '../../../../server/queries/work/task-details'
-import type { TaskPriority, TaskRecord } from '../../../../server/work/task-repository'
+import type { TaskRecord } from '../../../../server/work/task-repository'
 import { taskHref } from '../../task-navigation'
 import { TaskCreateForm } from '../TaskCreateForm'
 import { TaskWorkspaceViews } from '../TaskWorkspaceViews'
 import { TaskBoard } from './TaskBoard'
+import { priorityIcon } from '../priority-cell'
 import { workflowOrThrow } from '@/server/workflow-result'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -44,32 +36,26 @@ function labelsFor(locale: Locale): KanbanBoardLabels {
   }
 }
 
-const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
-  none: Minus,
-  low: SignalLow,
-  medium: SignalMedium,
-  high: SignalHigh,
-  urgent: CircleAlert,
-}
-
 function TaskMeta({
   task,
   locale,
   people,
 }: Readonly<{ task: TaskRecord; locale: Locale; people: ReadonlyMap<string, string> }>) {
-  const Icon = PRIORITY_ICON[task.priority]
+  const Icon = priorityIcon(task.priority)
   const copy = TASK_COPY[locale]
-  const priorityLabel = copy[task.priority === 'none' ? 'noPriority' : task.priority]
+  const priorityLabel = copy[task.priority]
   const assignees = task.assigneeIds.flatMap((id) => {
     const name = people.get(String(id))
     return name === undefined ? [] : [name]
   })
   return (
     <>
-      <span className="inline-flex items-center gap-1">
-        <Icon aria-hidden className={task.priority === 'urgent' ? 'size-3.5 text-destructive' : 'size-3.5'} />
-        {priorityLabel}
-      </span>
+      {task.priority === 'none' ? null : (
+        <span className="inline-flex items-center gap-1">
+          <Icon aria-hidden className={task.priority === 'urgent' ? 'size-3.5 text-destructive' : 'size-3.5'} />
+          {priorityLabel}
+        </span>
+      )}
       {task.dueAt === null ? null : (
         <span className="inline-flex items-center gap-1">
           <CalendarDays aria-hidden className="size-3.5" />

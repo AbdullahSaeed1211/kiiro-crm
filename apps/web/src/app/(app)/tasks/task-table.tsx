@@ -9,18 +9,12 @@ import {
 } from '@ops/ui/composites/DataTable'
 import { StagePill } from '@ops/ui/composites/StagePill'
 import { initials } from '@ops/ui/lib/initials'
-import { CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
+import { PriorityCell } from './priority-cell'
 import { TASK_COPY, type Locale } from '../../../i18n/config'
 import { formatDate } from '../../../i18n/format'
 import { formatTaskSort } from '../../../server/queries/work/tasks/listTasks'
-import type {
-  TaskListItem,
-  TaskListResult,
-  TaskPriority,
-  TaskSort,
-  TaskSortKey,
-} from '../../../server/queries/work/tasks/types'
+import type { TaskListItem, TaskListResult, TaskSort, TaskSortKey } from '../../../server/queries/work/tasks/types'
 import { taskHref } from '../task-navigation'
 
 const AVATAR_LIMIT = 3
@@ -37,28 +31,6 @@ export function labelsFor(locale: Locale): DataTableLabels {
     range: copy.range,
     selected: copy.selected,
   }
-}
-
-const PRIORITY_ICON: Record<TaskPriority, LucideIcon> = {
-  none: Minus,
-  low: SignalLow,
-  medium: SignalMedium,
-  high: SignalHigh,
-  urgent: CircleAlert,
-}
-
-function PriorityCell({ priority, locale }: Readonly<{ priority: TaskPriority; locale: Locale }>) {
-  const Icon = PRIORITY_ICON[priority]
-  const label = TASK_COPY[locale][priority === 'none' ? 'noPriority' : priority]
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <Icon
-        aria-hidden
-        className={priority === 'urgent' ? 'size-4 text-destructive' : 'size-4 text-muted-foreground'}
-      />
-      {label}
-    </span>
-  )
 }
 
 function AssigneesCell({ assignees }: Readonly<{ assignees: TaskListItem['assignees'] }>) {

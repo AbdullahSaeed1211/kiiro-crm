@@ -104,7 +104,9 @@ export default async function DashboardPage() {
       <PageContent>
         <PageHeader
           title={copy.title}
-          description={copy.description.replace('{mine}', String(work.mine)).replace('{open}', String(work.open))}
+          description={(work.mine === 1 ? copy.descriptionOne : copy.description)
+            .replace('{mine}', String(work.mine))
+            .replace('{open}', String(work.open))}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <a
