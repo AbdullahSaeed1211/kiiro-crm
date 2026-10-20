@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ops/ui/components/ui/
 import { useState, type ReactNode } from 'react'
 import { DealControls } from '../DealControls'
 import type { DealDetailData } from '../../../../server/crm/deals/queries'
-import { formatDate, formatMoney } from '../../../../server/crm/deals/view-model'
+import { formatDate } from '../../../../server/crm/deals/view-model'
 import { RecordActionLinks } from '../../record-action-links'
 import { markDealLostAction } from '../../../../server/crm/deals/actions'
 import { LostReasonDialog } from '../../LostReasonDialog'
@@ -32,9 +32,6 @@ function DetailsCard({ data, copy }: Readonly<{ data: DealDetailData; copy: Deal
         <CardTitle>{copy.detailsTitle}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3 text-sm">
-        <DetailRow label={copy.value}>
-          <span className="font-medium tabular-nums">{formatMoney(deal.value)}</span>
-        </DetailRow>
         <DetailRow label={copy.created}>
           <span>{formatDate(deal.createdAt)}</span>
         </DetailRow>
@@ -43,9 +40,6 @@ function DetailsCard({ data, copy }: Readonly<{ data: DealDetailData; copy: Deal
             <span>{formatDate(deal.closedAt)}</span>
           </DetailRow>
         )}
-        <DetailRow label={copy.expectedClose}>
-          <span>{deal.expectedCloseAt === null ? '—' : formatDate(deal.expectedCloseAt)}</span>
-        </DetailRow>
         <DetailRow label={copy.owner}>
           <span>{data.ownerName ?? copy.unassigned}</span>
         </DetailRow>
