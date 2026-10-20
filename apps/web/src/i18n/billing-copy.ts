@@ -30,6 +30,10 @@ export interface BillingCopy {
   readonly saving: string
   readonly subtotal: string
   readonly tax: string
+  /** Why Save is unavailable until a company is chosen. */
+  readonly needCompany: string
+  readonly newQuoteHint: string
+  readonly newInvoiceHint: string
   readonly edit: string
   readonly print: string
   readonly back: string
@@ -102,6 +106,9 @@ export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
     saving: 'Saving…',
     subtotal: 'Subtotal',
     tax: 'Tax',
+    needCompany: 'Choose a company to save this draft.',
+    newQuoteHint: 'Choose a company and list what you are charging for. It saves as a draft you can review and send.',
+    newInvoiceHint: 'Choose a company and list what you are billing. It saves as a draft you can review and send.',
     edit: 'Edit',
     print: 'Print or save as PDF',
     back: 'Back to the list',
@@ -178,6 +185,9 @@ export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
     saving: 'Guardando…',
     subtotal: 'Subtotal',
     tax: 'Impuesto',
+    needCompany: 'Elija una empresa para guardar este borrador.',
+    newQuoteHint: 'Elija una empresa y detalle lo que cobra. Se guarda como borrador que puede revisar y enviar.',
+    newInvoiceHint: 'Elija una empresa y detalle lo que factura. Se guarda como borrador que puede revisar y enviar.',
     edit: 'Editar',
     print: 'Imprimir o guardar como PDF',
     back: 'Volver a la lista',

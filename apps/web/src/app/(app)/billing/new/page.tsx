@@ -29,7 +29,7 @@ export default async function NewBillingPage({
     <>
       <AppHeader breadcrumbs={[{ label: copy.title, href: '/billing' }, { label: title }]} />
       <PageContent>
-        <PageHeader title={title} />
+        <PageHeader title={title} description={kind === 'quote' ? copy.newQuoteHint : copy.newInvoiceHint} />
         <BillingForm start={{ kind, currency }} />
       </PageContent>
     </>

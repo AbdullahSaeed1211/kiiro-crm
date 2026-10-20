@@ -2,7 +2,8 @@
 
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
-import { computeTotals, type DocumentKind } from '@ops/module-billing'
+import { Textarea } from '@ops/ui/components/ui/textarea'
+import { computeTotals, type DocumentKind, type Totals } from '@ops/module-billing'
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 import { BILLING_COPY, type BillingCopy } from '../../../i18n/billing-copy'
@@ -132,15 +133,26 @@ function initialOf(start: FormStart): { lines: readonly LineDraft[]; note: strin
 
 function Summary({
   copy,
-  totalMinor,
+  totals,
   currency,
-}: Readonly<{ copy: BillingCopy; totalMinor: number | undefined; currency: string }>) {
+}: Readonly<{ copy: BillingCopy; totals: Totals | undefined; currency: string }>) {
   const locale = useLocale() === 'es' ? 'es-ES' : 'en-US'
-  if (totalMinor === undefined) return null
+  const money = (minor: number | undefined) => (minor === undefined ? '—' : formatMoney({ minor, currency, locale }))
   return (
-    <p className="text-sm tabular-nums" aria-live="polite">
-      {copy.total}: <strong>{formatMoney({ minor: totalMinor, currency, locale })}</strong>
-    </p>
+    <dl className="ml-auto grid w-full max-w-xs gap-1 border-t pt-3 text-sm tabular-nums" aria-live="polite">
+      <div className="flex justify-between gap-6">
+        <dt className="text-muted-foreground">{copy.subtotal}</dt>
+        <dd>{money(totals?.subtotalMinor)}</dd>
+      </div>
+      <div className="flex justify-between gap-6">
+        <dt className="text-muted-foreground">{copy.tax}</dt>
+        <dd>{money(totals?.taxMinor)}</dd>
+      </div>
+      <div className="flex justify-between gap-6 text-base font-semibold">
+        <dt>{copy.total}</dt>
+        <dd>{money(totals?.totalMinor)}</dd>
+      </div>
+    </dl>
   )
 }
 
@@ -164,12 +176,13 @@ export function BillingForm({ start }: Readonly<{ start: FormStart }>) {
   const [dueDate, setDueDate] = useState(initial.dueDate)
   const items = toLines(lines, currency)
   const totals = items === undefined ? undefined : computeTotals(items)
+  const needsCompany = start.edit === undefined && organizationId === ''
   const submit = (event: SyntheticEvent) => {
     event.preventDefault()
     void save(bodyOf({ start, organizationId, currency, lines, note, dueDate }))
   }
   return (
-    <form onSubmit={submit} className="grid max-w-3xl gap-4">
+    <form onSubmit={submit} className="ops-detail-card grid max-w-3xl gap-5 rounded-lg border bg-card p-5">
       <HeaderFields
         copy={copy}
         start={start}
@@ -179,18 +192,30 @@ export function BillingForm({ start }: Readonly<{ start: FormStart }>) {
       <LinesEditor copy={copy} lines={lines} onChange={setLines} />
       <label className="grid gap-1 text-sm">
         <span className="font-medium">{copy.note}</span>
-        <Input
+        <Textarea
+          rows={3}
           value={note}
           onChange={(event) => {
             setNote(event.target.value)
           }}
         />
       </label>
-      <Summary copy={copy} totalMinor={totals?.totalMinor} currency={currency} />
+      <Summary copy={copy} totals={totals} currency={currency} />
       <ErrorLine message={error} />
-      <Button type="submit" className="w-fit" disabled={saving || (start.edit === undefined && organizationId === '')}>
-        {saving ? copy.saving : copy.save}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="submit"
+          aria-describedby={needsCompany ? 'billing-save-hint' : undefined}
+          disabled={saving || needsCompany}
+        >
+          {saving ? copy.saving : copy.save}
+        </Button>
+        {needsCompany ? (
+          <p id="billing-save-hint" className="text-sm text-muted-foreground">
+            {copy.needCompany}
+          </p>
+        ) : null}
+      </div>
     </form>
   )
 }

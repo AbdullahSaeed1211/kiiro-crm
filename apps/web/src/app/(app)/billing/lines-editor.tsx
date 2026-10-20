@@ -40,17 +40,18 @@ export function LinesEditor({
               />
             </label>
           ))}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={lines.length === 1}
-            onClick={() => {
-              onChange(lines.filter((_, at) => at !== index))
-            }}
-          >
-            {copy.removeLine}
-          </Button>
+          {lines.length === 1 ? null : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onChange(lines.filter((_, at) => at !== index))
+              }}
+            >
+              {copy.removeLine}
+            </Button>
+          )}
         </div>
       ))}
       <Button
