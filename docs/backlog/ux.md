@@ -1,6 +1,6 @@
 # UX backlog
 
-7 findings are open: 1 critical, 3 major and 3 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+8 findings are open: 1 critical, 3 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -55,3 +55,13 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Tasks. Effort: Quick. Codes: R-10.
 - Status: reproduced on 2026-10-01 in mobile WebKit by switching Chart then Grid on `/timeline`. The warning names a minified component inside the Gantt library (`Lt`), so no key in our code is missing; React prints it in development only, so production users never see it. What remains is filtering that one message in the route-health console budget or reporting it upstream.
 - At 390px `/timeline` switches the Gantt to compact mode and React logs "Each child in a list should have a unique key" from inside `@svar-ui/react-gantt`. The route-health budget test counts console errors, so its mobile run fails. Find which prop (columns, compact grid config) produces unkeyed children, or report it upstream and filter that one message in the test.
+
+### 38. Inline English remains outside the copy files
+
+- Area: Copy. Effort: Moderate. Codes: R-11.
+- Now: [AGENTS.md](../../AGENTS.md#pitfalls) requires every user-facing string to live in a per-feature `*-copy.ts` with an `en` and an `es` entry, so a workspace set to Spanish shows English wherever a component holds text. These still do:
+  - the shared record primitives in `record-view-primitives.tsx` (`Meta`, `RelationList`, `recordTabs` tab names, the activity feed labels), which the contact, organization, lead and deal pages all call;
+  - `contact-record-view.tsx`, `organization-record-view.tsx` and `directory-form.tsx`;
+  - `deals/page.tsx` and `projects/page.tsx` (column headers, filters, sort options);
+  - most pages under `settings/`.
+- Fix: Give the record primitives one `record-copy.ts` and pass the chosen catalog in. `recordTabs` is called from server pages and from the client `LeadRecordClient`, so the catalog arrives as an argument, not through a hook. Then move each page's strings into its own copy file, following `project-page-copy.ts`.
