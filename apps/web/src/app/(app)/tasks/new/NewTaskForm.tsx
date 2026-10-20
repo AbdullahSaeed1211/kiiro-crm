@@ -8,7 +8,7 @@ import { Textarea } from '@ops/ui/components/ui/textarea'
 import { createTask } from '../../../../server/actions/work/tasks/createTask'
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
-import { taskFormLabels } from '../../../../i18n/task-form-copy'
+import { taskFormLabels, type TaskFormLabels } from '../../../../i18n/task-form-copy'
 import { useLocale } from '../../../../i18n/locale-context'
 
 type Option = Readonly<{ value: string; label: string }>
@@ -32,17 +32,17 @@ function taskInput(form: FormData, context: Readonly<{ relatedType: string | nul
   }
 }
 
-function TaskCoreFields({ projects, projectId, initialTitle }: FormProps) {
+function TaskCoreFields({ projects, projectId, initialTitle, copy }: FormProps & Readonly<{ copy: TaskFormLabels }>) {
   return (
     <>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-title">
-        Task title
+        {copy.title}
         <Input id="task-title" name="title" required maxLength={300} autoFocus defaultValue={initialTitle} />
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-project">
-        Project
-        <NativeSelect id="task-project" name="projectId" defaultValue={projectId} className="font-normal">
-          <option value="">No project</option>
+        {copy.project}
+        <NativeSelect id="task-project" name="projectId" defaultValue={projectId} className="w-full font-normal">
+          <option value="">{copy.noProject}</option>
           {projects.map((project) => (
             <option key={project.value} value={project.value}>
               {project.label}
@@ -54,37 +54,35 @@ function TaskCoreFields({ projects, projectId, initialTitle }: FormProps) {
   )
 }
 
-function TaskScheduleFields() {
+function TaskScheduleFields({ copy }: Readonly<{ copy: TaskFormLabels }>) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-priority">
-        Priority
-        <NativeSelect id="task-priority" name="priority" defaultValue="none" className="font-normal">
-          <option value="none">No priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="urgent">Urgent</option>
+        {copy.priority}
+        <NativeSelect id="task-priority" name="priority" defaultValue="none" className="w-full font-normal">
+          <option value="none">{copy.priorityNone}</option>
+          <option value="low">{copy.priorityLow}</option>
+          <option value="medium">{copy.priorityMedium}</option>
+          <option value="high">{copy.priorityHigh}</option>
+          <option value="urgent">{copy.priorityUrgent}</option>
         </NativeSelect>
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-due-date">
-        Due date
+        {copy.dueDate}
         <Input id="task-due-date" name="dueAt" type="date" />
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-repeat">
-        Repeats
-        <NativeSelect id="task-repeat" name="repeat" defaultValue="none" className="font-normal">
-          <option value="none">Does not repeat</option>
-          <option value="daily">Every day</option>
-          <option value="weekly">Every week</option>
-          <option value="biweekly">Every 2 weeks</option>
-          <option value="monthly">Every month</option>
-          <option value="quarterly">Every 3 months</option>
-          <option value="yearly">Every year</option>
+        {copy.repeats}
+        <NativeSelect id="task-repeat" name="repeat" defaultValue="none" className="w-full font-normal">
+          <option value="none">{copy.repeatNone}</option>
+          <option value="daily">{copy.repeatDaily}</option>
+          <option value="weekly">{copy.repeatWeekly}</option>
+          <option value="biweekly">{copy.repeatBiweekly}</option>
+          <option value="monthly">{copy.repeatMonthly}</option>
+          <option value="quarterly">{copy.repeatQuarterly}</option>
+          <option value="yearly">{copy.repeatYearly}</option>
         </NativeSelect>
-        <span className="text-xs font-normal text-muted-foreground">
-          Needs a due date. Completing it creates the next one.
-        </span>
+        <span className="text-xs font-normal text-muted-foreground">{copy.repeatHelp}</span>
       </label>
     </div>
   )
@@ -108,7 +106,11 @@ function OwnerOnlyField({
   )
 }
 
-function TaskFormActions({ pending, cancel }: Readonly<{ pending: boolean; cancel: () => void }>) {
+function TaskFormActions({
+  pending,
+  cancel,
+  copy,
+}: Readonly<{ pending: boolean; cancel: () => void; copy: TaskFormLabels }>) {
   return (
     <div className="flex flex-wrap justify-end gap-2">
       <Button
@@ -119,12 +121,24 @@ function TaskFormActions({ pending, cancel }: Readonly<{ pending: boolean; cance
           cancel()
         }}
       >
-        Cancel
+        {copy.cancel}
       </Button>
       <Button type="submit" disabled={pending}>
-        {pending ? 'Creating…' : 'Create task'}
+        {pending ? copy.creating : copy.create}
       </Button>
     </div>
+  )
+}
+
+/** "Linked to <name>" with the name emphasized; `{name}` marks where it goes in the translated template. */
+function LinkedTo({ template, name }: Readonly<{ template: string; name: string }>) {
+  const [before = '', after = ''] = template.split('{name}')
+  return (
+    <p className="text-sm text-muted-foreground">
+      {before}
+      <span className="font-medium text-foreground">{name}</span>
+      {after}
+    </p>
   )
 }
 
@@ -167,7 +181,7 @@ export function NewTaskForm({
       router.push(`/tasks/${result.data.id}`)
       router.refresh()
     } catch {
-      setError('Unable to create task. Try again.')
+      setError(copy.failed)
     } finally {
       setPending(false)
     }
@@ -179,16 +193,12 @@ export function NewTaskForm({
         void submit(event)
       }}
     >
-      {relatedLabel === null ? null : (
-        <p className="text-sm text-muted-foreground">
-          Linked to <span className="font-medium text-foreground">{relatedLabel}</span>
-        </p>
-      )}
-      <TaskCoreFields projects={projects} projectId={projectId} initialTitle={initialTitle} />
-      <TaskScheduleFields />
+      {relatedLabel === null ? null : <LinkedTo template={copy.linkedTo} name={relatedLabel} />}
+      <TaskCoreFields projects={projects} projectId={projectId} initialTitle={initialTitle} copy={copy} />
+      <TaskScheduleFields copy={copy} />
       {canMarkOwnerOnly ? <OwnerOnlyField label={copy.ownerOnly} checked={ownerOnly} onChange={setOwnerOnly} /> : null}
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-description">
-        Description
+        {copy.description}
         <Textarea id="task-description" name="description" maxLength={20000} rows={5} />
       </label>
       {error === null ? null : (
@@ -197,6 +207,7 @@ export function NewTaskForm({
         </p>
       )}
       <TaskFormActions
+        copy={copy}
         pending={pending}
         cancel={() => {
           router.push(cancelHref)
