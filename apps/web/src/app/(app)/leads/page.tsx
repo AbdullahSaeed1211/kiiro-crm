@@ -37,10 +37,10 @@ const tableColumns = (copy: ListCopy): DataTableColumn[] => [
   { id: 'stage', header: copy.colStage },
   { id: 'owner', header: copy.colOwner },
   { id: 'nextAction', header: copy.colNextAction },
-  { id: 'source', header: copy.colSource },
+  { id: 'source', header: copy.colSource, defaultHidden: true },
   { id: 'email', header: copy.colEmail },
-  { id: 'phone', header: copy.colPhone },
-  { id: 'created', header: copy.colCreated },
+  { id: 'phone', header: copy.colPhone, defaultHidden: true },
+  { id: 'created', header: copy.colCreated, defaultHidden: true },
 ]
 
 function date(value: number, locale: Locale): string {

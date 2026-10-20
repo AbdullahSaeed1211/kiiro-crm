@@ -11,6 +11,8 @@ export type DataTableColumn = Readonly<{
   numeric?: boolean
   /** Whether the column is listed in the column visibility menu; defaults to true. */
   hideable?: boolean
+  /** Start hidden; the person can turn it on from the column menu and the choice is remembered. */
+  defaultHidden?: boolean
 }>
 
 /** One row whose cells were already rendered by the caller, keyed by column id. */

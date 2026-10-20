@@ -207,7 +207,7 @@ export function DataTable({
   mobileCard,
 }: DataTableProps) {
   const router = useRouter()
-  const [columnVisibility, setColumnVisibility] = useColumnVisibility(usePathname())
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(usePathname(), columns)
   const columnDefs = useMemo(() => buildColumns({ columns, labels, selectable }), [columns, labels, selectable])
   const sorting = useMemo<SortingState>(
     () => (sort === undefined ? NO_SORTING : [{ id: sort.id, desc: sort.desc }]),
