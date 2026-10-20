@@ -1,8 +1,7 @@
-import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { notFound } from 'next/navigation'
 import { DirectoryForm } from '../../../directory-form'
-import { DirectoryFormIntro } from '../../../directory-view'
+import { DirectoryFormHeader, DirectoryFormIntro } from '../../../directory-view'
 import { getOrganization } from '../../../../../server/crm/directory/data'
 
 export const dynamic = 'force-dynamic'
@@ -13,13 +12,7 @@ export default async function EditOrganizationPage({ params }: Readonly<{ params
   const { record } = data
   return (
     <>
-      <AppHeader
-        breadcrumbs={[
-          { label: 'Organizations', href: '/organizations' },
-          { label: record.name, href: `/organizations/${record.id}` },
-          { label: 'Edit' },
-        ]}
-      />
+      <DirectoryFormHeader kind="organization" record={{ id: record.id, name: record.name }} />
       <PageContent>
         <DirectoryFormIntro kind="organization" edit />
         <DirectoryForm

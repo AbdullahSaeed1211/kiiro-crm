@@ -4,6 +4,9 @@ import { RecordForm, type FormValue, type RecordFieldConfig } from '@ops/ui/comp
 import { useRouter } from 'next/navigation'
 import { useVersionedAction } from './use-versioned-action'
 import { saveContact, saveOrganization } from '../../server/crm/directory/actions'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { DIRECTORY_COPY, type DirectoryCopy } from '../../i18n/directory-copy'
 
 type FormKind = 'organization' | 'contact'
 
@@ -41,6 +44,43 @@ function contactPayload(values: Record<string, FormValue>) {
   }
 }
 
+function fieldsFor({
+  kind,
+  copy,
+  organizations,
+}: Readonly<{
+  kind: FormKind
+  copy: DirectoryCopy
+  organizations: NonNullable<DirectoryFormProps['organizations']>
+}>): RecordFieldConfig[] {
+  const email = { name: 'email', label: copy.email, type: 'email', half: true } as const
+  const phone = { name: 'phone', label: copy.phone, type: 'tel', placeholder: '+1 555 0100', half: true } as const
+  if (kind === 'organization')
+    return [
+      { name: 'name', label: copy.organizationName, required: true, placeholder: copy.organizationNamePlaceholder },
+      { name: 'website', label: copy.website, type: 'url', placeholder: 'https://…' },
+      { ...email, placeholder: 'hello@company.com' },
+      phone,
+    ]
+  return [
+    { name: 'firstName', label: copy.firstName, required: true, placeholder: copy.firstNamePlaceholder, half: true },
+    { name: 'lastName', label: copy.lastName, placeholder: copy.lastNamePlaceholder, half: true },
+    { ...email, placeholder: 'ada@company.com' },
+    phone,
+    {
+      name: 'organizationId',
+      label: copy.organization,
+      type: 'select',
+      options: [{ value: '', label: copy.noOrganization }, ...organizations],
+    },
+  ]
+}
+
+function submitLabel({ kind, saved, copy }: Readonly<{ kind: FormKind; saved: boolean; copy: DirectoryCopy }>): string {
+  if (saved) return copy.saveChanges
+  return kind === 'organization' ? copy.createOrganization : copy.createContact
+}
+
 export function DirectoryForm({
   kind,
   id,
@@ -51,25 +91,8 @@ export function DirectoryForm({
 }: DirectoryFormProps) {
   const router = useRouter()
   const { run, error } = useVersionedAction()
-  const organizationFields: RecordFieldConfig[] = [
-    { name: 'name', label: 'Organization name', required: true, placeholder: 'e.g. Northstar Labs' },
-    { name: 'website', label: 'Website', type: 'url', placeholder: 'https://…' },
-    { name: 'email', label: 'Email', type: 'email', placeholder: 'hello@company.com', half: true },
-    { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 0100', half: true },
-  ]
-  const contactFields: RecordFieldConfig[] = [
-    { name: 'firstName', label: 'First name', required: true, placeholder: 'e.g. Ada', half: true },
-    { name: 'lastName', label: 'Last name', placeholder: 'e.g. Lovelace', half: true },
-    { name: 'email', label: 'Email', type: 'email', placeholder: 'ada@company.com', half: true },
-    { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 0100', half: true },
-    {
-      name: 'organizationId',
-      label: 'Organization',
-      type: 'select',
-      options: [{ value: '', label: 'No organization' }, ...organizations],
-    },
-  ]
-  const fields = kind === 'organization' ? organizationFields : contactFields
+  const copy = catalogFor(DIRECTORY_COPY, useLocale())
+  const fields = fieldsFor({ kind, copy, organizations })
   const submit = async (values: Record<string, FormValue>) => {
     const payload = kind === 'organization' ? organizationPayload(values) : contactPayload(values)
     const saved = await run(() => saveRecord({ kind, id, expectedUpdatedAt, payload }))
@@ -90,10 +113,11 @@ export function DirectoryForm({
         fields={fields}
         initialValues={initialValues}
         labels={{
-          submit: id === undefined ? `Create ${kind}` : 'Save changes',
-          saving: 'Saving…',
-          cancel: 'Cancel',
-          required: 'This field is required.',
+          submit: submitLabel({ kind, saved: id !== undefined, copy }),
+          saving: copy.saving,
+          cancel: copy.cancel,
+          required: copy.required,
+          invalidEmail: copy.invalidEmail,
         }}
         onSubmit={submit}
         onCancel={() => {

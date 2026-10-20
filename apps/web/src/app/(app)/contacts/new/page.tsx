@@ -1,7 +1,6 @@
-import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { DirectoryForm } from '../../directory-form'
-import { DirectoryFormIntro } from '../../directory-view'
+import { DirectoryFormHeader, DirectoryFormIntro } from '../../directory-view'
 import { organizationChoice } from '../../../../server/crm/directory/data'
 
 export default async function NewContactPage({
@@ -10,7 +9,7 @@ export default async function NewContactPage({
   const { organizations, organizationId } = await organizationChoice(searchParams)
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Contacts', href: '/contacts' }, { label: 'New contact' }]} />
+      <DirectoryFormHeader kind="contact" />
       <PageContent>
         <DirectoryFormIntro kind="contact" />
         <DirectoryForm

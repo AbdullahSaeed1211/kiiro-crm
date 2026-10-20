@@ -1,4 +1,4 @@
-import { DATA_TABLE_LABELS } from '../../i18n/table-labels'
+import { TABLE_LABELS } from '../../i18n/table-labels'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import {
   DataTable,
@@ -23,9 +23,12 @@ import { formatDate } from '../../i18n/format'
 import { ListViewBar, type ListSort } from './list-view-bar'
 import { initials } from '@ops/ui/lib/initials'
 import { ListEmpty } from './ListEmpty'
+import { catalogFor } from '../../i18n/locale'
+import { DIRECTORY_COPY, type DirectoryCopy } from '../../i18n/directory-copy'
+import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
-function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
-  if (owner === null) return <span className="text-muted-foreground">Unassigned</span>
+function OwnerCell({ owner, copy }: Readonly<{ owner: PersonSummary | null; copy: DirectoryCopy }>) {
+  if (owner === null) return <span className="text-muted-foreground">{copy.unassigned}</span>
   return (
     <span className="inline-flex items-center gap-2">
       <Avatar size="sm">
@@ -35,10 +38,10 @@ function OwnerCell({ owner }: Readonly<{ owner: PersonSummary | null }>) {
     </span>
   )
 }
-function DateCell({ value }: Readonly<{ value: number }>) {
+function DateCell({ value, locale }: Readonly<{ value: number; locale: string }>) {
   return (
     <time dateTime={new Date(value).toISOString()} className="tabular-nums text-muted-foreground">
-      {formatDate(value, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+      {formatDate(value, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
     </time>
   )
 }
@@ -64,29 +67,40 @@ function pagination<T>(
   const { path, query, sort } = options
   return paginationFor({ ...result, href: (page) => `${path}?${paramsFor({ query, sort, page })}` })
 }
-const SORT_OPTIONS = [
-  { value: 'name', label: 'Name: A to Z' },
-  { value: '-name', label: 'Name: Z to A' },
-  { value: '-updatedAt', label: 'Recently updated' },
-  { value: 'updatedAt', label: 'Least recently updated' },
-] as const
-
-const sortMenu = (value: DirectorySort): ListSort => ({ value, options: SORT_OPTIONS })
+const sortMenu = (value: DirectorySort, copy: DirectoryCopy): ListSort => ({
+  value,
+  options: [
+    { value: 'name', label: copy.sortNameAsc },
+    { value: '-name', label: copy.sortNameDesc },
+    { value: '-updatedAt', label: copy.sortRecent },
+    { value: 'updatedAt', label: copy.sortOldest },
+  ],
+})
 
 const RECORD_LINK_CLASS = 'font-medium text-foreground hover:underline underline-offset-4'
 
-function organizationColumns(query: string, sort: DirectorySort): DataTableColumn[] {
+function organizationColumns(copy: DirectoryCopy, view: DirectoryUrlOptions): DataTableColumn[] {
+  const { query, sort } = view
   const nameSort = sort === 'name' ? '-name' : 'name'
   const dateSort = sort === 'updatedAt' ? '-updatedAt' : 'updatedAt'
   return [
-    { id: 'name', header: 'Name', sortHref: sortHref('/organizations', { query, sort: nameSort }), hideable: false },
-    { id: 'website', header: 'Website' },
-    { id: 'owner', header: 'Owner' },
-    { id: 'deals', header: 'Open deals', numeric: true },
-    { id: 'updated', header: 'Updated', sortHref: sortHref('/organizations', { query, sort: dateSort }) },
+    {
+      id: 'name',
+      header: copy.colName,
+      sortHref: sortHref('/organizations', { query, sort: nameSort }),
+      hideable: false,
+    },
+    { id: 'website', header: copy.colWebsite },
+    { id: 'owner', header: copy.colOwner },
+    { id: 'deals', header: copy.colOpenDeals, numeric: true },
+    { id: 'updated', header: copy.colUpdated, sortHref: sortHref('/organizations', { query, sort: dateSort }) },
   ]
 }
-function organizationRows(items: readonly OrganizationListItem[]): DataTableRow[] {
+function organizationRows(
+  items: readonly OrganizationListItem[],
+  text: Readonly<{ copy: DirectoryCopy; locale: string }>,
+): DataTableRow[] {
+  const { copy, locale } = text
   return items.map(({ record, owner, openDeals }) => {
     const website = record.website === null ? null : safeExternalHref(record.website)
     return {
@@ -116,28 +130,30 @@ function organizationRows(items: readonly OrganizationListItem[]): DataTableRow[
               <ArrowUpRight aria-hidden className="size-3" />
             </a>
           ),
-        owner: <OwnerCell owner={owner} />,
+        owner: <OwnerCell owner={owner} copy={copy} />,
         deals: String(openDeals),
-        updated: <DateCell value={record.updatedAt} />,
+        updated: <DateCell value={record.updatedAt} locale={locale} />,
       },
     }
   })
 }
-export function OrganizationsTable({
+export async function OrganizationsTable({
   result,
   query,
   sort,
 }: Readonly<{ result: DirectoryPage<OrganizationListItem>; query: string; sort: DirectorySort }>) {
+  const locale = await loadWorkspaceLocale()
+  const copy = catalogFor(DIRECTORY_COPY, locale)
   return (
     <DataTable
       className="ops-directory-table"
-      columns={organizationColumns(query, sort)}
-      rows={organizationRows(result.items)}
+      columns={organizationColumns(copy, { query, sort })}
+      rows={organizationRows(result.items, { copy, locale })}
       mobileCard={{ cells: ['name', 'website', 'owner', 'deals'] }}
-      toolbarStart={<ListViewBar searchLabel="Search organizations" query={query} sort={sortMenu(sort)} />}
+      toolbarStart={<ListViewBar searchLabel={copy.searchOrganizations} query={query} sort={sortMenu(sort, copy)} />}
       sort={{ id: sort.endsWith('updatedAt') ? 'updated' : 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/organizations', query, sort })}
-      labels={DATA_TABLE_LABELS}
+      labels={catalogFor(TABLE_LABELS, locale)}
       emptyState={
         <ListEmpty
           kind="organizations"
@@ -150,17 +166,18 @@ export function OrganizationsTable({
   )
 }
 
-function contactColumns(query: string, sort: DirectorySort): DataTableColumn[] {
+function contactColumns(copy: DirectoryCopy, view: DirectoryUrlOptions): DataTableColumn[] {
+  const { query, sort } = view
   const nameSort = sort === 'name' ? '-name' : 'name'
   return [
-    { id: 'name', header: 'Name', sortHref: sortHref('/contacts', { query, sort: nameSort }), hideable: false },
-    { id: 'organization', header: 'Organization' },
-    { id: 'email', header: 'Email' },
-    { id: 'phone', header: 'Phone' },
-    { id: 'owner', header: 'Owner' },
+    { id: 'name', header: copy.colName, sortHref: sortHref('/contacts', { query, sort: nameSort }), hideable: false },
+    { id: 'organization', header: copy.colOrganization },
+    { id: 'email', header: copy.colEmail },
+    { id: 'phone', header: copy.colPhone },
+    { id: 'owner', header: copy.colOwner },
   ]
 }
-function contactRows(items: readonly ContactListItem[]): DataTableRow[] {
+function contactRows(items: readonly ContactListItem[], copy: DirectoryCopy): DataTableRow[] {
   return items.map(({ record, organization, owner }) => ({
     id: record.id,
     cells: {
@@ -197,25 +214,27 @@ function contactRows(items: readonly ContactListItem[]): DataTableRow[] {
             {record.phone}
           </a>
         ),
-      owner: <OwnerCell owner={owner} />,
+      owner: <OwnerCell owner={owner} copy={copy} />,
     },
   }))
 }
-export function ContactsTable({
+export async function ContactsTable({
   result,
   query,
   sort,
 }: Readonly<{ result: DirectoryPage<ContactListItem>; query: string; sort: DirectorySort }>) {
+  const locale = await loadWorkspaceLocale()
+  const copy = catalogFor(DIRECTORY_COPY, locale)
   return (
     <DataTable
       className="ops-directory-table"
-      columns={contactColumns(query, sort)}
-      rows={contactRows(result.items)}
+      columns={contactColumns(copy, { query, sort })}
+      rows={contactRows(result.items, copy)}
       mobileCard={{ cells: ['name', 'organization', 'email', 'owner'] }}
-      toolbarStart={<ListViewBar searchLabel="Search contacts" query={query} sort={sortMenu(sort)} />}
+      toolbarStart={<ListViewBar searchLabel={copy.searchContacts} query={query} sort={sortMenu(sort, copy)} />}
       sort={{ id: 'name', desc: sort.startsWith('-') }}
       pagination={pagination(result, { path: '/contacts', query, sort })}
-      labels={DATA_TABLE_LABELS}
+      labels={catalogFor(TABLE_LABELS, locale)}
       emptyState={
         <ListEmpty kind="contacts" filtered={query !== ''} clearHref="/contacts" createHref="/contacts/new" />
       }

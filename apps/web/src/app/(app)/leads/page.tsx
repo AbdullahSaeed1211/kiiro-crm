@@ -1,4 +1,4 @@
-import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
+import { TABLE_LABELS } from '../../../i18n/table-labels'
 import { ExportLink, ImportLink } from '../ExportLink'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
@@ -24,7 +24,7 @@ type SearchParams = Record<string, string | string[] | undefined>
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Leads' }
 import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
-import { catalogFor } from '../../../i18n/locale'
+import { catalogFor, type Locale } from '../../../i18n/locale'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 export const dynamic = 'force-dynamic'
 
@@ -141,7 +141,13 @@ function LeadTable({
   result,
   params,
   canBulk,
-}: Readonly<{ result: Awaited<ReturnType<typeof listLeads>>; params: SearchParams; canBulk: boolean }>) {
+  locale,
+}: Readonly<{
+  result: Awaited<ReturnType<typeof listLeads>>
+  params: SearchParams
+  canBulk: boolean
+  locale: Locale
+}>) {
   return (
     <BulkTable
       bulk={
@@ -158,7 +164,7 @@ function LeadTable({
       columns={TABLE_COLUMNS}
       rows={result.items.map(row)}
       pagination={paginationFor({ ...result, href: (page) => pageHref(params, page) })}
-      labels={DATA_TABLE_LABELS}
+      labels={catalogFor(TABLE_LABELS, locale)}
       mobileCard={{ cells: ['title', 'stage', 'owner', 'created'] }}
       emptyState={
         <ListEmpty
@@ -173,7 +179,8 @@ function LeadTable({
 }
 
 export default async function LeadsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
-  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
+  const locale = await loadWorkspaceLocale()
+  const help = catalogFor(SECTION_HELP_COPY, locale)
   const params = await searchParams
   const { actor } = await getProductContext()
   const canBulk = actor.role === 'owner' || actor.role === 'manager'
@@ -205,7 +212,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
         <LeadListControls stages={result.stages} sources={result.sources} />
         <LeadFilterChips stages={result.stages} sources={result.sources} />
         <LeadViewControls views={[{ id: 'all', label: 'All open leads', query: '' }, ...views]} />
-        <LeadTable result={result} params={params} canBulk={canBulk} />
+        <LeadTable result={result} params={params} canBulk={canBulk} locale={locale} />
       </PageContent>
     </>
   )

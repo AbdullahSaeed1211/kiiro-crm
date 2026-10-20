@@ -3,6 +3,7 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { ReactNode } from 'react'
 import { catalogFor } from '../../i18n/locale'
+import { DIRECTORY_COPY } from '../../i18n/directory-copy'
 import { SECTION_HELP_COPY } from '../../i18n/section-help-copy'
 import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
@@ -16,8 +17,10 @@ export async function DirectoryListHeader({
   actions,
 }: Readonly<{ kind: 'organizations' | 'contacts'; total: number; children: ReactNode; actions: ReactNode }>) {
   const isOrganizations = kind === 'organizations'
-  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
-  const title = isOrganizations ? 'Organizations' : 'Contacts'
+  const locale = await loadWorkspaceLocale()
+  const help = catalogFor(SECTION_HELP_COPY, locale)
+  const copy = catalogFor(DIRECTORY_COPY, locale)
+  const title = isOrganizations ? copy.organizationsTitle : copy.contactsTitle
   return (
     <>
       <AppHeader breadcrumbs={[{ label: title }]} />
@@ -29,17 +32,31 @@ export async function DirectoryListHeader({
   )
 }
 
-export function DirectoryFormIntro({ kind, edit }: Readonly<{ kind: 'organization' | 'contact'; edit?: boolean }>) {
+/** Breadcrumbs for the create and edit pages: the list, then the record being edited or the new-record page. */
+export async function DirectoryFormHeader({
+  kind,
+  record,
+}: Readonly<{ kind: 'organization' | 'contact'; record?: Readonly<{ id: string; name: string }> }>) {
+  const copy = catalogFor(DIRECTORY_COPY, await loadWorkspaceLocale())
   const organization = kind === 'organization'
-  const noun = organization ? 'organization' : 'contact'
+  const base = organization ? '/organizations' : '/contacts'
+  const list = { label: organization ? copy.organizationsTitle : copy.contactsTitle, href: base }
+  if (record === undefined)
+    return <AppHeader breadcrumbs={[list, { label: organization ? copy.newOrganization : copy.newContact }]} />
+  return <AppHeader breadcrumbs={[list, { label: record.name, href: `${base}/${record.id}` }, { label: copy.edit }]} />
+}
+
+export async function DirectoryFormIntro({
+  kind,
+  edit,
+}: Readonly<{ kind: 'organization' | 'contact'; edit?: boolean }>) {
+  const copy = catalogFor(DIRECTORY_COPY, await loadWorkspaceLocale())
+  const organization = kind === 'organization'
+  const titles = organization ? [copy.newOrganization, copy.editOrganization] : [copy.newContact, copy.editContact]
   return (
     <PageHeader
-      title={edit ? `Edit ${noun}` : `New ${noun}`}
-      description={
-        organization
-          ? 'Keep company details and relationships easy for the whole team to trust.'
-          : 'Add a person and connect them to the organization they represent.'
-      }
+      title={edit ? titles[1] : titles[0]}
+      description={organization ? copy.introOrganization : copy.introContact}
     />
   )
 }

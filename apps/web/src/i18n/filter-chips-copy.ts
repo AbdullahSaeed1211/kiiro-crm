@@ -8,6 +8,10 @@ export interface FilterChipsCopy {
   readonly stage: string
   readonly owner: string
   readonly source: string
+  readonly sort: string
+  readonly filters: string
+  readonly clear: string
+  readonly noStageFilters: string
 }
 
 /** `{label}` and `{text}` are replaced with the chip text. */
@@ -20,6 +24,10 @@ export const FILTER_CHIPS_COPY: Readonly<Record<Locale, FilterChipsCopy>> = {
     stage: 'Stage: {text}',
     owner: 'Owner: {text}',
     source: 'Source: {text}',
+    sort: 'Sort',
+    filters: 'Filters',
+    clear: 'Clear',
+    noStageFilters: 'No stage filters here',
   },
   es: {
     group: 'Filtros en uso',
@@ -29,6 +37,10 @@ export const FILTER_CHIPS_COPY: Readonly<Record<Locale, FilterChipsCopy>> = {
     stage: 'Etapa: {text}',
     owner: 'Responsable: {text}',
     source: 'Origen: {text}',
+    sort: 'Ordenar',
+    filters: 'Filtros',
+    clear: 'Limpiar',
+    noStageFilters: 'No hay filtros de etapa aquí',
   },
 }
 

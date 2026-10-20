@@ -1,6 +1,6 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { ExportLink } from '../ExportLink'
-import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
+import { TABLE_LABELS } from '../../../i18n/table-labels'
 import {
   type DataTableColumn,
   type DataTablePaginationState,
@@ -120,7 +120,8 @@ function boardHref(query: string): string {
 export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
-  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
+  const locale = await loadWorkspaceLocale()
+  const help = catalogFor(SECTION_HELP_COPY, locale)
   const params = await searchParams
   const rawQuery = firstParam(params.q)?.trim() ?? ''
   const stageId = firstParam(params.stage)
@@ -170,7 +171,7 @@ export default async function DealsPage({
           rows={data.items.map(rowOf)}
           mobileCard={{ cells: ['title', 'stage', 'value', 'organization'] }}
           pagination={pagination({ page, total: data.total, query: rawQuery, stageId })}
-          labels={DATA_TABLE_LABELS}
+          labels={catalogFor(TABLE_LABELS, locale)}
           emptyState={<ListEmpty kind="deals" filtered={isFiltered(rawQuery, stageId)} clearHref="/deals" />}
         />
       </PageContent>

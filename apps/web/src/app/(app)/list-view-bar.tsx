@@ -44,12 +44,16 @@ function useQueryParam() {
   }
 }
 
-function SortMenu({ sort, onChange }: Readonly<{ sort: ListSort; onChange: (value: string) => void }>) {
+function SortMenu({
+  sort,
+  label,
+  onChange,
+}: Readonly<{ sort: ListSort; label: string; onChange: (value: string) => void }>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
         <ArrowDownUp aria-hidden />
-        Sort
+        {label}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuRadioGroup value={sort.value} onValueChange={onChange}>
@@ -103,9 +107,9 @@ export function ListViewBar({
           labels={{
             search: searchLabel,
             searchPlaceholder: `${searchLabel}…`,
-            stage: 'Filters',
-            clear: 'Clear',
-            noStages: 'No stage filters here',
+            stage: copy.filters,
+            clear: copy.clear,
+            noStages: copy.noStageFilters,
           }}
           onQueryChange={(value) => {
             setParam({ name: 'q', value: value.trim(), replace: true })
@@ -136,6 +140,7 @@ export function ListViewBar({
         {sort === undefined ? null : (
           <SortMenu
             sort={sort}
+            label={copy.sort}
             onChange={(value) => {
               setParam({ name: 'sort', value })
             }}

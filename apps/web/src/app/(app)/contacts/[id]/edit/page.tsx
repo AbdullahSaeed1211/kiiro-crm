@@ -1,8 +1,7 @@
-import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { notFound } from 'next/navigation'
 import { DirectoryForm } from '../../../directory-form'
-import { DirectoryFormIntro } from '../../../directory-view'
+import { DirectoryFormHeader, DirectoryFormIntro } from '../../../directory-view'
 import { getContact, listOrganizationOptions } from '../../../../../server/crm/directory/data'
 
 export const dynamic = 'force-dynamic'
@@ -14,13 +13,7 @@ export default async function EditContactPage({ params }: Readonly<{ params: Pro
   const { record } = data
   return (
     <>
-      <AppHeader
-        breadcrumbs={[
-          { label: 'Contacts', href: '/contacts' },
-          { label: displayName(record), href: `/contacts/${record.id}` },
-          { label: 'Edit' },
-        ]}
-      />
+      <DirectoryFormHeader kind="contact" record={{ id: record.id, name: displayName(record) }} />
       <PageContent>
         <DirectoryFormIntro kind="contact" edit />
         <DirectoryForm

@@ -11,7 +11,7 @@ import {
 } from '@ops/ui/composites/DataTable'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Metadata } from 'next'
-import { DATA_TABLE_LABELS } from '../../../i18n/table-labels'
+import { TABLE_LABELS } from '../../../i18n/table-labels'
 import { formatDate } from '../../../i18n/format'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
 import { loadProjectProgress, type Progress } from '../../../server/queries/work/project-progress'
@@ -145,7 +145,8 @@ async function loadView(params: SearchParams) {
 
 /** Projects list with progress from the same scoped read model, searchable by name and filterable by stage. */
 export default async function ProjectsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
-  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
+  const locale = await loadWorkspaceLocale()
+  const help = catalogFor(SECTION_HELP_COPY, locale)
   const { query, stage, sort, model, matched, page, shown, progress } = await loadView(await searchParams)
   const stages = [...new Set(model.projects.map((project) => project.stage))]
   return (
@@ -188,7 +189,7 @@ export default async function ProjectsPage({ searchParams }: Readonly<{ searchPa
             total: matched.length,
             href: (next) => pageHref({ query, stage, sort, page: next }),
           })}
-          labels={DATA_TABLE_LABELS}
+          labels={catalogFor(TABLE_LABELS, locale)}
           mobileCard={{ cells: ['name', 'stage', 'progress', 'target'] }}
           emptyState={<ListEmpty kind="projects" filtered={model.projects.length > 0} clearHref="/projects" />}
         />
