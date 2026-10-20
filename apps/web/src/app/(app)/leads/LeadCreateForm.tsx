@@ -80,8 +80,13 @@ export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: s
           setFieldErrors(undefined)
           const outcome = await saveLead(values)
           if ('id' in outcome) router.push(`/leads/${outcome.id}`)
-          else if (outcome.fields !== undefined) setFieldErrors(outcome.fields)
-          else setError(outcome.message)
+          else {
+            // Field messages only help when they name a field on this form; otherwise say it in the banner.
+            const names = new Set(fields(copy, sources).map((field) => field.name))
+            const onForm = Object.keys(outcome.fields ?? {}).some((name) => names.has(name))
+            if (onForm) setFieldErrors(outcome.fields)
+            else setError(outcome.message)
+          }
         }}
       />
     </div>

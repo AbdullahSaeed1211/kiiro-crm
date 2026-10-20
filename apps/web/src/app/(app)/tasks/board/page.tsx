@@ -106,11 +106,10 @@ export default async function TaskBoardPage({
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const workflow = await tasks.loadTaskWorkflow().then(workflowOrThrow)
-  const everyone = await loadTaskPeople()
-  const assignee = validAssignee(params.assignee, everyone)
+  const people = await loadTaskPeople()
+  const assignee = validAssignee(params.assignee, people)
   const page = await loadBoardTasks(context, workflow, { mine, assignee })
   const records = page.records
-  const people = everyone
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.table, href: '/tasks' }, { label: copy.board }]} />
@@ -129,7 +128,7 @@ export default async function TaskBoardPage({
                 value={assignee}
                 label={copy.assignee}
                 allLabel={copy.anyAssignee}
-                options={assigneeOptions(everyone)}
+                options={assigneeOptions(people)}
               />
               <TaskCreateForm />
               <TaskWorkspaceViews active="board" locale={locale} mine={mine} />

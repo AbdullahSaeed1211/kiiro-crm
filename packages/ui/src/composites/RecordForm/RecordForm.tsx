@@ -166,11 +166,11 @@ export function RecordForm({
   const [values, setValues] = useState<Record<string, FormValue>>(() => formValues(fields, initialValues))
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({})
   const [pending, setPending] = useState(false)
-  const serverField = useServerFieldErrors(
-    serverErrors,
-    fields.map((field) => field.name),
+  const serverField = useServerFieldErrors(serverErrors, {
+    fieldNames: fields.map((field) => field.name),
+    pending,
     formRef,
-  )
+  })
   const allErrors = { ...serverField.shown, ...errors }
   const setValue = (name: string, value: FormValue) => {
     setValues((current) => ({ ...current, [name]: value }))

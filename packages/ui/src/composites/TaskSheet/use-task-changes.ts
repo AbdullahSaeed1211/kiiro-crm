@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { TaskChange, TaskChangeRequest, TaskChangeResult, TaskSheetActions, TaskSheetTask } from './types'
 
 /** How long a "Saved." confirmation stays on screen. */
@@ -19,6 +19,18 @@ async function attempt(
   }
 }
 
+/** One fade timer at a time: a newer save, another task or closing the panel cancels the old one. */
+function useFadeTimer(taskId: string) {
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    window.clearTimeout(timer.current)
+    return () => {
+      window.clearTimeout(timer.current)
+    }
+  }, [taskId])
+  return timer
+}
+
 /** Saves one change at a time against the latest known version and keeps the resulting errors for display. */
 export function useTaskChanges(task: TaskSheetTask, onChange: TaskSheetActions['onChange'], failedMessage: string) {
   const [version, setVersion] = useState(task.updatedAt)
@@ -35,7 +47,10 @@ export function useTaskChanges(task: TaskSheetTask, onChange: TaskSheetActions['
     setFields({})
   }, [task.id])
 
+  const fadeTimer = useFadeTimer(task.id)
+
   const save = async (change: TaskChange, savedMessage?: string): Promise<boolean> => {
+    window.clearTimeout(fadeTimer.current)
     setPending(change.kind)
     setMessage(null)
     setFields({})
@@ -46,8 +61,8 @@ export function useTaskChanges(task: TaskSheetTask, onChange: TaskSheetActions['
       if (savedMessage !== undefined) {
         setMessage(savedMessage)
         // The confirmation fades, so a later change does not look like it is still showing an old result.
-        window.setTimeout(() => {
-          setMessage((current) => (current === savedMessage ? null : current))
+        fadeTimer.current = window.setTimeout(() => {
+          setMessage(null)
         }, SAVED_VISIBLE_MS)
       }
       return true

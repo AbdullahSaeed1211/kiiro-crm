@@ -42,6 +42,7 @@ export interface WorkReadModel {
   readonly timeZone: string
   readonly weekStartsOn: 0 | 1
   readonly locale: Locale
+  /** The stages of every workflow merged into one list, for looking a stage up by id. A task board takes `taskStages`. */
   readonly stages: readonly {
     readonly id: string
     readonly name: string

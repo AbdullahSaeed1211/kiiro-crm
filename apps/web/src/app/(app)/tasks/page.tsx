@@ -27,8 +27,8 @@ export const metadata: Metadata = { title: PAGE_TITLE }
 type Params = Record<string, string | string[] | undefined>
 
 /** The project a task belongs to; a task linked to a lead or deal has none, so it groups under "No project". */
-function projectName(task: Readonly<{ context: { label: string; href: string } | null }>): string | undefined {
-  return task.context?.href.startsWith('/projects/') === true ? task.context.label : undefined
+function projectName(task: Readonly<{ context: { type: string; label: string } | null }>): string | undefined {
+  return task.context?.type === 'project' ? task.context.label : undefined
 }
 
 /** What narrows the list, read from the address: the search text, the chosen assignee and the page. */

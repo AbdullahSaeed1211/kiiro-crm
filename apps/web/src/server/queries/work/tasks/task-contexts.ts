@@ -46,7 +46,7 @@ export function buildTaskContextMap(
       const label = labelsByType.get(reference.type)?.get(reference.id)
       if (label === undefined) return []
       const target = TARGETS[reference.type]
-      return [[String(task.id), { label, href: `${target.href}/${reference.id}` }] as const]
+      return [[String(task.id), { type: reference.type, label, href: `${target.href}/${reference.id}` }] as const]
     }),
   )
 }
