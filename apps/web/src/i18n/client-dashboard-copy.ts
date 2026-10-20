@@ -14,6 +14,9 @@ export interface ClientDashboardCopy {
   readonly invoicesPaid: string
   readonly quotesOut: string
   readonly openBilling: string
+  /** Label for the unpaid total; one amount per currency follows it. */
+  readonly outstanding: string
+  readonly nothingOutstanding: string
   readonly areas: Readonly<Record<string, string>>
 }
 
@@ -34,6 +37,8 @@ export const CLIENT_DASHBOARD_COPY: Readonly<Record<'en' | 'es', ClientDashboard
     invoicesPaid: 'Invoices paid',
     quotesOut: 'Quotes sent',
     openBilling: 'Open billing',
+    outstanding: 'Outstanding',
+    nothingOutstanding: 'Nothing outstanding',
     areas: {
       seo: 'SEO',
       gbp: 'Google Business Profile',
@@ -65,6 +70,8 @@ export const CLIENT_DASHBOARD_COPY: Readonly<Record<'en' | 'es', ClientDashboard
     invoicesPaid: 'Facturas pagadas',
     quotesOut: 'Cotizaciones enviadas',
     openBilling: 'Abrir facturación',
+    outstanding: 'Pendiente de pago',
+    nothingOutstanding: 'Nada pendiente de pago',
     areas: {
       seo: 'SEO',
       gbp: 'Perfil de Empresa de Google',

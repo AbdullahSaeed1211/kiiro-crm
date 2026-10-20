@@ -186,7 +186,7 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
             dashboard,
           })}
           actions={
-            <div className="grid gap-2">
+            <div className="grid w-full gap-2 md:w-auto">
               <Link
                 className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}

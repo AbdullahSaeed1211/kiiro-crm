@@ -69,10 +69,19 @@ function Billing({
         <Tile label={copy.invoicesPaid} value={billing.invoicesPaid} />
         <Tile label={copy.quotesOut} value={billing.quotesSent} />
       </div>
-      <p className="text-sm tabular-nums text-muted-foreground">
-        {billing.outstanding
-          .map((line) => formatMoney({ minor: line.minor, currency: line.currency, locale }))
-          .join(' · ')}
+      <p className="text-sm text-muted-foreground">
+        {billing.outstanding.length === 0 ? (
+          copy.nothingOutstanding
+        ) : (
+          <>
+            {copy.outstanding}{' '}
+            <span className="font-medium tabular-nums text-foreground">
+              {billing.outstanding
+                .map((line) => formatMoney({ minor: line.minor, currency: line.currency, locale }))
+                .join(' · ')}
+            </span>
+          </>
+        )}
       </p>
     </section>
   )
