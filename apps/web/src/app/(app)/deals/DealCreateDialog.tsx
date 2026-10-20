@@ -16,6 +16,9 @@ import { useState } from 'react'
 import { useGuardedTransition } from '../use-guarded-transition'
 import { RecordPicker } from '../RecordPicker'
 import { createDealAction } from '../../../server/crm/deals/actions'
+import { DEAL_CREATE_COPY, type DealCreateCopy } from '../../../i18n/deal-create-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
 
 type CreateInput = Readonly<{
   title: string
@@ -29,11 +32,11 @@ function field(form: FormData, name: string): string {
   const value = form.get(name)
   return typeof value === 'string' ? value : ''
 }
-function readForm(form: HTMLFormElement): CreateInput | { error: string } {
+function readForm(form: HTMLFormElement, copy: DealCreateCopy): CreateInput | { error: string } {
   const data = new FormData(form)
   const value = field(data, 'value').trim()
   const amountMinor = value === '' ? null : Math.round(Number(value) * 100)
-  if (amountMinor !== null && !Number.isFinite(amountMinor)) return { error: 'Enter a valid deal value.' }
+  if (amountMinor !== null && !Number.isFinite(amountMinor)) return { error: copy.invalidValue }
   const close = field(data, 'expectedCloseAt')
   return {
     title: field(data, 'title'),
@@ -44,28 +47,33 @@ function readForm(form: HTMLFormElement): CreateInput | { error: string } {
   }
 }
 
-function DealFields({ currency }: Readonly<{ currency: string }>) {
+function DealFields({ currency, copy }: Readonly<{ currency: string; copy: DealCreateCopy }>) {
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="deal-title">Title</Label>
-        <Input id="deal-title" name="title" required maxLength={300} placeholder="Website redesign" />
+        <Label htmlFor="deal-title">{copy.titleLabel}</Label>
+        <Input id="deal-title" name="title" required maxLength={300} placeholder={copy.titlePlaceholder} />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="deal-organization">Organization</Label>
-        <RecordPicker id="deal-organization" name="organizationId" type="organization" emptyLabel="No organization" />
+        <Label htmlFor="deal-organization">{copy.organization}</Label>
+        <RecordPicker
+          id="deal-organization"
+          name="organizationId"
+          type="organization"
+          emptyLabel={copy.noOrganization}
+        />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="deal-contact">Primary contact</Label>
-        <RecordPicker id="deal-contact" name="primaryContactId" type="contact" emptyLabel="No contact" />
+        <Label htmlFor="deal-contact">{copy.contact}</Label>
+        <RecordPicker id="deal-contact" name="primaryContactId" type="contact" emptyLabel={copy.noContact} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="deal-value">Value ({currency})</Label>
-          <Input id="deal-value" name="value" inputMode="decimal" placeholder="12000" />
+          <Label htmlFor="deal-value">{copy.value.replace('{currency}', currency)}</Label>
+          <Input id="deal-value" name="value" inputMode="decimal" placeholder={copy.valuePlaceholder} />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="deal-close">Expected close</Label>
+          <Label htmlFor="deal-close">{copy.expectedClose}</Label>
           <Input id="deal-close" name="expectedCloseAt" type="date" />
         </div>
       </div>
@@ -74,11 +82,12 @@ function DealFields({ currency }: Readonly<{ currency: string }>) {
 }
 
 export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
+  const copy = catalogFor(DEAL_CREATE_COPY, useLocale())
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useGuardedTransition(setError)
   function submit(form: HTMLFormElement) {
-    const input = readForm(form)
+    const input = readForm(form, copy)
     if ('error' in input) {
       setError(input.error)
       return
@@ -106,11 +115,11 @@ export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
   }
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>New deal</Button>} />
+      <DialogTrigger render={<Button>{copy.trigger}</Button>} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create deal</DialogTitle>
-          <DialogDescription>Add an opportunity to the sales pipeline.</DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         <form
           className="grid gap-4"
@@ -119,7 +128,7 @@ export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
             submit(event.currentTarget)
           }}
         >
-          <DealFields currency={currency} />
+          <DealFields currency={currency} copy={copy} />
           {error === null ? null : (
             <p role="alert" className="text-sm text-destructive">
               {error}
@@ -133,10 +142,10 @@ export function DealCreateDialog({ currency }: Readonly<{ currency: string }>) {
                 setOpen(false)
               }}
             >
-              Cancel
+              {copy.cancel}
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? 'Creating…' : 'Create deal'}
+              {pending ? copy.creating : copy.create}
             </Button>
           </DialogFooter>
         </form>
