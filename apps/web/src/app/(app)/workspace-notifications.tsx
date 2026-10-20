@@ -36,6 +36,19 @@ const RECORD_ROUTES: Readonly<Record<string, string>> = {
   task: 'tasks',
 }
 
+/** How often the bell re-reads the unread count while the tab is visible. */
+const UNREAD_POLL_MS = 60_000
+
+async function loadUnreadCount(signal: AbortSignal): Promise<number> {
+  try {
+    const response = await fetch('/api/v1/notifications/unread-count', { credentials: 'same-origin', signal })
+    const result = await readApi<{ count?: number }>(response, 'Could not count notifications.')
+    return result.ok ? (result.data.count ?? 0) : 0
+  } catch {
+    return 0
+  }
+}
+
 const humanize = (value = 'Update') => value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
 
 function notificationCopy(item: NotificationItem): string {
@@ -56,17 +69,27 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
   const shellCopy = SHELL_COPY[locale]
 
   useEffect(() => {
+    const controller = new AbortController()
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return
+      void loadUnreadCount(controller.signal).then((next) => {
+        if (!controller.signal.aborted) setCount(next)
+      })
+    }
+    refresh()
+    const timer = window.setInterval(refresh, UNREAD_POLL_MS)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      controller.abort()
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [open])
+
+  useEffect(() => {
     if (!open) return
     const controller = new AbortController()
     setLoading(true)
-    void fetch('/api/v1/notifications/unread-count', { credentials: 'same-origin', signal: controller.signal })
-      .then((response) => readApi<{ count?: number }>(response, 'Could not count notifications.'))
-      .then((result) => {
-        if (!controller.signal.aborted) setCount(result.ok ? (result.data.count ?? 0) : 0)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setCount(0)
-      })
     void fetch('/api/v1/notifications', { credentials: 'same-origin', signal: controller.signal })
       .then((response) => readApi<{ records?: readonly NotificationItem[] }>(response, 'Could not load notifications.'))
       .then((result) => {
