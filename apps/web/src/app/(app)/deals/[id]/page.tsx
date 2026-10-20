@@ -12,6 +12,9 @@ import { RecordCustomFields } from '../../record-custom-fields'
 import { ArchiveRecordControl } from '../../archive-record-control'
 import { DealOriginLinks } from '../DealOriginLinks'
 import { DealRecordClient } from './DealRecordClient'
+import { catalogFor } from '../../../../i18n/locale'
+import { RECORD_COPY } from '../../../../i18n/record-copy'
+import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 
 export const dynamic = 'force-dynamic'
 /** The parent app layout supplies the tenant's branded title suffix. */
@@ -19,12 +22,14 @@ export const metadata: Metadata = { title: 'Deal' }
 
 export default async function DealRecordPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
-  const [data, outboundEmailEnabled, settings] = await Promise.all([
+  const [data, outboundEmailEnabled, settings, locale] = await Promise.all([
     getDealDetailData(id),
     getOutboundEmailEnabled(),
     getWorkspaceSettings(),
+    loadWorkspaceLocale(),
   ])
   if (data === null) notFound()
+  const copy = catalogFor(RECORD_COPY, locale)
 
   const activity = data.activity.map((entry) => ({
     id: entry.id,
@@ -36,12 +41,17 @@ export default async function DealRecordPage({ params }: Readonly<{ params: Prom
   const activityFeed = (
     <ActivityFeed
       entries={activity}
-      labels={{ heading: 'Activity', empty: 'No activity yet', loadMore: 'Load more', systemActor: 'System' }}
-      locale="en"
+      labels={{
+        heading: copy.tabActivity,
+        empty: copy.noActivity,
+        loadMore: copy.loadMore,
+        systemActor: copy.systemActor,
+      }}
+      locale={locale}
     />
   )
 
-  const tabs = recordTabs(activityFeed, data.emailMessages, {
+  const tabs = recordTabs(copy, locale, activityFeed, data.emailMessages, {
     recordType: 'deal',
     recordId: data.deal.id,
     notes: <RecordNotesTab recordType="deal" recordId={data.deal.id} />,
@@ -53,7 +63,7 @@ export default async function DealRecordPage({ params }: Readonly<{ params: Prom
 
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Deals', href: '/deals' }, { label: data.deal.title }]} />
+      <AppHeader breadcrumbs={[{ label: copy.deals, href: '/deals' }, { label: data.deal.title }]} />
       <PageContent>
         <DealOriginLinks
           sourceLeadId={data.deal.sourceLeadId}

@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useRef, useState, type ChangeEvent } from 'react'
 import type { RecordAttachment, RelatedTask } from '../../server/crm/directory/types'
 import { formatDate } from '../../i18n/format'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { RECORD_COPY } from '../../i18n/record-copy'
 import { describeClientError } from './client-errors'
 import { readApi } from './api-client'
 
@@ -19,25 +22,27 @@ export function RelatedTasksTab({
   recordType,
   recordId,
 }: Readonly<{ tasks: readonly RelatedTask[]; recordType: string; recordId: string }>) {
+  const locale = useLocale()
+  const copy = catalogFor(RECORD_COPY, locale)
   const createHref = `/tasks/new?${new URLSearchParams({ relatedType: recordType, relatedId: recordId }).toString()}`
   return (
     <section className="rounded-xl border bg-card p-4" aria-labelledby="record-tasks-heading">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 id="record-tasks-heading" className="font-medium">
-            Tasks
+            {copy.tabTasks}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Linked work.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{copy.linkedWork}</p>
         </div>
         <Link
           className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href={createHref}
         >
-          New task
+          {copy.newTask}
         </Link>
       </div>
       {tasks.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No tasks yet.</p>
+        <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{copy.noTasksYet}</p>
       ) : (
         <ul className="mt-4 divide-y rounded-lg border">
           {tasks.map((task) => (
@@ -50,10 +55,10 @@ export function RelatedTasksTab({
                 {task.title}
               </Link>
               <span className="shrink-0 text-xs text-muted-foreground">
-                {task.completedAt === null ? task.priority : 'Complete'}
+                {task.completedAt === null ? task.priority : copy.complete}
                 {task.dueAt === null
                   ? ''
-                  : ` · due ${formatDate(task.dueAt, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`}
+                  : ` · ${copy.dueOn.replace('{date}', formatDate(task.dueAt, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }))}`}
               </span>
             </li>
           ))}
@@ -63,14 +68,13 @@ export function RelatedTasksTab({
   )
 }
 
-const UPLOAD_FAILURE = { context: 'file upload', fallback: 'Unable to reach the server. Try again.' } as const
-
 export function RecordFilesTab({
   attachments,
   recordType,
   recordId,
 }: Readonly<{ attachments: readonly RecordAttachment[]; recordType: string; recordId: string }>) {
   const router = useRouter()
+  const copy = catalogFor(RECORD_COPY, useLocale())
   const inputRef = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string>()
@@ -85,14 +89,14 @@ export function RecordFilesTab({
     form.set('file', file)
     try {
       const response = await fetch('/api/v1/files', { method: 'POST', body: form })
-      const result = await readApi(response, 'Unable to upload file.')
+      const result = await readApi(response, copy.uploadFailed)
       if (!result.ok) setMessage(result.message)
       else {
-        setMessage('File uploaded.')
+        setMessage(copy.fileUploaded)
         router.refresh()
       }
     } catch (error) {
-      setMessage(describeClientError(error, UPLOAD_FAILURE))
+      setMessage(describeClientError(error, { context: 'file upload', fallback: copy.serverUnreachable }))
     } finally {
       setPending(false)
       if (inputRef.current !== null) inputRef.current.value = ''
@@ -103,12 +107,12 @@ export function RecordFilesTab({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 id="record-files-heading" className="font-medium">
-            Files
+            {copy.tabFiles}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Private files.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{copy.privateFiles}</p>
         </div>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-md border px-3 text-xs font-medium hover:bg-muted focus-within:outline-none focus-within:ring-2 focus-within:ring-ring">
-          <span>{pending ? 'Uploading…' : 'Upload file'}</span>
+          <span>{pending ? copy.uploading : copy.uploadFile}</span>
           <input
             ref={inputRef}
             className="sr-only"
@@ -124,7 +128,7 @@ export function RecordFilesTab({
         </p>
       )}
       {attachments.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No files yet.</p>
+        <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{copy.noFilesYet}</p>
       ) : (
         <ul className="mt-4 divide-y rounded-lg border">
           {attachments.map((attachment) => (

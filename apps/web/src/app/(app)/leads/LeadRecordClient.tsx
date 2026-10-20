@@ -13,6 +13,8 @@ import { useVersionedAction } from '../use-versioned-action'
 import { LeadNextAction } from './LeadNextAction'
 import { RecordActionLinks } from '../record-action-links'
 import { recordTabs } from '../record-view-primitives'
+import { catalogFor } from '../../../i18n/locale'
+import { RECORD_COPY, type RecordCopy } from '../../../i18n/record-copy'
 import { formatDate as formatLocaleDate } from '../../../i18n/format'
 import { useLocale } from '../../../i18n/locale-context'
 
@@ -32,18 +34,18 @@ function optionalValue(value: string | null): string {
   return value ?? '—'
 }
 
-function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
+function LeadStatusBanners({ data, copy }: Readonly<{ data: LeadPageData; copy: RecordCopy }>) {
   const lead = data.item.lead
   const locale = useLocale()
   if (lead.convertedAt !== null)
     return (
       <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
-        Converted {formatDate(lead.convertedAt, locale)}
+        {copy.convertedOn.replace('{date}', formatDate(lead.convertedAt, locale))}
         {lead.convertedDealId === null ? null : (
           <>
             {' · '}
             <Link href={`/deals/${lead.convertedDealId}`} className="underline underline-offset-2">
-              Open deal
+              {copy.openDeal}
             </Link>
           </>
         )}
@@ -52,37 +54,34 @@ function LeadStatusBanners({ data }: Readonly<{ data: LeadPageData }>) {
   if (data.item.stage.category === 'done_failure')
     return (
       <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
-        Lost{lead.lostNote ? `: ${lead.lostNote}` : ''}
+        {lead.lostNote ? copy.lostWithNote.replace('{note}', lead.lostNote) : copy.lost}
       </p>
     )
   if (data.item.responseOverdue)
-    return (
-      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-        Response overdue: this lead is still in its first stage past the first-response target.
-      </p>
-    )
+    return <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">{copy.responseOverdue}</p>
   return null
 }
 
 function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
   const lead = data.item.lead
   const locale = useLocale()
-  const details = [['Source', optionalValue(data.item.source?.name ?? null)]] as const
+  const copy = catalogFor(RECORD_COPY, locale)
+  const details = [[copy.source, optionalValue(data.item.source?.name ?? null)]] as const
   const meta = [
-    ['Created', formatDate(lead.createdAt, locale)],
-    ['Updated', formatDate(lead.updatedAt, locale)],
-    ['Stage entered', formatDate(lead.stageEnteredAt, locale)],
+    [copy.created, formatDate(lead.createdAt, locale)],
+    [copy.updated, formatDate(lead.updatedAt, locale)],
+    [copy.stageEntered, formatDate(lead.stageEnteredAt, locale)],
   ] as const
   return (
     <div className="flex flex-col gap-4">
       <section className="ops-detail-card rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Source and next action</h2>
+        <h2 className="text-sm font-medium">{copy.sourceAndNextAction}</h2>
         <dl className="mt-3 grid gap-3 text-sm">
           {details.map(([label, value]) => (
             <AsideField key={label} label={label} value={value} />
           ))}
           <div>
-            <dt className="text-muted-foreground">Next action</dt>
+            <dt className="text-muted-foreground">{copy.nextAction}</dt>
             <dd className="mt-1">
               <LeadNextAction
                 leadId={lead.id}
@@ -95,14 +94,14 @@ function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
         </dl>
       </section>
       <section className="ops-detail-card rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Meta</h2>
+        <h2 className="text-sm font-medium">{copy.meta}</h2>
         <dl className="mt-3 grid gap-3 text-sm">
           {meta.map(([label, value]) => (
             <AsideField key={label} label={label} value={value} />
           ))}
         </dl>
       </section>
-      <LeadStatusBanners data={data} />
+      <LeadStatusBanners data={data} copy={copy} />
     </div>
   )
 }
@@ -112,14 +111,21 @@ function LeadActions({
   isTerminal,
   onConvert,
   onLost,
-}: Readonly<{ isConverted: boolean; isTerminal: boolean; onConvert: () => void; onLost: () => void }>) {
+  copy,
+}: Readonly<{
+  isConverted: boolean
+  isTerminal: boolean
+  onConvert: () => void
+  onLost: () => void
+  copy: RecordCopy
+}>) {
   return (
     <div className="flex gap-2">
       <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onConvert}>
-        Convert
+        {copy.convert}
       </Button>
       <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onLost}>
-        Mark lost
+        {copy.markLost}
       </Button>
     </div>
   )
@@ -127,16 +133,25 @@ function LeadActions({
 
 // eslint-disable-next-line max-params -- tab content needs the record data, activity projection and capability flag.
 function leadTabs(
+  copy: RecordCopy,
+  locale: string,
   data: LeadPageData,
   activity: readonly ActivityEntry[],
   outboundEmailEnabled: boolean,
   notes: ReactNode,
 ) {
   return recordTabs(
+    copy,
+    locale,
     <ActivityFeed
       entries={activity}
-      labels={{ heading: 'Activity', empty: 'No activity yet', loadMore: 'Load more', systemActor: 'System' }}
-      locale="en"
+      labels={{
+        heading: copy.tabActivity,
+        empty: copy.noActivity,
+        loadMore: copy.loadMore,
+        systemActor: copy.systemActor,
+      }}
+      locale={locale}
     />,
     data.emailMessages,
     {
@@ -165,6 +180,15 @@ function leadOwner(owner: LeadPageData['item']['owner']) {
 /** Server-rendered sections the page passes in, because they load data with server-only code. */
 export type LeadSlots = Readonly<{ details: ReactNode; customFields: ReactNode; notes: ReactNode; archive: ReactNode }>
 
+function LeadError({ message }: Readonly<{ message: string | undefined }>) {
+  if (message === undefined) return null
+  return (
+    <p role="alert" className="text-sm text-destructive">
+      {message}
+    </p>
+  )
+}
+
 function LeadRecordLayout({
   data,
   isConverted,
@@ -191,15 +215,13 @@ function LeadRecordLayout({
   outboundEmailEnabled: boolean
 }>) {
   const lead = data.item.lead
+  const locale = useLocale()
+  const copy = catalogFor(RECORD_COPY, locale)
   return (
     <>
-      {error === undefined ? null : (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <LeadError message={error} />
       <RecordPageLayout
-        labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel title' }}
+        labels={{ breadcrumb: copy.breadcrumb, saveTitle: copy.saveTitle, cancelTitle: copy.cancelTitle }}
         title={lead.title}
         onTitleChange={onSaveTitle}
         stage={
@@ -207,7 +229,7 @@ function LeadRecordLayout({
             stages={data.stages}
             value={lead.stageId}
             onChange={onChangeStage}
-            labels={{ label: 'Stage', terminalGroup: 'Closed', placeholder: 'Select stage' }}
+            labels={{ label: copy.stage, terminalGroup: copy.closedGroup, placeholder: copy.selectStage }}
             disabled={isConverted || isTerminal}
           />
         }
@@ -215,6 +237,7 @@ function LeadRecordLayout({
         actions={
           <div className="flex flex-wrap gap-2">
             <RecordActionLinks
+              copy={copy}
               recordType="lead"
               recordId={lead.id}
               recordLabel={lead.title}
@@ -223,10 +246,16 @@ function LeadRecordLayout({
               phone={lead.phone}
               outboundEmailEnabled={outboundEmailEnabled}
             />
-            <LeadActions isConverted={isConverted} isTerminal={isTerminal} onConvert={onConvert} onLost={onLost} />
+            <LeadActions
+              isConverted={isConverted}
+              isTerminal={isTerminal}
+              onConvert={onConvert}
+              onLost={onLost}
+              copy={copy}
+            />
           </div>
         }
-        tabs={leadTabs(data, activity, outboundEmailEnabled, slots.notes)}
+        tabs={leadTabs(copy, locale, data, activity, outboundEmailEnabled, slots.notes)}
         aside={
           <div className="grid gap-4">
             {slots.details}

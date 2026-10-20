@@ -3,6 +3,7 @@ import { ClipboardPlus, Mail, MailWarning, Pencil, Phone } from 'lucide-react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { SendTextDialog } from './send-text-dialog'
+import type { RecordCopy } from '../../i18n/record-copy'
 
 function actionLink({ href, label, icon }: Readonly<{ href: string; label: string; icon: ReactNode }>) {
   return (
@@ -30,15 +31,9 @@ function actionLink({ href, label, icon }: Readonly<{ href: string; label: strin
   )
 }
 
-function disabledAction(label: string, icon: ReactNode) {
+function disabledAction({ label, icon, title }: Readonly<{ label: string; icon: ReactNode; title: string }>) {
   return (
-    <Button
-      aria-disabled
-      disabled
-      title="Email sending will be available after Cloudflare Email Sending is enabled."
-      variant="outline"
-      size="sm"
-    >
+    <Button aria-disabled disabled title={title} variant="outline" size="sm">
       {icon}
       {label}
     </Button>
@@ -50,11 +45,14 @@ function optionalText(value: string | null | undefined): string | null {
   return trimmed === undefined || trimmed === '' ? null : trimmed
 }
 
-function emailActionFor(emailAddress: string | null, outboundEmailEnabled: boolean): ReactNode {
-  if (emailAddress === null) return null
-  if (outboundEmailEnabled)
-    return actionLink({ href: `mailto:${emailAddress}`, label: 'Email', icon: <Mail aria-hidden /> })
-  return disabledAction('Email', <MailWarning aria-hidden />)
+function emailActionFor({
+  address,
+  enabled,
+  copy,
+}: Readonly<{ address: string | null; enabled: boolean; copy: RecordCopy }>): ReactNode {
+  if (address === null) return null
+  if (enabled) return actionLink({ href: `mailto:${address}`, label: copy.email, icon: <Mail aria-hidden /> })
+  return disabledAction({ label: copy.email, icon: <MailWarning aria-hidden />, title: copy.sendingUnavailableBody })
 }
 
 export function RecordActionLinks({
@@ -66,7 +64,9 @@ export function RecordActionLinks({
   phone,
   outboundEmailEnabled = true,
   archive,
+  copy,
 }: Readonly<{
+  copy: RecordCopy
   recordType: 'contact' | 'organization' | 'lead' | 'deal'
   recordId: string
   recordLabel: string
@@ -80,21 +80,21 @@ export function RecordActionLinks({
   const taskHref = `/tasks/new?${new URLSearchParams({
     relatedType: recordType,
     relatedId: recordId,
-    title: `Follow up with ${recordLabel}`,
+    title: copy.followUpWith.replace('{name}', recordLabel),
   }).toString()}`
   const emailAddress = optionalText(email)
   const phoneNumber = optionalText(phone)
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {emailActionFor(emailAddress, outboundEmailEnabled)}
+      {emailActionFor({ address: emailAddress, enabled: outboundEmailEnabled, copy })}
       {phoneNumber === null
         ? null
-        : actionLink({ href: `tel:${phoneNumber}`, label: 'Call', icon: <Phone aria-hidden /> })}
+        : actionLink({ href: `tel:${phoneNumber}`, label: copy.call, icon: <Phone aria-hidden /> })}
       {phoneNumber === null || recordType === 'deal' ? null : (
         <SendTextDialog recordType={recordType} recordId={recordId} recipient={phoneNumber} />
       )}
-      {actionLink({ href: taskHref, label: 'New task', icon: <ClipboardPlus aria-hidden /> })}
-      {editHref === undefined ? null : actionLink({ href: editHref, label: 'Edit', icon: <Pencil aria-hidden /> })}
+      {actionLink({ href: taskHref, label: copy.newTask, icon: <ClipboardPlus aria-hidden /> })}
+      {editHref === undefined ? null : actionLink({ href: editHref, label: copy.edit, icon: <Pencil aria-hidden /> })}
       {archive}
     </div>
   )

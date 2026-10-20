@@ -20,18 +20,25 @@ import { ArchiveRecordControl } from './archive-record-control'
 import { RecordActionLinks } from './record-action-links'
 import { RecordCustomFields } from './record-custom-fields'
 import { RecordDetails } from './record-details'
+import { catalogFor } from '../../i18n/locale'
+import { RECORD_COPY, type RecordCopy } from '../../i18n/record-copy'
+import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
-function OrganizationAside({ record, owner }: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null }>) {
+function OrganizationAside({
+  record,
+  owner,
+  copy,
+}: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null; copy: RecordCopy }>) {
   return (
-    <DetailCard title="Record">
+    <DetailCard title={copy.record}>
       <dl className="grid gap-3 text-sm">
         <div>
-          <dt className="text-xs text-muted-foreground">Owner</dt>
+          <dt className="text-xs text-muted-foreground">{copy.owner}</dt>
           <dd className="mt-0.5">{personLabel(owner)}</dd>
         </div>
       </dl>
       <div className="mt-3">
-        <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} />
+        <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} copy={copy} />
       </div>
     </DetailCard>
   )
@@ -64,22 +71,23 @@ function getAddContactHref(organizationId: string): string {
 function OrganizationOverview({
   organizationId,
   relations,
-}: Readonly<{ organizationId: string; relations: OrganizationRelations }>) {
+  copy,
+}: Readonly<{ organizationId: string; relations: OrganizationRelations; copy: RecordCopy }>) {
   const sections = [
     {
-      label: 'Projects',
+      label: copy.projects,
       count: relations.projects.length,
-      empty: 'No projects linked yet.',
-      action: <RelatedCreateAction href={getAddProjectHref(organizationId)} label="Add project" />,
+      empty: copy.noProjectsLinked,
+      action: <RelatedCreateAction href={getAddProjectHref(organizationId)} label={copy.addProject} />,
       items: relations.projects.map((project) => (
         <RelationRow key={project.id} href={`/projects/${project.id}`} title={project.name} />
       )),
     },
     {
-      label: 'Contacts',
+      label: copy.contacts,
       count: relations.contacts.length,
-      empty: 'No contacts linked yet.',
-      action: <RelatedCreateAction href={getAddContactHref(organizationId)} label="Add contact" />,
+      empty: copy.noContactsLinked,
+      action: <RelatedCreateAction href={getAddContactHref(organizationId)} label={copy.addContact} />,
       items: relations.contacts.map((contact) => (
         <RelationRow
           key={contact.id}
@@ -90,9 +98,9 @@ function OrganizationOverview({
       )),
     },
     {
-      label: 'Deals',
+      label: copy.deals,
       count: relations.deals.length,
-      empty: 'No deals linked yet.',
+      empty: copy.noDealsLinked,
       action: null,
       items: relations.deals.map((deal) => <RelationRow key={deal.id} href={`/deals/${deal.id}`} title={deal.title} />),
     },
@@ -118,7 +126,7 @@ function OrganizationOverview({
   )
 }
 
-export function OrganizationRecordView({
+export async function OrganizationRecordView({
   data,
   outboundEmailEnabled,
 }: Readonly<{
@@ -134,8 +142,12 @@ export function OrganizationRecordView({
   outboundEmailEnabled: boolean
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
+  const locale = await loadWorkspaceLocale()
+  const copy = catalogFor(RECORD_COPY, locale)
   const tabs = recordTabs(
-    <Activity entries={activity} recordType="organization" recordId={record.id} />,
+    copy,
+    locale,
+    <Activity entries={activity} recordType="organization" recordId={record.id} copy={copy} />,
     emailMessages,
     {
       recordType: 'organization',
@@ -149,11 +161,11 @@ export function OrganizationRecordView({
   )
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Organizations', href: '/organizations' }]} />
+      <AppHeader breadcrumbs={[{ label: copy.organizationsCrumb, href: '/organizations' }]} />
       <PageContent>
         <RecordPageLayout
           className="ops-organization-record"
-          labels={{ breadcrumb: 'Organization', saveTitle: 'Save name', cancelTitle: 'Cancel' }}
+          labels={{ breadcrumb: copy.organizationLabel, saveTitle: copy.saveName, cancelTitle: copy.cancel }}
           title={record.name}
           owner={
             <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -163,6 +175,7 @@ export function OrganizationRecordView({
           }
           actions={
             <RecordActionLinks
+              copy={copy}
               recordType="organization"
               recordId={record.id}
               recordLabel={record.name}
@@ -176,15 +189,15 @@ export function OrganizationRecordView({
           tabs={[
             {
               id: 'overview',
-              label: 'Overview',
-              content: <OrganizationOverview organizationId={record.id} relations={relations} />,
+              label: copy.tabOverview,
+              content: <OrganizationOverview organizationId={record.id} relations={relations} copy={copy} />,
             },
             ...tabs,
           ]}
           aside={
             <div className="grid gap-4">
               <RecordDetails type="organization" id={record.id} />
-              <OrganizationAside record={record} owner={owner} />
+              <OrganizationAside record={record} owner={owner} copy={copy} />
               <RecordCustomFields type="organization" id={record.id} />
             </div>
           }

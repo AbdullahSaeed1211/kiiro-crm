@@ -13,6 +13,7 @@ import { markDealLostAction } from '../../../../server/crm/deals/actions'
 import { LostReasonDialog } from '../../LostReasonDialog'
 import { DEAL_RECORD_COPY, type DealRecordCopy } from '../../../../i18n/deal-record-copy'
 import { catalogFor } from '../../../../i18n/locale'
+import { RECORD_COPY } from '../../../../i18n/record-copy'
 import { useLocale } from '../../../../i18n/locale-context'
 
 function DetailRow({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
@@ -101,6 +102,7 @@ export function DealRecordClient({
   archive: ReactNode
 }>) {
   const copy = catalogFor(DEAL_RECORD_COPY, useLocale())
+  const recordCopy = catalogFor(RECORD_COPY, useLocale())
   const [lostOpen, setLostOpen] = useState(false)
   return (
     <>
@@ -110,6 +112,7 @@ export function DealRecordClient({
         stage={<Badge variant="outline">{data.stage.name}</Badge>}
         actions={
           <RecordActionLinks
+            copy={recordCopy}
             recordType="deal"
             recordId={data.deal.id}
             recordLabel={data.deal.title}

@@ -19,12 +19,16 @@ import { RecordActionLinks } from './record-action-links'
 import { Activity, DetailCard, Meta, recordTabs, RelationList, RelationRow } from './record-view-primitives'
 import { RecordCustomFields } from './record-custom-fields'
 import { RecordDetails } from './record-details'
+import { catalogFor } from '../../i18n/locale'
+import { RECORD_COPY, type RecordCopy } from '../../i18n/record-copy'
+import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
 function ContactAside({
   record,
   owner,
   relations,
-}: Readonly<{ record: ContactRecord; owner: PersonSummary | null; relations: ContactRelations }>) {
+  copy,
+}: Readonly<{ record: ContactRecord; owner: PersonSummary | null; relations: ContactRelations; copy: RecordCopy }>) {
   const leadRows = relations.leads.map((lead) => (
     <RelationRow key={lead.id} href={`/leads/${lead.id}`} title={lead.title} />
   ))
@@ -33,10 +37,10 @@ function ContactAside({
   ))
   return (
     <div className="space-y-4">
-      <DetailCard title="Organization and owner">
+      <DetailCard title={copy.organizationAndOwner}>
         <dl className="grid gap-3 text-sm">
           <div>
-            <dt className="text-xs text-muted-foreground">Organization</dt>
+            <dt className="text-xs text-muted-foreground">{copy.organization}</dt>
             <dd className="mt-0.5">
               {relations.organization === null ? (
                 <EmptyValue />
@@ -48,25 +52,25 @@ function ContactAside({
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Owner</dt>
+            <dt className="text-xs text-muted-foreground">{copy.owner}</dt>
             <dd className="mt-0.5">{personLabel(owner)}</dd>
           </div>
         </dl>
       </DetailCard>
-      <DetailCard title={`Leads · ${String(relations.leads.length)}`}>
-        <RelationList items={leadRows} empty="No leads linked yet." />
+      <DetailCard title={`${copy.leads} · ${String(relations.leads.length)}`}>
+        <RelationList items={leadRows} empty={copy.noLeadsLinked} />
       </DetailCard>
-      <DetailCard title={`Deals · ${String(relations.deals.length)}`}>
-        <RelationList items={dealRows} empty="No deals linked yet." />
+      <DetailCard title={`${copy.deals} · ${String(relations.deals.length)}`}>
+        <RelationList items={dealRows} empty={copy.noDealsLinked} />
       </DetailCard>
-      <DetailCard title="Meta">
-        <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} />
+      <DetailCard title={copy.meta}>
+        <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} copy={copy} />
       </DetailCard>
     </div>
   )
 }
 
-export function ContactRecordView({
+export async function ContactRecordView({
   data,
   outboundEmailEnabled,
 }: Readonly<{
@@ -82,22 +86,30 @@ export function ContactRecordView({
   outboundEmailEnabled: boolean
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
+  const locale = await loadWorkspaceLocale()
+  const copy = catalogFor(RECORD_COPY, locale)
   const title = displayName(record)
-  const tabs = recordTabs(<Activity entries={activity} recordType="contact" recordId={record.id} />, emailMessages, {
-    recordType: 'contact',
-    recordId: record.id,
-    notes: <RecordNotesTab recordType="contact" recordId={record.id} />,
-    recipient: record.email,
-    outboundEmailEnabled,
-    tasks: relatedTasks,
-    attachments,
-  })
+  const tabs = recordTabs(
+    copy,
+    locale,
+    <Activity entries={activity} recordType="contact" recordId={record.id} copy={copy} />,
+    emailMessages,
+    {
+      recordType: 'contact',
+      recordId: record.id,
+      notes: <RecordNotesTab recordType="contact" recordId={record.id} />,
+      recipient: record.email,
+      outboundEmailEnabled,
+      tasks: relatedTasks,
+      attachments,
+    },
+  )
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Contacts', href: '/contacts' }, { label: title }]} />
+      <AppHeader breadcrumbs={[{ label: copy.contactsCrumb, href: '/contacts' }, { label: title }]} />
       <PageContent>
         <RecordPageLayout
-          labels={{ breadcrumb: 'Contact', saveTitle: 'Save name', cancelTitle: 'Cancel' }}
+          labels={{ breadcrumb: copy.contactLabel, saveTitle: copy.saveName, cancelTitle: copy.cancel }}
           title={title}
           owner={
             <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -107,6 +119,7 @@ export function ContactRecordView({
           }
           actions={
             <RecordActionLinks
+              copy={copy}
               recordType="contact"
               recordId={record.id}
               recordLabel={title}
@@ -121,7 +134,7 @@ export function ContactRecordView({
           aside={
             <div className="grid gap-4">
               <RecordDetails type="contact" id={record.id} />
-              <ContactAside record={record} owner={owner} relations={relations} />
+              <ContactAside record={record} owner={owner} relations={relations} copy={copy} />
               <RecordCustomFields type="contact" id={record.id} />
             </div>
           }

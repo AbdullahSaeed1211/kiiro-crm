@@ -11,6 +11,7 @@ import { RecordActivityComposer } from './record-activity-composer'
 import { RecordEmailThread } from './record-email-thread'
 import { RecordFilesTab, RelatedTasksTab } from './record-related-tabs'
 import { formatDate } from '../../i18n/format'
+import type { RecordCopy } from '../../i18n/record-copy'
 
 export function DateCell({ value }: Readonly<{ value: number }>) {
   return (
@@ -24,7 +25,13 @@ export function Activity({
   entries,
   recordType,
   recordId,
-}: Readonly<{ entries: readonly ActivityItem[]; recordType: 'contact' | 'organization'; recordId: string }>) {
+  copy,
+}: Readonly<{
+  entries: readonly ActivityItem[]
+  recordType: 'contact' | 'organization'
+  recordId: string
+  copy: RecordCopy
+}>) {
   return (
     <>
       <RecordActivityComposer recordType={recordType} recordId={recordId} />
@@ -36,10 +43,10 @@ export function Activity({
           summary: entry.summary,
         }))}
         labels={{
-          heading: 'Activity',
-          empty: 'No activity recorded yet.',
-          loadMore: 'Load more',
-          systemActor: 'System',
+          heading: copy.tabActivity,
+          empty: copy.noActivity,
+          loadMore: copy.loadMore,
+          systemActor: copy.systemActor,
         }}
       />
     </>
@@ -86,17 +93,21 @@ export function DetailCard({ title, children }: Readonly<{ title: string; childr
   )
 }
 
-export function Meta({ createdAt, updatedAt }: Readonly<{ createdAt: number; updatedAt: number }>) {
+export function Meta({
+  createdAt,
+  updatedAt,
+  copy,
+}: Readonly<{ createdAt: number; updatedAt: number; copy: RecordCopy }>) {
   return (
     <dl className="grid gap-3 text-sm">
       <div>
-        <dt className="text-xs text-muted-foreground">Created</dt>
+        <dt className="text-xs text-muted-foreground">{copy.created}</dt>
         <dd>
           <DateCell value={createdAt} />
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-muted-foreground">Last updated</dt>
+        <dt className="text-xs text-muted-foreground">{copy.lastUpdated}</dt>
         <dd>
           <DateCell value={updatedAt} />
         </dd>
@@ -107,6 +118,8 @@ export function Meta({ createdAt, updatedAt }: Readonly<{ createdAt: number; upd
 
 // eslint-disable-next-line complexity, max-params -- the optional related context keeps tab construction explicit at each record boundary.
 export function recordTabs(
+  copy: RecordCopy,
+  locale: string,
   activity: ReactNode,
   emailMessages: readonly EmailThreadMessage[] = [],
   related?: Readonly<{
@@ -123,21 +136,21 @@ export function recordTabs(
   if (related !== undefined) {
     tabs.push({
       id: 'notes',
-      label: 'Notes',
+      label: copy.tabNotes,
       content: related.notes,
     })
   }
-  tabs.push({ id: 'activity', label: 'Activity', content: activity })
+  tabs.push({ id: 'activity', label: copy.tabActivity, content: activity })
   if (related !== undefined) {
     tabs.push(
       {
         id: 'tasks',
-        label: 'Tasks',
+        label: copy.tabTasks,
         content: <RelatedTasksTab tasks={related.tasks} recordType={related.recordType} recordId={related.recordId} />,
       },
       {
         id: 'files',
-        label: 'Files',
+        label: copy.tabFiles,
         content: (
           <RecordFilesTab
             attachments={related.attachments}
@@ -150,9 +163,11 @@ export function recordTabs(
   }
   tabs.push({
     id: 'email',
-    label: 'Email',
+    label: copy.tabEmail,
     content: (
       <RecordEmailThread
+        copy={copy}
+        locale={locale}
         messages={emailMessages}
         recordType={related?.recordType ?? 'record'}
         recordId={related?.recordId ?? ''}

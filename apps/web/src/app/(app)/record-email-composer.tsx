@@ -8,6 +8,9 @@ import { useRef, useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailTemplatePicker } from './email-template-picker'
 import { readApi } from './api-client'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { RECORD_COPY } from '../../i18n/record-copy'
 
 interface Props {
   readonly recordType: string
@@ -23,6 +26,7 @@ interface Attachment {
 
 // eslint-disable-next-line complexity, max-lines-per-function -- composer owns validation, upload, send and retry feedback.
 export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundEmailEnabled = true }: Props) {
+  const copy = catalogFor(RECORD_COPY, useLocale())
   const [to, setTo] = useState(defaultTo ?? '')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
@@ -38,9 +42,9 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
     form.set('recordId', recordId)
     form.set('file', file)
     const response = await fetch('/api/v1/files', { method: 'POST', body: form })
-    const result = await readApi<{ id?: string | number }>(response, 'Unable to upload the attachment.')
+    const result = await readApi<{ id?: string | number }>(response, copy.attachFailed)
     if (!result.ok) throw new Error(result.message)
-    if (result.data.id === undefined) throw new Error('Attachment upload returned no id.')
+    if (result.data.id === undefined) throw new Error(copy.attachNoId)
     return { id: String(result.data.id), name: file.name }
   }
 
@@ -51,10 +55,10 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
     const trimmedSubject = subject.trim()
     const trimmedBody = body.trim()
     if (recipient === '' || trimmedSubject === '' || trimmedBody === '') {
-      setMessage('Recipient, subject, and message are required.')
+      setMessage(copy.messageFieldsRequired)
       return
     }
-    if (!window.confirm(`Send this message to ${recipient}?`)) return
+    if (!window.confirm(copy.confirmSend.replace('{recipient}', recipient))) return
     setPending(true)
     setMessage(null)
     try {
@@ -73,16 +77,16 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
           attachmentIds,
         }),
       })
-      const result = await readApi(response, 'Unable to send the message. Try again.')
+      const result = await readApi(response, copy.sendFailed)
       if (!result.ok) throw new Error(result.message)
       setSubject('')
       setBody('')
       setSelectedFile(null)
       if (inputRef.current !== null) inputRef.current.value = ''
-      setMessage('Message sent.')
+      setMessage(copy.messageSent)
       router.refresh()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to send the message. Try again.')
+      setMessage(error instanceof Error ? error.message : copy.sendFailed)
     } finally {
       setPending(false)
     }
@@ -100,8 +104,8 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
       <div className="mt-4 flex items-start gap-3 rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
         <MailWarning aria-hidden className="mt-0.5 size-4 shrink-0" />
         <div>
-          <p className="font-medium text-foreground">Sending is unavailable</p>
-          <p className="mt-1">Email sending will be available after Cloudflare Email Sending is enabled.</p>
+          <p className="font-medium text-foreground">{copy.sendingUnavailable}</p>
+          <p className="mt-1">{copy.sendingUnavailableBody}</p>
         </div>
       </div>
     )
@@ -115,7 +119,7 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium">New message</p>
+        <p className="text-sm font-medium">{copy.newMessage}</p>
         <EmailTemplatePicker
           recordType={recordType}
           recordId={recordId}
@@ -128,7 +132,7 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
       </div>
       <div className="mt-3 grid gap-2">
         <label className="sr-only" htmlFor="email-to">
-          To
+          {copy.to}
         </label>
         <Input
           id="email-to"
@@ -137,11 +141,11 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
           onChange={(event) => {
             setTo(event.target.value)
           }}
-          placeholder="To"
+          placeholder={copy.to}
           disabled={pending}
         />
         <label className="sr-only" htmlFor="email-subject">
-          Subject
+          {copy.subject}
         </label>
         <Input
           id="email-subject"
@@ -149,11 +153,11 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
           onChange={(event) => {
             setSubject(event.target.value)
           }}
-          placeholder="Subject"
+          placeholder={copy.subject}
           disabled={pending}
         />
         <label className="sr-only" htmlFor="email-body">
-          Message
+          {copy.messageLabel}
         </label>
         <Textarea
           id="email-body"
@@ -162,14 +166,14 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
             setBody(event.target.value)
           }}
           onKeyDown={onKeyDown}
-          placeholder="Write a message…"
+          placeholder={copy.writeMessage}
           className="min-h-24 resize-y"
           disabled={pending}
         />
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <label className="inline-flex cursor-pointer items-center text-xs font-medium text-muted-foreground hover:text-foreground">
-          <span>{pending ? 'Sending…' : 'Attach file'}</span>
+          <span>{pending ? copy.sending : copy.attachFile}</span>
           <input
             ref={inputRef}
             className="sr-only"
@@ -186,14 +190,16 @@ export function RecordEmailComposer({ recordType, recordId, defaultTo, outboundE
           size="sm"
           disabled={pending || to.trim() === '' || subject.trim() === '' || body.trim() === ''}
         >
-          {pending ? 'Sending…' : 'Send'}
+          {pending ? copy.sending : copy.send}
         </Button>
       </div>
       {selectedFile === null ? null : (
-        <p className="mt-2 truncate text-xs text-muted-foreground">Attached: {selectedFile.name}</p>
+        <p className="mt-2 truncate text-xs text-muted-foreground">
+          {copy.attached.replace('{name}', selectedFile.name)}
+        </p>
       )}
       {message === null ? (
-        <p className="mt-2 text-xs text-muted-foreground">⌘/Ctrl + Enter to send</p>
+        <p className="mt-2 text-xs text-muted-foreground">{copy.sendHint}</p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground" role="status" aria-live="polite">
           {message}

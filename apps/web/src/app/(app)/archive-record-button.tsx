@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { archiveRecordAction } from '../../server/crm/archive'
 import { describeClientError } from './client-errors'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { RECORD_COPY } from '../../i18n/record-copy'
 
 const LIST_HREF = { organization: '/organizations', contact: '/contacts', lead: '/leads', deal: '/deals' } as const
 
@@ -19,6 +22,7 @@ type Props = Readonly<{
 /** Asks for confirmation, archives the record, and returns to its list. */
 export function ArchiveRecordButton({ type, id, label }: Props) {
   const router = useRouter()
+  const copy = catalogFor(RECORD_COPY, useLocale())
   const [message, setMessage] = useState<string>()
   const archive = async () => {
     setMessage(undefined)
@@ -27,21 +31,21 @@ export function ArchiveRecordButton({ type, id, label }: Props) {
       if (result.ok) router.push(LIST_HREF[type])
       else setMessage(result.error.message)
     } catch (error) {
-      setMessage(describeClientError(error, { context: 'archive record', fallback: 'Unable to archive. Try again.' }))
+      setMessage(describeClientError(error, { context: 'archive record', fallback: copy.archiveFailed }))
     }
   }
   return (
     <>
       <ConfirmDialog
-        title={`Archive ${label}?`}
-        description="It leaves every list and search. Its notes and history are kept."
-        labels={{ cancel: 'Cancel', confirm: 'Archive', confirming: 'Archiving…' }}
+        title={copy.archiveTitle.replace('{name}', label)}
+        description={copy.archiveBody}
+        labels={{ cancel: copy.cancel, confirm: copy.archive, confirming: copy.archiving }}
         destructive
         onConfirm={archive}
         trigger={
           <Button variant="outline" size="sm" type="button">
             <Archive aria-hidden />
-            Archive
+            {copy.archive}
           </Button>
         }
       />
