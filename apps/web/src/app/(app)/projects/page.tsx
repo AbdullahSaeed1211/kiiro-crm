@@ -21,6 +21,9 @@ import { firstParam } from '../search-params'
 import { ListEmpty } from '../ListEmpty'
 
 export const metadata: Metadata = { title: 'Projects' }
+import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 export const dynamic = 'force-dynamic'
 
 type Model = Awaited<ReturnType<typeof loadWorkReadModel>>
@@ -142,6 +145,7 @@ async function loadView(params: SearchParams) {
 
 /** Projects list with progress from the same scoped read model, searchable by name and filterable by stage. */
 export default async function ProjectsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
+  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
   const { query, stage, sort, model, matched, page, shown, progress } = await loadView(await searchParams)
   const stages = [...new Set(model.projects.map((project) => project.stage))]
   return (
@@ -150,6 +154,7 @@ export default async function ProjectsPage({ searchParams }: Readonly<{ searchPa
       <PageContent>
         <PageHeader
           title="Projects"
+          description={help.projects}
           count={matched.length}
           actions={
             <a

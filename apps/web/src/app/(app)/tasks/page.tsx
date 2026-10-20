@@ -13,6 +13,8 @@ import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
 import { TaskBulkTable } from './TaskBulkTable'
 import { validAssignee } from './assignee-options'
+import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
+import { catalogFor } from '../../../i18n/locale'
 import { TaskGroupToggle } from './TaskGroupToggle'
 import { TaskListFilters } from './TaskListFilters'
 import { TasksHeaderActions } from './TasksHeaderActions'
@@ -71,6 +73,7 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
         <PageHeader
           title={title}
           count={result.total}
+          description={catalogFor(SECTION_HELP_COPY, locale).tasks}
           actions={
             <TasksHeaderActions
               view={view}

@@ -2,23 +2,27 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { ReactNode } from 'react'
+import { catalogFor } from '../../i18n/locale'
+import { SECTION_HELP_COPY } from '../../i18n/section-help-copy'
+import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
 export { ContactsTable, OrganizationsTable } from './directory-list-view'
 export { ContactRecordView, OrganizationRecordView } from './directory-record-view'
 
-export function DirectoryListHeader({
+export async function DirectoryListHeader({
   kind,
   total,
   children,
   actions,
 }: Readonly<{ kind: 'organizations' | 'contacts'; total: number; children: ReactNode; actions: ReactNode }>) {
   const isOrganizations = kind === 'organizations'
+  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
   const title = isOrganizations ? 'Organizations' : 'Contacts'
   return (
     <>
       <AppHeader breadcrumbs={[{ label: title }]} />
       <PageContent>
-        <PageHeader title={title} count={total} actions={actions} />
+        <PageHeader title={title} count={total} description={help[kind]} actions={actions} />
         {children}
       </PageContent>
     </>

@@ -23,6 +23,9 @@ import { ListEmpty } from '../ListEmpty'
 type SearchParams = Record<string, string | string[] | undefined>
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Leads' }
+import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 export const dynamic = 'force-dynamic'
 
 const TABLE_COLUMNS: DataTableColumn[] = [
@@ -170,6 +173,7 @@ function LeadTable({
 }
 
 export default async function LeadsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
+  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
   const params = await searchParams
   const { actor } = await getProductContext()
   const canBulk = actor.role === 'owner' || actor.role === 'manager'
@@ -187,6 +191,7 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
       <PageContent>
         <PageHeader
           title="Leads"
+          description={help.leads}
           count={result.total}
           actions={
             <>

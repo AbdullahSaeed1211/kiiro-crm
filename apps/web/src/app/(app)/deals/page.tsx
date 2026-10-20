@@ -29,6 +29,9 @@ import { ListEmpty } from '../ListEmpty'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deals' }
+import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 export const dynamic = 'force-dynamic'
 
 function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number]): DataTableRow {
@@ -117,6 +120,7 @@ function boardHref(query: string): string {
 export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
+  const help = catalogFor(SECTION_HELP_COPY, await loadWorkspaceLocale())
   const params = await searchParams
   const rawQuery = firstParam(params.q)?.trim() ?? ''
   const stageId = firstParam(params.stage)
@@ -133,6 +137,7 @@ export default async function DealsPage({
       <PageContent>
         <PageHeader
           title="Deals"
+          description={help.deals}
           count={data.total}
           actions={
             <div className="flex items-center gap-2">
