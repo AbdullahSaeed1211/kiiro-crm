@@ -17,8 +17,17 @@ function boardWhere(workflow: Workflow): Where {
 }
 
 /** The tasks the board shows (up to the board limit) and how many there are in all. */
-export function loadBoardTasks(context: RequestContext, workflow: Workflow, mine = false) {
+export function loadBoardTasks(
+  context: RequestContext,
+  workflow: Workflow,
+  filter: Readonly<{ mine?: boolean; assignee?: string }> = {},
+) {
   const open = boardWhere(workflow)
-  const where: Where = mine ? { and: [open, { assignees: { in: [String(context.actor.id)] } }] } : open
+  const people = [
+    ...(filter.mine === true ? [String(context.actor.id)] : []),
+    ...(filter.assignee === undefined || filter.assignee === '' ? [] : [filter.assignee]),
+  ]
+  const where: Where =
+    people.length === 0 ? open : { and: [open, ...people.map((id) => ({ assignees: { in: [id] } }))] }
   return listTaskPage(context.req, { where, sort: ['rank', 'id'], page: 1, limit: BOARD_LIMIT })
 }

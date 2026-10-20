@@ -13,6 +13,7 @@ import { getRequestContext } from '@/server/container'
 import { loadTaskPeople } from '../../../../server/queries/work/task-details'
 import type { TaskRecord } from '../../../../server/work/task-repository'
 import { taskHref } from '../../task-navigation'
+import { AssigneeFilter } from '../AssigneeFilter'
 import { TaskCreateForm } from '../TaskCreateForm'
 import { TaskWorkspaceViews } from '../TaskWorkspaceViews'
 import { TaskBoard } from './TaskBoard'
@@ -96,14 +97,16 @@ function toCard(
 /** Task board (spec §17.5). */
 export default async function TaskBoardPage({
   searchParams,
-}: Readonly<{ searchParams: Promise<{ readonly view?: string }> }>) {
-  const mine = (await searchParams).view === 'mine'
+}: Readonly<{ searchParams: Promise<{ readonly view?: string; readonly assignee?: string }> }>) {
+  const params = await searchParams
+  const mine = params.view === 'mine'
+  const assignee = params.assignee ?? ''
   const context = await getRequestContext()
   const { tasks } = await workDeps(context)
   const locale = await loadWorkspaceLocale()
   const copy = TASK_COPY[locale]
   const workflow = await tasks.loadTaskWorkflow().then(workflowOrThrow)
-  const page = await loadBoardTasks(context, workflow, mine)
+  const [page, everyone] = await Promise.all([loadBoardTasks(context, workflow, { mine, assignee }), loadTaskPeople()])
   const records = page.records
   const assigneeIds = [...new Set(records.flatMap((task) => task.assigneeIds.map(String)))]
   const people = await loadTaskPeople(assigneeIds)
@@ -121,6 +124,14 @@ export default async function TaskBoardPage({
           }
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <AssigneeFilter
+                value={assignee}
+                label={copy.assignee}
+                allLabel={copy.anyAssignee}
+                options={[...everyone]
+                  .map(([value, label]) => ({ value, label }))
+                  .sort((a, b) => a.label.localeCompare(b.label))}
+              />
               <TaskCreateForm />
               <TaskWorkspaceViews active="board" locale={locale} mine={mine} />
             </div>
