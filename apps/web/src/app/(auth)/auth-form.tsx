@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ReactNode, SyntheticEvent } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@ops/ui/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ops/ui/components/ui/card'
@@ -67,6 +67,17 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
   const [pending, setPending] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [needsCode, setNeedsCode] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  // A form that asks to confirm the password is setting a new one, so password managers should offer to generate it.
+  const secretAutoComplete = fields.includes('confirm') ? 'new-password' : 'current-password'
+
+  // After a failed attempt the inputs come back from disabled; put the cursor where the fix usually is.
+  useEffect(() => {
+    if (error === undefined || pending) return
+    const target = formRef.current?.querySelector<HTMLInputElement>('input[name="code"], input[name="password"]')
+    target?.focus()
+    target?.select()
+  }, [error, pending])
   function show(data: AuthResponse & { ok: boolean }) {
     if (data.twoFactor === true) setNeedsCode(true)
     if (!data.ok) setError(data.error ?? 'Unable to continue.')
@@ -97,6 +108,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
   return (
     <Card className="w-full">
       <form
+        ref={formRef}
         onSubmit={(event) => {
           void submit(event)
         }}
@@ -107,7 +119,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
           <CardDescription>Use your team account to continue.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {fields.map((field) => (
+          {fields.map((field, index) => (
             <div className="space-y-2" key={field}>
               <Label htmlFor={`auth-${field}`}>{fieldLabel(field)}</Label>
               <div className="flex gap-2">
@@ -117,7 +129,8 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
                   name={field}
                   type={visibleFieldType(field, passwordVisible)}
                   required
-                  autoComplete={isSecretField(field) ? 'current-password' : field}
+                  autoFocus={index === 0}
+                  autoComplete={isSecretField(field) ? secretAutoComplete : field}
                   disabled={disabled || pending}
                 />
                 {isSecretField(field) ? (
