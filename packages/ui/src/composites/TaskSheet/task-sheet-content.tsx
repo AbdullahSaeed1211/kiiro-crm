@@ -119,7 +119,7 @@ export function TaskSheetContent({
             taskHref={actions.taskHref}
             busy={pending !== null}
             fields={fields}
-            onSave={(change) => void save(change)}
+            onSave={(change) => void save(change, labels.saved)}
           />
           <TaskMessage message={message} />
         </div>

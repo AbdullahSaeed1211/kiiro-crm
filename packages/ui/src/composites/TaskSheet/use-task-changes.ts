@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import type { TaskChange, TaskChangeRequest, TaskChangeResult, TaskSheetActions, TaskSheetTask } from './types'
 
+/** How long a "Saved." confirmation stays on screen. */
+const SAVED_VISIBLE_MS = 2500
+
 /** Runs the save; a request that fails before the server answers becomes a failed result, so the panel never hangs. */
 async function attempt(
   onChange: TaskSheetActions['onChange'],
@@ -40,7 +43,13 @@ export function useTaskChanges(task: TaskSheetTask, onChange: TaskSheetActions['
     setPending(null)
     if (result.ok) {
       if (result.updatedAt !== undefined) setVersion(result.updatedAt)
-      if (savedMessage !== undefined) setMessage(savedMessage)
+      if (savedMessage !== undefined) {
+        setMessage(savedMessage)
+        // The confirmation fades, so a later change does not look like it is still showing an old result.
+        window.setTimeout(() => {
+          setMessage((current) => (current === savedMessage ? null : current))
+        }, SAVED_VISIBLE_MS)
+      }
       return true
     }
     setMessage(result.message)
