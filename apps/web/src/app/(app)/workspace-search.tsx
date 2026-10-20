@@ -11,23 +11,13 @@ import {
   CommandList,
   CommandShortcut,
 } from '@ops/ui/components/ui/command'
-import {
-  Building2,
-  CircleCheckBig,
-  Contact,
-  FolderKanban,
-  Handshake,
-  Link2,
-  LayoutDashboard,
-  ListTodo,
-  Search,
-  UserPlus,
-} from 'lucide-react'
+import { Building2, Contact, FolderKanban, Handshake, ListTodo, Search, UserPlus } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { taskHref } from './task-navigation'
 import { useEffect, useState } from 'react'
 import { SEARCH_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
 import { readApi } from './api-client'
+import { WorkspaceCommands } from './workspace-commands'
 
 interface SearchResult {
   readonly recordType: string
@@ -67,20 +57,6 @@ function emptyCopy({
   if (query.length < 2) return copy.minChars
   return copy.noMatches
 }
-
-const NAVIGATION = [
-  ['dashboard', '/', LayoutDashboard],
-  ['myTasks', '/my-tasks', CircleCheckBig],
-  ['leads', '/leads', UserPlus],
-  ['deals', '/deals', Handshake],
-  ['projects', '/projects', FolderKanban],
-  ['tasks', '/tasks', ListTodo],
-] as const
-const CREATE = [
-  ['newLead', '/leads/new', UserPlus],
-  ['newContact', '/contacts/new', Contact],
-  ['newOrganization', '/organizations/new', Building2],
-] as const
 
 // eslint-disable-next-line max-lines-per-function -- search owns keyboard, query, result, and navigation states.
 export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
@@ -177,50 +153,16 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
           <CommandInput placeholder={copy.placeholder} value={query} onValueChange={setQuery} />
           <CommandList>
             <CommandEmpty aria-live="polite">{emptyCopy({ query, loading, copy })}</CommandEmpty>
-            {query.trim().length < 2 ? (
-              <>
-                <CommandGroup heading={copy.navigate}>
-                  {NAVIGATION.map(([key, href, Icon]) => (
-                    <CommandItem
-                      key={href}
-                      value={shellCopy[key]}
-                      onSelect={() => {
-                        visitPath(href)
-                      }}
-                    >
-                      <Icon aria-hidden />
-                      <span>{shellCopy[key]}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-                <CommandGroup heading={copy.create}>
-                  {CREATE.map(([key, href, Icon]) => (
-                    <CommandItem
-                      key={href}
-                      value={copy[key]}
-                      onSelect={() => {
-                        visitPath(href)
-                      }}
-                    >
-                      <Icon aria-hidden />
-                      <span>{copy[key]}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-                <CommandGroup heading={copy.actions}>
-                  <CommandItem
-                    value={copy.copyLink}
-                    onSelect={() => {
-                      void navigator.clipboard.writeText(window.location.href)
-                      setOpen(false)
-                    }}
-                  >
-                    <Link2 aria-hidden />
-                    <span>{copy.copyLink}</span>
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            ) : null}
+            <WorkspaceCommands
+              query={query}
+              copy={copy}
+              shellCopy={shellCopy}
+              onGo={visitPath}
+              onCopyLink={() => {
+                void navigator.clipboard.writeText(window.location.href)
+                setOpen(false)
+              }}
+            />
             <CommandGroup heading={results.length > 0 ? copy.records : undefined}>
               {results.map((result) => {
                 const Icon = iconFor(result.recordType)
