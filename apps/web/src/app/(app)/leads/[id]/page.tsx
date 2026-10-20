@@ -1,3 +1,5 @@
+import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { PageContent } from '@ops/ui/composites/AppShell'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getLeadPage } from '../../../../server/crm/leads/queries'
@@ -24,19 +26,22 @@ export default async function LeadPage({ params }: Readonly<{ params: Promise<{ 
   ])
   if (data === null) notFound()
   return (
-    <main className="flex min-h-0 flex-1 flex-col gap-4 p-4">
-      <LeadDuplicateNotice leadId={data.item.lead.id} email={data.item.lead.email} phone={data.item.lead.phone} />
-      <LeadRecordClient
-        data={data}
-        outboundEmailEnabled={outboundEmailEnabled}
-        currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
-        slots={{
-          details: <RecordDetails type="lead" id={data.item.lead.id} />,
-          customFields: <RecordCustomFields type="lead" id={data.item.lead.id} />,
-          notes: <RecordNotesTab recordType="lead" recordId={data.item.lead.id} />,
-          archive: <ArchiveRecordControl type="lead" id={data.item.lead.id} label={data.item.lead.title} />,
-        }}
-      />
-    </main>
+    <>
+      <AppHeader breadcrumbs={[{ label: 'Leads', href: '/leads' }, { label: data.item.lead.title }]} />
+      <PageContent>
+        <LeadDuplicateNotice leadId={data.item.lead.id} email={data.item.lead.email} phone={data.item.lead.phone} />
+        <LeadRecordClient
+          data={data}
+          outboundEmailEnabled={outboundEmailEnabled}
+          currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
+          slots={{
+            details: <RecordDetails type="lead" id={data.item.lead.id} />,
+            customFields: <RecordCustomFields type="lead" id={data.item.lead.id} />,
+            notes: <RecordNotesTab recordType="lead" recordId={data.item.lead.id} />,
+            archive: <ArchiveRecordControl type="lead" id={data.item.lead.id} label={data.item.lead.title} />,
+          }}
+        />
+      </PageContent>
+    </>
   )
 }

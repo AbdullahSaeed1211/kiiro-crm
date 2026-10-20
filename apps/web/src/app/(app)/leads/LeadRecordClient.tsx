@@ -197,11 +197,6 @@ function LeadRecordLayout({
       )}
       <RecordPageLayout
         labels={{ breadcrumb: 'Breadcrumb', saveTitle: 'Save title', cancelTitle: 'Cancel title' }}
-        breadcrumbs={
-          <a href="/leads" className="text-sm text-muted-foreground hover:text-foreground">
-            Leads
-          </a>
-        }
         title={lead.title}
         onTitleChange={onSaveTitle}
         stage={

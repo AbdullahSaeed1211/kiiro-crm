@@ -71,7 +71,7 @@ export function CustomFieldsCard(props: CustomFieldsCardProps) {
   return (
     <section aria-label={labels.title} className="space-y-3 rounded-lg border p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">{labels.title}</h3>
+        <h2 className="text-sm font-medium">{labels.title}</h2>
         {canEdit && !card.editing ? (
           <Button size="sm" variant="ghost" onClick={card.start}>
             {labels.edit}
