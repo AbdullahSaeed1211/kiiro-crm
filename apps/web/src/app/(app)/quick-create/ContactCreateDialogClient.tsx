@@ -1,12 +1,13 @@
 'use client'
 
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
 import { QUICK_CREATE_COPY } from '../../../i18n/quick-create-copy'
 import { quickCreateContact } from '../../../server/actions/crm/quick-create'
 import { QuickCreateDialog } from './QuickCreateDialog'
 
-const copy = QUICK_CREATE_COPY.en
-
 export function ContactCreateDialogClient() {
+  const copy = catalogFor(QUICK_CREATE_COPY, useLocale())
   return (
     <QuickCreateDialog
       basePath="/contacts"

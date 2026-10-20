@@ -1,13 +1,14 @@
 'use client'
 
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
 import { QUICK_CREATE_COPY } from '../../../i18n/quick-create-copy'
 import { quickCreateLead } from '../../../server/actions/crm/quick-create'
 import { QuickCreateDialog } from './QuickCreateDialog'
 
-const copy = QUICK_CREATE_COPY.en
-
 /** `stageId` makes the new lead start in that pipeline stage; `compact` renders the small board-column trigger. */
 export function LeadCreateDialogClient({ stageId, compact }: Readonly<{ stageId?: string; compact?: boolean }>) {
+  const copy = catalogFor(QUICK_CREATE_COPY, useLocale())
   return (
     <QuickCreateDialog
       basePath="/leads"
