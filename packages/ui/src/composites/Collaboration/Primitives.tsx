@@ -5,6 +5,7 @@ import { Badge } from '@ops/ui/components/ui/badge'
 import { Button } from '@ops/ui/components/ui/button'
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@ops/ui/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@ops/ui/components/ui/popover'
+import { initials } from '@ops/ui/lib/initials'
 import { Check, CircleAlert, Minus, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import { useState } from 'react'
 
@@ -138,16 +139,8 @@ export function UserAvatar({
   size = 'sm',
 }: Readonly<{ name: string; imageUrl?: string; size?: 'sm' | 'default' }>) {
   return (
-    <Avatar size={size}>
-      <AvatarFallback>
-        {name
-          .trim()
-          .split(/\s+/)
-          .map((part) => part[0])
-          .join('')
-          .slice(0, 2)
-          .toUpperCase() || '?'}
-      </AvatarFallback>
+    <Avatar size={size} title={name}>
+      <AvatarFallback>{initials(name) || '?'}</AvatarFallback>
       {imageUrl ? <img src={imageUrl} alt="" /> : null}
     </Avatar>
   )
