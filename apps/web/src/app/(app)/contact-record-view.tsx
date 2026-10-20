@@ -33,7 +33,7 @@ function ContactAside({
   ))
   return (
     <div className="space-y-4">
-      <DetailCard title="Details">
+      <DetailCard title="Organization and owner">
         <dl className="grid gap-3 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">Organization</dt>
