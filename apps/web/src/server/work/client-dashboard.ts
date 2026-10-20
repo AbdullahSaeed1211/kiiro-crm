@@ -60,30 +60,33 @@ function areaOf(title: string): Area {
   return PREFIXES.find(([prefix]) => lower.startsWith(prefix))?.[1] ?? 'other'
 }
 
-function rowFor(area: Area, tasks: readonly WorkListTask[], now: number): AreaRow {
+function rowFor(area: Area, tasks: readonly WorkListTask[], today: number): AreaRow {
   const open = tasks.filter((task) => !isFinished(task))
   const due = open.flatMap((task) => (task.dueAt === null ? [] : [task.dueAt]))
   return {
     area,
     open: open.length,
-    overdue: open.filter((task) => task.dueAt !== null && task.dueAt < now).length,
+    overdue: open.filter((task) => task.dueAt !== null && task.dueAt < today).length,
     nextDueAt: due.length === 0 ? null : Math.min(...due),
   }
 }
 
-/** What is open, late and done for one client's tasks, and the same per area of work. */
-export function buildClientDashboard(tasks: readonly WorkListTask[], now: number): ClientDashboard {
+/**
+ * What is open, late and done for one client's tasks, and the same per area of work. `today` is today's date as a stored
+ * due date (`todayAsDueAt`): a task is late when its due date is before today, so one due today is not.
+ */
+export function buildClientDashboard(tasks: readonly WorkListTask[], today: number): ClientDashboard {
   const open = tasks.filter((task) => !isFinished(task))
   return {
     open: open.length,
-    overdue: open.filter((task) => task.dueAt !== null && task.dueAt < now).length,
-    dueSoon: open.filter((task) => task.dueAt !== null && task.dueAt >= now && task.dueAt < now + WEEK_MS).length,
+    overdue: open.filter((task) => task.dueAt !== null && task.dueAt < today).length,
+    dueSoon: open.filter((task) => task.dueAt !== null && task.dueAt >= today && task.dueAt < today + WEEK_MS).length,
     done: tasks.length - open.length,
     areas: AREAS.map((area) =>
       rowFor(
         area,
         tasks.filter((task) => areaOf(task.title) === area),
-        now,
+        today,
       ),
     ).filter((row) => row.open > 0),
   }

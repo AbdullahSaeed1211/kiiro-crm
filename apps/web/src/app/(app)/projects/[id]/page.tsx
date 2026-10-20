@@ -11,6 +11,7 @@ import { CLIENT_DASHBOARD_COPY, type ClientDashboardCopy } from '../../../../i18
 import { catalogFor } from '../../../../i18n/locale'
 import { PROJECT_PAGE_COPY, type ProjectPageCopy } from '../../../../i18n/project-page-copy'
 import { loadClientBilling } from '../../../../server/billing/client-summary'
+import { todayAsDueAt } from '@ops/module-work'
 import { buildClientDashboard } from '../../../../server/work/client-dashboard'
 import { getRequestContext } from '@/server/container'
 import { ClientDashboardView } from './client-dashboard'
@@ -67,6 +68,7 @@ async function dashboardFor(input: {
   readonly tasks: readonly WorkListTask[]
   readonly organizationId: string | null
   readonly locale: string
+  readonly timeZone: string
 }): Promise<{ label: string; content: React.ReactNode }> {
   const context = await getRequestContext()
   const copy: ClientDashboardCopy = catalogFor(CLIENT_DASHBOARD_COPY, input.locale === 'es' ? 'es' : 'en')
@@ -78,7 +80,7 @@ async function dashboardFor(input: {
     content: (
       <ClientDashboardView
         copy={copy}
-        dashboard={buildClientDashboard(input.tasks, Date.now())}
+        dashboard={buildClientDashboard(input.tasks, todayAsDueAt(Date.now(), input.timeZone))}
         billing={billing}
         locale={input.locale === 'es' ? 'es-ES' : 'en-US'}
       />
@@ -95,7 +97,12 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
   const copy = catalogFor(PROJECT_PAGE_COPY, model.locale)
   const tasks = model.tasks.filter((task) => task.projectId === project.id)
   const organizationName = project.organizationId === null ? null : await getOrganizationLabel(project.organizationId)
-  const dashboard = await dashboardFor({ tasks, organizationId: project.organizationId, locale: model.locale })
+  const dashboard = await dashboardFor({
+    tasks,
+    organizationId: project.organizationId,
+    locale: model.locale,
+    timeZone: model.timeZone,
+  })
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.projects, href: '/projects' }]} />

@@ -1,3 +1,4 @@
+import { todayAsDueAt } from '@ops/module-work'
 import type { Where } from 'payload'
 import { getWorkspaceSettings } from '../auth/context'
 import { normalizeLocale, type Locale } from '../../i18n/config'
@@ -47,9 +48,9 @@ const between = (field: 'dueAt' | 'completedAt', from: number, to: number): Wher
 /** Counts for tasks matching `owner`: one person, nobody (`null`), or everyone (`undefined`). */
 async function countsFor(
   context: RequestContext,
-  input: { owner: string | null | undefined; range: ReportRange; now: number; finished: readonly string[] },
+  input: { owner: string | null | undefined; range: ReportRange; today: number; finished: readonly string[] },
 ): Promise<TaskCounts> {
-  const { owner, range, now, finished } = input
+  const { owner, range, today, finished } = input
   const who: Where[] =
     owner === undefined ? [] : [owner === null ? { assignees: { exists: false } } : { assignees: { contains: owner } }]
   const open: Where[] = finished.length === 0 ? [] : [{ stageId: { not_in: finished } }]
@@ -65,7 +66,8 @@ async function countsFor(
   const [openTasks, completedTasks, overdueTasks] = await Promise.all([
     count(...open, between('dueAt', range.from, range.to)),
     count(between('completedAt', range.from, range.to)),
-    count(...open, between('dueAt', range.from, Math.min(range.to, now))),
+    // Overdue means due before today's date, so a task due today is not late yet.
+    count(...open, between('dueAt', range.from, Math.min(range.to, today))),
   ])
   return { openTasks, completedTasks, overdueTasks }
 }
@@ -95,7 +97,9 @@ export async function loadTaskFigures(
     }),
   ])
   const people = new Map(users.docs.map((user) => [user.id, user.name]))
-  const run = (owner: string | null | undefined) => countsFor(context, { owner, finished, ...input })
+  const timeZone = text(settings.timezone) || 'UTC'
+  const today = todayAsDueAt(input.now, timeZone)
+  const run = (owner: string | null | undefined) => countsFor(context, { owner, finished, range: input.range, today })
   const owners: (string | null)[] = [...people.keys(), null]
   const [everyone, each] = await Promise.all([run(undefined), Promise.all(owners.map(run))])
   return {
@@ -103,6 +107,6 @@ export async function loadTaskFigures(
     byOwner: new Map(owners.flatMap((owner, index) => (empty(each[index]) ? [] : [[owner, each[index]] as const]))),
     people,
     locale: normalizeLocale(settings.locale),
-    timeZone: text(settings.timezone) || 'UTC',
+    timeZone,
   }
 }

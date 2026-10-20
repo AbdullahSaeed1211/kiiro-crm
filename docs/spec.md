@@ -180,6 +180,7 @@ runtime white-label; lead intake from existing websites; inbound + outbound emai
 | D-48 | Generality | The product is tenant- and vertical-agnostic from onboarding: every template in §18 is selectable and applies terminology, workflows, fields, modules, and starter views idempotently. Tenant branding and locale remain configuration, not source-code forks |
 | D-49 | Custom tenant domains | Phase 2, when a customer asks: Cloudflare for SaaS custom hostnames on the `PLATFORM_DOMAIN` zone (100 included, then $0.10 each); the customer CNAMEs its hostname to `tenants.<PLATFORM_DOMAIN>`; an `ops-edge-router` Worker on route `*/*` forwards by `request.cf.hostMetadata.slug` to the tenant Worker through a service binding; email still uses the platform sender with the tenant display name |
 | D-50 | Platform operator | Owns the Cloudflare account, GitHub organization, `PLATFORM_DOMAIN`, Email Service domains and all secrets. Customers are tenants: their owners and managers are users inside their own instance and never receive platform credentials |
+| D-51 | Task due dates | A due date is a calendar date: stored as 00:00 UTC of that date and shown as that date in every time zone (the exception to D-09's display rule). "Today" is today's date in the tenant timezone; a task is overdue when its date is before today and due today when it equals it. `packages/modules/work/src/domain/due-dates.ts` owns the comparison. |
 
 ---
 

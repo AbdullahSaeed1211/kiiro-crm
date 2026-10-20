@@ -31,8 +31,11 @@ describe('buildTaskContextMap', () => {
 
     expect(buildTaskContextMap(tasks, labels)).toEqual(
       new Map([
-        ['task-project', { label: 'Example project', href: '/projects/project-1' }],
-        ['task-organization', { label: 'Example organization', href: '/organizations/organization-1' }],
+        ['task-project', { type: 'project', label: 'Example project', href: '/projects/project-1' }],
+        [
+          'task-organization',
+          { type: 'organization', label: 'Example organization', href: '/organizations/organization-1' },
+        ],
       ]),
     )
   })

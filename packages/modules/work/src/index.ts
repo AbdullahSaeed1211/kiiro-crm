@@ -31,6 +31,7 @@ export { TASK_REPEATS, missedPeriods, nextOccurrence, type TaskRepeat } from './
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'
 export { myTasksBuckets, type MyTaskBuckets } from './queries/my-tasks'
+export { DAY_MS, dueDay, todayAsDueAt, todayIn } from './domain/due-dates'
 export {
   createProjectSchema,
   createTaskSchema,

@@ -1,6 +1,6 @@
 # UX backlog
 
-8 findings are open: 1 critical, 3 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+7 findings are open: 1 critical, 2 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Mirch Media tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -30,12 +30,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Design system. Effort: Moderate. Codes: S-01 S-02.
 - Status: mostly fixed. No native `<select>` is left, and settings, onboarding, reports, sign-in, the workflow builder, the copy button and the calendar use `Button`. Date fields stay native on purpose: the phone date picker is better than any custom one. Left: the inbox (CSS modules: folder rail, thread rows, reader tools, compose close) and the notification card, which are bespoke layouts rather than buttons. Fix: move the inbox to `Button` and the shared tokens when the inbox is next redesigned, then add a lint rule against raw `<button>` in app code.
-
-### 39. Due dates shift a day in time zones behind UTC
-
-- Area: Tasks. Effort: Moderate. Codes: T-07.
-- Now: A due date picked in the task form is stored as that day at 00:00 UTC (`NewTaskForm.tsx`), and screens show it with `timeZone: 'UTC'`, so the date reads as picked. The Overdue, Today and Next 7 days buckets (`myTasksBuckets`) and the dashboard cards instead take the workspace-zone date of that timestamp. In a zone ahead of UTC, such as Asia/Kolkata, the two agree. In a zone behind UTC, such as America/New_York, a task due Oct 20 (Oct 20 00:00 UTC) falls on Oct 19 locally, so it counts as due a day early and is overdue on the morning it is due.
-- Fix: Pick one rule and apply it everywhere. Either bucket by the UTC date of `dueAt`, which matches how the date is shown, or store the due date as local midnight in the workspace zone and show it in that zone, which matches decision D-09. Then check every place that decides what is overdue against the chosen rule: `myTasksBuckets`, `dashboard-work.ts`, `report-task-counts.ts` and `client-dashboard.ts`.
 
 ## Minor
 

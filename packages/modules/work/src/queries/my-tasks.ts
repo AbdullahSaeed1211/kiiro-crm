@@ -1,5 +1,6 @@
 import type { Actor } from '@ops/platform'
 import type { WorkTaskRecord } from '../ports/work'
+import { dueDay, todayIn } from '../domain/due-dates'
 import { TERMINAL_CATEGORIES } from '../domain/rules'
 
 export interface MyTaskBuckets {
@@ -8,10 +9,6 @@ export interface MyTaskBuckets {
   readonly next7Days: readonly WorkTaskRecord[]
   readonly later: readonly WorkTaskRecord[]
   readonly noDueDate: readonly WorkTaskRecord[]
-}
-
-function localDay(value: number, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(value)
 }
 
 function addDays(day: string, days: number): string {
@@ -31,7 +28,7 @@ function isAssignedOpen(task: WorkTaskRecord, actorId: Actor['id']): boolean {
   return !TERMINAL_CATEGORIES.has(task.stageCategory) && task.assigneeIds.includes(actorId)
 }
 
-/** Buckets open assigned tasks using calendar days in the tenant timezone, including DST-safe boundaries. */
+/** Buckets open assigned tasks by calendar date: today in the tenant timezone against each task's stored due date. */
 export function myTasksBuckets(input: {
   readonly tasks: readonly WorkTaskRecord[]
   readonly actor: Pick<Actor, 'id'>
@@ -39,7 +36,7 @@ export function myTasksBuckets(input: {
   readonly now: number
 }): MyTaskBuckets {
   const { tasks, actor, timeZone, now } = input
-  const today = localDay(now, timeZone)
+  const today = todayIn(now, timeZone)
   const nextWeek = addDays(today, 7)
   const buckets: Record<keyof MyTaskBuckets, WorkTaskRecord[]> = {
     overdue: [],
@@ -54,7 +51,7 @@ export function myTasksBuckets(input: {
       buckets.noDueDate.push(task)
       continue
     }
-    const due = localDay(task.dueAt, timeZone)
+    const due = dueDay(task.dueAt)
     buckets[bucketFor(due, today, nextWeek)].push(task)
   }
   for (const bucket of Object.values(buckets))

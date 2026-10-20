@@ -1,4 +1,5 @@
 import type { Where } from 'payload'
+import { todayAsDueAt } from '@ops/module-work'
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
@@ -32,24 +33,6 @@ export interface DashboardWork {
     readonly count: number
     readonly items: readonly { readonly id: string; readonly name: string; readonly stage: string }[]
   }
-}
-
-/** Start of the current day in `timeZone`, as epoch milliseconds. */
-function startOfDay(now: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-  }).formatToParts(now)
-  const at = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0)
-  const wallClock = Date.UTC(at('year'), at('month') - 1, at('day'), at('hour'), at('minute'), at('second'))
-  const offset = wallClock - Math.floor(now / 1000) * 1000
-  return Date.UTC(at('year'), at('month') - 1, at('day')) - offset
 }
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
@@ -147,9 +130,9 @@ export async function loadDashboardWork(context: RequestContext): Promise<Dashbo
   const me = String(context.actor.id)
   const now = Date.now()
   const timeZone = text(settings.timezone) || 'UTC'
-  const dayStart = startOfDay(now, timeZone)
+  const dayStart = todayAsDueAt(now, timeZone)
   const mine = [{ assignees: { contains: me } }]
-  const week = [{ dueAt: { greater_than_equal: now } }, { dueAt: { less_than_equal: now + WEEK_MS } }]
+  const week = [{ dueAt: { greater_than_equal: dayStart } }, { dueAt: { less_than_equal: dayStart + WEEK_MS } }]
   const [mineCount, openCount, overdue, today, dueWeek, projects] = await Promise.all([
     count(context, 'tasks', openWhere(closed, mine)),
     count(context, 'tasks', openWhere(closed, [])),

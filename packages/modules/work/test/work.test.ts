@@ -190,3 +190,23 @@ describe('moveTask uses atomic operations and rejects stale moves', () => {
     expect(atomicWrites).toBe(1)
   })
 })
+
+describe('due dates are calendar dates', () => {
+  it('T-WORK-5 a task due today is due today in a time zone behind UTC, and is not overdue', () => {
+    // 2026-10-20 is stored as 00:00 UTC; it is 11:00 that day in New York (15:00 UTC).
+    const now = Date.parse('2026-10-20T15:00:00.000Z')
+    const result = myTasksBuckets({
+      tasks: [
+        task('today', { dueAt: Date.parse('2026-10-20T00:00:00.000Z') }),
+        task('yesterday', { dueAt: Date.parse('2026-10-19T00:00:00.000Z') }),
+        task('tomorrow', { dueAt: Date.parse('2026-10-21T00:00:00.000Z') }),
+      ],
+      actor: { id: asId('staff') },
+      timeZone: 'America/New_York',
+      now,
+    })
+    expect(result.today.map((value) => value.id)).toEqual(['today'])
+    expect(result.overdue.map((value) => value.id)).toEqual(['yesterday'])
+    expect(result.next7Days.map((value) => value.id)).toEqual(['tomorrow'])
+  })
+})
