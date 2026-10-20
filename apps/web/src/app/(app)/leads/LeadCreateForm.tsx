@@ -27,10 +27,33 @@ const fields = (copy: LeadFormCopy, sources: readonly { id: string; name: string
   { name: 'newSource', label: copy.newSource, placeholder: copy.newSourcePlaceholder, maxLength: 120, half: true },
 ]
 
+type SaveFailure = Readonly<{ message: string; fields?: Readonly<Record<string, string>> }>
+type SaveOutcome = Readonly<{ id: string }> | SaveFailure
+
+/** The source to use: a typed-in one is added first; otherwise the one picked from the list, if any. */
+async function sourceFor(newSource: unknown, chosen: unknown): Promise<Readonly<{ sourceId: unknown }> | SaveFailure> {
+  const typed = typeof newSource === 'string' ? newSource.trim() : ''
+  if (typed === '') return { sourceId: chosen }
+  const added = await ensureSource({ name: typed })
+  return added.ok ? { sourceId: added.data.id } : { message: added.error.message }
+}
+
+/** Creates the lead, adding a typed-in source first; says what went wrong, and on which fields, if it fails. */
+async function saveLead(values: Readonly<Record<string, unknown>>): Promise<SaveOutcome> {
+  const { newSource, ...lead } = values
+  const source = await sourceFor(newSource, lead.sourceId)
+  if ('message' in source) return source
+  const result = await createLead({ ...lead, sourceId: source.sourceId, assigneeIds: [] })
+  if (result.ok) return { id: (result.data as { id: string }).id }
+  const { message, fields } = result.error
+  return fields === undefined ? { message } : { message, fields }
+}
+
 export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: string; name: string }[] }>) {
   const copy = catalogFor(LEAD_FORM_COPY, useLocale())
   const router = useRouter()
   const [error, setError] = useState<string | undefined>()
+  const [fieldErrors, setFieldErrors] = useState<Readonly<Record<string, string>> | undefined>()
   return (
     <div className="grid gap-4">
       {error === undefined ? null : (
@@ -41,23 +64,24 @@ export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: s
       <RecordForm
         className="ops-detail-card rounded-lg border bg-card p-5"
         fields={fields(copy, sources)}
-        labels={{ submit: copy.submit, saving: copy.saving, cancel: copy.cancel, required: copy.required }}
+        serverErrors={fieldErrors}
+        labels={{
+          submit: copy.submit,
+          saving: copy.saving,
+          cancel: copy.cancel,
+          required: copy.required,
+          invalidEmail: copy.invalidEmail,
+        }}
         onCancel={() => {
           router.push('/leads')
         }}
         onSubmit={async (values) => {
           setError(undefined)
-          const { newSource, ...lead } = values
-          const typed = typeof newSource === 'string' ? newSource.trim() : ''
-          const source = typed === '' ? undefined : await ensureSource({ name: typed })
-          if (source !== undefined && !source.ok) {
-            setError(source.error.message)
-            return
-          }
-          const sourceId = source?.ok === true ? source.data.id : lead.sourceId
-          const result = await createLead({ ...lead, sourceId, assigneeIds: [] })
-          if (result.ok) router.push(`/leads/${(result.data as { id: string }).id}`)
-          else setError(result.error.message)
+          setFieldErrors(undefined)
+          const outcome = await saveLead(values)
+          if ('id' in outcome) router.push(`/leads/${outcome.id}`)
+          else if (outcome.fields !== undefined) setFieldErrors(outcome.fields)
+          else setError(outcome.message)
         }}
       />
     </div>

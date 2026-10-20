@@ -19,6 +19,7 @@ export interface LeadFormCopy {
   readonly saving: string
   readonly cancel: string
   readonly required: string
+  readonly invalidEmail: string
 }
 
 export const LEAD_FORM_COPY: Readonly<Record<Locale, LeadFormCopy>> = {
@@ -41,6 +42,7 @@ export const LEAD_FORM_COPY: Readonly<Record<Locale, LeadFormCopy>> = {
     saving: 'Creating…',
     cancel: 'Cancel',
     required: 'This field is required',
+    invalidEmail: 'Enter a valid email address',
   },
   es: {
     title: 'Título',
@@ -61,5 +63,6 @@ export const LEAD_FORM_COPY: Readonly<Record<Locale, LeadFormCopy>> = {
     saving: 'Creando…',
     cancel: 'Cancelar',
     required: 'Este campo es obligatorio',
+    invalidEmail: 'Ingresa un correo electrónico válido',
   },
 }

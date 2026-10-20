@@ -31,7 +31,9 @@ export function parse<T>(
   input: unknown,
 ): CrmResult<T> {
   const result = schema.safeParse(input)
-  return result.success ? ok(result.data) : err(invalidInput('invalid CRM input', result.error.issues))
+  return result.success
+    ? ok(result.data)
+    : err(invalidInput('Some details are not valid. Check the fields and try again.', result.error.issues))
 }
 
 /** Converts an optional external id into the branded kernel id. */

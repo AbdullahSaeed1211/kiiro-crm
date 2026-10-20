@@ -7,13 +7,23 @@ import { NativeSelect, NativeSelectOption } from '@ops/ui/components/ui/native-s
 import { Input } from '@ops/ui/components/ui/input'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { cn } from '@ops/ui/lib/utils'
-import { formValues, validateRequired, type FormValue, type RecordFieldConfig, type RecordFormValues } from './form'
+import {
+  formValues,
+  validateEmails,
+  validateRequired,
+  type FormValue,
+  type RecordFieldConfig,
+  type RecordFormValues,
+} from './form'
+import { useServerFieldErrors } from './use-server-field-errors'
 
 export type RecordFormLabels = Readonly<{
   submit: string
   saving: string
   cancel: string
   required: string
+  /** Shown under an email field whose text is not an address; defaults to English. */
+  invalidEmail?: string
 }>
 
 export type RecordFormProps = Readonly<{
@@ -22,6 +32,8 @@ export type RecordFormProps = Readonly<{
   labels: RecordFormLabels
   onSubmit: (values: Record<string, FormValue>) => void | Promise<void>
   onCancel?: () => void
+  /** Messages the server gave for individual fields, keyed by field name; shown on those fields until they are edited. */
+  serverErrors?: Readonly<Record<string, string>> | undefined
   className?: string | undefined
 }>
 
@@ -113,14 +125,56 @@ function RecordField({ field, value, error, pending, setValue }: RecordFieldProp
   )
 }
 
+/** Cancel, when the form can be cancelled, and the submit button that turns into its saving label while a save runs. */
+function FormActions({
+  labels,
+  pending,
+  onCancel,
+}: Readonly<{ labels: RecordFormLabels; pending: boolean; onCancel: (() => void) | undefined }>) {
+  return (
+    <div className="flex justify-end gap-2 sm:col-span-2">
+      {onCancel === undefined ? null : (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          onClick={() => {
+            onCancel()
+          }}
+        >
+          {labels.cancel}
+        </Button>
+      )}
+      <Button type="submit" disabled={pending}>
+        {pending ? labels.saving : labels.submit}
+      </Button>
+    </div>
+  )
+}
+
 /** Field-config-driven create/edit form. It owns only local input state and calls the supplied submit handler. */
-export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCancel, className }: RecordFormProps) {
+export function RecordForm({
+  fields,
+  initialValues = {},
+  labels,
+  onSubmit,
+  onCancel,
+  serverErrors,
+  className,
+}: RecordFormProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const [values, setValues] = useState<Record<string, FormValue>>(() => formValues(fields, initialValues))
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({})
   const [pending, setPending] = useState(false)
+  const serverField = useServerFieldErrors(
+    serverErrors,
+    fields.map((field) => field.name),
+    formRef,
+  )
+  const allErrors = { ...serverField.shown, ...errors }
   const setValue = (name: string, value: FormValue) => {
     setValues((current) => ({ ...current, [name]: value }))
+    serverField.markEdited(name)
     setErrors((current) => {
       if (!(name in current)) return current
       return Object.fromEntries(Object.entries(current).filter(([key]) => key !== name))
@@ -128,7 +182,10 @@ export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCan
   }
   const submit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const nextErrors = validateRequired(fields, values, labels.required)
+    const nextErrors = {
+      ...validateEmails(fields, values, labels.invalidEmail ?? 'Enter a valid email address.'),
+      ...validateRequired(fields, values, labels.required),
+    }
     setErrors(nextErrors)
     const firstInvalidField = fields.find((field) => field.name in nextErrors)
     if (firstInvalidField !== undefined) {
@@ -155,28 +212,12 @@ export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCan
           key={field.name}
           field={field}
           value={values[field.name]}
-          error={errors[field.name]}
+          error={allErrors[field.name]}
           pending={pending}
           setValue={setValue}
         />
       ))}
-      <div className="flex justify-end gap-2 sm:col-span-2">
-        {onCancel === undefined ? null : (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => {
-              onCancel()
-            }}
-          >
-            {labels.cancel}
-          </Button>
-        )}
-        <Button type="submit" disabled={pending}>
-          {pending ? labels.saving : labels.submit}
-        </Button>
-      </div>
+      <FormActions labels={labels} pending={pending} onCancel={onCancel} />
     </form>
   )
 }
