@@ -4,7 +4,7 @@ import { ToggleGroup, ToggleGroupItem } from '@ops/ui/components/ui/toggle-group
 import { GanttView, type GanttBar, type GanttViewLabels, type GanttZoom } from '@ops/ui/composites/GanttView'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { TASK_COPY, type Locale } from '../../../i18n/config'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 import { createDatesSaver, type TimelineTask } from './save-dates'
@@ -106,7 +106,8 @@ export function TimelineChart({
   tasks,
   locale,
   mine = false,
-}: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale; mine?: boolean }>) {
+  filter,
+}: Readonly<{ title: string; tasks: readonly TimelineTask[]; locale: Locale; mine?: boolean; filter?: ReactNode }>) {
   const router = useRouter()
   const copy = TASK_COPY[locale]
   const compact = useSyncExternalStore(subscribeCompact, compactMatches, desktopDefault)
@@ -164,6 +165,7 @@ export function TimelineChart({
                 if (isZoom(value)) setZoom(value)
               }}
             />
+            {filter}
             <TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />
           </div>
         }

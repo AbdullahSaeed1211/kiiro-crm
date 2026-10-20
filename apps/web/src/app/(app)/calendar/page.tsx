@@ -8,6 +8,9 @@ import { TASK_COPY } from '../../../i18n/config'
 import { CALENDAR_COPY } from '../../../i18n/calendar-copy'
 import { catalogFor } from '../../../i18n/locale'
 import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
+import { loadTaskPeople } from '../../../server/queries/work/task-details'
+import { AssigneeFilter } from '../tasks/AssigneeFilter'
+import { assigneeOptions } from '../tasks/assignee-options'
 import { taskHref } from '../task-navigation'
 import { moveTaskOnCalendar } from './move-task'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
@@ -20,15 +23,31 @@ function eventColor(priority: string): CalendarEvent['color'] {
   return 'blue'
 }
 
+/** The view and assignee choices that the previous, next and Today links keep. */
+function carriedQuery({ mine, assignee }: Readonly<{ mine: boolean; assignee: string }>): string {
+  return [mine ? 'view=mine' : '', assignee === '' ? '' : `assignee=${encodeURIComponent(assignee)}`]
+    .filter(Boolean)
+    .join('&')
+}
+
 /** Month calendar for scoped tasks, grouped by due date. */
 export default async function CalendarPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ readonly month?: string; readonly year?: string; readonly view?: string }>
+  searchParams: Promise<{
+    readonly month?: string
+    readonly year?: string
+    readonly view?: string
+    readonly assignee?: string
+  }>
 }>) {
   const query = await searchParams
   const mine = query.view === 'mine'
-  const model = await loadCalendarReadModel({ year: query.year, month: query.month, mine })
+  const assignee = query.assignee ?? ''
+  const [model, people] = await Promise.all([
+    loadCalendarReadModel({ year: query.year, month: query.month, mine, assignee }),
+    loadTaskPeople(),
+  ])
   const year = model.calendarYear
   const month = model.calendarMonth
   const copy = TASK_COPY[model.locale]
@@ -60,7 +79,17 @@ export default async function CalendarPage({
         <PageHeader
           title={copy.calendar}
           description={copy.calendarDescription}
-          actions={<TaskWorkspaceViews active="calendar" locale={model.locale} mine={mine} />}
+          actions={
+            <>
+              <AssigneeFilter
+                value={assignee}
+                label={copy.assignee}
+                allLabel={copy.anyAssignee}
+                options={assigneeOptions(people)}
+              />
+              <TaskWorkspaceViews active="calendar" locale={model.locale} mine={mine} />
+            </>
+          }
         />
         {model.capped ? (
           <p role="status" className="text-sm text-muted-foreground">
@@ -76,7 +105,7 @@ export default async function CalendarPage({
           events={events}
           today={formatter.format(Date.now())}
           onMove={moveTaskOnCalendar}
-          query={mine ? 'view=mine' : ''}
+          query={carriedQuery({ mine, assignee })}
         />
       </PageContent>
     </>

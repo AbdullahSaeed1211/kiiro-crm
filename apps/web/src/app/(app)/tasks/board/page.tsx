@@ -14,6 +14,7 @@ import { loadTaskPeople } from '../../../../server/queries/work/task-details'
 import type { TaskRecord } from '../../../../server/work/task-repository'
 import { taskHref } from '../../task-navigation'
 import { AssigneeFilter } from '../AssigneeFilter'
+import { assigneeOptions } from '../assignee-options'
 import { TaskCreateForm } from '../TaskCreateForm'
 import { TaskWorkspaceViews } from '../TaskWorkspaceViews'
 import { TaskBoard } from './TaskBoard'
@@ -128,9 +129,7 @@ export default async function TaskBoardPage({
                 value={assignee}
                 label={copy.assignee}
                 allLabel={copy.anyAssignee}
-                options={[...everyone]
-                  .map(([value, label]) => ({ value, label }))
-                  .sort((a, b) => a.label.localeCompare(b.label))}
+                options={assigneeOptions(everyone)}
               />
               <TaskCreateForm />
               <TaskWorkspaceViews active="board" locale={locale} mine={mine} />

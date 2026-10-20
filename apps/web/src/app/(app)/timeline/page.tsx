@@ -7,6 +7,9 @@ import type { Metadata } from 'next'
 import { TASK_COPY } from '../../../i18n/config'
 import { getRequestContext } from '@/server/container'
 import { loadTimelineTasks } from '../../../server/queries/work/timeline-tasks'
+import { loadTaskPeople } from '../../../server/queries/work/task-details'
+import { AssigneeFilter } from '../tasks/AssigneeFilter'
+import { assigneeOptions } from '../tasks/assignee-options'
 import { TimelineChart } from './TimelineChart'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
@@ -21,10 +24,23 @@ export const dynamic = 'force-dynamic'
 /** Dated tasks the signed-in user can see, coloured by their stage. */
 export default async function TimelinePage({
   searchParams,
-}: Readonly<{ searchParams: Promise<{ readonly view?: string }> }>) {
-  const mine = (await searchParams).view === 'mine'
-  const { rows: tasks, total, locale } = await loadTimelineTasks(await getRequestContext(), mine)
+}: Readonly<{ searchParams: Promise<{ readonly view?: string; readonly assignee?: string }> }>) {
+  const params = await searchParams
+  const mine = params.view === 'mine'
+  const assignee = params.assignee ?? ''
+  const [{ rows: tasks, total, locale }, people] = await Promise.all([
+    loadTimelineTasks(await getRequestContext(), { mine, assignee }),
+    loadTaskPeople(),
+  ])
   const copy = TASK_COPY[locale]
+  const filter = (
+    <AssigneeFilter
+      value={assignee}
+      label={copy.assignee}
+      allLabel={copy.anyAssignee}
+      options={assigneeOptions(people)}
+    />
+  )
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.gantt }]} />
@@ -37,13 +53,18 @@ export default async function TimelinePage({
                 rest.
               </p>
             ) : null}
-            <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} mine={mine} />
+            <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} mine={mine} filter={filter} />
           </>
         ) : (
           <>
             <PageHeader
               title={copy.gantt}
-              actions={<TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />}
+              actions={
+                <>
+                  {filter}
+                  <TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />
+                </>
+              }
             />
             <EmptyState
               icon={ChartGantt}

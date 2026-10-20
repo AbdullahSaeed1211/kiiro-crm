@@ -111,7 +111,7 @@ function monthClauses(year: number, month: number, assigneeId: string | null): W
 
 /** Reads only tasks in the selected calendar month, plus workflow labels and calendar settings. */
 export async function loadCalendarReadModel(
-  input: Readonly<{ year: unknown; month: unknown; mine?: boolean }>,
+  input: Readonly<{ year: unknown; month: unknown; mine?: boolean; assignee?: string }>,
   context?: RequestContext,
 ): Promise<CalendarReadModel> {
   const [requestContext, settings] = await Promise.all([context ?? getRequestContext(), getWorkspaceSettings()])
@@ -127,7 +127,8 @@ export async function loadCalendarReadModel(
   const workflows = workflowPage.docs as readonly object[]
   const categories = stageCategories(workflows)
   const finished = [...categories].filter(([, category]) => FINISHED.has(category)).map(([id]) => id)
-  const inMonth = monthClauses(year, month, input.mine === true ? String(requestContext.actor.id) : null)
+  const person = input.assignee ?? (input.mine === true ? String(requestContext.actor.id) : '')
+  const inMonth = monthClauses(year, month, person === '' ? null : person)
   const taskPage = await requestContext.payload.find({
     collection: 'tasks',
     ...request,

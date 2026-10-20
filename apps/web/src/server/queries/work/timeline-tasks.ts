@@ -49,12 +49,16 @@ async function taskStages(context: RequestContext) {
 }
 
 /** The soonest open tasks that have a start or due date, read as one small page and not the whole task list. */
-export async function loadTimelineTasks(context: RequestContext, mine = false): Promise<TimelineData> {
+export async function loadTimelineTasks(
+  context: RequestContext,
+  filter: Readonly<{ mine?: boolean; assignee?: string }> = {},
+): Promise<TimelineData> {
   const [{ tones, finished }, settings] = await Promise.all([taskStages(context), getWorkspaceSettings()])
   const dated: Where = { or: [{ startAt: { exists: true } }, { dueAt: { exists: true } }] }
   const clauses: Where[] = [dated]
   if (finished.length > 0) clauses.push({ stageId: { not_in: finished } })
-  if (mine) clauses.push({ assignees: { in: [String(context.actor.id)] } })
+  if (filter.mine === true) clauses.push({ assignees: { in: [String(context.actor.id)] } })
+  if (filter.assignee !== undefined && filter.assignee !== '') clauses.push({ assignees: { in: [filter.assignee] } })
   const where: Where = clauses.length === 1 ? dated : { and: clauses }
   const page = await context.payload.find({
     collection: 'tasks',
