@@ -44,7 +44,9 @@ export function taskListHref({
   page,
   view,
   search = '',
-}: Readonly<{ sort: TaskSort; page: number; view: string; search?: string }>): string {
+  assignee = '',
+}: Readonly<{ sort: TaskSort; page: number; view: string; search?: string; assignee?: string }>): string {
   const params = { sort: formatTaskSort(sort), page: String(page), view }
-  return `/tasks?${new URLSearchParams(search === '' ? params : { ...params, q: search }).toString()}`
+  const filters = { ...(search === '' ? {} : { q: search }), ...(assignee === '' ? {} : { assignee }) }
+  return `/tasks?${new URLSearchParams({ ...params, ...filters }).toString()}`
 }

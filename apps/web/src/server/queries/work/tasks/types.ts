@@ -45,6 +45,8 @@ export interface TaskListQuery {
   readonly view?: 'all' | 'open' | 'mine'
   /** Only tasks whose title has this text, ignoring case. */
   readonly search?: string
+  /** Only tasks assigned to this person (a user id). */
+  readonly assignee?: string
 }
 
 /** One page of tasks plus the total across all pages. */

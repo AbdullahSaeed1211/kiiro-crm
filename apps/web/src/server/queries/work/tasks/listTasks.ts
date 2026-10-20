@@ -53,7 +53,10 @@ function viewWhere(query: TaskListQuery, workflow: Workflow, actorId: string): W
 function taskWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {
   const view = viewWhere(query, workflow, actorId)
   const search = query.search?.trim() ?? ''
-  return search === '' ? view : { and: [view, { title: { contains: search } }] }
+  const narrowed: Where[] = [view]
+  if (search !== '') narrowed.push({ title: { contains: search } })
+  if (query.assignee !== undefined && query.assignee !== '') narrowed.push({ assignees: { contains: query.assignee } })
+  return narrowed.length === 1 ? view : { and: narrowed }
 }
 
 interface PageArgs {

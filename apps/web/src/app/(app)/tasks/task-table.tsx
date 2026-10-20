@@ -95,8 +95,9 @@ export function toRow({
 }
 
 /** A list address that keeps the sort, view and search; an empty search is left out. */
-function listQuery({ search, ...params }: Readonly<Record<string, string>>): string {
-  return `?${new URLSearchParams(search === '' ? params : { ...params, q: search }).toString()}`
+function listQuery({ search, assignee, ...params }: Readonly<Record<string, string>>): string {
+  const filters = { ...(search === '' ? {} : { q: search }), ...(assignee === '' ? {} : { assignee }) }
+  return `?${new URLSearchParams({ ...params, ...filters }).toString()}`
 }
 
 /** Columns with sort links that keep the selected view. */
@@ -105,11 +106,12 @@ export function taskColumns({
   view,
   locale,
   search = '',
-}: Readonly<{ sort: TaskSort; view: string; locale: Locale; search?: string }>): DataTableColumn[] {
+  assignee = '',
+}: Readonly<{ sort: TaskSort; view: string; locale: Locale; search?: string; assignee?: string }>): DataTableColumn[] {
   const copy = TASK_COPY[locale]
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
-    listQuery({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view, search })
+    listQuery({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view, search, assignee })
   return [
     { id: 'title', header: copy.title, sortHref: sortHref('title'), hideable: false },
     { id: 'stage', header: copy.stage, sortHref: sortHref('stage') },
@@ -126,9 +128,16 @@ export function paginationOf({
   sort,
   view,
   search = '',
-}: Readonly<{ result: TaskListResult; sort: TaskSort; view: string; search?: string }>): DataTablePaginationState {
+  assignee = '',
+}: Readonly<{
+  result: TaskListResult
+  sort: TaskSort
+  view: string
+  search?: string
+  assignee?: string
+}>): DataTablePaginationState {
   return paginationFor({
     ...result,
-    href: (page) => listQuery({ sort: formatTaskSort(sort), page: String(page), view, search }),
+    href: (page) => listQuery({ sort: formatTaskSort(sort), page: String(page), view, search, assignee }),
   })
 }
