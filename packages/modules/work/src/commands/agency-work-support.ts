@@ -63,6 +63,7 @@ export async function responsibleOwner(input: {
 }): Promise<WorkResult<Id>> {
   const { deps, project, actorId, requestedOwner } = input
   const requestedId = requestedOwner === undefined ? actorId : asId(requestedOwner)
+  if (requestedOwner !== undefined && !projectStaff(project, requestedId)) return forbidden(INVALID_PROJECT_MEMBER)
   const ownerId = projectStaff(project, requestedId) ? requestedId : (project.ownerId ?? project.memberIds[0])
   if (ownerId === undefined) return forbidden(NO_PROJECT_MEMBER)
   if (!(await activeProjectStaff(deps, project, ownerId))) return forbidden(INVALID_PROJECT_MEMBER)
