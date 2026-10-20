@@ -3,6 +3,7 @@ import type { ContentItemRecord, DeliverableRecord, WorkRepository } from '@ops/
 import type { CollectionSlug, PayloadRequest, Where } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import { fieldOf, idOf, msOf, numberOf, textOf, type Doc } from './documents'
+import { updateAgencyItemIfUnchanged } from './agency-write'
 import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
 
 // The application regenerates this union from Payload after a schema change.
@@ -139,7 +140,7 @@ async function getDeliverable(req: PayloadRequest, id: Id) {
 
 async function listDeliverables(req: PayloadRequest, projectId: Id) {
   const docs = await findAsUser(req, {
-    collection: collection(COLLECTIONS.deliverables),
+    collection: COLLECTIONS.deliverables,
     where: { project: { equals: projectId } },
     sort: '-createdAt',
   })
@@ -155,8 +156,8 @@ async function updateDeliverable(
   },
 ) {
   const { id, patch, expectedUpdatedAt } = input
-  const doc = await updateIfUnchanged(req, {
-    collection: collection(COLLECTIONS.deliverables),
+  const doc = await updateAgencyItemIfUnchanged(req, {
+    collection: COLLECTIONS.deliverables,
     id,
     expectedUpdatedAt,
     data: updateData(patch, deliverableField),
@@ -199,8 +200,8 @@ async function updateContentItem(
   },
 ) {
   const { id, patch, expectedUpdatedAt } = input
-  const doc = await updateIfUnchanged(req, {
-    collection: collection(COLLECTIONS.contentItems),
+  const doc = await updateAgencyItemIfUnchanged(req, {
+    collection: COLLECTIONS.contentItems,
     id,
     expectedUpdatedAt,
     data: updateData(patch, contentField),

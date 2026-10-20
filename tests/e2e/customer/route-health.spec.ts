@@ -605,6 +605,30 @@ test('customer routes load without browser failures and stay within the response
   test.info().annotations.push({ type: 'route-timings', description: timings.join(', ') })
 })
 
+test('core surfaces fit the viewport and the mobile timeline stays warning-free', async ({ page }) => {
+  await signIn(page)
+  const keyWarnings: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'warning' || message.type() === 'error') {
+      if (message.text().includes('unique "key" prop')) keyWarnings.push(`${page.url()} ${message.text()}`)
+    }
+  })
+  for (const route of CORE_LAYOUT_ROUTES) {
+    const heading = ROUTES.find(([candidate]) => candidate === route)?.[1]
+    if (heading === undefined) throw new Error(`layout route ${route} has no expected heading`)
+    await page.goto(route, { waitUntil: 'load' })
+    await expect(page.getByRole('heading', { name: heading, exact: false }).first()).toBeVisible()
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+    }))
+    expect(dimensions.document, `${route} overflows the ${String(dimensions.viewport)}px viewport`).toBeLessThanOrEqual(
+      dimensions.viewport,
+    )
+  }
+  expect(keyWarnings, keyWarnings.join('\n')).toEqual([])
+})
+
 test('task details preserve origin in contextual mode and render canonically when deep-linked', async ({ page }) => {
   await signIn(page)
   const task = await verifyCalendarTaskPanelOpen(page)

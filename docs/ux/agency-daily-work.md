@@ -14,6 +14,14 @@ Global navigation names work areas. Calendar, board, timeline and repeating are 
 
 ## Acceptance checklist
 
+### Sales staff workspace requirement
+
+Sales staff need a personal calling workspace: assigned leads, call history, due callbacks, booked appointments and sales tasks. Their calendar must show their appointments, callbacks and dated tasks. Owners and authorized managers need the agency view with a person filter. Sales staff must not gain access to unrelated client delivery, billing, private tasks or workspace administration through this workspace. Access checks apply to direct URLs and APIs as well as navigation.
+
+This requirement is pending implementation and acceptance. The current permission roles are owner, manager and staff (`packages/platform/src/contracts/access.ts`). The public outbound form does not authenticate callers. A caller name entered in that form is attribution only and must not grant CRM access or establish record ownership. Signed-in call logging must record the authenticated actor. Acceptance requires two sales accounts with separate assignments, denied cross-account reads and writes, personal calendar checks, and an authorized agency overview.
+
+### Daily work acceptance
+
 All rows are pending final acceptance. Local source files and passing checks are evidence of implementation, not evidence of deployment.
 
 | Item                    | Required outcome                                                                                 | Evidence needed to accept                                                                                                                         |

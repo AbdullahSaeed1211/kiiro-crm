@@ -197,10 +197,10 @@ export function AppFrame({
     const taskId = window.sessionStorage.getItem('task-panel-focus-return')
     if (taskId === null) return
     const returnPath = window.sessionStorage.getItem('task-panel-focus-path')
-    const currentPath = `${window.location.pathname}${window.location.search}`
-    if (returnPath !== null && currentPath !== returnPath) return
+    const returnPathname = returnPath === null ? null : new URL(returnPath, window.location.origin).pathname
+    if (returnPathname !== null && returnPathname !== pathname) return
     const trigger = [...document.querySelectorAll<HTMLElement>('[data-task-link-id]')].find(
-      (element) => element.dataset.taskLinkId === taskId,
+      (element) => element.dataset.taskLinkId === taskId && element.getClientRects().length > 0,
     )
     if (trigger === undefined) return
     trigger.focus({ preventScroll: true })
