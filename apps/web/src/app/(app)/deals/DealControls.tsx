@@ -12,6 +12,9 @@ import type { DealActionResult } from '../../../server/crm/deals/actions'
 import { moveDealAction, updateDealAction } from '../../../server/crm/deals/actions'
 import { ClosingControls } from './DealClosingControls'
 import { ContactPicker } from './DealContactPicker'
+import { DEAL_CONTROLS_COPY, type DealControlsCopy } from '../../../i18n/deal-controls-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
 
 type Contact = Readonly<{ id: string; name: string }>
 type Deal = Readonly<{
@@ -49,6 +52,7 @@ type ActionProps = Readonly<{
   pending: boolean
   setError: (value: string) => void
   run: (task: () => Promise<DealActionResult>, onFailure?: () => void) => void
+  copy: DealControlsCopy
 }>
 
 function StagePicker({
@@ -57,11 +61,12 @@ function StagePicker({
   pending,
   setError,
   run,
+  copy,
 }: ActionProps & Readonly<{ stages: readonly StageOption[] }>) {
   function changeStage(stageId: string) {
     const destination = stages.find((stage) => stage.id === stageId)
     if (destination?.category === 'done_failure') {
-      setError('Choose a lost reason and use Mark lost to close this deal.')
+      setError(copy.useMarkLost)
       return
     }
     run(
@@ -77,19 +82,19 @@ function StagePicker({
         stages={stages}
         value={deal.stageId}
         onChange={changeStage}
-        labels={{ label: 'Stage', terminalGroup: 'Closed', placeholder: 'Select stage' }}
+        labels={{ label: copy.stage, terminalGroup: copy.closedGroup, placeholder: copy.selectStage }}
         disabled={pending}
       />
     </div>
   )
 }
 
-function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & Readonly<{ currency: string }>) {
+function ValueEditor({ deal, currency, pending, setError, run, copy }: ActionProps & Readonly<{ currency: string }>) {
   const [value, setValue] = useState(deal.value === null ? '' : String(deal.value.amountMinor / 100))
   function save() {
     const amountMinor = value.trim() === '' ? null : Math.round(Number(value) * 100)
     if (amountMinor !== null && !Number.isFinite(amountMinor)) {
-      setError('Enter a valid deal value.')
+      setError(copy.invalidValue)
       return
     }
     run(
@@ -106,7 +111,7 @@ function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & R
   }
   return (
     <div className="grid gap-2">
-      <Label htmlFor="deal-value-detail">Value ({deal.value?.currency ?? currency})</Label>
+      <Label htmlFor="deal-value-detail">{copy.value.replace('{currency}', deal.value?.currency ?? currency)}</Label>
       <div className="flex gap-2">
         <Input
           id="deal-value-detail"
@@ -124,7 +129,7 @@ function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & R
           }}
           disabled={pending}
         >
-          Save
+          {copy.save}
         </Button>
       </div>
     </div>
@@ -133,12 +138,12 @@ function ValueEditor({ deal, currency, pending, setError, run }: ActionProps & R
 
 const dayOf = (epoch: number | null): string => (epoch === null ? '' : new Date(epoch).toISOString().slice(0, 10))
 
-function ExpectedCloseEditor({ deal, pending, setError, run }: ActionProps) {
+function ExpectedCloseEditor({ deal, pending, setError, run, copy }: ActionProps) {
   const [day, setDay] = useState(dayOf(deal.expectedCloseAt))
   function save() {
     const epoch = day === '' ? null : new Date(`${day}T00:00:00Z`).getTime()
     if (epoch !== null && !Number.isFinite(epoch)) {
-      setError('Enter a valid date.')
+      setError(copy.invalidDate)
       return
     }
     run(
@@ -150,7 +155,7 @@ function ExpectedCloseEditor({ deal, pending, setError, run }: ActionProps) {
   }
   return (
     <div className="grid gap-2">
-      <Label htmlFor="deal-close-detail">Expected close</Label>
+      <Label htmlFor="deal-close-detail">{copy.expectedClose}</Label>
       <div className="flex gap-2">
         <Input
           id="deal-close-detail"
@@ -161,7 +166,7 @@ function ExpectedCloseEditor({ deal, pending, setError, run }: ActionProps) {
           }}
         />
         <Button size="sm" variant="outline" onClick={save} disabled={pending}>
-          Save date
+          {copy.saveDate}
         </Button>
       </div>
     </div>
@@ -183,12 +188,21 @@ export function DealControls({
   currency: string
   onMarkLost: () => void
 }>) {
+  const copy = catalogFor(DEAL_CONTROLS_COPY, useLocale())
   const { pending, error, setError, run } = useDealAction()
   return (
     <div className="grid gap-5">
-      <StagePicker key={deal.stageId} deal={deal} stages={stages} pending={pending} setError={setError} run={run} />
-      <ValueEditor deal={deal} currency={currency} pending={pending} setError={setError} run={run} />
-      <ExpectedCloseEditor deal={deal} pending={pending} setError={setError} run={run} />
+      <StagePicker
+        key={deal.stageId}
+        deal={deal}
+        stages={stages}
+        pending={pending}
+        setError={setError}
+        run={run}
+        copy={copy}
+      />
+      <ValueEditor deal={deal} currency={currency} pending={pending} setError={setError} run={run} copy={copy} />
+      <ExpectedCloseEditor deal={deal} pending={pending} setError={setError} run={run} copy={copy} />
       <ContactPicker deal={deal} contacts={contacts} pending={pending} run={run} />
       <ClosingControls
         deal={deal}
@@ -197,6 +211,7 @@ export function DealControls({
         pending={pending}
         run={run}
         onMarkLost={onMarkLost}
+        copy={copy}
       />
       {error === null ? null : (
         <p role="alert" className="text-sm text-destructive">

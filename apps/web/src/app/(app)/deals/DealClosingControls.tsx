@@ -4,6 +4,7 @@ import { Button } from '@ops/ui/components/ui/button'
 import type { StageOption } from '@ops/ui/composites/StagePill'
 import type { DealActionResult } from '../../../server/crm/deals/actions'
 import { moveDealAction } from '../../../server/crm/deals/actions'
+import type { DealControlsCopy } from '../../../i18n/deal-controls-copy'
 
 type Deal = Readonly<{ id: string; updatedAt: number }>
 
@@ -15,7 +16,9 @@ function ClosingActions({
   pending,
   run,
   onMarkLost,
+  copy,
 }: Readonly<{
+  copy: DealControlsCopy
   deal: Deal
   won: StageOption | undefined
   reopen: StageOption | undefined
@@ -35,7 +38,7 @@ function ClosingActions({
           }}
           disabled={pending}
         >
-          Mark won
+          {copy.markWon}
         </Button>
       )}
       {reopen === undefined ? null : (
@@ -46,12 +49,12 @@ function ClosingActions({
           }}
           disabled={pending}
         >
-          Reopen
+          {copy.reopen}
         </Button>
       )}
       {lost || (!reopen && !won) ? null : (
         <Button variant="destructive" onClick={onMarkLost} disabled={pending}>
-          Mark lost
+          {copy.markLost}
         </Button>
       )}
     </>
@@ -65,7 +68,9 @@ export function ClosingControls({
   pending,
   run,
   onMarkLost,
+  copy,
 }: Readonly<{
+  copy: DealControlsCopy
   deal: Deal
   stages: readonly StageOption[]
   stageCategory: string
@@ -88,6 +93,7 @@ export function ClosingControls({
         pending={pending}
         run={run}
         onMarkLost={onMarkLost}
+        copy={copy}
       />
     </div>
   )

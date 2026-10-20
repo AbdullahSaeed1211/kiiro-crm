@@ -14,6 +14,9 @@ import { Label } from '@ops/ui/components/ui/label'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import { useState } from 'react'
 import { useVersionedAction } from './use-versioned-action'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
+import { LOST_REASON_COPY } from '../../i18n/lost-reason-copy'
 
 type LostResult = Readonly<{ ok: true }> | Readonly<{ ok: false; error: Readonly<{ code: string; message: string }> }>
 
@@ -21,8 +24,8 @@ export type LostReasonDialogProps = Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
   recordId: string
-  /** Singular record name used in the title, such as "lead" or "deal". */
-  noun: string
+  /** Which kind of record is being marked lost; picks the translated title. */
+  noun: 'lead' | 'deal'
   markLost: (input: {
     id: string
     expectedUpdatedAt: number
@@ -47,19 +50,20 @@ function LostReasonDialogView(
     }
   >,
 ) {
+  const copy = catalogFor(LOST_REASON_COPY, useLocale())
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Mark {props.noun} as lost</DialogTitle>
-          <DialogDescription>Choose a reason so the pipeline stays useful.</DialogDescription>
+          <DialogTitle>{props.noun === 'lead' ? copy.titleLead : copy.titleDeal}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="lost-reason">Lost reason</Label>
+            <Label htmlFor="lost-reason">{copy.reasonLabel}</Label>
             <NativeSelect
               id="lost-reason"
-
+              className="w-full"
               value={props.reason}
               onChange={(event) => {
                 props.onReason(event.target.value)
@@ -73,14 +77,14 @@ function LostReasonDialogView(
             </NativeSelect>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="lost-note">Note (optional)</Label>
+            <Label htmlFor="lost-note">{copy.noteLabel}</Label>
             <Textarea
               id="lost-note"
               value={props.note}
               onChange={(event) => {
                 props.onNote(event.target.value)
               }}
-              placeholder="What happened?"
+              placeholder={copy.notePlaceholder}
             />
           </div>
         </div>
@@ -91,7 +95,7 @@ function LostReasonDialogView(
         )}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onCancel}>
-            Cancel
+            {copy.cancel}
           </Button>
           <Button
             type="button"
@@ -99,7 +103,7 @@ function LostReasonDialogView(
             disabled={props.pending || !props.reason}
             onClick={props.onSubmit}
           >
-            {props.pending ? 'Saving…' : 'Mark lost'}
+            {props.pending ? copy.saving : copy.submit}
           </Button>
         </DialogFooter>
       </DialogContent>
