@@ -13,11 +13,10 @@ import { useVersionedAction } from '../use-versioned-action'
 import { LeadNextAction } from './LeadNextAction'
 import { RecordActionLinks } from '../record-action-links'
 import { recordTabs } from '../record-view-primitives'
+import { formatDate as formatLocaleDate } from '../../../i18n/format'
 
-function formatDate(value: number): string {
-  const iso = new Date(value).toISOString()
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`
-}
+const formatDate = (value: number): string =>
+  formatLocaleDate(value, undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 function AsideField({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
@@ -74,7 +73,7 @@ function LeadAside({ data }: Readonly<{ data: LeadPageData }>) {
   return (
     <div className="flex flex-col gap-4">
       <section className="ops-detail-card rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Details</h2>
+        <h2 className="text-sm font-medium">Source and next action</h2>
         <dl className="mt-3 grid gap-3 text-sm">
           {details.map(([label, value]) => (
             <AsideField key={label} label={label} value={value} />
