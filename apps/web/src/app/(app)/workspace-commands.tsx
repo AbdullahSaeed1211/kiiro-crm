@@ -6,6 +6,7 @@ import {
   Contact,
   FolderKanban,
   Handshake,
+  Keyboard,
   LayoutDashboard,
   Link2,
   ListTodo,
@@ -53,12 +54,14 @@ export function WorkspaceCommands({
   shellCopy,
   onGo,
   onCopyLink,
+  onShowShortcuts,
 }: Readonly<{
   query: string
   copy: Copy
   shellCopy: Copy
   onGo: (href: string) => void
   onCopyLink: () => void
+  onShowShortcuts: () => void
 }>) {
   const matches = matcher(query)
   const navigation = NAVIGATION.filter(([key]) => matches(shellCopy[key]))
@@ -100,12 +103,21 @@ export function WorkspaceCommands({
           ))}
         </CommandGroup>
       )}
-      {matches(copyLink) ? (
+      {matches(copyLink) || matches(copy.showShortcuts) ? (
         <CommandGroup heading={copy.actions}>
-          <CommandItem value={copyLink} onSelect={onCopyLink}>
-            <Link2 aria-hidden />
-            <span>{copyLink}</span>
-          </CommandItem>
+          {matches(copyLink) ? (
+            <CommandItem value={copyLink} onSelect={onCopyLink}>
+              <Link2 aria-hidden />
+              <span>{copyLink}</span>
+            </CommandItem>
+          ) : null}
+          {matches(copy.showShortcuts) ? (
+            <CommandItem value={copy.showShortcuts} onSelect={onShowShortcuts}>
+              <Keyboard aria-hidden />
+              <span>{copy.showShortcuts}</span>
+              <CommandShortcut>?</CommandShortcut>
+            </CommandItem>
+          ) : null}
         </CommandGroup>
       ) : null}
     </>

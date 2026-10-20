@@ -1014,7 +1014,7 @@ Mobile (< md): trigger, page title, Create (icon only), bell.
 Groups: Navigation (visible sidebar items) · Create (same as Create menu) · Records (`/api/v1/search`, debounce 200 ms) · Preferences (theme, language).
 
 ### 16.5 Keyboard shortcuts
-`⌘/Ctrl+K` command menu · `⌘/Ctrl+B` toggle sidebar · `/` focus page search · `n` new record on list pages · `Esc` close sheet/dialog · `?` shortcuts dialog. Ignored while focus is in an editable field.
+`⌘/Ctrl+K` command menu · `⌘/Ctrl+B` toggle sidebar · `/` focus page search (opens the command menu when the page has none) · `n` new record on the tasks, leads, contacts, organizations and projects lists · `c` new task · `g` then `d`, `m`, `t`, `l`, `p` or `c` go to Dashboard, My tasks, Tasks, Leads, Projects or Calendar (second key within 1.2 s) · `Esc` close sheet/dialog · `?` shortcuts dialog. Ignored while focus is in an editable field, while a dialog is open and with a modifier held.
 
 ---
 

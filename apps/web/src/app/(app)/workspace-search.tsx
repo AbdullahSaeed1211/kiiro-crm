@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { SEARCH_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
 import { readApi } from './api-client'
 import { WorkspaceCommands } from './workspace-commands'
+import { ShortcutsHelp } from './shortcuts-help'
 import { useWorkspaceShortcuts } from './workspace-shortcuts'
 
 interface SearchResult {
@@ -92,7 +93,11 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
     },
     [router],
   )
-  useWorkspaceShortcuts({ openSearch, go })
+  const [helpOpen, setHelpOpen] = useState(false)
+  const openHelp = useCallback(() => {
+    setHelpOpen(true)
+  }, [])
+  useWorkspaceShortcuts({ openSearch, openHelp, go })
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -170,6 +175,10 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
               copy={copy}
               shellCopy={shellCopy}
               onGo={visitPath}
+              onShowShortcuts={() => {
+                setOpen(false)
+                setHelpOpen(true)
+              }}
               onCopyLink={() => {
                 void navigator.clipboard.writeText(window.location.href)
                 setOpen(false)
@@ -201,6 +210,7 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
           </CommandList>
         </Command>
       </CommandDialog>
+      <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
     </>
   )
 }

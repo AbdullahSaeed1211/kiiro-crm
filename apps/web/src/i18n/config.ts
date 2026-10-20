@@ -134,6 +134,7 @@ export const SEARCH_COPY: Readonly<Record<Locale, Readonly<Record<string, string
     newOrganization: 'New organization',
     actions: 'Actions',
     copyLink: 'Copy link to this page',
+    showShortcuts: 'Keyboard shortcuts',
     enter: '↵',
   },
   es: {
@@ -154,6 +155,7 @@ export const SEARCH_COPY: Readonly<Record<Locale, Readonly<Record<string, string
     newOrganization: 'Nueva organización',
     actions: 'Acciones',
     copyLink: 'Copiar el enlace de esta página',
+    showShortcuts: 'Atajos de teclado',
     enter: '↵',
   },
 }
