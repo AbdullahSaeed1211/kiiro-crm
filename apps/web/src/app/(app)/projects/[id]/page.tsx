@@ -107,7 +107,7 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
           tabs={projectTabs({
             tasks,
             description: project.description,
-            stages: model.stages,
+            stages: model.taskStages,
             projectId: project.id,
             dashboard,
             copy,

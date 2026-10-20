@@ -48,6 +48,8 @@ export interface WorkReadModel {
     readonly category: StageCategory
     readonly color: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink'
   }[]
+  /** Only the stages of the task workflow: the lanes of a task board, without project or other record stages. */
+  readonly taskStages: WorkReadModel['stages']
 }
 
 export const value = (doc: object, key: string): unknown => Reflect.get(doc, key)
@@ -177,6 +179,9 @@ export async function loadWorkReadModel(
     weekStartsOn: configuredWeekStart === 0 ? 0 : 1,
     locale,
     stages: workflowStages(workflowDocs),
+    taskStages: workflowStages(
+      (workflowDocs as readonly object[]).filter((doc) => value(doc, 'recordType') === 'task'),
+    ),
   }
 }
 

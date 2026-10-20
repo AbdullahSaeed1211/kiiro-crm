@@ -73,7 +73,12 @@ export function ProjectBoardContent({
         stageId: task.stageId,
         title: task.title,
         updatedAt: task.updatedAt,
-        meta: <Badge variant="secondary">{task.priority}</Badge>,
+        meta:
+          task.priority === 'none' ? undefined : (
+            <Badge variant="secondary" className="capitalize">
+              {task.priority}
+            </Badge>
+          ),
       }))}
     />
   )
