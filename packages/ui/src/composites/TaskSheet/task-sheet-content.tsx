@@ -67,6 +67,12 @@ function DescriptionSection({
         onChange={(event) => {
           setDescription(event.target.value)
         }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && dirty && !busy) {
+            event.preventDefault()
+            onSave(description)
+          }
+        }}
         placeholder={labels.descriptionPlaceholder}
         rows={6}
       />
@@ -105,16 +111,18 @@ export function TaskSheetContent({
     <>
       <TaskHeading title={task.title} labels={labels} asPage={asPage} ownerOnly={task.ownerOnly} />
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-3">
-        <TaskProperties
-          task={task}
-          options={options}
-          labels={labels}
-          taskHref={actions.taskHref}
-          busy={pending !== null}
-          fields={fields}
-          onSave={(change) => void save(change)}
-        />
-        <TaskMessage message={message} />
+        <div>
+          <TaskProperties
+            task={task}
+            options={options}
+            labels={labels}
+            taskHref={actions.taskHref}
+            busy={pending !== null}
+            fields={fields}
+            onSave={(change) => void save(change)}
+          />
+          <TaskMessage message={message} />
+        </div>
         <DescriptionSection
           task={task}
           labels={labels}

@@ -80,11 +80,10 @@ export function TaskActionsBar({
   )
 }
 
-/** Save outcome announced to assistive technology. */
+/** Save outcome announced to assistive technology. Its line is always reserved so a save never moves the fields below. */
 export function TaskMessage({ message }: Readonly<{ message: string | null }>) {
-  if (message === null) return null
   return (
-    <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+    <p className="-mb-2 mt-1 h-4 text-xs text-muted-foreground" role="status" aria-live="polite">
       {message}
     </p>
   )
