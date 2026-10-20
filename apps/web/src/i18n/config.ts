@@ -24,6 +24,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     crm: 'CRM',
     work: 'Work',
     settings: 'Settings',
+    logout: 'Log out',
   },
   es: {
     dashboard: 'Inicio',
@@ -42,6 +43,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     crm: 'CRM',
     work: 'Trabajo',
     settings: 'Configuración',
+    logout: 'Cerrar sesión',
   },
 }
 
@@ -186,6 +188,10 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
     contacts: 'Contacts',
     organizations: '{count} organizations',
     myOverdue: 'My overdue',
+    dueToday: 'Due today',
+    nothingToday: 'Nothing due today',
+    nothingTodayDescription: 'Pick something from your list, or enjoy the quiet.',
+    noDueDate: 'No due date',
     dueThisWeek: 'Due this week',
     activeProjects: 'Active projects',
     viewAll: 'View all',
@@ -215,6 +221,10 @@ export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, str
     contacts: 'Contactos',
     organizations: '{count} organizaciones',
     myOverdue: 'Mis vencidas',
+    dueToday: 'Vencen hoy',
+    nothingToday: 'Nada vence hoy',
+    nothingTodayDescription: 'Elige algo de tu lista, o disfruta la calma.',
+    noDueDate: 'Sin fecha',
     dueThisWeek: 'Vencen esta semana',
     activeProjects: 'Proyectos activos',
     viewAll: 'Ver todo',

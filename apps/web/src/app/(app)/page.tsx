@@ -1,8 +1,6 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import { EmptyState } from '@ops/ui/composites/EmptyState'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import { CircleCheckBig } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { DASHBOARD_COPY } from '../../i18n/config'
@@ -12,15 +10,16 @@ import { getRequestContext } from '@/server/container'
 import { DashboardPipeline } from './dashboard-pipeline'
 import { taskHref } from './task-navigation'
 import Link from 'next/link'
+import { CardEmpty } from './CardEmpty'
 import { DashboardFollowUps } from './DashboardFollowUps'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 export const dynamic = 'force-dynamic'
 
-// eslint-disable-next-line max-params -- date formatting needs the stored value and both user locale settings.
-function day(value: number | null, timeZone: string, locale: string): string {
+// eslint-disable-next-line max-params -- date formatting needs the stored value, the empty label and both user locale settings.
+function day(value: number | null, noDueDate: string, timeZone: string, locale: string): string {
   return value === null
-    ? 'No due date'
+    ? noDueDate
     : new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(value)
 }
 
@@ -48,10 +47,12 @@ function WorkCard({
 
 function TaskLinks({
   tasks,
+  noDueDate,
   timeZone,
   locale,
 }: Readonly<{
   tasks: readonly { id: string; title: string; dueAt: number | null }[]
+  noDueDate: string
   timeZone: string
   locale: string
 }>) {
@@ -63,7 +64,7 @@ function TaskLinks({
       data-task-link-id={task.id}
     >
       {task.title}
-      <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt, timeZone, locale)}</span>
+      <span className="ml-2 text-xs text-muted-foreground">{day(task.dueAt, noDueDate, timeZone, locale)}</span>
     </Link>
   ))
 }
@@ -137,29 +138,45 @@ export default async function DashboardPage() {
             href="/contacts"
           />
         </div>
-        {context.actor.role === 'owner' || context.actor.role === 'manager' ? (
-          <DashboardPipeline context={context} locale={work.locale} />
-        ) : null}
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <WorkCard title={copy.dueToday} count={work.today.count} viewAll={{ href: '/my-tasks', label: copy.viewAll }}>
+            <TaskLinks
+              tasks={work.today.items}
+              noDueDate={copy.noDueDate}
+              timeZone={work.timeZone}
+              locale={work.locale}
+            />
+            {work.today.count === 0 ? (
+              <CardEmpty title={copy.nothingToday} description={copy.nothingTodayDescription} />
+            ) : null}
+          </WorkCard>
           <DashboardFollowUps locale={work.locale} />
           <WorkCard
             title={copy.myOverdue}
             count={work.overdue.count}
             viewAll={{ href: '/my-tasks', label: copy.viewAll }}
           >
-            <TaskLinks tasks={work.overdue.items} timeZone={work.timeZone} locale={work.locale} />
-            {work.overdue.count === 0 ? (
-              <EmptyState icon={CircleCheckBig} title={copy.nothingOverdue} description={copy.onTrack} />
-            ) : null}
+            <TaskLinks
+              tasks={work.overdue.items}
+              noDueDate={copy.noDueDate}
+              timeZone={work.timeZone}
+              locale={work.locale}
+            />
+            {work.overdue.count === 0 ? <CardEmpty title={copy.nothingOverdue} description={copy.onTrack} /> : null}
           </WorkCard>
           <WorkCard
             title={copy.dueThisWeek}
             count={work.dueWeek.count}
             viewAll={{ href: '/tasks', label: copy.viewAll }}
           >
-            <TaskLinks tasks={work.dueWeek.items} timeZone={work.timeZone} locale={work.locale} />
+            <TaskLinks
+              tasks={work.dueWeek.items}
+              noDueDate={copy.noDueDate}
+              timeZone={work.timeZone}
+              locale={work.locale}
+            />
             {work.dueWeek.count === 0 ? (
-              <EmptyState title={copy.noTasksDue} description={copy.noTasksDueDescription} />
+              <CardEmpty title={copy.noTasksDue} description={copy.noTasksDueDescription} />
             ) : null}
           </WorkCard>
           <WorkCard
@@ -178,10 +195,13 @@ export default async function DashboardPage() {
               </a>
             ))}
             {work.projects.count === 0 ? (
-              <EmptyState title={copy.noActiveProjects} description={copy.noActiveProjectsDescription} />
+              <CardEmpty title={copy.noActiveProjects} description={copy.noActiveProjectsDescription} />
             ) : null}
           </WorkCard>
         </div>
+        {context.actor.role === 'owner' || context.actor.role === 'manager' ? (
+          <DashboardPipeline context={context} locale={work.locale} />
+        ) : null}
       </PageContent>
     </>
   )

@@ -1,4 +1,4 @@
-import { EmptyState } from '@ops/ui/composites/EmptyState'
+import { CardEmpty } from './CardEmpty'
 import { groupFollowUps } from '@ops/module-crm'
 import Link from 'next/link'
 import { catalogFor } from '../../i18n/locale'
@@ -50,7 +50,7 @@ export async function DashboardFollowUps({ locale }: Readonly<{ locale: string }
           {copy.more.replace('{count}', String(unique.length - SHOWN))}
         </p>
       ) : null}
-      {unique.length === 0 ? <EmptyState title={copy.emptyTitle} description={copy.emptyBody} /> : null}
+      {unique.length === 0 ? <CardEmpty title={copy.emptyTitle} description={copy.emptyBody} /> : null}
     </section>
   )
 }

@@ -35,7 +35,7 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 - Area: Tasks. Effort: Moderate. Reported by the owner on 2026-10-13.
 - Now: My tasks has the overdue, today, next 7 days and later buckets, but the signed-in person lands on the dashboard cards, and All tasks cannot be grouped by client.
-- Status: partly fixed in v0.9.75. My tasks has a Group by toggle (due date or client; `?group=client`), and the Project column on All tasks sorts, which puts each client's tasks together. Left: a today-first home view.
+- Status: partly fixed in v0.9.75. My tasks has a Group by toggle (due date or client; `?group=client`), and the Project column on All tasks sorts, which puts each client's tasks together. The dashboard now leads with a Due today card, then overdue and this week, above the pipeline. Left: a group-by toggle on All tasks.
 - Fix: A home view of the last task, today's tasks and pending tasks for the signed-in person, and a group-by toggle (client, person, project) on All tasks. The owner chose "by client" as the first grouping. Both reuse existing queries (`myTasksBuckets`).
 
 ## Minor

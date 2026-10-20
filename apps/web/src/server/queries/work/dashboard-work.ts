@@ -5,7 +5,8 @@ import type { RequestContext } from '../../container'
 
 const CLOSED = new Set(['done_success', 'done_failure', 'cancelled'])
 const SHOWN = 5
-const WEEK_MS = 7 * 86_400_000
+const DAY_MS = 86_400_000
+const WEEK_MS = 7 * DAY_MS
 
 interface Stage {
   readonly id: string
@@ -25,11 +26,30 @@ export interface DashboardWork {
   readonly mine: number
   readonly open: number
   readonly overdue: { readonly count: number; readonly items: readonly DashboardTask[] }
+  readonly today: { readonly count: number; readonly items: readonly DashboardTask[] }
   readonly dueWeek: { readonly count: number; readonly items: readonly DashboardTask[] }
   readonly projects: {
     readonly count: number
     readonly items: readonly { readonly id: string; readonly name: string; readonly stage: string }[]
   }
+}
+
+/** Start of the current day in `timeZone`, as epoch milliseconds. */
+function startOfDay(now: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  }).formatToParts(now)
+  const at = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0)
+  const wallClock = Date.UTC(at('year'), at('month') - 1, at('day'), at('hour'), at('minute'), at('second'))
+  const offset = wallClock - Math.floor(now / 1000) * 1000
+  return Date.UTC(at('year'), at('month') - 1, at('day')) - offset
 }
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
@@ -126,21 +146,32 @@ export async function loadDashboardWork(context: RequestContext): Promise<Dashbo
   const closed = (stages.get('task') ?? []).filter((stage) => CLOSED.has(stage.category)).map((stage) => stage.id)
   const me = String(context.actor.id)
   const now = Date.now()
+  const timeZone = text(settings.timezone) || 'UTC'
+  const dayStart = startOfDay(now, timeZone)
   const mine = [{ assignees: { contains: me } }]
   const week = [{ dueAt: { greater_than_equal: now } }, { dueAt: { less_than_equal: now + WEEK_MS } }]
-  const [mineCount, openCount, overdue, dueWeek, projects] = await Promise.all([
+  const [mineCount, openCount, overdue, today, dueWeek, projects] = await Promise.all([
     count(context, 'tasks', openWhere(closed, mine)),
     count(context, 'tasks', openWhere(closed, [])),
-    taskSection(context, openWhere(closed, [...mine, { dueAt: { less_than: now } }])),
+    taskSection(context, openWhere(closed, [...mine, { dueAt: { less_than: dayStart } }])),
+    taskSection(
+      context,
+      openWhere(closed, [
+        ...mine,
+        { dueAt: { greater_than_equal: dayStart } },
+        { dueAt: { less_than: dayStart + DAY_MS } },
+      ]),
+    ),
     taskSection(context, openWhere(closed, week)),
     projectSection(context, stages.get('project') ?? []),
   ])
   return {
     locale: normalizeLocale(settings.locale),
-    timeZone: text(settings.timezone) || 'UTC',
+    timeZone,
     mine: mineCount.totalDocs,
     open: openCount.totalDocs,
     overdue,
+    today,
     dueWeek,
     projects,
   }
