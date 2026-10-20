@@ -18,6 +18,8 @@ export interface MyTasksCopy {
   readonly teamHelp: string
   readonly emptyTitle: string
   readonly emptyDescription: string
+  readonly completeTask: string
+  readonly completeFailed: string
 }
 
 export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
@@ -38,6 +40,8 @@ export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
     teamHelp: 'Nobody has taken these yet. Open one and add yourself.',
     emptyTitle: 'Nothing assigned to you',
     emptyDescription: 'New work assigned to you will appear here.',
+    completeTask: 'Complete task',
+    completeFailed: 'The task was not completed. Refresh and try again.',
   },
   es: {
     title: 'Mis tareas',
@@ -56,5 +60,7 @@ export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
     teamHelp: 'Nadie las ha tomado aún. Abre una y asígnatela.',
     emptyTitle: 'No tienes nada asignado',
     emptyDescription: 'El trabajo nuevo que te asignen aparecerá aquí.',
+    completeTask: 'Completar tarea',
+    completeFailed: 'No se completó la tarea. Actualiza e inténtalo de nuevo.',
   },
 }
