@@ -73,7 +73,10 @@ export function CalendarMonth({
   labels = { previous: 'Previous month', next: 'Next month', more: '+{count} more', today: 'Today' },
   onMove,
   query = '',
+  today,
 }: Readonly<{
+  /** The current day as `YYYY-MM-DD` in the workspace time zone; that day's number is highlighted. */
+  today?: string
   /** Extra query parameters (such as `view=mine`) that month links keep. */
   query?: string
   year: number
@@ -121,6 +124,7 @@ export function CalendarMonth({
               events={date === null ? [] : (byDate.get(date) ?? [])}
               maxVisible={MAX_VISIBLE_EVENTS}
               moreLabel={labels.more}
+              isToday={date !== null && date === today}
               {...(onMove === undefined ? {} : { onMove })}
             />
           )

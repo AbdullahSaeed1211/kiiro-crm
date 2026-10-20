@@ -74,6 +74,7 @@ export default async function CalendarPage({
           locale={model.locale}
           labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore, today: copy.today }}
           events={events}
+          today={formatter.format(Date.now())}
           onMove={moveTaskOnCalendar}
           query={mine ? 'view=mine' : ''}
         />

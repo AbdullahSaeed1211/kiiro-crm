@@ -128,7 +128,9 @@ export function DayCell({
   maxVisible = 4,
   moreLabel,
   onMove,
+  isToday = false,
 }: Readonly<{
+  isToday?: boolean
   date: string | null
   day: number
   events: readonly CalendarEvent[]
@@ -147,7 +149,15 @@ export function DayCell({
       className={`min-h-20 min-w-0 border-b border-r p-1 sm:min-h-28 sm:p-2 ${over ? 'bg-accent/40' : ''}`}
       {...handlers}
     >
-      <time dateTime={date} className="text-xs font-medium text-muted-foreground">
+      <time
+        dateTime={date}
+        {...(isToday ? { 'aria-current': 'date' as const } : {})}
+        className={
+          isToday
+            ? 'inline-grid size-5 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground'
+            : 'text-xs font-medium text-muted-foreground'
+        }
+      >
         {day}
       </time>
       {problem === undefined ? null : (
