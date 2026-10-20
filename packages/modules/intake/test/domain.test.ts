@@ -1,5 +1,13 @@
 import { expect, it } from 'vitest'
-import { sha256Hex, submitIntake, checkedFormAnswers, zonedMinuteToUnix, type FormField } from '../src'
+import {
+  sha256Hex,
+  submitIntake,
+  checkedFormAnswers,
+  formFieldsSchema,
+  zonedMinuteToUnix,
+  type FormField,
+} from '../src'
+import { mappedLead } from '../src/domain'
 import type { IntakeForm, IntakeStore } from '../src'
 
 const form: IntakeForm = {
@@ -47,6 +55,10 @@ function store(): IntakeStore & { leads: number; submissions: number } {
 const allowed = { check: () => Promise.resolve(true) }
 
 const BOOKED = 'Booking arranged'
+const SERVER_KEY = 'server-key'
+const LOCAL_DATE = '2026-09-14'
+const CALLBACK_KEY = 'callback'
+const NEW_YORK = 'America/New_York'
 
 const bookingFields: readonly FormField[] = [
   { key: 'outcome', label: 'Outcome', type: 'select', required: true, options: ['Interested', BOOKED] },
@@ -73,9 +85,44 @@ it('rejects a missing booking instant and discards a hidden stale booking', () =
 
 it('resolves booking wall-clock time to Unix milliseconds without guessing DST gaps or folds', () => {
   expect(zonedMinuteToUnix('2026-10-22T15:30', 'Asia/Kolkata')).toBe(Date.UTC(2026, 9, 22, 10))
-  expect(zonedMinuteToUnix('2026-10-22T09:00', 'America/New_York')).toBe(Date.UTC(2026, 9, 22, 13))
-  expect(zonedMinuteToUnix('2026-03-08T02:30', 'America/New_York')).toBeUndefined()
-  expect(zonedMinuteToUnix('2026-11-01T01:30', 'America/New_York')).toBeUndefined()
+  expect(zonedMinuteToUnix('2026-10-22T09:00', NEW_YORK)).toBe(Date.UTC(2026, 9, 22, 13))
+  expect(zonedMinuteToUnix('2026-03-08T02:30', NEW_YORK)).toBeUndefined()
+  expect(zonedMinuteToUnix('2026-11-01T01:30', NEW_YORK)).toBeUndefined()
+})
+
+it('accepts a valid per-question IANA time zone only for datetime questions', () => {
+  const base = { key: 'booking', label: 'Booking', required: true, options: [] }
+  expect(formFieldsSchema.safeParse([{ ...base, type: 'datetime', timeZone: NEW_YORK }]).success).toBe(true)
+  expect(formFieldsSchema.safeParse([{ ...base, type: 'datetime', timeZone: 'Mars/Olympus' }]).success).toBe(false)
+  expect(formFieldsSchema.safeParse([{ ...base, type: 'text', timeZone: NEW_YORK }]).success).toBe(false)
+})
+
+it('maps only valid Unix milliseconds to a lead next-action date', () => {
+  const nextActionForm = { ...form, fieldMap: { nextAction: 'nextActionAt' } }
+  expect(mappedLead(nextActionForm, { nextAction: 1792663200000 })['nextActionAt']).toBe(1792663200000)
+  expect(mappedLead(nextActionForm, { nextAction: '2026-10-22T15:30' })).not.toHaveProperty('nextActionAt')
+  expect(mappedLead(nextActionForm, { nextAction: Number.MAX_SAFE_INTEGER })).not.toHaveProperty('nextActionAt')
+})
+
+it('rejects invalid mapped callback timestamps before accepting an intake submission', async () => {
+  const callbackForm: IntakeForm = {
+    ...form,
+    fieldMap: { [CALLBACK_KEY]: 'nextActionAt' },
+    formFields: [{ key: CALLBACK_KEY, label: 'Callback', type: 'datetime', required: true, options: [] }],
+    serverKeyHashes: [await sha256Hex(SERVER_KEY)],
+  }
+  const result = await submitIntake(
+    {
+      form: callbackForm,
+      store: store(),
+      rateLimiter: allowed,
+      serverKey: SERVER_KEY,
+      now: 1,
+      localDate: LOCAL_DATE,
+    },
+    { email: 'person@example.test', [CALLBACK_KEY]: '2026-10-22T15:30' },
+  )
+  expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
 })
 
 it('fails closed for an unlisted origin before Turnstile', async () => {
@@ -95,7 +142,7 @@ it('fails closed for an unlisted origin before Turnstile', async () => {
       turnstileToken: 'token',
       production: true,
       now: 1,
-      localDate: '2026-09-14',
+      localDate: LOCAL_DATE,
     },
     { email: 'person@example.test' },
   )
@@ -115,7 +162,7 @@ it('accepts a verified browser submission and creates one lead', async () => {
       turnstileToken: 'valid',
       production: true,
       now: 1,
-      localDate: '2026-09-14',
+      localDate: LOCAL_DATE,
     },
     { name: 'Ada', email: 'Ada@Example.test', message: 'Hello' },
   )
@@ -128,15 +175,15 @@ it('accepts a verified browser submission and creates one lead', async () => {
 })
 
 it('accepts a valid server key without origin or Turnstile', async () => {
-  const serverForm = { ...form, requireTurnstile: true, serverKeyHashes: [await sha256Hex('server-key')] }
+  const serverForm = { ...form, requireTurnstile: true, serverKeyHashes: [await sha256Hex(SERVER_KEY)] }
   const result = await submitIntake(
     {
       form: serverForm,
       store: store(),
       rateLimiter: allowed,
-      serverKey: 'server-key',
+      serverKey: SERVER_KEY,
       now: 1,
-      localDate: '2026-09-14',
+      localDate: LOCAL_DATE,
     },
     { phone: '+1 555 0100' },
   )

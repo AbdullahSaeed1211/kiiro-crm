@@ -21,8 +21,8 @@ interface NotificationItem {
   readonly id: string
   readonly type?: string
   readonly recordType?: string
-  readonly recordId?: string
-  readonly readAt?: number
+  readonly recordId?: string | null
+  readonly readAt?: number | null
   readonly createdAt?: string
   readonly data?: Readonly<Record<string, unknown>>
 }
@@ -68,10 +68,34 @@ function timeAgo(createdAt: string | undefined, locale: Locale): string {
 }
 
 const humanize = (value = 'Update') => value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
+const isUnread = (item: NotificationItem): boolean => typeof item.readAt !== 'number'
+
+function notificationHref(item: NotificationItem, pathname: string): string | undefined {
+  const route = item.recordType === undefined ? undefined : RECORD_ROUTES[item.recordType]
+  if (route === undefined || typeof item.recordId !== 'string') return undefined
+  return item.recordType === 'task'
+    ? taskHref(item.recordId, `${pathname}${window.location.search}`)
+    : `/${route}/${item.recordId}`
+}
 
 function notificationCopy(item: NotificationItem): string {
   const message = item.data?.message ?? item.data?.title
   return typeof message === 'string' && message.trim() !== '' ? message : humanize(item.type)
+}
+
+function NotificationsEmpty({
+  loading,
+  error,
+  empty,
+  label,
+}: Readonly<{ loading: boolean; error: string | null; empty: boolean; label: string }>) {
+  if (loading || error !== null || !empty) return null
+  return (
+    <div className="grid place-items-center gap-2 py-12 text-center text-sm text-muted-foreground">
+      <CheckCircle2 className="size-6" aria-hidden />
+      {label}
+    </div>
+  )
 }
 
 // eslint-disable-next-line max-lines-per-function -- the notification sheet keeps its fetch and read state together.
@@ -109,13 +133,16 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
     if (!open) return
     const controller = new AbortController()
     setLoading(true)
+    setError(null)
     void fetch('/api/v1/notifications', { credentials: 'same-origin', signal: controller.signal })
-      .then((response) => readApi<{ records?: readonly NotificationItem[] }>(response, 'Could not load notifications.'))
+      .then((response) => readApi<{ records?: readonly NotificationItem[] }>(response, copy.loadFailed))
       .then((result) => {
-        setItems(result.ok ? (result.data.records ?? []) : [])
+        if (controller.signal.aborted) return
+        if (result.ok) setItems(result.data.records ?? [])
+        else setError(copy.loadFailed)
       })
       .catch(() => {
-        setItems([])
+        if (!controller.signal.aborted) setError(copy.loadFailed)
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
@@ -123,9 +150,9 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
     return () => {
       controller.abort()
     }
-  }, [open])
+  }, [open, copy.loadFailed])
 
-  const unread = items.filter((item) => item.readAt === undefined)
+  const unread = items.filter(isUnread)
   const markAllRead = async () => {
     setMarkingAll(true)
     const results = await Promise.all(
@@ -143,7 +170,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
   }
 
   const select = async (item: NotificationItem) => {
-    if (item.readAt === undefined) {
+    if (isUnread(item)) {
       try {
         const response = await fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
         if (!response.ok) throw new Error('notification read update failed')
@@ -155,11 +182,10 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
       setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, readAt: Date.now() } : entry)))
     }
     setError(null)
-    const route = item.recordType === undefined ? undefined : RECORD_ROUTES[item.recordType]
-    if (route !== undefined && item.recordId !== undefined) {
+    const href = notificationHref(item, pathname)
+    if (href !== undefined) {
       setOpen(false)
-      const returnTo = `${pathname}${window.location.search}`
-      router.push(item.recordType === 'task' ? taskHref(item.recordId, returnTo) : `/${route}/${item.recordId}`)
+      router.push(href)
     }
   }
 
@@ -203,22 +229,18 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
               {copy.loading}
             </p>
           ) : null}
-          {!loading && items.length === 0 ? (
-            <div className="grid place-items-center gap-2 py-12 text-center text-sm text-muted-foreground">
-              <CheckCircle2 className="size-6" aria-hidden />
-              {copy.caughtUp}
-            </div>
-          ) : null}
+          <NotificationsEmpty loading={loading} error={error} empty={items.length === 0} label={copy.caughtUp} />
           {items.map((item) => (
-            <button
+            <Button
+              variant="ghost"
               type="button"
-              className="w-full rounded-lg border bg-card p-3 text-left shadow-xs transition-[background-color,box-shadow] hover:bg-muted"
+              className="h-auto w-full justify-start whitespace-normal rounded-lg border bg-card p-3 text-left"
               key={item.id}
               onClick={() => void select(item)}
             >
               <span className="flex items-start gap-2">
                 <span
-                  className={`mt-1.5 size-1.5 shrink-0 rounded-full ${item.readAt === undefined ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                  className={`mt-1.5 size-1.5 shrink-0 rounded-full ${isUnread(item) ? 'bg-primary' : 'bg-muted-foreground/30'}`}
                 />
                 <span>
                   <span className="block text-sm font-medium">{notificationCopy(item)}</span>
@@ -232,7 +254,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
                   </span>
                 </span>
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       </SheetContent>

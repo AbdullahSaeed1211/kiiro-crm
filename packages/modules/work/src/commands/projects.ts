@@ -1,6 +1,12 @@
 import { asId, err, invalidInput, ok, type Id } from '@ops/kernel'
 import type { ProjectPatch, ProjectRecord, WorkDeps, WorkResult } from '../ports/work'
-import { createProjectSchema, updateProjectSchema, type CreateProjectInput, type ProjectPatchInput } from '../schema'
+import {
+  createProjectSchema,
+  setProjectRetainerSchema,
+  updateProjectSchema,
+  type CreateProjectInput,
+  type ProjectPatchInput,
+} from '../schema'
 import { fail, isManagerUp } from './input'
 
 const CONFLICT = 'project was updated by someone else'
@@ -122,6 +128,36 @@ export async function updateProject(deps: WorkDeps, input: unknown): Promise<Wor
   const denied = await updateDenial(deps, project, patch)
   if (denied !== undefined) return denied
   const saved = await deps.repo.updateProject(project.id, patch, expectedUpdatedAt)
+  return saved === undefined ? fail('CONFLICT', CONFLICT) : ok(saved)
+}
+
+/** Sets the reporting retainer flag without replacing other project custom data. */
+export async function setProjectRetainer(
+  deps: WorkDeps,
+  input: unknown,
+): Promise<WorkResult<{ readonly retainer: boolean; readonly updatedAt: number }>> {
+  const parsed = setProjectRetainerSchema.safeParse(input)
+  if (!parsed.success) return err(invalidInput('project retainer update is invalid', parsed.error.issues))
+  const project = await deps.repo.getProject(asId(parsed.data.projectId))
+  if (project === undefined) return fail('NOT_FOUND', NOT_FOUND)
+  if (!deps.can(deps.actor, 'update', projectResource(project)))
+    return fail('FORBIDDEN', 'not allowed to update project')
+  const saved = await deps.uow.run(async () => {
+    const updated = await deps.repo.updateProjectRetainer(
+      project.id,
+      parsed.data.retainer,
+      parsed.data.expectedUpdatedAt,
+    )
+    if (updated === undefined) return undefined
+    await deps.repo.addActivity({
+      record: { type: 'project', id: project.id },
+      verb: 'field.changed',
+      actorId: deps.actor.id,
+      occurredAt: deps.clock.now(),
+      data: { field: 'retainer', retainer: updated.retainer },
+    })
+    return updated
+  })
   return saved === undefined ? fail('CONFLICT', CONFLICT) : ok(saved)
 }
 

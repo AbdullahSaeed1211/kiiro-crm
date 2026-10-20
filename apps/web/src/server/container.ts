@@ -54,6 +54,44 @@ const RELATED_COLLECTIONS: Readonly<
   deal: 'deals',
 }
 
+async function relatedRecordVisible(context: RequestContext, type: string, id: string): Promise<boolean> {
+  const collection = RELATED_COLLECTIONS[type]
+  if (collection === undefined) return false
+  const result = await context.payload.find({
+    collection,
+    where: { id: { equals: id } },
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return result.totalDocs > 0
+}
+
+async function projectAttachmentVisible(
+  context: RequestContext,
+  projectId: string,
+  attachmentId: string,
+): Promise<boolean> {
+  const result = await context.payload.find({
+    collection: 'attachments',
+    where: {
+      and: [
+        { id: { equals: attachmentId } },
+        { recordType: { equals: 'project' } },
+        { recordId: { equals: projectId } },
+      ],
+    },
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return result.totalDocs > 0
+}
+
 /** Builds the authorized command boundary for work mutations. */
 export async function workCommandDeps(requestContext?: RequestContext): Promise<WorkCommandDeps> {
   const context = requestContext ?? (await getRequestContext())
@@ -63,12 +101,12 @@ export async function workCommandDeps(requestContext?: RequestContext): Promise<
     repo: createTaskRepository(context.req),
     uow: createUnitOfWork(context.req),
     clock: systemClock,
-    readRecord: async (type: string, id: string): Promise<boolean> => {
-      const collection = RELATED_COLLECTIONS[type]
-      if (collection === undefined) return false
+    readRecord: (type, id) => relatedRecordVisible(context, type, id),
+    readProjectAttachment: (projectId, attachmentId) => projectAttachmentVisible(context, projectId, attachmentId),
+    isActiveUser: async (userId) => {
       const result = await context.payload.find({
-        collection,
-        where: { id: { equals: id } },
+        collection: 'users',
+        where: { and: [{ id: { equals: userId } }, { active: { equals: true } }] },
         depth: 0,
         limit: 1,
         pagination: false,

@@ -42,19 +42,25 @@ function MonthHeader({
       <Link
         className="text-sm text-muted-foreground hover:text-foreground"
         href={monthHref({ year, month, delta: -1, query })}
+        scroll={false}
         aria-label={labels.previous}
       >
         ←
       </Link>
       <div className="flex items-center gap-3">
         <h2 className="text-sm font-semibold">{monthLabel}</h2>
-        <Link className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted" href={query === '' ? '?' : `?${query}`}>
+        <Link
+          scroll={false}
+          className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted"
+          href={query === '' ? '?' : `?${query}`}
+        >
           {labels.today}
         </Link>
       </div>
       <Link
         className="text-sm text-muted-foreground hover:text-foreground"
         href={monthHref({ year, month, delta: 1, query })}
+        scroll={false}
         aria-label={labels.next}
       >
         →
@@ -74,7 +80,10 @@ export function CalendarMonth({
   onMove,
   query = '',
   today,
+  creation,
 }: Readonly<{
+  /** Enables date-specific creation through the day button, right-click, or long press. */
+  creation?: Readonly<{ label: string; onCreate: (date: string) => void }>
   /** The current day as `YYYY-MM-DD` in the workspace time zone; that day's number is highlighted. */
   today?: string
   /** Extra query parameters (such as `view=mine`) that month links keep. */
@@ -90,7 +99,8 @@ export function CalendarMonth({
 }>) {
   const leading = firstWeekday({ year, month, weekStartsOn })
   const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-  const cells = Math.ceil((leading + days) / 7) * 7
+  // Keep six weeks reserved so changing months never moves the content below the calendar.
+  const cells = 42
   const monthLabel = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
     Date.UTC(year, month, 1),
   )
@@ -112,7 +122,7 @@ export function CalendarMonth({
           </div>
         ))}
       </div>
-      <div className="grid min-w-0 grid-cols-7">
+      <div className="ops-calendar-grid grid min-w-0 grid-cols-7">
         {Array.from({ length: cells }, (_, index) => {
           const day = index - leading + 1
           const date = day < 1 || day > days ? null : dateKey({ year, month, day })
@@ -125,6 +135,7 @@ export function CalendarMonth({
               maxVisible={MAX_VISIBLE_EVENTS}
               moreLabel={labels.more}
               isToday={date !== null && date === today}
+              creation={creation}
               {...(onMove === undefined ? {} : { onMove })}
             />
           )

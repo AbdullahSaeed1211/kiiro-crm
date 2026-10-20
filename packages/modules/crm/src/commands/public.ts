@@ -4,6 +4,7 @@ export { convertLead, markLost } from './conversion'
 export { setCustomFields } from './custom-fields'
 export { assignDeals, assignLeads, moveDeals, moveLeads } from './bulk'
 export { archiveRecord, restoreRecord } from './archive'
+export { logCall, listCallLogs } from './calls'
 export { importRecords, MAX_IMPORT_ROWS, type ImportReport } from './import'
 
 export {

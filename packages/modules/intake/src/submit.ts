@@ -9,7 +9,16 @@ import {
   type IntakeResult,
   type SubmitIntakeDeps,
 } from './contracts'
-import { intakeDedupeKey, isAllowedOrigin, mappedLead, sha256Hex, text, titleOf, validateIntakePayload } from './domain'
+import {
+  intakeDedupeKey,
+  isAllowedOrigin,
+  mappedLead,
+  sha256Hex,
+  text,
+  titleOf,
+  validMappedLeadDates,
+  validateIntakePayload,
+} from './domain'
 import { checkedFormAnswers } from './form-answers'
 
 const failure = (code: DomainError['code'], message: string): IntakeResult => err(domainError(code, message))
@@ -131,11 +140,13 @@ async function prepare(
 
 function validateAnswers(deps: SubmitIntakeDeps, payload: unknown, channel: string) {
   const parsed = validateIntakePayload(payload)
-  if (!parsed.ok || channel !== 'web') return parsed
-  const answers = checkedFormAnswers(deps.form.formFields ?? [], parsed.value)
-  return answers === undefined
-    ? err(domainError('VALIDATION', 'Complete the required form questions with valid answers.'))
-    : ok(answers)
+  if (!parsed.ok) return parsed
+  const answers = channel === 'web' ? checkedFormAnswers(deps.form.formFields ?? [], parsed.value) : parsed.value
+  if (answers === undefined)
+    return err(domainError('VALIDATION', 'Complete the required form questions with valid answers.'))
+  return validMappedLeadDates(deps.form, answers)
+    ? ok(answers)
+    : err(domainError('VALIDATION', 'Next action date must be a valid Unix timestamp in milliseconds.'))
 }
 
 function duplicate(

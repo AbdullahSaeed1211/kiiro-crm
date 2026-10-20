@@ -2,6 +2,7 @@
 export interface RecordCopy {
   // Tabs and the activity feed
   readonly tabNotes: string
+  readonly tabCalls: string
   readonly tabActivity: string
   readonly tabTasks: string
   readonly tabFiles: string

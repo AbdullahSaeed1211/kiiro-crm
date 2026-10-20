@@ -6,12 +6,16 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { REPORT_COPY } from '../../../i18n/config'
 import { formatDate } from '../../../i18n/format'
+import { formatDuration } from '../../../server/time/duration'
 import { loadPipelineSummary } from '../../../server/queries/pipeline-insights'
 import { loadReportFigures } from '../../../server/queries/reports'
+import { loadRetainerFigures } from '../../../server/queries/report-retainers'
+import { loadTimeReport } from '../../../server/time/report'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../search-params'
 import { TimeReport } from './time-report'
 import { PipelineCharts } from './pipeline-charts'
+import { ReportCharts } from './report-charts'
 import { Button } from '@ops/ui/components/ui/button'
 
 export const dynamic = 'force-dynamic'
@@ -63,7 +67,11 @@ export default async function ReportsPage({
     context,
   )
   const copy = REPORT_COPY[figures.locale]
-  const pipeline = await loadPipelineSummary(context)
+  const [pipeline, time, retainers] = await Promise.all([
+    loadPipelineSummary(context),
+    loadTimeReport(context, { fromMs: figures.range.from, toMs: figures.range.to - 1 }),
+    loadRetainerFigures(context, figures.range),
+  ])
   const locale = figures.locale === 'es' ? 'es-ES' : 'en-US'
   const range = figures.range
   const options = [
@@ -160,7 +168,27 @@ export default async function ReportsPage({
               ),
           }}
         />
-        <TimeReport context={context} fromDate={range.fromDate} toDate={range.toDate} />
+        <ReportCharts
+          figures={figures}
+          time={time}
+          retainers={retainers}
+          formatCount={(value) => number(value, locale)}
+          formatTime={formatDuration}
+          labels={copy}
+        />
+        <TimeReport
+          report={time}
+          fromDate={range.fromDate}
+          toDate={range.toDate}
+          copy={{
+            timeLogged: copy.timeLogged,
+            byPerson: copy.byPerson,
+            byProject: copy.byProject,
+            noTime: copy.noTime,
+            logFromTask: copy.logFromTask,
+            download: copy.download,
+          }}
+        />
         <section className="ops-surface-card overflow-hidden rounded-lg border bg-card">
           <header className="border-b px-4 py-3">
             <h2 className="text-sm font-semibold">{copy.ownerBreakdown}</h2>

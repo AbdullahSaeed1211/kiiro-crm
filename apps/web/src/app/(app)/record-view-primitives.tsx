@@ -126,6 +126,7 @@ export function recordTabs(
     recordType: string
     recordId: string
     notes: ReactNode
+    calls?: ReactNode
     recipient?: string | null
     outboundEmailEnabled?: boolean
     tasks: readonly RelatedTask[]
@@ -139,6 +140,7 @@ export function recordTabs(
       label: copy.tabNotes,
       content: related.notes,
     })
+    if (related.calls !== undefined) tabs.push({ id: 'calls', label: copy.tabCalls, content: related.calls })
   }
   tabs.push({ id: 'activity', label: copy.tabActivity, content: activity })
   if (related !== undefined) {

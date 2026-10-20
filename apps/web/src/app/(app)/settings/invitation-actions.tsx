@@ -6,8 +6,14 @@ import { CopyButton } from '../copy-button'
 import { describeClientError } from '../client-errors'
 import type { ResendAction, RevokeAction } from './form-utils'
 import { Button } from '@ops/ui/components/ui/button'
+import { settingText } from '../../../i18n/settings-form-copy'
+import { useLocale } from '../../../i18n/locale-context'
 
-function InvitationMessage({ message, inviteUrl }: Readonly<{ message: string | undefined; inviteUrl: string }>) {
+function InvitationMessage({
+  message,
+  inviteUrl,
+  locale,
+}: Readonly<{ message: string | undefined; inviteUrl: string; locale: 'en' | 'es' }>) {
   if (message === undefined) return null
   return (
     <span className="text-xs text-muted-foreground" role="status" aria-live="polite">
@@ -15,10 +21,35 @@ function InvitationMessage({ message, inviteUrl }: Readonly<{ message: string | 
       {inviteUrl === '' ? null : (
         <span className="ml-1 inline-flex items-center gap-1 break-all">
           {inviteUrl}
-          <CopyButton value={inviteUrl} label="invitation link" />
+          <CopyButton value={inviteUrl} label={settingText('Invitation link', locale)} />
         </span>
       )}
     </span>
+  )
+}
+
+function RevokeInvitationButton({
+  pending,
+  onRevoke,
+  locale,
+}: Readonly<{ pending: 'resend' | 'revoke' | null; onRevoke: () => Promise<void>; locale: 'en' | 'es' }>) {
+  return (
+    <ConfirmDialog
+      title={settingText('Revoke invitation?', locale)}
+      description={settingText('This invitation link will stop working immediately.', locale)}
+      labels={{
+        cancel: settingText('Cancel', locale),
+        confirm: settingText('Revoke invitation', locale),
+        confirming: settingText('Revoking…', locale),
+      }}
+      destructive
+      onConfirm={onRevoke}
+      trigger={
+        <Button variant="link" size="sm" className="text-destructive" type="button" disabled={pending !== null}>
+          {pending === 'revoke' ? settingText('Revoking…', locale) : settingText('Revoke', locale)}
+        </Button>
+      }
+    />
   )
 }
 
@@ -28,6 +59,7 @@ export function InvitationActions({
   revokeAction,
   canRevoke = true,
 }: Readonly<{ id: string; resendAction: ResendAction; revokeAction: RevokeAction; canRevoke?: boolean }>) {
+  const locale = useLocale()
   const [pending, setPending] = useState<'resend' | 'revoke' | null>(null)
   const [message, setMessage] = useState<string>()
   const [inviteUrl, setInviteUrl] = useState('')
@@ -39,12 +71,12 @@ export function InvitationActions({
     try {
       const result = await resendAction({ id })
       setInviteUrl(result.ok ? result.data.inviteUrl : '')
-      setMessage(result.ok ? 'Invitation resent.' : result.error.message)
+      setMessage(result.ok ? settingText('Invitation resent.', locale) : settingText(result.error.message, locale))
     } catch (error) {
       setMessage(
         describeClientError(error, {
           context: 'invitation resend',
-          fallback: 'Unable to resend invitation. Try again.',
+          fallback: settingText('Unable to resend invitation. Try again.', locale),
         }),
       )
     } finally {
@@ -57,12 +89,12 @@ export function InvitationActions({
     setMessage(undefined)
     try {
       const result = await revokeAction({ id })
-      setMessage(result.ok ? 'Invitation revoked.' : result.error.message)
+      setMessage(result.ok ? settingText('Invitation revoked.', locale) : settingText(result.error.message, locale))
     } catch (error) {
       setMessage(
         describeClientError(error, {
           context: 'invitation revoke',
-          fallback: 'Unable to revoke invitation. Try again.',
+          fallback: settingText('Unable to revoke invitation. Try again.', locale),
         }),
       )
     } finally {
@@ -81,23 +113,14 @@ export function InvitationActions({
           void resend()
         }}
       >
-        {pending === 'resend' ? 'Resending…' : 'Resend'}
+        {pending === 'resend' ? settingText('Resending…', locale) : settingText('Resend', locale)}
       </Button>
-      {canRevoke ? (
-        <ConfirmDialog
-          title="Revoke invitation?"
-          description="This invitation link will stop working immediately."
-          labels={{ cancel: 'Cancel', confirm: 'Revoke invitation', confirming: 'Revoking…' }}
-          destructive
-          onConfirm={revoke}
-          trigger={
-            <Button variant="link" size="sm" className="text-destructive" type="button" disabled={pending !== null}>
-              {pending === 'revoke' ? 'Revoking…' : 'Revoke'}
-            </Button>
-          }
-        />
-      ) : null}
-      <InvitationMessage message={message} inviteUrl={inviteUrl} />
+      {canRevoke ? <RevokeInvitationButton pending={pending} onRevoke={revoke} locale={locale} /> : null}
+      <InvitationMessage
+        message={message === undefined ? undefined : settingText(message, locale)}
+        inviteUrl={inviteUrl}
+        locale={locale}
+      />
     </div>
   )
 }

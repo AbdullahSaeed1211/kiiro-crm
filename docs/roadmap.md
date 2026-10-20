@@ -108,6 +108,8 @@ Depends on: wave 10. Done when: each feature is verified signed in on production
 
 ## 12. Owner's daily view
 
+The active fourteen-item request is tracked in [the agency daily-work checklist](ux/agency-daily-work.md). Its acceptance rows require observed local and deployed behavior. Earlier wave completion does not close these rows.
+
 Source: the owner's walkthrough on 2026-10-13. Staff should open the app and know what to do today, and nothing should be missed silently.
 
 - Done (v0.9.72–v0.9.75): missed periods on repeating tasks. A cron run gives each elapsed period its own task, My tasks shows "N periods missed", and the overdue notice names the due day.

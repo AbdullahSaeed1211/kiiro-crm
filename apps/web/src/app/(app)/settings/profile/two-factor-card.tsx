@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useGuardedTransition } from '../../use-guarded-transition'
 import { confirmTwoFactorSetup, disableTwoFactor, startTwoFactor } from '../../../../server/actions/settings/two-factor'
+import { settingText } from '../../../../i18n/settings-form-copy'
+import { useLocale } from '../../../../i18n/locale-context'
 
 interface Setup {
   readonly secret: string
@@ -31,12 +33,19 @@ function CodeField({
   )
 }
 
-function RecoveryCodes({ codes, onDone }: Readonly<{ codes: readonly string[]; onDone: () => void }>) {
+function RecoveryCodes({
+  codes,
+  onDone,
+  locale,
+}: Readonly<{ codes: readonly string[]; onDone: () => void; locale: 'en' | 'es' }>) {
   return (
     <div className="grid gap-2 rounded-md border p-3" role="status">
-      <p className="font-medium">Two-step sign-in is on. Save these recovery codes now.</p>
+      <p className="font-medium">{settingText('Two-step sign-in is on. Save these recovery codes now.', locale)}</p>
       <p className="text-muted-foreground">
-        Each works once if you lose your phone. They are not shown again; store them somewhere safe.
+        {settingText(
+          'Each works once if you lose your phone. They are not shown again; store them somewhere safe.',
+          locale,
+        )}
       </p>
       <ul className="grid grid-cols-2 gap-1 font-mono text-sm">
         {codes.map((code) => (
@@ -44,7 +53,7 @@ function RecoveryCodes({ codes, onDone }: Readonly<{ codes: readonly string[]; o
         ))}
       </ul>
       <Button size="sm" className="w-fit" onClick={onDone}>
-        I saved them
+        {settingText('I saved them', locale)}
       </Button>
     </div>
   )
@@ -56,19 +65,27 @@ function SetupSteps({
   message,
   onConfirm,
 }: Readonly<{ setup: Setup; pending: boolean; message: string | null; onConfirm: (code: string) => void }>) {
+  const locale = useLocale()
   const [code, setCode] = useState('')
   return (
     <div className="grid gap-2">
       <p>
-        Add this key to an authenticator app (1Password, Google Authenticator, Authy), choosing "enter a setup key" and
-        time-based. On a phone,{' '}
+        {settingText(
+          'Add this key to an authenticator app (1Password, Google Authenticator, Authy), choosing "enter a setup key" and time-based. On a phone,',
+          locale,
+        )}{' '}
         <a className="underline" href={setup.uri}>
-          open it in your app
+          {settingText('open it in your app', locale)}
         </a>
         .
       </p>
-      <Input readOnly className="font-mono text-xs" aria-label="Setup key" value={setup.secret} />
-      <CodeField label="6-digit code from the app" value={code} onChange={setCode} />
+      <Input
+        readOnly
+        className="font-mono text-xs"
+        aria-label={settingText('Setup key', locale)}
+        value={setup.secret}
+      />
+      <CodeField label={settingText('6-digit code from the app', locale)} value={code} onChange={setCode} />
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
@@ -77,7 +94,38 @@ function SetupSteps({
             onConfirm(code)
           }}
         >
-          Turn on
+          {settingText('Turn on', locale)}
+        </Button>
+        {message === null ? null : <span role="status">{message}</span>}
+      </div>
+    </div>
+  )
+}
+
+function EnabledControls({
+  locale,
+  code,
+  onCodeChange,
+  pending,
+  message,
+  onDisable,
+}: Readonly<{
+  locale: 'en' | 'es'
+  code: string
+  onCodeChange: (value: string) => void
+  pending: boolean
+  message: string | null
+  onDisable: () => void
+}>) {
+  return (
+    <div className="grid gap-2">
+      <p>
+        {settingText('Two-step sign-in is on. To turn it off, enter a code from your app or a recovery code.', locale)}
+      </p>
+      <CodeField label={settingText('Code', locale)} value={code} onChange={onCodeChange} />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" disabled={pending} onClick={onDisable}>
+          {settingText('Turn off', locale)}
         </Button>
         {message === null ? null : <span role="status">{message}</span>}
       </div>
@@ -87,6 +135,7 @@ function SetupSteps({
 
 /** Turn two-step sign-in on or off for the signed-in user. */
 export function TwoFactorCard({ enabled }: Readonly<{ enabled: boolean }>) {
+  const locale = useLocale()
   const router = useRouter()
   const [setup, setSetup] = useState<Setup | null>(null)
   const [recovery, setRecovery] = useState<readonly string[] | null>(null)
@@ -102,6 +151,7 @@ export function TwoFactorCard({ enabled }: Readonly<{ enabled: boolean }>) {
     return (
       <RecoveryCodes
         codes={recovery}
+        locale={locale}
         onDone={() => {
           setRecovery(null)
           router.refresh()
@@ -118,7 +168,7 @@ export function TwoFactorCard({ enabled }: Readonly<{ enabled: boolean }>) {
           run(async () => {
             const result = await confirmTwoFactorSetup({ code: value })
             if (result.ok) setRecovery(result.data.recoveryCodes)
-            else setMessage(result.error.message)
+            else setMessage(settingText(result.error.message, locale))
           })
         }}
       />
@@ -134,34 +184,27 @@ export function TwoFactorCard({ enabled }: Readonly<{ enabled: boolean }>) {
           run(async () => {
             const result = await startTwoFactor()
             if (result.ok) setSetup(result.data)
-            else setMessage(result.error.message)
+            else setMessage(settingText(result.error.message, locale))
           })
         }}
       >
-        Set up two-step sign-in
+        {settingText('Set up two-step sign-in', locale)}
       </Button>
     )
   return (
-    <div className="grid gap-2">
-      <p>Two-step sign-in is on. To turn it off, enter a code from your app or a recovery code.</p>
-      <CodeField label="Code" value={code} onChange={setCode} />
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={pending}
-          onClick={() => {
-            run(async () => {
-              const result = await disableTwoFactor({ code })
-              setMessage(result.ok ? 'Turned off.' : result.error.message)
-              if (result.ok) router.refresh()
-            })
-          }}
-        >
-          Turn off
-        </Button>
-        {message === null ? null : <span role="status">{message}</span>}
-      </div>
-    </div>
+    <EnabledControls
+      locale={locale}
+      code={code}
+      onCodeChange={setCode}
+      pending={pending}
+      message={message}
+      onDisable={() => {
+        run(async () => {
+          const result = await disableTwoFactor({ code })
+          setMessage(result.ok ? settingText('Turned off.', locale) : settingText(result.error.message, locale))
+          if (result.ok) router.refresh()
+        })
+      }}
+    />
   )
 }

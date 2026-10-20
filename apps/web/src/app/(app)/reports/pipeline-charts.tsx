@@ -85,7 +85,7 @@ function Kpi({ label, value }: Readonly<{ label: string; value: string }>) {
   )
 }
 
-/** The pipeline at a glance: headline numbers, deals and leads by stage, revenue won per month and where leads come from. */
+/** The pipeline at a glance: headline numbers, deals and leads by stage and revenue won per month. */
 export function PipelineCharts({ summary, format }: Readonly<{ summary: PipelineSummary; format: Formatters }>) {
   const open = summary.dealStages.filter((stage) => !stage.category.startsWith('done'))
   const won = summary.wonByMonth.reduce((sum, month) => sum + month.valueMinor, 0)
@@ -113,20 +113,6 @@ export function PipelineCharts({ summary, format }: Readonly<{ summary: Pipeline
         </ChartCard>
         <ChartCard title="Leads by stage">
           <StageBars stages={summary.leadStages} detail={(stage) => format.count(stage.count)} />
-        </ChartCard>
-        <ChartCard title="Where leads come from">
-          {summary.leadSources.map((source) => (
-            <div key={source.name} className="grid gap-1 text-sm">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate font-medium">{source.name}</span>
-                <span className="tabular-nums text-muted-foreground">{format.count(source.count)}</span>
-              </div>
-              <Bar
-                percent={(source.count / Math.max(1, summary.leadSources[0]?.count ?? 1)) * 100}
-                color="var(--primary)"
-              />
-            </div>
-          ))}
         </ChartCard>
       </div>
     </div>

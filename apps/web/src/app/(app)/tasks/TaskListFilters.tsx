@@ -9,7 +9,8 @@ export function TaskListFilters({
   assignee,
   people,
   locale,
-}: Readonly<{ search: string; assignee: string; people: ReadonlyMap<string, string>; locale: Locale }>) {
+  due,
+}: Readonly<{ search: string; assignee: string; people: ReadonlyMap<string, string>; locale: Locale; due?: string }>) {
   const copy = TASK_COPY[locale]
   return (
     <ListViewBar
@@ -23,6 +24,20 @@ export function TaskListFilters({
           value: assignee,
           options: assigneeOptions(people),
         },
+        ...(due === undefined
+          ? []
+          : [
+              {
+                name: 'due',
+                label: copy.due,
+                allLabel: copy.anyDate,
+                value: due,
+                options: [
+                  { value: 'overdue', label: copy.overdue },
+                  { value: 'week', label: copy.dueThisWeek },
+                ],
+              },
+            ]),
       ]}
     />
   )

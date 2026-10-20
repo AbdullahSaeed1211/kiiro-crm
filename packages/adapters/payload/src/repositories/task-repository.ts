@@ -7,6 +7,7 @@ import { createAsSystem, findAsUser, pageAsUser, updateIfUnchanged, updateAndMap
 import { toStageRecord, toTaskRecord } from './task-mapping'
 import { workArchiveAccess } from './work-archive'
 import { createUnitOfWork } from '../uow/unit-of-work'
+import { agencyWorkMethods } from './agency-work'
 import { projectData, taskData, projectPatchData, taskPatchData } from './task-write-data'
 import { activityData, transitionData } from './stage-codecs'
 import {
@@ -234,6 +235,7 @@ export function createTaskRepository(req: PayloadRequest): Repository {
     ...taskWriteMethods(req),
     ...projectMethods(req),
     ...moveMethods(req),
+    ...agencyWorkMethods(req),
     ...workArchiveAccess(req),
   }
 }

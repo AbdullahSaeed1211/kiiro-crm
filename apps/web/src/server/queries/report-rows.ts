@@ -5,7 +5,7 @@ import type { RequestContext } from '@/server/container'
 import type { ReportRange } from './report-range'
 
 /** The parts of a lead and a deal the figures read, so only those are fetched. */
-export type ReportLead = Pick<LeadRecord, 'createdAt' | 'ownerId'>
+export type ReportLead = Pick<LeadRecord, 'createdAt' | 'ownerId' | 'sourceId'>
 export type ReportDeal = Pick<DealRecord, 'createdAt' | 'closedAt' | 'ownerId' | 'stageId' | 'value'>
 
 const dateOf = (value: unknown): number => (typeof value === 'string' ? Date.parse(value) : 0)
@@ -40,7 +40,7 @@ export async function loadLeanRows(
     context.payload.find({
       collection: 'leads',
       where: leadsInRange(range),
-      select: { owner: true, createdAt: true },
+      select: { owner: true, source: true, createdAt: true },
       ...request,
     }),
     context.payload.find({
@@ -57,17 +57,29 @@ export async function loadLeanRows(
       ...request,
     }),
   ])
+  return { leads: leads.docs.map(mapLead), deals: deals.docs.map(mapDeal) }
+}
+
+function mapLead(lead: { createdAt: unknown; owner?: unknown; source?: unknown }): ReportLead {
+  return { createdAt: dateOf(lead.createdAt), ownerId: idOrNull(lead.owner), sourceId: idOrNull(lead.source) }
+}
+
+function mapDeal(deal: {
+  createdAt: unknown
+  closedAt?: unknown
+  owner?: unknown
+  stageId?: unknown
+  valueAmountMinor?: unknown
+  valueCurrency?: unknown
+}): ReportDeal {
   return {
-    leads: leads.docs.map((lead) => ({ createdAt: dateOf(lead.createdAt), ownerId: idOrNull(lead.owner) })),
-    deals: deals.docs.map((deal) => ({
-      createdAt: dateOf(deal.createdAt),
-      closedAt: typeof deal.closedAt === 'number' ? deal.closedAt : null,
-      ownerId: idOrNull(deal.owner),
-      stageId: asId(typeof deal.stageId === 'string' ? deal.stageId : ''),
-      value:
-        typeof deal.valueAmountMinor === 'number' && typeof deal.valueCurrency === 'string'
-          ? { amountMinor: deal.valueAmountMinor, currency: deal.valueCurrency }
-          : null,
-    })),
+    createdAt: dateOf(deal.createdAt),
+    closedAt: typeof deal.closedAt === 'number' ? deal.closedAt : null,
+    ownerId: idOrNull(deal.owner),
+    stageId: asId(typeof deal.stageId === 'string' ? deal.stageId : ''),
+    value:
+      typeof deal.valueAmountMinor === 'number' && typeof deal.valueCurrency === 'string'
+        ? { amountMinor: deal.valueAmountMinor, currency: deal.valueCurrency }
+        : null,
   }
 }

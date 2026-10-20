@@ -139,6 +139,7 @@ function leadTabs(
   activity: readonly ActivityEntry[],
   outboundEmailEnabled: boolean,
   notes: ReactNode,
+  calls: ReactNode,
 ) {
   return recordTabs(
     copy,
@@ -158,6 +159,7 @@ function leadTabs(
       recordType: 'lead',
       recordId: data.item.lead.id,
       notes,
+      calls,
       recipient: data.item.lead.email,
       outboundEmailEnabled,
       tasks: data.relatedTasks,
@@ -178,7 +180,13 @@ function leadOwner(owner: LeadPageData['item']['owner']) {
 }
 
 /** Server-rendered sections the page passes in, because they load data with server-only code. */
-export type LeadSlots = Readonly<{ details: ReactNode; customFields: ReactNode; notes: ReactNode; archive: ReactNode }>
+export type LeadSlots = Readonly<{
+  details: ReactNode
+  customFields: ReactNode
+  notes: ReactNode
+  calls: ReactNode
+  archive: ReactNode
+}>
 
 function LeadError({ message }: Readonly<{ message: string | undefined }>) {
   if (message === undefined) return null
@@ -255,7 +263,7 @@ function LeadRecordLayout({
             />
           </div>
         }
-        tabs={leadTabs(copy, locale, data, activity, outboundEmailEnabled, slots.notes)}
+        tabs={leadTabs(copy, locale, data, activity, outboundEmailEnabled, slots.notes, slots.calls)}
         aside={
           <div className="grid gap-4">
             {slots.details}

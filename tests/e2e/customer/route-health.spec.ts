@@ -25,7 +25,7 @@ const TASK_PATH = '/tasks'
 const MEMBERS_PATH = '/settings/members'
 const TASK_PANEL = '[data-slot="sheet-content"]'
 const ROUTES = [
-  ['/', 'Dashboard'],
+  ['/', 'Today'],
   ['/leads', 'Leads'],
   ['/leads/board', 'Lead board'],
   ['/deals', 'Deals'],
@@ -59,6 +59,7 @@ const ROUTES = [
   ['/organizations/new', 'New organization'],
   ['/projects/new', 'New project'],
 ] as const
+const CORE_LAYOUT_ROUTES = new Set(['/', TASK_PATH, '/calendar', '/timeline', '/reports'])
 
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
 
@@ -166,8 +167,6 @@ async function closeTaskSourcePanel(page: Page, title: string, sourceUrl: string
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === sourceUrl)
   await expect(page.getByRole('dialog', { name: title })).toHaveCount(0)
-  // Mobile WebKit does not give the opening link focus back (open finding UX 34); desktop browsers do.
-  if (isPhone(page)) return
   await expect(page.getByRole('link', { name: title, exact: true })).toBeFocused()
 }
 
@@ -323,8 +322,6 @@ async function verifyTaskPanelHistoryAndEscape(page: Page, title: string) {
     await recordedLayoutShiftSince(page, closeStartedAt),
     'closing a task panel should not shift the calendar',
   ).toBe(0)
-  // Same open finding as above: only desktop browsers return focus to the opening link.
-  if (isPhone(page)) return
   await expect(page.getByRole('link', { name: title, exact: true })).toBeFocused()
 }
 
@@ -453,9 +450,7 @@ test('customer routes load without browser failures and stay within the response
   const badResponses: string[] = []
   const notificationDiagnostics: string[] = []
   page.on('console', (message) => {
-    // The phone timeline's Gantt library renders unkeyed children (backlog UX 35); every other warning still fails.
-    const knownGanttKeyWarning = message.text().includes('unique "key" prop')
-    if ((message.type() === 'warning' || message.type() === 'error') && !knownGanttKeyWarning)
+    if (message.type() === 'warning' || message.type() === 'error')
       consoleIssues.push(`${message.type()}: ${message.text()}`)
   })
   page.on('pageerror', (error) => {
@@ -511,6 +506,16 @@ test('customer routes load without browser failures and stay within the response
     const bodyText = await page.locator('body').innerText()
     expect(bodyText).not.toContain('Application error')
     expect(bodyText, `${route} leaked an internal identifier`).not.toMatch(UUID_TEXT)
+    if (CORE_LAYOUT_ROUTES.has(route)) {
+      const dimensions = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+      }))
+      expect(
+        dimensions.document,
+        `${route} overflows the ${String(dimensions.viewport)}px viewport`,
+      ).toBeLessThanOrEqual(dimensions.viewport)
+    }
   }
 
   const detailRoutes = await availableDetailRoutes(page)
@@ -562,6 +567,10 @@ test('customer routes load without browser failures and stay within the response
   await expect(page.getByRole('heading', { name: 'Figures', exact: true })).toBeVisible()
   await expect(page.getByLabel('Date range')).toHaveValue('30d')
   await expect(page.getByRole('button', { name: 'Apply range', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'New leads by source', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workload by person', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Retainer activity', exact: true })).toBeVisible()
+  await expect(page.getByText(/No retainer budget is recorded/)).toBeVisible()
   for (const route of detailRoutes) {
     const start = Date.now()
     await page.goto(route, { waitUntil: 'load' })

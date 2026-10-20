@@ -23,6 +23,9 @@ export interface TaskFormLabels {
   readonly repeatHelp: string
   readonly ownerOnly: string
   readonly description: string
+  readonly moreDetails: string
+  readonly captureHelp: string
+  readonly pageTitle: string
   /** `{name}` is the record the task will be linked to. */
   readonly linkedTo: string
   readonly cancel: string
@@ -54,6 +57,9 @@ const TASK_FORM_COPY: Readonly<Record<Locale, TaskFormLabels>> = {
     repeatHelp: 'Needs a due date. Completing it creates the next one.',
     ownerOnly: 'Owner only: hide from staff',
     description: 'Description',
+    moreDetails: 'More details',
+    captureHelp: 'A title is enough to start. Add dates, notes and other details when you know them.',
+    pageTitle: 'New task',
     linkedTo: 'Linked to {name}',
     cancel: 'Cancel',
     create: 'Create task',
@@ -82,6 +88,9 @@ const TASK_FORM_COPY: Readonly<Record<Locale, TaskFormLabels>> = {
     repeatHelp: 'Necesita fecha límite. Al completarla se crea la siguiente.',
     ownerOnly: 'Solo propietario: ocultar al personal',
     description: 'Descripción',
+    moreDetails: 'Más detalles',
+    captureHelp: 'Un título basta para empezar. Añade fechas, notas y otros detalles cuando los sepas.',
+    pageTitle: 'Nueva tarea',
     linkedTo: 'Vinculada a {name}',
     cancel: 'Cancelar',
     create: 'Crear tarea',

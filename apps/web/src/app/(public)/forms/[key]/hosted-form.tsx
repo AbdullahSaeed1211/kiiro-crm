@@ -61,7 +61,7 @@ function Question({ field, timeZone, locale }: Readonly<{ field: Field }> & Pres
           {field.label}
           {field.required ? ' *' : ''}
         </legend>
-        <BookingInstant name={field.key} timeZone={timeZone} locale={locale} />
+        <BookingInstant name={field.key} timeZone={field.timeZone ?? timeZone} locale={locale} />
       </fieldset>
     )
   if (field.type === 'checkbox')

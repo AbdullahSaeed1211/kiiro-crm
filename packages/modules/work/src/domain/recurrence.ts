@@ -39,3 +39,17 @@ export function nextOccurrence(time: number, repeat: TaskRepeat): number {
   if (months !== undefined) return addMonths(time, months)
   return time + (DAYS[repeat] ?? 0) * DAY_MS
 }
+
+/** The next scheduled calendar day strictly after today, even while older occurrences remain unfinished. */
+export function nextRunAfter(dueAt: number, repeat: TaskRepeat, today: number): number | null {
+  if (repeat === 'none') return null
+  if (dueAt > today) return dueAt
+  const days = DAYS[repeat]
+  if (days !== undefined) {
+    const step = days * DAY_MS
+    return dueAt + (Math.floor((today - dueAt) / step) + 1) * step
+  }
+  let next = nextOccurrence(dueAt, repeat)
+  while (next <= today) next = nextOccurrence(next, repeat)
+  return next
+}

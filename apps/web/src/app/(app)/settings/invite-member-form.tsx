@@ -6,8 +6,14 @@ import { CopyButton } from '../copy-button'
 import { describeClientError } from '../client-errors'
 import { formText, type InviteAction } from './form-utils'
 import { Button } from '@ops/ui/components/ui/button'
+import { settingText } from '../../../i18n/settings-form-copy'
+import { useLocale } from '../../../i18n/locale-context'
 
-function InviteFormMessage({ message, inviteUrl }: Readonly<{ message: string | undefined; inviteUrl: string }>) {
+function InviteFormMessage({
+  message,
+  inviteUrl,
+  locale,
+}: Readonly<{ message: string | undefined; inviteUrl: string; locale: 'en' | 'es' }>) {
   if (message === undefined) return null
   return (
     <div className="text-sm text-muted-foreground sm:col-span-3" role="status" aria-live="polite">
@@ -15,7 +21,7 @@ function InviteFormMessage({ message, inviteUrl }: Readonly<{ message: string | 
       {inviteUrl === '' ? null : (
         <span className="mt-1 flex items-center gap-1 break-all text-xs">
           {inviteUrl}
-          <CopyButton value={inviteUrl} label="invitation link" />
+          <CopyButton value={inviteUrl} label={settingText('Invitation link', locale)} />
         </span>
       )}
     </div>
@@ -28,17 +34,19 @@ function InviteFormFields({
   pending,
   onEmailChange,
   onRoleChange,
+  locale,
 }: Readonly<{
   email: string
   role: string
   pending: boolean
   onEmailChange: (value: string) => void
   onRoleChange: (value: string) => void
+  locale: 'en' | 'es'
 }>) {
   return (
     <>
       <label className="sr-only" htmlFor="invite-member-email">
-        Teammate email
+        {settingText('Teammate email', locale)}
       </label>
       <input
         id="invite-member-email"
@@ -56,7 +64,7 @@ function InviteFormFields({
         disabled={pending}
       />
       <label className="sr-only" htmlFor="invite-member-role">
-        Member role
+        {settingText('Member role', locale)}
       </label>
       <NativeSelect
         id="invite-member-role"
@@ -73,13 +81,14 @@ function InviteFormFields({
         <option value="owner">Owner</option>
       </NativeSelect>
       <Button size="lg" type="submit" disabled={pending}>
-        {pending ? 'Inviting…' : 'Invite'}
+        {pending ? settingText('Inviting…', locale) : settingText('Invite', locale)}
       </Button>
     </>
   )
 }
 
 export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>) {
+  const locale = useLocale()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('staff')
   const [message, setMessage] = useState<string>()
@@ -103,7 +112,7 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
       setMessage(
         describeClientError(error, {
           context: 'invitation create',
-          fallback: 'Unable to create invitation. Try again.',
+          fallback: settingText('Unable to create invitation. Try again.', locale),
         }),
       )
     } finally {
@@ -118,8 +127,19 @@ export function InviteMemberForm({ action }: Readonly<{ action: InviteAction }>)
         void submit(event)
       }}
     >
-      <InviteFormFields email={email} role={role} pending={pending} onEmailChange={setEmail} onRoleChange={setRole} />
-      <InviteFormMessage message={message} inviteUrl={inviteUrl} />
+      <InviteFormFields
+        email={email}
+        role={role}
+        pending={pending}
+        onEmailChange={setEmail}
+        onRoleChange={setRole}
+        locale={locale}
+      />
+      <InviteFormMessage
+        message={message === undefined ? undefined : settingText(message, locale)}
+        inviteUrl={inviteUrl}
+        locale={locale}
+      />
     </form>
   )
 }

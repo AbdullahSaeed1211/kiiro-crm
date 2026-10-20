@@ -84,14 +84,14 @@ export function createInvitationsExpireJob(deps: ScheduledJobsDeps): CronJob {
   }
 }
 
-/** Notifies assignees of open tasks whose due date is before the tenant's local day. */
+/** Checks overdue tasks every window; daily per-recipient keys prevent repeated alerts. */
 export function createOverdueJob(deps: ScheduledJobsDeps): CronJob {
   return {
     name: 'tasks.overdue',
-    isDue: (window) => firstRunAfterNine(deps.timeZone, window),
     run: async (window) => {
       if (!(await claim(deps, 'tasks.overdue', window))) return ok({ processed: 0, created: 0, skipped: 0 })
-      const today = startOfLocalDay(deps.timeZone, window.end)
+      // Due dates store the calendar date at UTC midnight, rather than an instant in the workspace zone.
+      const today = Date.parse(`${localDate(deps.timeZone, window.end)}T00:00:00.000Z`)
       const page = asBatch<JobTarget>(
         await deps.source.listOverdue(today, deps.limit ?? JOB_LIMIT, await cursorOfJob(deps, 'tasks.overdue')),
       )

@@ -33,6 +33,7 @@ interface WorkListProject {
   readonly startAt: number | null
   readonly targetEndAt: number | null
   readonly updatedAt: number
+  readonly retainer: boolean
 }
 export interface WorkReadModel {
   readonly tasks: readonly WorkListTask[]
@@ -134,6 +135,11 @@ export function mapTask(doc: object, stages: ReadonlyMap<string, StageLabel>): W
     repeat: repeatOf(doc),
   }
 }
+function projectRetainer(doc: object): boolean {
+  const customData = value(doc, 'customData')
+  return typeof customData === 'object' && customData !== null && Reflect.get(customData, 'retainer') === true
+}
+
 function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkListProject {
   const stageId = text(doc, 'stageId')
   return {
@@ -148,6 +154,7 @@ function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkL
     startAt: number(doc, 'startAt'),
     targetEndAt: number(doc, 'targetEndAt'),
     updatedAt: date(doc, 'updatedAt'),
+    retainer: projectRetainer(doc),
   }
 }
 

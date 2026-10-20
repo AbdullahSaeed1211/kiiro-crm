@@ -8,7 +8,7 @@ export const LOCALE_LABELS: Readonly<Record<Locale, string>> = {
 
 export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
-    dashboard: 'Dashboard',
+    dashboard: 'Today',
     myTasks: 'My tasks',
     inbox: 'Inbox',
     leads: 'Leads',
@@ -27,7 +27,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     logout: 'Log out',
   },
   es: {
-    dashboard: 'Inicio',
+    dashboard: 'Hoy',
     myTasks: 'Mis tareas',
     inbox: 'Bandeja de entrada',
     leads: 'Prospectos',
@@ -160,29 +160,9 @@ export const SEARCH_COPY: Readonly<Record<Locale, Readonly<Record<string, string
   },
 }
 
-export const NOTIFICATION_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
-  en: {
-    label: 'Notifications',
-    description: 'Updates that need your attention.',
-    loading: 'Loading updates…',
-    caughtUp: 'You’re all caught up.',
-    readFailed: 'Could not mark this notification as read. Try again.',
-    markAllRead: 'Mark all as read',
-    markingAll: 'Marking…',
-  },
-  es: {
-    label: 'Notificaciones',
-    description: 'Novedades que requieren tu atención.',
-    loading: 'Cargando novedades…',
-    caughtUp: 'Estás al día.',
-    readFailed: 'No se pudo marcar la notificación como leída. Inténtalo de nuevo.',
-    markAllRead: 'Marcar todo como leído',
-    markingAll: 'Marcando…',
-  },
-}
+export { NOTIFICATION_COPY } from './notification-copy'
 
 export { INBOX_COPY } from './inbox-copy'
-
 export const DASHBOARD_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
     title: 'Dashboard',

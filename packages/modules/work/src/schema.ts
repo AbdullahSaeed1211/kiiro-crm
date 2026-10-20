@@ -12,6 +12,65 @@ const projectName = z.string().trim().min(1, 'Enter a project name.').max(200, '
 const priority = z.enum(['none', 'low', 'medium', 'high', 'urgent'])
 const version = z.number()
 const repeat = z.enum(TASK_REPEATS)
+const agencyTitle = z.string().trim().min(1, 'Enter a title.').max(300, 'Use 300 characters or fewer.')
+const optionalNote = z.string().trim().max(5_000).nullable().optional()
+const webUrl = z
+  .url()
+  .max(2_000)
+  .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), { message: 'Use a secure web link.' })
+  .nullable()
+  .optional()
+
+export const createDeliverableSchema = z.strictObject({
+  projectId: nonEmptyId,
+  title: agencyTitle,
+  ownerId: nonEmptyId.optional(),
+  linkUrl: webUrl,
+  attachmentId: optionalRef,
+})
+
+export const respondToDeliverableSchema = z.strictObject({
+  deliverableId: nonEmptyId,
+  expectedUpdatedAt: version,
+  status: z.enum(['sent_to_client', 'approved', 'changes_requested']),
+  responseNote: optionalNote,
+})
+
+export const createContentItemSchema = z
+  .strictObject({
+    projectId: nonEmptyId,
+    title: agencyTitle,
+    body: z.string().trim().max(20_000).nullable().optional(),
+    channel: z.string().trim().max(100).optional(),
+    publishAt: z.number().nonnegative().nullable().optional(),
+    status: z.enum(['draft', 'scheduled', 'published']).optional(),
+    ownerId: nonEmptyId.optional(),
+  })
+  .refine(
+    (value) =>
+      value.status === undefined ||
+      value.status === 'draft' ||
+      (value.publishAt !== null && value.publishAt !== undefined && !!value.channel?.trim()),
+    {
+      message: 'Scheduled or published content needs a date and channel.',
+      path: ['publishAt'],
+    },
+  )
+
+export const updateContentItemSchema = z.strictObject({
+  contentItemId: nonEmptyId,
+  expectedUpdatedAt: version,
+  patch: z
+    .strictObject({
+      title: agencyTitle.optional(),
+      body: z.string().trim().max(20_000).nullable().optional(),
+      channel: z.string().trim().max(100).nullable().optional(),
+      publishAt: z.number().nonnegative().nullable().optional(),
+      status: z.enum(['draft', 'scheduled', 'published']).optional(),
+      ownerId: nonEmptyId.optional(),
+    })
+    .refine((patch) => Object.keys(patch).length > 0, { message: 'Change at least one field.' }),
+})
 
 const startNotAfterDue = (value: { startAt?: number | null | undefined; dueAt?: number | null | undefined }): boolean =>
   typeof value.startAt !== 'number' || typeof value.dueAt !== 'number' || value.startAt <= value.dueAt
@@ -94,6 +153,12 @@ export const updateProjectSchema = z.object({
   projectId: nonEmptyId,
   expectedUpdatedAt: version,
   patch: projectPatchSchema,
+})
+
+export const setProjectRetainerSchema = z.strictObject({
+  projectId: nonEmptyId,
+  retainer: z.boolean(),
+  expectedUpdatedAt: version,
 })
 
 /** Compare-and-set guard for commands that only need the record's current version. */

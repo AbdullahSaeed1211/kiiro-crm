@@ -3,7 +3,6 @@ import { LIST_COPY, type ListCopy } from '../../../i18n/list-copy'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { initials } from '@ops/ui/lib/initials'
 import { PersonCell } from '../person-cell'
-import { ExportLink, ImportLink } from '../ExportLink'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { EmptyValue, paginationFor, type DataTableColumn, type DataTableRow } from '@ops/ui/composites/DataTable'
@@ -30,6 +29,8 @@ export const metadata: Metadata = { title: 'Leads' }
 import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
 import { catalogFor, type Locale } from '../../../i18n/locale'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
+import { LEAD_VIEWS_COPY, type LeadViewsCopy } from '../../../i18n/lead-views-copy'
+import { LEAD_MORE_COPY } from '../../../i18n/lead-more-copy'
 export const dynamic = 'force-dynamic'
 
 const tableColumns = (copy: ListCopy): DataTableColumn[] => [
@@ -37,8 +38,8 @@ const tableColumns = (copy: ListCopy): DataTableColumn[] => [
   { id: 'stage', header: copy.colStage },
   { id: 'owner', header: copy.colOwner },
   { id: 'nextAction', header: copy.colNextAction },
-  { id: 'source', header: copy.colSource, defaultHidden: true },
-  { id: 'email', header: copy.colEmail },
+  { id: 'source', header: copy.colSource },
+  { id: 'email', header: copy.colEmail, defaultHidden: true },
   { id: 'phone', header: copy.colPhone, defaultHidden: true },
   { id: 'created', header: copy.colCreated, defaultHidden: true },
 ]
@@ -133,7 +134,7 @@ function pageHref(params: SearchParams, page: number): string {
 }
 
 /** The table and board share the search and stage filters; the board has no source or owner filter. */
-function viewSwitcher(params: SearchParams) {
+function viewSwitcher(params: SearchParams, copy: LeadViewsCopy) {
   const query = new URLSearchParams()
   const q = parseLeadSearch(params.q)
   if (q) query.set('q', q)
@@ -143,9 +144,9 @@ function viewSwitcher(params: SearchParams) {
   const suffix = query.toString() === '' ? '' : `?${query.toString()}`
   return (
     <ViewSwitcher
-      label="Lead views"
+      label={copy.label}
       active="table"
-      views={leadViews({ tableHref: `/leads${suffix}`, boardHref: `/leads/board${suffix}` })}
+      views={leadViews({ tableHref: `/leads${suffix}`, boardHref: `/leads/board${suffix}`, copy })}
     />
   )
 }
@@ -222,6 +223,8 @@ function LeadTable({
 export default async function LeadsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
   const locale = await loadWorkspaceLocale()
   const help = catalogFor(SECTION_HELP_COPY, locale)
+  const leadViewsCopy = catalogFor(LEAD_VIEWS_COPY, locale)
+  const moreCopy = catalogFor(LEAD_MORE_COPY, locale)
   const params = await searchParams
   const { actor } = await getProductContext()
   const canBulk = actor.role === 'owner' || actor.role === 'manager'
@@ -243,16 +246,17 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
           count={result.total}
           actions={
             <>
-              <ImportLink type="lead" />
-              <ExportLink kind="leads" />
               <LeadCreateDialogClient />
-              {viewSwitcher(params)}
+              {viewSwitcher(params, leadViewsCopy)}
+              <LeadViewControls
+                views={[{ id: 'all', label: moreCopy.allOpenLeads, query: '' }, ...views]}
+                canImportExport={canBulk}
+              />
             </>
           }
         />
         <LeadListControls stages={result.stages} sources={result.sources} />
         <LeadFilterChips stages={result.stages} sources={result.sources} />
-        <LeadViewControls views={[{ id: 'all', label: 'All open leads', query: '' }, ...views]} />
         <LeadTable result={result} params={params} canBulk={canBulk} locale={locale} />
       </PageContent>
     </>

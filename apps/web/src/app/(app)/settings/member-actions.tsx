@@ -6,6 +6,8 @@ import { CheckboxGroup } from './checkbox-group'
 import { describeClientError } from '../client-errors'
 import type { MemberAction } from './form-utils'
 import { Button } from '@ops/ui/components/ui/button'
+import { settingText } from '../../../i18n/settings-form-copy'
+import { useLocale } from '../../../i18n/locale-context'
 
 function ReportsToSelect({
   value,
@@ -18,9 +20,10 @@ function ReportsToSelect({
   pending: boolean
   onChange: (value: string) => void
 }>) {
+  const locale = useLocale()
   return (
     <label className="grid gap-1">
-      <span className="font-medium">Reports to</span>
+      <span className="font-medium">{settingText('Reports to', locale)}</span>
       <NativeSelect
         value={value}
         onChange={(event) => {
@@ -28,7 +31,7 @@ function ReportsToSelect({
         }}
         disabled={pending}
       >
-        <option value="">No manager</option>
+        <option value="">{settingText('No manager', locale)}</option>
         {options.map((report) => (
           <option key={report.id} value={report.id}>
             {report.name}
@@ -40,6 +43,7 @@ function ReportsToSelect({
 }
 
 function SaveAccessButton({ pending, onSave }: Readonly<{ pending: boolean; onSave: () => void }>) {
+  const locale = useLocale()
   return (
     <Button
       size="lg"
@@ -49,7 +53,7 @@ function SaveAccessButton({ pending, onSave }: Readonly<{ pending: boolean; onSa
       }}
       disabled={pending}
     >
-      {pending ? 'Saving…' : 'Save access'}
+      {pending ? settingText('Saving…', locale) : settingText('Save access', locale)}
     </Button>
   )
 }
@@ -83,10 +87,11 @@ function MemberAccessForm({
   onReportsToChange: (value: string) => void
   onSave: () => void
 }>) {
+  const locale = useLocale()
   return (
     <div className="mt-3 grid gap-3 rounded-md border bg-muted/20 p-3 text-xs">
       <label className="grid gap-1">
-        <span className="font-medium">Role</span>
+        <span className="font-medium">{settingText('Role', locale)}</span>
         <NativeSelect
           value={role}
           onChange={(event) => {
@@ -94,9 +99,9 @@ function MemberAccessForm({
           }}
           disabled={pending}
         >
-          <option value="staff">Staff</option>
-          <option value="manager">Manager</option>
-          <option value="owner">Owner</option>
+          <option value="staff">{settingText('Staff', locale)}</option>
+          <option value="manager">{settingText('Manager', locale)}</option>
+          <option value="owner">{settingText('Owner', locale)}</option>
         </NativeSelect>
       </label>
       <label className="flex items-center gap-2">
@@ -108,14 +113,14 @@ function MemberAccessForm({
           }}
           disabled={pending}
         />
-        <span className="font-medium">Account active</span>
+        <span className="font-medium">{settingText('Account active', locale)}</span>
       </label>
       <CheckboxGroup
-        label="Groups"
+        label={settingText('Groups', locale)}
         options={groups}
         values={selectedGroups}
         disabled={pending}
-        emptyText="No groups created yet"
+        emptyText={settingText('No groups created yet', locale)}
         onChange={onGroupsChange}
       />
       <ReportsToSelect value={reportsTo} options={reports} pending={pending} onChange={onReportsToChange} />
@@ -140,6 +145,7 @@ export function MemberActions({
   reports: readonly { id: string; name: string }[]
   action: MemberAction
 }>) {
+  const locale = useLocale()
   const [role, setRole] = useState(member.role)
   const [active, setActive] = useState(member.active)
   const [selectedGroups, setSelectedGroups] = useState<string[]>([...member.groups])
@@ -152,10 +158,13 @@ export function MemberActions({
     setMessage(undefined)
     try {
       const result = await action({ id: member.id, role, active, groups: selectedGroups, reportsTo })
-      setMessage(result.ok ? 'Access saved.' : result.error.message)
+      setMessage(result.ok ? settingText('Access saved.', locale) : settingText(result.error.message, locale))
     } catch (error) {
       setMessage(
-        describeClientError(error, { context: 'member access save', fallback: 'Unable to save access. Try again.' }),
+        describeClientError(error, {
+          context: 'member access save',
+          fallback: settingText('Unable to save access. Try again.', locale),
+        }),
       )
     } finally {
       setPending(false)
@@ -165,7 +174,7 @@ export function MemberActions({
   return (
     <details className="max-w-sm">
       <summary className="cursor-pointer rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        Edit access
+        {settingText('Edit access', locale)}
       </summary>
       <MemberAccessForm
         role={role}
@@ -175,7 +184,7 @@ export function MemberActions({
         groups={groups}
         reports={reports}
         pending={pending}
-        message={message}
+        message={message === undefined ? undefined : settingText(message, locale)}
         onRoleChange={setRole}
         onActiveChange={setActive}
         onGroupsChange={setSelectedGroups}

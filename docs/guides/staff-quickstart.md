@@ -2,7 +2,7 @@
 
 For anyone who works leads, clients and tasks every day. Setup and workspace rules are in the [owner guide](owner-guide.md).
 
-Sign in at `/login`. The sidebar holds My tasks, the sales pages (Leads, Deals, Organizations, Contacts) and the work pages (Projects, Tasks, Calendar, Timeline). Drag a task to another day on the Calendar to change its due date. Press `Cmd+K` to search every record. Under Settings, Profile you can turn on two-step sign-in (a code from an authenticator app after your password) and a calendar feed of your due dates and follow-ups.
+Sign in at `/login`. Start in Today to see overdue work, lead follow-ups and tasks due this week. My tasks holds your assigned work. The sidebar also holds the sales pages (Leads, Deals, Organizations, Contacts) and the work pages (Projects and Tasks). Calendar and Timeline are views inside Tasks. Drag a task to another day on the Calendar to change its due date. Press `Cmd+K` to search every record. Under Settings, Profile you can turn on two-step sign-in and a calendar feed of your due dates and follow-ups.
 
 ## Work a lead
 
@@ -34,7 +34,7 @@ Tick several rows in the lead list to assign an owner or move them to another st
 ## Tasks
 
 - **My tasks** shows what is assigned to you. Open a task to edit its properties, add subtasks and see its activity.
-- Switch between Table, Kanban, Calendar and Timeline with the view switcher at the top of Tasks.
+- Switch between Table, Kanban, Calendar, Timeline and Repeating with the view switcher at the top of Tasks. Repeating lists each active schedule and its next run; older unfinished occurrences remain in All tasks.
 - In the Table, tick several tasks and press **Mark done** to finish them at once, choose **Set priority**, or press **Assign to me** to add yourself. A task that someone else changed meanwhile, or that you may not edit, is skipped and counted.
 - In the Table, tick several tasks and press **Mark done** to finish them at once, choose **Set priority**, or press **Assign to me** to add yourself. A task that someone else changed meanwhile, or that you may not edit, is skipped and counted.
 - Set **Repeats** on a task with a due date (every day, week, 2 weeks, month, 3 months or year). When you complete it, the next one is created with the same title, people, project and priority, due one step after the one you finished. A finished task stops repeating, so reopening it does not make another copy.

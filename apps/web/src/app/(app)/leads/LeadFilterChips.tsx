@@ -6,8 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { catalogFor } from '../../../i18n/locale'
 import { useLocale } from '../../../i18n/locale-context'
 import { FILTER_CHIPS_COPY, fill, type FilterChipsCopy } from '../../../i18n/filter-chips-copy'
-
-const OWNER_NAMES: Readonly<Record<string, string>> = { me: 'My leads', none: 'Unassigned' }
+import { CRM_LIST_CONTROLS_COPY } from '../../../i18n/crm-list-controls-copy'
 
 /** Removes one filter from the list's address, drops the page number, and keeps the others. */
 function without(search: URLSearchParams, id: string): string {
@@ -30,6 +29,7 @@ interface ChipInput {
   stages: readonly KanbanStage[]
   sources: Sources
   copy: FilterChipsCopy
+  ownerNames: Readonly<Record<string, string>>
 }
 
 function stageChips({ search, stages, copy }: ChipInput): FilterChip[] {
@@ -39,11 +39,11 @@ function stageChips({ search, stages, copy }: ChipInput): FilterChip[] {
   })
 }
 
-function facetChips({ search, sources, copy }: ChipInput): FilterChip[] {
+function facetChips({ search, sources, copy, ownerNames }: ChipInput): FilterChip[] {
   const owner = search.get('owner') ?? ''
   const source = sources.find((item) => item.id === search.get('source'))
   return [
-    ...(owner === '' ? [] : [{ id: 'owner', label: fill(copy.owner, { text: OWNER_NAMES[owner] ?? owner }) }]),
+    ...(owner === '' ? [] : [{ id: 'owner', label: fill(copy.owner, { text: ownerNames[owner] ?? owner }) }]),
     ...(source === undefined ? [] : [{ id: 'source', label: fill(copy.source, { text: source.name }) }]),
   ]
 }
@@ -61,9 +61,16 @@ export function LeadFilterChips({ stages, sources }: Readonly<{ stages: readonly
   const pathname = usePathname()
   const search = useSearchParams()
   const copy = catalogFor(FILTER_CHIPS_COPY, useLocale())
+  const controls = catalogFor(CRM_LIST_CONTROLS_COPY, useLocale())
   return (
     <FilterChips
-      chips={chipsFor({ search, stages, sources, copy })}
+      chips={chipsFor({
+        search,
+        stages,
+        sources,
+        copy,
+        ownerNames: { me: controls.myLeads, none: controls.unassigned },
+      })}
       labels={{ group: copy.group, clearAll: copy.clearAll, remove: (label) => fill(copy.remove, { label }) }}
       onRemove={(id) => {
         router.push(`${pathname}?${without(search, id)}`)

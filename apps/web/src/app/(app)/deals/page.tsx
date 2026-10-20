@@ -28,6 +28,7 @@ import { firstParam } from '../search-params'
 import { ListViewBar, type ListFilter } from '../list-view-bar'
 import { StagePill, toStageColor } from '@ops/ui/composites/StagePill'
 import { ListEmpty } from '../ListEmpty'
+import { CRM_LIST_CONTROLS_COPY, type CrmListControlsCopy } from '../../../i18n/crm-list-controls-copy'
 
 /** The parent app layout supplies the tenant's branded title suffix. */
 export const metadata: Metadata = { title: 'Deals' }
@@ -57,11 +58,11 @@ function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number
 function columns(copy: ListCopy): DataTableColumn[] {
   return [
     { id: 'title', header: copy.colTitle, hideable: false },
+    { id: 'organization', header: copy.colOrganization },
     { id: 'stage', header: copy.colStage },
     { id: 'value', header: copy.colValue, numeric: true },
-    { id: 'organization', header: copy.colOrganization },
-    { id: 'owner', header: copy.colOwner },
-    { id: 'expectedCloseAt', header: copy.colExpectedClose },
+    { id: 'owner', header: copy.colOwner, defaultHidden: true },
+    { id: 'expectedCloseAt', header: copy.colExpectedClose, defaultHidden: true },
   ]
 }
 function pagination(
@@ -82,14 +83,21 @@ function pagination(
   })
 }
 
-function stageFilter(stages: readonly { id: string; name: string }[], stageId: string | undefined): ListFilter {
+function stageFilter(
+  input: Readonly<{
+    stages: readonly { id: string; name: string }[]
+    stageId: string | undefined
+    controls: CrmListControlsCopy
+  }>,
+): ListFilter {
+  const { stages, stageId, controls } = input
   return {
     name: 'stage',
-    label: 'Filter by stage',
-    allLabel: 'All stages',
+    label: controls.dealStage,
+    allLabel: controls.allStages,
     value: stageId ?? '',
     options: [
-      { value: 'open', label: 'Open deals' },
+      { value: 'open', label: controls.openDeals },
       ...stages.map((stage) => ({ value: stage.id, label: stage.name })),
     ],
   }
@@ -124,6 +132,7 @@ export default async function DealsPage({
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const locale = await loadWorkspaceLocale()
   const help = catalogFor(SECTION_HELP_COPY, locale)
+  const controls = catalogFor(CRM_LIST_CONTROLS_COPY, locale)
   const params = await searchParams
   const rawQuery = firstParam(params.q)?.trim() ?? ''
   const stageId = firstParam(params.stage)
@@ -162,9 +171,9 @@ export default async function DealsPage({
           }
         />
         <ListViewBar
-          searchLabel="Search deals"
+          searchLabel={controls.searchDeals}
           query={firstParam(params.q) ?? ''}
-          filters={[stageFilter(data.workflow.stages, stageId)]}
+          filters={[stageFilter({ stages: data.workflow.stages, stageId, controls })]}
         />
         <BulkTable
           bulk={bulk}

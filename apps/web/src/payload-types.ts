@@ -98,6 +98,9 @@ export interface Config {
     auditEvents: AuditEvent;
     billingDocuments: BillingDocument;
     campaignQueue: CampaignQueue;
+    callLogs: CallLog;
+    deliverables: Deliverable;
+    contentItems: ContentItem;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -136,6 +139,9 @@ export interface Config {
     auditEvents: AuditEventsSelect<false> | AuditEventsSelect<true>;
     billingDocuments: BillingDocumentsSelect<false> | BillingDocumentsSelect<true>;
     campaignQueue: CampaignQueueSelect<false> | CampaignQueueSelect<true>;
+    callLogs: CallLogsSelect<false> | CallLogsSelect<true>;
+    deliverables: DeliverablesSelect<false> | DeliverablesSelect<true>;
+    contentItems: ContentItemsSelect<false> | ContentItemsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -551,7 +557,18 @@ export interface FieldDefinition {
   recordType: 'organization' | 'contact' | 'lead' | 'deal' | 'project' | 'task';
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'currency' | 'date' | 'select' | 'multiSelect' | 'checkbox' | 'email' | 'url';
+  type:
+    | 'text'
+    | 'textarea'
+    | 'number'
+    | 'currency'
+    | 'date'
+    | 'datetime'
+    | 'select'
+    | 'multiSelect'
+    | 'checkbox'
+    | 'email'
+    | 'url';
   required?: boolean | null;
   options?:
     | {
@@ -1132,6 +1149,68 @@ export interface CampaignQueue {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "callLogs".
+ */
+export interface CallLog {
+  id: string;
+  recordType: 'lead' | 'contact';
+  recordId: string;
+  caller: string | User;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  occurredAt: number;
+  outcome: 'answered' | 'no_answer' | 'voicemail' | 'follow_up';
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deliverables".
+ */
+export interface Deliverable {
+  id: string;
+  project: string | Project;
+  title: string;
+  owner: string | User;
+  status: 'draft' | 'sent_to_client' | 'approved' | 'changes_requested';
+  linkUrl?: string | null;
+  attachment?: (string | null) | Attachment;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  sentAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  respondedAt?: number | null;
+  respondedBy?: (string | null) | User;
+  responseNote?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contentItems".
+ */
+export interface ContentItem {
+  id: string;
+  project: string | Project;
+  title: string;
+  body?: string | null;
+  channel?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  publishAt?: number | null;
+  status: 'draft' | 'scheduled' | 'published';
+  owner: string | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1277,6 +1356,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'campaignQueue';
         value: string | CampaignQueue;
+      } | null)
+    | ({
+        relationTo: 'callLogs';
+        value: string | CallLog;
+      } | null)
+    | ({
+        relationTo: 'deliverables';
+        value: string | Deliverable;
+      } | null)
+    | ({
+        relationTo: 'contentItems';
+        value: string | ContentItem;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1881,6 +1972,53 @@ export interface CampaignQueueSelect<T extends boolean = true> {
   sent?: T;
   failed?: T;
   pending?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "callLogs_select".
+ */
+export interface CallLogsSelect<T extends boolean = true> {
+  recordType?: T;
+  recordId?: T;
+  caller?: T;
+  occurredAt?: T;
+  outcome?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deliverables_select".
+ */
+export interface DeliverablesSelect<T extends boolean = true> {
+  project?: T;
+  title?: T;
+  owner?: T;
+  status?: T;
+  linkUrl?: T;
+  attachment?: T;
+  sentAt?: T;
+  respondedAt?: T;
+  respondedBy?: T;
+  responseNote?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contentItems_select".
+ */
+export interface ContentItemsSelect<T extends boolean = true> {
+  project?: T;
+  title?: T;
+  body?: T;
+  channel?: T;
+  publishAt?: T;
+  status?: T;
+  owner?: T;
   updatedAt?: T;
   createdAt?: T;
 }

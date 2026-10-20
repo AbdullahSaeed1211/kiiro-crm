@@ -18,6 +18,12 @@ interface TimelineRow {
   readonly tone: 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'teal' | 'pink'
 }
 
+interface TaskStage {
+  readonly id: string
+  readonly category: string
+  readonly color: string
+}
+
 export interface TimelineData {
   readonly rows: readonly TimelineRow[]
   /** Open tasks with a date, of which `rows` shows the soonest. */
@@ -26,6 +32,13 @@ export interface TimelineData {
 }
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
+
+function taskStage(value: unknown): TaskStage | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const stage = value as { id?: unknown; category?: unknown; color?: unknown }
+  if (typeof stage.id !== 'string') return undefined
+  return { id: stage.id, category: text(stage.category), color: text(stage.color) }
+}
 
 /** Stage colours by id, and the ids of finished stages, from the task workflow. */
 async function taskStages(context: RequestContext) {
@@ -39,11 +52,12 @@ async function taskStages(context: RequestContext) {
   })
   const tones = new Map<string, TimelineRow['tone']>()
   const finished: string[] = []
-  for (const row of Array.isArray(found.docs[0]?.stages) ? found.docs[0].stages : []) {
-    const stage = row as { id?: unknown; category?: unknown; color?: unknown }
-    if (typeof stage.id !== 'string') continue
-    tones.set(stage.id, COLORS.has(text(stage.color)) ? (text(stage.color) as TimelineRow['tone']) : 'gray')
-    if (FINISHED.has(text(stage.category))) finished.push(stage.id)
+  const rows: unknown[] = Array.isArray(found.docs[0]?.stages) ? found.docs[0].stages : []
+  for (const row of rows) {
+    const stage = taskStage(row)
+    if (stage === undefined) continue
+    tones.set(stage.id, COLORS.has(stage.color) ? (stage.color as TimelineRow['tone']) : 'gray')
+    if (FINISHED.has(stage.category)) finished.push(stage.id)
   }
   return { tones, finished }
 }

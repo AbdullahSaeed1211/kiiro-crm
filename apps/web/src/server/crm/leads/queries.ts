@@ -1,5 +1,5 @@
 import { workflowOrThrow } from '../../workflow-result'
-import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
+import { createCrmRepository, listCrmPage, type CrmPageResult } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import { isManagerUp, type Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
@@ -13,6 +13,9 @@ import { type LeadListItem, type LeadPageData, type LeadPerson } from './types'
 
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
 import type { Where } from 'payload'
+import { todayAsDueAt } from '@ops/module-work'
+import { getWorkspaceSettings } from '../../auth/context'
+import { attentionLeadWhere } from '../../queries/today-leads'
 
 const PAGE_SIZE = 50
 type SearchParam = string | string[] | undefined
@@ -45,9 +48,77 @@ function facetFilters({ source, owner }: LeadFacets): Where[] {
   return filters
 }
 
+function queryFilter(query: string | undefined): Where[] {
+  const value = query?.trim() ?? ''
+  return value === ''
+    ? []
+    : [
+        {
+          or: ['title', 'firstName', 'lastName', 'email', 'companyName', 'phone'].map((field) => ({
+            [field]: { contains: value },
+          })),
+        },
+      ]
+}
+
+async function attentionFilter(context: RequestContext, enabled: boolean): Promise<Where | undefined> {
+  if (!enabled) return undefined
+  const settings = await getWorkspaceSettings()
+  const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
+  return attentionLeadWhere(context, todayAsDueAt(Date.now(), timeZone))
+}
+
+function pageQuery(
+  input: Readonly<{
+    context: RequestContext
+    params: Readonly<{ q?: string; stages?: readonly string[]; page?: number; pageSize?: number }> & LeadFacets
+    owner: string | undefined
+    workflow: Workflow
+    attentionWhere: Where | undefined
+  }>,
+) {
+  const { context, params, owner, workflow, attentionWhere } = input
+  return listCrmPage(context.req, {
+    type: 'lead',
+    where: leadWhere({ ...params, ...(owner === undefined ? {} : { owner }) }, workflow, attentionWhere),
+    page: Math.max(1, params.page ?? 1),
+    limit: params.pageSize ?? PAGE_SIZE,
+  })
+}
+
+async function resultFromPage(
+  input: Readonly<{
+    context: RequestContext
+    pageResult: CrmPageResult<'lead'>
+    sources: readonly LookupRecord[]
+    lostReasons: readonly LookupRecord[]
+    workflow: Workflow
+    params: Readonly<{ page?: number; pageSize?: number }>
+  }>,
+): Promise<LeadListResult> {
+  const { context, pageResult, sources, lostReasons, workflow, params } = input
+  const stages = toStages(workflow)
+  const sourceMap = lookupMap(sources)
+  const people = await loadLeadPeople(context, pageResult.records)
+  const overdue = await responseCheck(workflow)
+  const items = pageResult.records.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people, overdue }))
+  return {
+    items,
+    total: pageResult.total,
+    page: Math.max(1, params.page ?? 1),
+    pageSize: params.pageSize ?? PAGE_SIZE,
+    stages,
+    sources,
+    lostReasons,
+    people: [...people.values()],
+    owners: await loadOwnerOptions(context),
+  }
+}
+
 function leadWhere(
   params: Readonly<{ q?: string; stages?: readonly string[] }> & LeadFacets,
   workflow: Workflow,
+  attentionWhere?: Where,
 ): Where {
   const filters: Where[] = []
   const stages = params.stages ?? []
@@ -62,14 +133,8 @@ function leadWhere(
     })
   }
   filters.push(...facetFilters(params))
-  const query = params.q?.trim() ?? ''
-  if (query !== '') {
-    filters.push({
-      or: ['title', 'firstName', 'lastName', 'email', 'companyName', 'phone'].map((field) => ({
-        [field]: { contains: query },
-      })),
-    })
-  }
+  filters.push(...(attentionWhere === undefined ? [] : [attentionWhere]))
+  filters.push(...queryFilter(params.q))
   return filters.length === 1 ? (filters[0] ?? {}) : { and: filters }
 }
 
@@ -96,7 +161,8 @@ export async function loadOwnerOptions(context: Awaited<ReturnType<typeof getReq
 
 /** Reads visible leads and supporting lookup data for the table/board. */
 export async function listLeads(
-  params: Readonly<{ q?: string; stages?: readonly string[]; page?: number; pageSize?: number }> & LeadFacets,
+  params: Readonly<{ q?: string; stages?: readonly string[]; page?: number; pageSize?: number; attention?: boolean }> &
+    LeadFacets,
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
   const owner = params.owner === 'me' ? String(context.actor.id) : params.owner
@@ -105,33 +171,13 @@ export async function listLeads(
   const sourcesPromise = repo.listLookups('source')
   const lostReasonsPromise = repo.listLookups('lostReason')
   const workflow = await workflowPromise
+  const attentionWhere = await attentionFilter(context, params.attention === true)
   const [pageResult, sources, lostReasons] = await Promise.all([
-    listCrmPage(context.req, {
-      type: 'lead',
-      where: leadWhere({ ...params, ...(owner === undefined ? {} : { owner }) }, workflow),
-      page: Math.max(1, params.page ?? 1),
-      limit: params.pageSize ?? PAGE_SIZE,
-    }),
+    pageQuery({ context, params, owner, workflow, attentionWhere }),
     sourcesPromise,
     lostReasonsPromise,
   ])
-  const pageNumber = Math.max(1, params.page ?? 1)
-  const stages = toStages(workflow)
-  const sourceMap = lookupMap(sources)
-  const people = await loadLeadPeople(context, pageResult.records)
-  const overdue = await responseCheck(workflow)
-  const items = pageResult.records.map((lead) => makeListItem({ lead, stages, sources: sourceMap, people, overdue }))
-  return {
-    items,
-    total: pageResult.total,
-    page: pageNumber,
-    pageSize: params.pageSize ?? PAGE_SIZE,
-    stages,
-    sources,
-    lostReasons,
-    people: [...people.values()],
-    owners: await loadOwnerOptions(context),
-  }
+  return resultFromPage({ context, pageResult, sources, lostReasons, workflow, params })
 }
 
 /** Reads one authorized lead and its supporting details/activity. */

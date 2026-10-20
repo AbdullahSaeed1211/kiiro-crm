@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateTaskViews } from './revalidate-task-views'
 import { setTaskDates as setTaskDatesCommand } from '@ops/module-work'
 import { asId } from '@ops/kernel'
 import { workCommandDeps } from '@/server/container'
@@ -14,7 +14,7 @@ export async function setTaskDates(input: SetTaskDatesInput): Promise<SetTaskDat
     dueAt: input.dueAt,
     expectedUpdatedAt: input.expectedUpdatedAt,
   })
-  if (result.ok) revalidatePath('/timeline')
+  if (result.ok) revalidateTaskViews(input.taskId)
   return result.ok
     ? {
         ok: true as const,

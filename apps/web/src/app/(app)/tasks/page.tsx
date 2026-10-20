@@ -20,6 +20,7 @@ import { TaskListFilters } from './TaskListFilters'
 import { TasksHeaderActions } from './TasksHeaderActions'
 import { labelsFor, paginationOf, taskColumns, toRow } from './task-table'
 import { parseTaskView, savedViewSort, taskListHref, taskModeOf } from './task-view-params'
+import { parseTaskDue } from '../../../server/queries/work/task-due-filter'
 
 const PAGE_TITLE = 'Tasks'
 
@@ -34,19 +35,21 @@ function projectName(task: Readonly<{ context: { type: string; label: string } |
 }
 
 /** What narrows the list, read from the address: the search text, the chosen assignee and the page. */
-function readFilters(params: Params) {
+function readFilters(params: Params, actorId: string) {
+  const requested = firstParam(params.assignee) ?? ''
   return {
     search: firstParam(params.q)?.trim() ?? '',
-    assignee: firstParam(params.assignee) ?? '',
+    assignee: requested === 'me' ? actorId : requested,
     page: parseTaskPage(firstParam(params.page)),
+    due: parseTaskDue(firstParam(params.due)),
   }
 }
 
 /** Tasks list (spec §17.5). */
 export default async function TasksPage({ searchParams }: Readonly<{ searchParams: Promise<Params> }>) {
   const params = await searchParams
-  const { search, assignee: requested, page } = readFilters(params)
   const context = await getRequestContext()
+  const { search, assignee: requested, page, due } = readFilters(params, String(context.actor.id))
   const [savedViews, locale, people] = await Promise.all([
     listSavedViews('task', context),
     loadWorkspaceLocale(),
@@ -60,10 +63,10 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
   const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
   const taskMode = taskModeOf(view, selectedSavedView)
   const title = selectedSavedView?.name ?? { all: copy.allTasks, mine: copy.myTasks, open: copy.openTasks }[taskMode]
-  const returnTo = taskListHref({ sort, page, view, search, assignee })
-  const result = await listTasks({ page, sort: effectiveSort, view: taskMode, search, assignee }, context)
+  const returnTo = taskListHref({ sort, page, view, search, assignee, due })
+  const result = await listTasks({ page, sort: effectiveSort, view: taskMode, search, assignee, due }, context)
   const grouped = effectiveSort.key === 'project'
-  const narrowed = search !== '' || assignee !== ''
+  const narrowed = search !== '' || assignee !== '' || due !== ''
   const emptyTitle = narrowed ? copy.noTasksMatch : copy.noTasks
   const emptyBody = narrowed ? copy.noTasksMatchDescription : copy.noTasksDescription
   return (
@@ -87,20 +90,27 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
             />
           }
         />
-        <TaskListFilters search={search} assignee={assignee} people={people} locale={locale} />
+        <TaskListFilters search={search} assignee={assignee} people={people} locale={locale} due={due} />
         <TaskBulkTable
           versions={Object.fromEntries(result.items.map((task) => [task.id, task.updatedAt]))}
           // A new sort or page remounts the table, so row selection does not carry over to other rows.
-          key={`${formatTaskSort(sort)}:${String(result.page)}:${search}:${assignee}`}
+          key={`${formatTaskSort(sort)}:${String(result.page)}:${search}:${assignee}:${due}`}
           toolbarStart={
-            <TaskGroupToggle grouped={grouped} view={view} search={search} assignee={assignee} locale={locale} />
+            <TaskGroupToggle
+              grouped={grouped}
+              view={view}
+              search={search}
+              assignee={assignee}
+              locale={locale}
+              due={due}
+            />
           }
-          columns={taskColumns({ sort: effectiveSort, view, locale, search, assignee })}
+          columns={taskColumns({ sort: effectiveSort, view, locale, search, assignee, due })}
           rows={result.items.map((task) =>
             toRow({ task, returnTo, locale, ...(grouped && { group: projectName(task) ?? copy.noProject }) }),
           )}
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
-          pagination={paginationOf({ result, sort: effectiveSort, view, search, assignee })}
+          pagination={paginationOf({ result, sort: effectiveSort, view, search, assignee, due })}
           labels={labelsFor(locale)}
           emptyState={<EmptyState icon={ListTodo} title={emptyTitle} description={emptyBody} />}
           mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees'] }}

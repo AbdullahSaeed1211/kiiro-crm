@@ -109,7 +109,41 @@ function deps(partial: Partial<JobSources>, limit = 200): ScheduledJobsDeps {
 }
 
 describe('scheduled job windows and continuation', () => {
-  it('uses tenant-local midnight and fires overdue/stalled on the first run after 09:00', async () => {
+  it('alerts after a missed morning run, excludes dates due today and deduplicates the day', async () => {
+    const today = Date.UTC(2026, 8, 14)
+    const notifications = new InMemoryNotificationStore()
+    const source = {
+      listOverdue: (before: number) =>
+        Promise.resolve(
+          [
+            {
+              record: { type: 'task', id: asId('late') },
+              title: 'Monthly report',
+              dueAt: today - 86_400_000,
+              assigneeIds: [asId('staff')],
+              updatedAt: 1,
+            },
+            {
+              record: { type: 'task', id: asId('today') },
+              title: 'Due today',
+              dueAt: today,
+              assigneeIds: [asId('staff')],
+              updatedAt: 2,
+            },
+          ].filter((task) => task.dueAt < before),
+        ),
+    }
+    const job = createOverdueJob({ ...deps(source), notifications })
+    const afternoon = windowAt(NEW_YORK_09 + 3 * HOUR)
+    expect(job.isDue?.(afternoon) ?? true).toBe(true)
+    await job.run(afternoon)
+    await job.run(windowAt(afternoon.end + 15 * MINUTE))
+    expect([...notifications.rows.values()]).toMatchObject([
+      { record: { id: 'late' }, data: { message: 'Monthly report · 2026-09-13' } },
+    ])
+  })
+
+  it('uses calendar due dates for overdue tasks and local midnight for stalled records', async () => {
     const calls: number[] = []
     const source: Partial<JobSources> = {
       listOverdue: (before) => {
@@ -124,11 +158,11 @@ describe('scheduled job windows and continuation', () => {
     const overdue = createOverdueJob(deps(source))
     const stalled = createStalledJob(deps(source))
     const window = windowAt(NEW_YORK_09)
-    expect(overdue.isDue?.(window)).toBe(true)
+    expect(overdue.isDue?.(window) ?? true).toBe(true)
     expect(stalled.isDue?.(window)).toBe(true)
     await overdue.run(window)
     await stalled.run(window)
-    expect(calls[0]).toBe(Date.UTC(2026, 8, 14, 4, 0))
+    expect(calls[0]).toBe(Date.UTC(2026, 8, 14))
     expect(calls[1]).toBe(Date.UTC(2026, 8, 14, 4, 0))
   })
 

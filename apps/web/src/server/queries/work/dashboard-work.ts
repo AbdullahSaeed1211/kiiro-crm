@@ -1,161 +1,139 @@
 import type { Where } from 'payload'
-import { todayAsDueAt } from '@ops/module-work'
+import { asId, type Id } from '@ops/kernel'
+import { todayAsDueAt, weekEndAfter } from '@ops/module-work'
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
+import { loadPeople } from '../../people'
+import { loadTaskContexts } from './tasks/task-contexts'
 
-const CLOSED = new Set(['done_success', 'done_failure', 'cancelled'])
+import { loadWorkflowStages } from '../workflow-stages'
 const SHOWN = 5
-const DAY_MS = 86_400_000
-const WEEK_MS = 7 * DAY_MS
 
-interface Stage {
-  readonly id: string
-  readonly name: string
-  readonly category: string
-}
-
-interface DashboardTask {
-  readonly id: string
+export interface DashboardTask {
+  readonly id: Id
   readonly title: string
   readonly dueAt: number | null
+  readonly projectId: Id | null
+  readonly relatedType: string | null
+  readonly relatedId: Id | null
+  readonly assigneeIds: readonly string[]
+  readonly context: string | null
+  readonly people: readonly string[]
 }
-
-export interface DashboardWork {
-  readonly locale: Locale
-  readonly timeZone: string
-  readonly mine: number
-  readonly open: number
-  readonly overdue: { readonly count: number; readonly items: readonly DashboardTask[] }
-  readonly today: { readonly count: number; readonly items: readonly DashboardTask[] }
-  readonly dueWeek: { readonly count: number; readonly items: readonly DashboardTask[] }
-  readonly projects: {
-    readonly count: number
-    readonly items: readonly { readonly id: string; readonly name: string; readonly stage: string }[]
-  }
-}
-
-const text = (value: unknown): string => (typeof value === 'string' ? value : '')
-
-/** Every stage of the task and project workflows, by recordType, so closed ones can be left out of the counts. */
-async function stagesByType(context: RequestContext): Promise<ReadonlyMap<string, readonly Stage[]>> {
-  const found = await context.payload.find({
-    collection: 'workflows',
-    where: { recordType: { in: ['task', 'project'] } },
-    limit: 10,
-    depth: 0,
-    overrideAccess: false,
-    req: context.req,
-  })
-  const byType = new Map<string, Stage[]>()
-  for (const workflow of found.docs) {
-    const stages = (Array.isArray(workflow.stages) ? workflow.stages : []).flatMap((row: unknown) => {
-      const stage = row as { id?: unknown; name?: unknown; category?: unknown }
-      return typeof stage.id === 'string'
-        ? [{ id: stage.id, name: text(stage.name), category: text(stage.category) }]
-        : []
-    })
-    byType.set(workflow.recordType, [...(byType.get(workflow.recordType) ?? []), ...stages])
-  }
-  return byType
-}
-
-const openWhere = (closed: readonly string[], extra: Where[]): Where => ({
-  and: [...extra, ...(closed.length === 0 ? [] : [{ stageId: { not_in: closed } }])],
-})
-
-const count = (context: RequestContext, collection: 'tasks' | 'projects', where: Where) =>
-  context.payload.count({ collection, where, overrideAccess: false, req: context.req })
-
 interface TaskSection {
   readonly count: number
   readonly items: readonly DashboardTask[]
 }
-
-/** The total and the first few tasks matching `where`, soonest due first. */
-async function taskSection(context: RequestContext, where: Where): Promise<TaskSection> {
-  const [page, total] = await Promise.all([
-    context.payload.find({
-      collection: 'tasks',
-      where,
-      sort: 'dueAt',
-      limit: SHOWN,
-      select: { id: true, title: true, dueAt: true },
-      depth: 0,
-      overrideAccess: false,
-      req: context.req,
-    }),
-    count(context, 'tasks', where),
-  ])
-  return {
-    count: total.totalDocs,
-    items: page.docs.map((doc) => ({ id: doc.id, title: doc.title, dueAt: doc.dueAt ?? null })),
-  }
+export interface DashboardWork {
+  readonly locale: Locale
+  readonly timeZone: string
+  readonly dayStart: number
+  readonly team: boolean
+  readonly crmEnabled: boolean
+  readonly workEnabled: boolean
+  readonly overdue: TaskSection
+  readonly dueWeek: TaskSection
 }
+const relation = (value: unknown): Id | null => (typeof value === 'string' ? asId(value) : null)
+const empty: TaskSection = { count: 0, items: [] }
 
-async function projectSection(context: RequestContext, stages: readonly Stage[]): Promise<DashboardWork['projects']> {
-  const closed = stages.filter((stage) => CLOSED.has(stage.category)).map((stage) => stage.id)
-  const where = openWhere(closed, [])
-  const names = new Map(stages.map((stage) => [stage.id, stage.name]))
+/** Reads only five rows and the exact count; the database applies the user's normal record scope. */
+async function taskSection(context: RequestContext, where: Where): Promise<TaskSection> {
+  const request = { collection: 'tasks' as const, where, overrideAccess: false, req: context.req }
   const [page, total] = await Promise.all([
     context.payload.find({
-      collection: 'projects',
-      where,
-      sort: 'name',
+      ...request,
+      sort: ['dueAt', 'id'],
       limit: SHOWN,
-      select: { id: true, name: true, stageId: true },
       depth: 0,
-      overrideAccess: false,
-      req: context.req,
+      select: {
+        id: true,
+        title: true,
+        dueAt: true,
+        project: true,
+        relatedType: true,
+        relatedId: true,
+        assignees: true,
+      },
     }),
-    count(context, 'projects', where),
+    context.payload.count(request),
   ])
   return {
     count: total.totalDocs,
-    items: page.docs.map((project) => ({
-      id: project.id,
-      name: project.name,
-      stage: names.get(text(project.stageId)) ?? '',
+    items: page.docs.map((doc) => ({
+      id: asId(doc.id),
+      title: doc.title,
+      dueAt: doc.dueAt ?? null,
+      projectId: relation(doc.project),
+      relatedType: doc.relatedType ?? null,
+      relatedId: relation(doc.relatedId),
+      assigneeIds: (doc.assignees ?? []).flatMap((id) => (typeof id === 'string' ? [id] : [])),
+      context: null,
+      people: [],
     })),
   }
 }
 
-/**
- * What the dashboard shows, read as counts and five-row lists instead of loading every task and project: the signed-in
- * user's open and overdue tasks, tasks due this week, and active projects.
- */
-export async function loadDashboardWork(context: RequestContext): Promise<DashboardWork> {
-  const [stages, settings] = await Promise.all([stagesByType(context), getWorkspaceSettings()])
-  const closed = (stages.get('task') ?? []).filter((stage) => CLOSED.has(stage.category)).map((stage) => stage.id)
-  const me = String(context.actor.id)
-  const now = Date.now()
-  const timeZone = text(settings.timezone) || 'UTC'
-  const dayStart = todayAsDueAt(now, timeZone)
-  const mine = [{ assignees: { contains: me } }]
-  const week = [{ dueAt: { greater_than_equal: dayStart } }, { dueAt: { less_than_equal: dayStart + WEEK_MS } }]
-  const [mineCount, openCount, overdue, today, dueWeek, projects] = await Promise.all([
-    count(context, 'tasks', openWhere(closed, mine)),
-    count(context, 'tasks', openWhere(closed, [])),
-    taskSection(context, openWhere(closed, [...mine, { dueAt: { less_than: dayStart } }])),
-    taskSection(
+async function enrich(context: RequestContext, sections: readonly TaskSection[]): Promise<TaskSection[]> {
+  const tasks = sections.flatMap((section) => section.items)
+  const [contexts, people] = await Promise.all([
+    loadTaskContexts(context, tasks),
+    loadPeople(
       context,
-      openWhere(closed, [
-        ...mine,
-        { dueAt: { greater_than_equal: dayStart } },
-        { dueAt: { less_than: dayStart + DAY_MS } },
-      ]),
+      tasks.flatMap((task) => task.assigneeIds),
     ),
-    taskSection(context, openWhere(closed, week)),
-    projectSection(context, stages.get('project') ?? []),
   ])
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.map((task) => ({
+      ...task,
+      context: contexts.get(task.id)?.label ?? null,
+      people: task.assigneeIds.flatMap((id) => people.get(id)?.name ?? []),
+    })),
+  }))
+}
+
+type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueWeek'> & { readonly weekEnd: number }
+
+function dashboardScope(
+  settings: Awaited<ReturnType<typeof getWorkspaceSettings>>,
+  context: RequestContext,
+): DashboardScope {
+  const modules = settings.modules as Record<string, boolean> | null
+  const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
+  const dayStart = todayAsDueAt(Date.now(), timeZone)
+  const weekStart = settings.weekStartsOn === 0 ? 0 : 1
   return {
     locale: normalizeLocale(settings.locale),
     timeZone,
-    mine: mineCount.totalDocs,
-    open: openCount.totalDocs,
-    overdue,
-    today,
-    dueWeek,
-    projects,
+    dayStart,
+    team: ['owner', 'manager'].includes(context.actor.role),
+    crmEnabled: modules?.crm !== false,
+    workEnabled: modules?.work !== false,
+    weekEnd: weekEndAfter(dayStart, weekStart),
   }
+}
+
+async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
+  const workflow = await loadWorkflowStages(context, 'task')
+  const clauses: Where[] = [
+    ...(workflow.closed.length ? [{ stageId: { not_in: workflow.closed } }] : []),
+    ...(scope.team ? [] : [{ assignees: { contains: String(context.actor.id) } }]),
+  ]
+  const [overdue, dueWeek] = await Promise.all([
+    taskSection(context, { and: [...clauses, { dueAt: { less_than: scope.dayStart } }] }),
+    taskSection(context, {
+      and: [...clauses, { dueAt: { greater_than_equal: scope.dayStart } }, { dueAt: { less_than: scope.weekEnd } }],
+    }),
+  ])
+  const enriched = await enrich(context, [overdue, dueWeek])
+  return { overdue: enriched[0] ?? empty, dueWeek: enriched[1] ?? empty }
+}
+
+/** Owners see team queues; staff see assigned work. Calendar-date comparisons match the task screens. */
+export async function loadDashboardWork(context: RequestContext): Promise<DashboardWork> {
+  const scope = dashboardScope(await getWorkspaceSettings(), context)
+  if (!scope.workEnabled) return { ...scope, overdue: empty, dueWeek: empty }
+  return { ...scope, ...(await dashboardQueues(context, scope)) }
 }

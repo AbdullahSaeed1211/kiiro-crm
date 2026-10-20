@@ -159,7 +159,7 @@ function notificationData(
   const { dueAt } = target
   const { timeZone } = input
   if (input.type !== 'overdue' || dueAt === undefined || timeZone === undefined) return { title: target.title }
-  return { title: target.title, message: `${target.title} · ${localDate(timeZone, dueAt)}` }
+  return { title: target.title, message: `${target.title} · ${new Date(dueAt).toISOString().slice(0, 10)}` }
 }
 
 function recipientsOf(target: JobTarget): readonly Id[] {

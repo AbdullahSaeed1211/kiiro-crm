@@ -63,6 +63,9 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   // Hours are read through server queries that check the task first; direct reads are the entry's own author or a manager.
   [COLLECTIONS.demoManifests]: { read: ownerOnly, ...systemWrites },
   [COLLECTIONS.campaignQueue]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.callLogs]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.deliverables]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.contentItems]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.auditEvents]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.webhookDeliveries]: { read: ownerOnly, ...systemWrites },
   [COLLECTIONS.timeEntries]: {

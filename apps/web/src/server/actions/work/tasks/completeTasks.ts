@@ -2,7 +2,7 @@
 
 import { asId } from '@ops/kernel'
 import { completeTask as completeTaskCommand } from '@ops/module-work'
-import { revalidatePath } from 'next/cache'
+import { revalidateTaskViews } from './revalidate-task-views'
 import { z } from 'zod'
 import { workCommandDeps } from '@/server/container'
 
@@ -32,6 +32,6 @@ export async function completeTasks(input: unknown): Promise<CompleteTasksResult
     const result = await completeTaskCommand(deps, asId(task.id), task.updatedAt)
     if (result.ok) completed += 1
   }
-  if (completed > 0) revalidatePath('/tasks')
+  if (completed > 0) revalidateTaskViews()
   return { completed, skipped: parsed.data.tasks.length - completed }
 }

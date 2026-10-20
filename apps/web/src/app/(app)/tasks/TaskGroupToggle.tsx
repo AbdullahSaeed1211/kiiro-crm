@@ -14,7 +14,8 @@ export function TaskGroupToggle({
   search,
   assignee,
   locale,
-}: Readonly<{ grouped: boolean; view: string; search: string; assignee: string; locale: Locale }>) {
+  due = '',
+}: Readonly<{ grouped: boolean; view: string; search: string; assignee: string; locale: Locale; due?: string }>) {
   const copy = TASK_COPY[locale]
   const link = (active: boolean) =>
     active ? 'font-medium text-foreground' : 'text-muted-foreground hover:text-foreground hover:underline'
@@ -24,14 +25,14 @@ export function TaskGroupToggle({
       <Link
         className={link(!grouped)}
         aria-current={grouped ? undefined : 'true'}
-        href={taskListHref({ sort: BY_DUE_DATE, page: 1, view, search, assignee })}
+        href={taskListHref({ sort: BY_DUE_DATE, page: 1, view, search, assignee, due })}
       >
         {copy.groupNone}
       </Link>
       <Link
         className={link(grouped)}
         aria-current={grouped ? 'true' : undefined}
-        href={taskListHref({ sort: BY_RELATED, page: 1, view, search, assignee })}
+        href={taskListHref({ sort: BY_RELATED, page: 1, view, search, assignee, due })}
       >
         {copy.groupProject}
       </Link>

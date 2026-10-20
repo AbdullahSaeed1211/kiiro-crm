@@ -1,10 +1,18 @@
-import type { CrmDrafts, CrmRecords, CrmRepository, CrmRecordType, LookupKind, LookupRecord } from '@ops/module-crm'
+import type {
+  CallLogRecord,
+  CrmDrafts,
+  CrmRecords,
+  CrmRepository,
+  CrmRecordType,
+  LookupKind,
+  LookupRecord,
+} from '@ops/module-crm'
 import type { PayloadRequest, Sort, Where } from 'payload'
 import { domainError, err, ok, type Result } from '@ops/kernel'
 import type { Workflow } from '@ops/platform'
 import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
-import { findAsUser, pageAsUser, updateAndMap } from '../local-api'
+import { createAsSystem, findAsUser, pageAsUser, updateAndMap } from '../local-api'
 import { loadFieldDefinitions } from '../field-definitions'
 import { archiveAccess } from './archive-store'
 import { createAsUser } from './local-writes'
@@ -17,6 +25,90 @@ type Directory = Pick<
   CrmRepository,
   'findContactByEmail' | 'loadDefaultWorkflow' | 'listLookups' | 'loadFieldDefinitions'
 >
+
+type Calls = Pick<CrmRepository, 'createCallLog' | 'listCallLogs'>
+
+interface CallLogFields {
+  readonly id: ReturnType<typeof idOf>
+  readonly recordId: ReturnType<typeof idOf>
+  readonly callerId: ReturnType<typeof idOf>
+  readonly occurredAt: unknown
+  readonly recordType: unknown
+  readonly outcome: unknown
+  readonly createdAt: number
+  readonly updatedAt: number
+}
+
+function isCallLogFields(value: CallLogFields): value is CallLogFields & {
+  readonly id: NonNullable<CallLogFields['id']>
+  readonly recordId: NonNullable<CallLogFields['recordId']>
+  readonly callerId: NonNullable<CallLogFields['callerId']>
+  readonly occurredAt: number
+  readonly recordType: 'lead' | 'contact'
+  readonly outcome: CallLogRecord['outcome']
+} {
+  const idsPresent = [value.id, value.recordId, value.callerId].every((field) => field !== undefined)
+  const timesValid =
+    typeof value.occurredAt === 'number' && Number.isFinite(value.createdAt) && Number.isFinite(value.updatedAt)
+  const recordValid = value.recordType === 'lead' || value.recordType === 'contact'
+  const outcomeValid = ['answered', 'no_answer', 'voicemail', 'follow_up'].includes(String(value.outcome))
+  return idsPresent && timesValid && recordValid && outcomeValid
+}
+
+function callLogFields(doc: Doc): CallLogFields {
+  return {
+    id: idOf(fieldOf(doc, 'id')),
+    recordId: idOf(fieldOf(doc, 'recordId')),
+    callerId: idOf(fieldOf(doc, 'caller')),
+    occurredAt: fieldOf(doc, 'occurredAt'),
+    createdAt: Date.parse(String(fieldOf(doc, 'createdAt'))),
+    updatedAt: Date.parse(String(fieldOf(doc, 'updatedAt'))),
+    recordType: fieldOf(doc, 'recordType'),
+    outcome: fieldOf(doc, 'outcome'),
+  }
+}
+
+function mapCallLog(doc: Doc): CallLogRecord | undefined {
+  const fields = callLogFields(doc)
+  if (!isCallLogFields(fields)) return undefined
+  return {
+    id: fields.id,
+    recordType: fields.recordType,
+    recordId: fields.recordId,
+    callerId: fields.callerId,
+    occurredAt: fields.occurredAt,
+    outcome: fields.outcome,
+    notes: textOf(doc, 'notes') ?? null,
+    createdAt: fields.createdAt,
+    updatedAt: fields.updatedAt,
+  }
+}
+
+function calls(req: PayloadRequest): Calls {
+  return {
+    createCallLog: async (input) => {
+      const doc = await createAsSystem(req, COLLECTIONS.callLogs, {
+        recordType: input.recordType,
+        recordId: input.recordId,
+        caller: input.callerId,
+        occurredAt: input.occurredAt,
+        outcome: input.outcome,
+        notes: input.notes,
+      })
+      const mapped = mapCallLog(doc)
+      if (mapped === undefined) throw new Error('Created call log is incomplete')
+      return mapped
+    },
+    listCallLogs: async (recordType, recordId) => {
+      const docs = await findAsUser(req, {
+        collection: COLLECTIONS.callLogs,
+        where: { recordType: { equals: recordType }, recordId: { equals: recordId } },
+        sort: '-occurredAt',
+      })
+      return docs.flatMap((doc) => mapCallLog(doc) ?? [])
+    },
+  }
+}
 
 export interface CrmPageQuery<T extends CrmRecordType = CrmRecordType> {
   readonly type: T
@@ -109,7 +201,7 @@ function directory(req: PayloadRequest): Directory {
 
 /** `CrmRepository` on the Payload Local API: reads, creates and compare-and-set updates apply the request user's access. */
 export function createCrmRepository(req: PayloadRequest): CrmRepository {
-  return { ...createCrmStageStore(req), ...recordAccess(req), ...directory(req) }
+  return { ...createCrmStageStore(req), ...recordAccess(req), ...directory(req), ...calls(req) }
 }
 
 /** Reads one permission-scoped CRM page without materializing the entire collection. */

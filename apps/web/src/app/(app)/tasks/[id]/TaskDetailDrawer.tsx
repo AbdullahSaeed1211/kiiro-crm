@@ -33,8 +33,11 @@ export function TaskDetailDrawer({
   const router = useRouter()
 
   useEffect(() => {
-    if (restoreFocus) window.sessionStorage.setItem('task-panel-focus-return', task.id)
-  }, [restoreFocus, task.id])
+    if (restoreFocus) {
+      window.sessionStorage.setItem('task-panel-focus-return', task.id)
+      window.sessionStorage.setItem('task-panel-focus-path', returnTo)
+    }
+  }, [restoreFocus, returnTo, task.id])
 
   const actions = useMemo<TaskSheetActions>(() => {
     const refreshAfter = async <T extends { ok: boolean }>(pending: Promise<T>): Promise<T> => {

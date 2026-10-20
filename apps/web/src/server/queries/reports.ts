@@ -23,6 +23,12 @@ export interface OwnerFigure {
   readonly pipelineCurrency: string | null
 }
 
+export interface LeadSourceFigure {
+  readonly id: string
+  readonly name: string | null
+  readonly count: number
+}
+
 export interface ReportFigures {
   readonly range: ReportRange
   readonly totals: {
@@ -36,6 +42,7 @@ export interface ReportFigures {
     readonly pipelineCurrency: string | null
   }
   readonly owners: readonly OwnerFigure[]
+  readonly leadSources: readonly LeadSourceFigure[]
   readonly locale: Locale
   readonly timeZone: string
 }
@@ -150,18 +157,22 @@ function aggregateLeads({
   people,
   figures,
   totals,
+  sourceCounts,
 }: Readonly<{
   leads: readonly ReportLead[]
   range: ReportRange
   people: ReadonlyMap<string, string>
   figures: Map<string, FigureAccumulator>
   totals: FigureCounts
+  sourceCounts: Map<string, number>
 }>): void {
   for (const lead of leads) {
     if (!inRange(lead.createdAt, range)) continue
     const id = lead.ownerId === null ? null : String(lead.ownerId)
     addLeadCount(totals)
     addLeadCount(figureFor(figures, id, people))
+    const sourceKey = lead.sourceId === null ? '__unspecified__' : String(lead.sourceId)
+    sourceCounts.set(sourceKey, (sourceCounts.get(sourceKey) ?? 0) + 1)
   }
 }
 
@@ -191,6 +202,46 @@ function aggregateDeals({
   }
 }
 
+function buildReportFigures(input: {
+  readonly range: ReportRange
+  readonly taskFigures: Awaited<ReturnType<typeof loadTaskFigures>>
+  readonly leads: readonly ReportLead[]
+  readonly deals: readonly ReportDeal[]
+  readonly dealWorkflow: Workflow | undefined
+  readonly sources: readonly { readonly id: string | number; readonly name: string }[]
+}): ReportFigures {
+  const { range, taskFigures, leads, deals, dealWorkflow, sources } = input
+  const sourceNames = new Map(sources.map((source) => [String(source.id), source.name]))
+  const sourceCounts = new Map<string, number>()
+  const figures = new Map<string, FigureAccumulator>()
+  const totals: ReportFigures['totals'] = {
+    ...emptyCounts(),
+    ...taskFigures.totals,
+    pipelineMinor: 0,
+    pipelineCurrency: null,
+  }
+  for (const [owner, counts] of taskFigures.byOwner)
+    Object.assign(figureFor(figures, owner, taskFigures.people), counts)
+  aggregateLeads({ leads, range, people: taskFigures.people, figures, totals, sourceCounts })
+  aggregateDeals({ deals, workflow: dealWorkflow, range, people: taskFigures.people, figures, totals })
+  return {
+    range,
+    totals,
+    owners: [...figures.values()].sort(
+      (a, b) => b.openTasks + b.pipelineMinor - (a.openTasks + a.pipelineMinor) || a.name.localeCompare(b.name),
+    ),
+    leadSources: [...sourceCounts]
+      .map(([key, count]) => ({
+        id: key,
+        name: key === '__unspecified__' ? null : (sourceNames.get(key) ?? null),
+        count,
+      }))
+      .toSorted((a, b) => b.count - a.count || (a.name ?? '').localeCompare(b.name ?? '')),
+    locale: taskFigures.locale,
+    timeZone: taskFigures.timeZone,
+  }
+}
+
 /** Permission-scoped owner/manager figures for the reporting workspace. */
 export async function loadReportFigures(
   input: { readonly range?: unknown; readonly from?: unknown; readonly to?: unknown } = {},
@@ -200,32 +251,21 @@ export async function loadReportFigures(
   const repository = createCrmRepository(requestContext.req)
   const range = resolveReportRange(input)
   const now = Date.now()
-  const [taskFigures, { leads, deals }, dealWorkflow] = await Promise.all([
+  const [taskFigures, { leads, deals }, dealWorkflow, sources] = await Promise.all([
     loadTaskFigures(requestContext, { range, now }),
     loadLeanRows(requestContext, range),
     repository.loadDefaultWorkflow('deal').then(
       (result) => (result.ok ? result.value : undefined),
       () => undefined,
     ),
+    repository.listLookups('source'),
   ])
-  const figures = new Map<string, FigureAccumulator>()
-  const { people } = taskFigures
-  const totals: ReportFigures['totals'] = {
-    ...emptyCounts(),
-    ...taskFigures.totals,
-    pipelineMinor: 0,
-    pipelineCurrency: null,
-  }
-  for (const [owner, counts] of taskFigures.byOwner) Object.assign(figureFor(figures, owner, people), counts)
-  aggregateLeads({ leads, range, people, figures, totals })
-  aggregateDeals({ deals, workflow: dealWorkflow, range, people, figures, totals })
-  return {
+  return buildReportFigures({
     range,
-    totals,
-    owners: [...figures.values()].sort(
-      (a, b) => b.openTasks + b.pipelineMinor - (a.openTasks + a.pipelineMinor) || a.name.localeCompare(b.name),
-    ),
-    locale: taskFigures.locale,
-    timeZone: taskFigures.timeZone,
-  }
+    taskFigures,
+    leads,
+    deals,
+    dealWorkflow,
+    sources,
+  })
 }

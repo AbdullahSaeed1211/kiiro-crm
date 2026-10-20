@@ -196,12 +196,16 @@ export function AppFrame({
   useEffect(() => {
     const taskId = window.sessionStorage.getItem('task-panel-focus-return')
     if (taskId === null) return
+    const returnPath = window.sessionStorage.getItem('task-panel-focus-path')
+    const currentPath = `${window.location.pathname}${window.location.search}`
+    if (returnPath !== null && currentPath !== returnPath) return
     const trigger = [...document.querySelectorAll<HTMLElement>('[data-task-link-id]')].find(
       (element) => element.dataset.taskLinkId === taskId,
     )
     if (trigger === undefined) return
-    trigger.focus()
+    trigger.focus({ preventScroll: true })
     window.sessionStorage.removeItem('task-panel-focus-return')
+    window.sessionStorage.removeItem('task-panel-focus-path')
   }, [pathname])
   return (
     <AppShell

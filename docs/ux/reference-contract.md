@@ -32,6 +32,8 @@ Every surface must be checked in empty, loading, populated, long-content, error,
 
 ## Current guards
 
+- Daily agency work follows [the agency acceptance checklist](agency-daily-work.md), including capture-first drafts, contextual actions and the distinction between local implementation and live verification.
+
 - `tests/e2e/customer/route-health.spec.ts` checks route health, identifier leakage, light-mode default, contextual task close, and canonical task rendering.
 - `pnpm lint`, `pnpm typecheck`, `pnpm check:brand`, `pnpm check:docs`, and `git diff --check` are required before a UI batch is complete.
 - A route-health pass alone is insufficient evidence for visual completion; add state assertions and screenshots when a surface changes.

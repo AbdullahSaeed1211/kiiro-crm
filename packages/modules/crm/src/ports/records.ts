@@ -84,6 +84,19 @@ export interface LookupRecord {
   readonly name: string
 }
 
+/** A dated call outcome recorded against a lead or contact by the signed-in staff member. */
+export interface CallLogRecord {
+  readonly id: Id
+  readonly recordType: 'lead' | 'contact'
+  readonly recordId: Id
+  readonly callerId: Id
+  readonly occurredAt: number
+  readonly outcome: 'answered' | 'no_answer' | 'voicemail' | 'follow_up'
+  readonly notes: string | null
+  readonly createdAt: number
+  readonly updatedAt: number
+}
+
 /** Record type to record shape. */
 export interface CrmRecords {
   readonly organization: OrganizationRecord

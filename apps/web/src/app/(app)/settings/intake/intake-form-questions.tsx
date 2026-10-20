@@ -14,6 +14,47 @@ import { ConditionalQuestion } from './conditional-question'
 export type { Question } from './intake-question'
 
 const TYPES = ['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'datetime'] as const
+const TIME_ZONES = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Asia/Kolkata',
+  'UTC',
+] as const
+
+function withoutTimeZone(question: Question): Question {
+  const next = { ...question }
+  delete next.timeZone
+  return next
+}
+
+function QuestionTimeZone({
+  question,
+  onChange,
+}: Readonly<{ question: Question; onChange: (next: Question) => void }>) {
+  return (
+    <label className="grid gap-1.5 text-sm">
+      Time zone for this question
+      <NativeSelect
+        aria-label="Time zone for this question"
+        value={question.timeZone ?? ''}
+        onChange={(event) => {
+          const timeZone = event.target.value
+          onChange(timeZone === '' ? withoutTimeZone(question) : { ...question, timeZone })
+        }}
+      >
+        <option value="">Use workspace time zone</option>
+        {TIME_ZONES.map((timeZone) => (
+          <option key={timeZone} value={timeZone}>
+            {timeZone.replaceAll('_', ' ')}
+          </option>
+        ))}
+      </NativeSelect>
+    </label>
+  )
+}
 
 /** A short camelCase key from a label, such as "Phone number" to "phoneNumber". */
 function keyFromLabel(label: string): string {
@@ -57,7 +98,8 @@ function QuestionRow({
           aria-label="Answer type"
           value={question.type}
           onChange={(event) => {
-            onChange({ ...question, type: event.target.value as Question['type'] })
+            const type = event.target.value as Question['type']
+            onChange(type === 'datetime' ? { ...question, type } : { ...withoutTimeZone(question), type })
           }}
         >
           {TYPES.map((type) => (
@@ -77,6 +119,7 @@ function QuestionRow({
           }}
         />
       ) : null}
+      {question.type === 'datetime' ? <QuestionTimeZone question={question} onChange={onChange} /> : null}
       <TargetSelect
         label="Where the answer is saved"
         value={question.target}

@@ -14,6 +14,7 @@ import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { can } from '@ops/platform'
 import { formatDate } from '../../../../i18n/format'
 import { normalizeLocale } from '../../../../i18n/config'
+import { settingText } from '../../../../i18n/settings-form-copy'
 
 export const metadata: Metadata = { title: 'Members' }
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,7 @@ type AccessRow = Readonly<{
   email: string
   role: string
   status: string
+  locale: 'en' | 'es'
   lastInvitation: string
   actions?: ReactNode
 }>
@@ -38,15 +40,17 @@ function AccessCards({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
               <h3 className="truncate font-medium">{row.name}</h3>
               <p className="break-all text-xs text-muted-foreground">{row.email}</p>
             </div>
-            <span className="shrink-0 text-xs capitalize text-muted-foreground">{row.role}</span>
+            <span className="shrink-0 text-xs capitalize text-muted-foreground">
+              {settingText(row.role, row.locale)}
+            </span>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
             <div>
-              <dt>Status</dt>
+              <dt>{settingText('Status', row.locale)}</dt>
               <dd className="mt-0.5 text-sm capitalize text-foreground">{row.status}</dd>
             </div>
             <div>
-              <dt>Last invitation</dt>
+              <dt>{settingText('Last invitation', row.locale)}</dt>
               <dd className="mt-0.5 text-sm text-foreground">{row.lastInvitation}</dd>
             </div>
           </dl>
@@ -57,17 +61,17 @@ function AccessCards({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
   )
 }
 
-function AccessTable({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
+function AccessTable({ rows, locale }: Readonly<{ rows: readonly AccessRow[]; locale: 'en' | 'es' }>) {
   return (
     <div className="hidden lg:block">
       <table className="w-full table-fixed text-left text-sm">
         <thead className="text-xs text-muted-foreground">
           <tr>
-            <th className="w-[28%] py-2 pr-3">Member</th>
-            <th className="w-[10%] py-2 pr-3">Role</th>
-            <th className="w-[12%] py-2 pr-3">Status</th>
-            <th className="w-[18%] py-2">Last invitation</th>
-            <th className="w-[32%] py-2">Actions</th>
+            <th className="w-[28%] py-2 pr-3">{settingText('Member', locale)}</th>
+            <th className="w-[10%] py-2 pr-3">{settingText('Role', locale)}</th>
+            <th className="w-[12%] py-2 pr-3">{settingText('Status', locale)}</th>
+            <th className="w-[18%] py-2">{settingText('Last invitation', locale)}</th>
+            <th className="w-[32%] py-2">{settingText('Actions', locale)}</th>
           </tr>
         </thead>
         <tbody>
@@ -77,7 +81,7 @@ function AccessTable({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
                 <span className="block">{row.name}</span>
                 <span className="block break-all text-xs text-muted-foreground">{row.email}</span>
               </td>
-              <td className="break-words py-2 pr-3 capitalize">{row.role}</td>
+              <td className="break-words py-2 pr-3 capitalize">{settingText(row.role, row.locale)}</td>
               <td className="break-words py-2 pr-3 capitalize">{row.status}</td>
               <td className="break-words py-2 text-xs text-muted-foreground">{row.lastInvitation}</td>
               <td className="py-2 pl-3">{row.actions}</td>
@@ -121,9 +125,10 @@ export default async function MembersSettingsPage() {
       id: user.id,
       name: user.name || user.email,
       email: user.email,
+      locale,
       role: user.role,
-      status: user.active === true ? 'Active' : 'Inactive',
-      lastInvitation: 'Not sent',
+      status: user.active === true ? settingText('Active', locale) : settingText('Inactive', locale),
+      lastInvitation: settingText('Not sent', locale),
       actions: can(context.actor, 'manage_members', { type: 'users', role: user.role }) ? (
         <>
           {context.actor.role === 'owner' ? (
@@ -143,25 +148,26 @@ export default async function MembersSettingsPage() {
           />
         </>
       ) : (
-        <span className="text-xs text-muted-foreground">Managed by role policy</span>
+        <span className="text-xs text-muted-foreground">{settingText('Managed by role policy', locale)}</span>
       ),
     })),
     ...invitations.docs.map((invitation) => ({
       id: invitation.id,
       name: invitation.email,
       email: invitation.email,
+      locale,
       role: invitation.role,
-      status: invitation.status,
+      status: settingText(invitation.status, locale),
       lastInvitation:
         typeof invitation.createdAt === 'string'
           ? formatDate(new Date(invitation.createdAt), locale, {
               dateStyle: 'medium',
               timeZone,
             })
-          : 'Not sent',
+          : settingText('Not sent', locale),
       actions:
         invitation.status === 'accepted' || invitation.status === 'accepting' ? (
-          <span className="text-xs text-muted-foreground">No actions</span>
+          <span className="text-xs text-muted-foreground">{settingText('No actions', locale)}</span>
         ) : (
           <InvitationActions
             id={invitation.id}
@@ -180,13 +186,15 @@ export default async function MembersSettingsPage() {
     >
       <SettingsForm>
         <p className="rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
-          Workspace access changes are limited to owners and managers. Invitations can be resent while pending; revoking
-          one immediately invalidates its link.
+          {settingText(
+            'Workspace access changes are limited to owners and managers. Invitations can be resent while pending; revoking one immediately invalidates its link.',
+            locale,
+          )}
         </p>
         <InviteMemberForm action={inviteMember} />
         <div className="border-t pt-4">
           <AccessCards rows={rows} />
-          <AccessTable rows={rows} />
+          <AccessTable rows={rows} locale={locale} />
         </div>
       </SettingsForm>
     </SettingsPage>

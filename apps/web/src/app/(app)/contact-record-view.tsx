@@ -1,6 +1,7 @@
 import { EmptyValue } from '@ops/ui/composites/DataTable'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { RecordNotesTab } from './record-notes-tab'
+import { RecordCallLogsTab } from './record-call-logs-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
@@ -98,6 +99,7 @@ export async function ContactRecordView({
       recordType: 'contact',
       recordId: record.id,
       notes: <RecordNotesTab recordType="contact" recordId={record.id} />,
+      calls: <RecordCallLogsTab recordType="contact" recordId={record.id} />,
       recipient: record.email,
       outboundEmailEnabled,
       tasks: relatedTasks,

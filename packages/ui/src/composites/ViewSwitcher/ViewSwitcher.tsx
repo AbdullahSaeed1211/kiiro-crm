@@ -10,7 +10,10 @@ export function ViewSwitcher({
   active,
 }: Readonly<{ label: string; views: readonly ViewOption[]; active: string }>) {
   return (
-    <nav aria-label={label} className="inline-flex max-w-full items-center rounded-lg border border-border p-0.5">
+    <nav
+      aria-label={label}
+      className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-border p-0.5"
+    >
       {views.map((view) => {
         const selected = view.id === active
         return (

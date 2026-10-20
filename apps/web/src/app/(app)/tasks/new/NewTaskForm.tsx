@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 import { taskFormLabels, type TaskFormLabels } from '../../../../i18n/task-form-copy'
 import { useLocale } from '../../../../i18n/locale-context'
+import type { TaskRepeat } from '@ops/module-work'
 
 type Option = Readonly<{ value: string; label: string }>
 type FormProps = Readonly<{ projects: readonly Option[]; projectId: string; initialTitle: string }>
@@ -54,7 +55,8 @@ function TaskCoreFields({ projects, projectId, initialTitle, copy }: FormProps &
   )
 }
 
-function TaskScheduleFields({ copy }: Readonly<{ copy: TaskFormLabels }>) {
+function TaskScheduleFields({ copy, initialRepeat }: Readonly<{ copy: TaskFormLabels; initialRepeat: TaskRepeat }>) {
+  const [repeat, setRepeat] = useState(initialRepeat)
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-priority">
@@ -69,11 +71,19 @@ function TaskScheduleFields({ copy }: Readonly<{ copy: TaskFormLabels }>) {
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-due-date">
         {copy.dueDate}
-        <Input id="task-due-date" name="dueAt" type="date" />
+        <Input id="task-due-date" name="dueAt" type="date" required={repeat !== 'none'} />
       </label>
       <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-repeat">
         {copy.repeats}
-        <NativeSelect id="task-repeat" name="repeat" defaultValue="none" className="w-full font-normal">
+        <NativeSelect
+          id="task-repeat"
+          name="repeat"
+          value={repeat}
+          onChange={(event) => {
+            setRepeat(event.target.value as TaskRepeat)
+          }}
+          className="w-full font-normal"
+        >
           <option value="none">{copy.repeatNone}</option>
           <option value="daily">{copy.repeatDaily}</option>
           <option value="weekly">{copy.repeatWeekly}</option>
@@ -142,6 +152,34 @@ function LinkedTo({ template, name }: Readonly<{ template: string; name: string 
   )
 }
 
+function TaskDetails({
+  copy,
+  initialRepeat,
+  canMarkOwnerOnly,
+  ownerOnly,
+  onOwnerOnly,
+}: Readonly<{
+  copy: TaskFormLabels
+  initialRepeat: TaskRepeat
+  canMarkOwnerOnly: boolean
+  ownerOnly: boolean
+  onOwnerOnly: (value: boolean) => void
+}>) {
+  return (
+    <details open={initialRepeat !== 'none'} className="rounded-lg border p-3">
+      <summary className="cursor-pointer text-sm font-medium">{copy.moreDetails}</summary>
+      <div className="mt-4 grid gap-4">
+        <TaskScheduleFields copy={copy} initialRepeat={initialRepeat} />
+        {canMarkOwnerOnly ? <OwnerOnlyField label={copy.ownerOnly} checked={ownerOnly} onChange={onOwnerOnly} /> : null}
+        <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-description">
+          {copy.description}
+          <Textarea id="task-description" name="description" maxLength={20000} rows={4} />
+        </label>
+      </div>
+    </details>
+  )
+}
+
 export function NewTaskForm({
   projects,
   projectId,
@@ -149,6 +187,7 @@ export function NewTaskForm({
   relatedId,
   relatedLabel,
   initialTitle,
+  initialRepeat = 'none',
   cancelHref,
   canMarkOwnerOnly,
 }: Readonly<{
@@ -158,6 +197,7 @@ export function NewTaskForm({
   relatedId: string | null
   relatedLabel: string | null
   initialTitle: string
+  initialRepeat?: TaskRepeat
   cancelHref: string
   canMarkOwnerOnly: boolean
 }>) {
@@ -195,12 +235,13 @@ export function NewTaskForm({
     >
       {relatedLabel === null ? null : <LinkedTo template={copy.linkedTo} name={relatedLabel} />}
       <TaskCoreFields projects={projects} projectId={projectId} initialTitle={initialTitle} copy={copy} />
-      <TaskScheduleFields copy={copy} />
-      {canMarkOwnerOnly ? <OwnerOnlyField label={copy.ownerOnly} checked={ownerOnly} onChange={setOwnerOnly} /> : null}
-      <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-description">
-        {copy.description}
-        <Textarea id="task-description" name="description" maxLength={20000} rows={5} />
-      </label>
+      <TaskDetails
+        copy={copy}
+        initialRepeat={initialRepeat}
+        canMarkOwnerOnly={canMarkOwnerOnly}
+        ownerOnly={ownerOnly}
+        onOwnerOnly={setOwnerOnly}
+      />
       {error === null ? null : (
         <p className="text-sm text-destructive" role="alert">
           {error}

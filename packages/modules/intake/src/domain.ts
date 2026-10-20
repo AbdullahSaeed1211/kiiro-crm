@@ -95,9 +95,22 @@ export function mappedLead(form: IntakeForm, payload: IntakePayload): Readonly<R
   const customData: Record<string, unknown> = {}
   for (const [incoming, target] of Object.entries(form.fieldMap)) {
     if (target === 'ignore' || payload[incoming] === undefined) continue
+    if (target === 'nextActionAt' && !isUnixTimestamp(payload[incoming])) continue
     if (target.startsWith('custom:')) customData[target.slice('custom:'.length)] = payload[incoming]
     else lead[target] = payload[incoming]
   }
   if (Object.keys(customData).length > 0) lead['customData'] = customData
   return Object.fromEntries(Object.entries(lead).filter(([, value]) => value !== undefined))
+}
+
+/** Intake records with a mapped follow-up date must receive an epoch in milliseconds. */
+export function validMappedLeadDates(form: IntakeForm, payload: IntakePayload): boolean {
+  return Object.entries(form.fieldMap).every(([incoming, target]) => {
+    const value = payload[incoming]
+    return target !== 'nextActionAt' || value === undefined || value === null || value === '' || isUnixTimestamp(value)
+  })
+}
+
+function isUnixTimestamp(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= 8_640_000_000_000_000
 }

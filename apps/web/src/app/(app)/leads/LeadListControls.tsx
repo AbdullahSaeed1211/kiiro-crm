@@ -5,12 +5,9 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import type { KanbanStage } from '@ops/ui/composites/KanbanBoard'
-
-const OWNER_OPTIONS = [
-  { value: '', label: 'Any owner' },
-  { value: 'me', label: 'My leads' },
-  { value: 'none', label: 'Unassigned' },
-] as const
+import { CRM_LIST_CONTROLS_COPY } from '../../../i18n/crm-list-controls-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
 
 function FacetSelect({
   label,
@@ -48,6 +45,12 @@ export function LeadListControls({
   const router = useRouter()
   const pathname = usePathname()
   const search = useSearchParams()
+  const copy = catalogFor(CRM_LIST_CONTROLS_COPY, useLocale())
+  const ownerOptions = [
+    { value: '', label: copy.anyOwner },
+    { value: 'me', label: copy.myLeads },
+    { value: 'none', label: copy.unassigned },
+  ]
   const q = search.get('q') ?? ''
   const selected = search.getAll('stage')
   const setFacet = (name: 'source' | 'owner', value: string) => {
@@ -80,8 +83,8 @@ export function LeadListControls({
         stages={selected}
         stageOptions={stages}
         labels={{
-          search: 'Search leads',
-          searchPlaceholder: 'Search leads…',
+          search: copy.searchLeads,
+          searchPlaceholder: `${copy.searchLeads}…`,
           stage: 'Stage',
           clear: 'Clear',
           noStages: 'No stages',
@@ -95,17 +98,17 @@ export function LeadListControls({
         showClear={false}
       />
       <FacetSelect
-        label="Owner"
+        label={copy.owner}
         value={search.get('owner') ?? ''}
-        options={OWNER_OPTIONS}
+        options={ownerOptions}
         onChange={(value) => {
           setFacet('owner', value)
         }}
       />
       <FacetSelect
-        label="Source"
+        label={copy.source}
         value={search.get('source') ?? ''}
-        options={[{ value: '', label: 'Any source' }, ...sources.map(({ id, name }) => ({ value: id, label: name }))]}
+        options={[{ value: '', label: copy.anySource }, ...sources.map(({ id, name }) => ({ value: id, label: name }))]}
         onChange={(value) => {
           setFacet('source', value)
         }}

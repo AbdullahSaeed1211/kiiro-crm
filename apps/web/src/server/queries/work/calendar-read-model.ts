@@ -20,6 +20,7 @@ interface CalendarTask {
 }
 
 interface CalendarReadModel {
+  readonly actorId: string
   readonly tasks: readonly CalendarTask[]
   readonly timeZone: string
   readonly weekStartsOn: 0 | 1
@@ -148,6 +149,7 @@ export async function loadCalendarReadModel(
   })
   const locale = normalizeLocale(field(settings, 'locale'))
   return {
+    actorId: String(requestContext.actor.id),
     tasks: mapTasks(taskPage.docs, categories),
     capped: taskPage.totalDocs > CALENDAR_LIMIT,
     timeZone,

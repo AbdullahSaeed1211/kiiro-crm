@@ -2,7 +2,7 @@
 
 import { asId } from '@ops/kernel'
 import { updateTask as updateTaskCommand } from '@ops/module-work'
-import { revalidatePath } from 'next/cache'
+import { revalidateTaskViews } from './revalidate-task-views'
 import { z } from 'zod'
 import { workCommandDeps } from '@/server/container'
 
@@ -46,6 +46,6 @@ export async function updateTasks(input: unknown): Promise<UpdateTasksResult> {
     const result = await updateTaskCommand(deps, { taskId: task.id, expectedUpdatedAt: task.updatedAt, patch })
     if (result.ok) updated += 1
   }
-  if (updated > 0) for (const path of ['/tasks', '/tasks/board', '/my-tasks', '/']) revalidatePath(path)
+  if (updated > 0) revalidateTaskViews()
   return { updated, skipped: tasks.length - updated }
 }

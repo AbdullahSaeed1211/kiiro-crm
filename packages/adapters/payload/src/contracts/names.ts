@@ -25,6 +25,9 @@ export const COLLECTIONS = {
   webhookDeliveries: 'webhookDeliveries',
   demoManifests: 'demoManifests',
   campaignQueue: 'campaignQueue',
+  callLogs: 'callLogs',
+  deliverables: 'deliverables',
+  contentItems: 'contentItems',
 } as const
 
 /** One of the spike collection slugs. */

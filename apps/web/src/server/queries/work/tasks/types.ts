@@ -1,4 +1,5 @@
 import type { StageColor } from '@ops/ui/composites/StagePill'
+import type { TaskDueFilter } from '../task-due-filter'
 /** Task priority levels, shown with the icons of spec §15.4. */
 type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent'
 
@@ -51,6 +52,7 @@ export interface TaskListQuery {
   readonly search?: string
   /** Only tasks assigned to this person (a user id). */
   readonly assignee?: string
+  readonly due?: TaskDueFilter
 }
 
 /** One page of tasks plus the total across all pages. */

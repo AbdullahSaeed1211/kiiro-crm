@@ -107,11 +107,25 @@ export function taskColumns({
   locale,
   search = '',
   assignee = '',
-}: Readonly<{ sort: TaskSort; view: string; locale: Locale; search?: string; assignee?: string }>): DataTableColumn[] {
+  due = '',
+}: Readonly<{
+  sort: TaskSort
+  view: string
+  locale: Locale
+  search?: string
+  assignee?: string
+  due?: string
+}>): DataTableColumn[] {
   const copy = TASK_COPY[locale]
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
-    listQuery({ sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }), view, search, assignee })
+    listQuery({
+      sort: formatTaskSort({ key, desc: sort.key === key && !sort.desc }),
+      view,
+      search,
+      assignee,
+      ...(due === '' ? {} : { due }),
+    })
   return [
     { id: 'title', header: copy.title, sortHref: sortHref('title'), hideable: false },
     { id: 'stage', header: copy.stage, sortHref: sortHref('stage') },
@@ -129,15 +143,25 @@ export function paginationOf({
   view,
   search = '',
   assignee = '',
+  due = '',
 }: Readonly<{
   result: TaskListResult
   sort: TaskSort
   view: string
   search?: string
   assignee?: string
+  due?: string
 }>): DataTablePaginationState {
   return paginationFor({
     ...result,
-    href: (page) => listQuery({ sort: formatTaskSort(sort), page: String(page), view, search, assignee }),
+    href: (page) =>
+      listQuery({
+        sort: formatTaskSort(sort),
+        page: String(page),
+        view,
+        search,
+        assignee,
+        ...(due === '' ? {} : { due }),
+      }),
   })
 }

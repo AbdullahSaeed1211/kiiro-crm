@@ -26,6 +26,14 @@ const moneySchema = z
   })
   .strict()
 
+export const logCallSchema = z.strictObject({
+  recordType: z.enum(['lead', 'contact']),
+  recordId: id,
+  occurredAt: epoch,
+  outcome: z.enum(['answered', 'no_answer', 'voicemail', 'follow_up']),
+  notes: z.string().trim().max(5_000).nullable().optional(),
+})
+
 export const createOrganizationSchema = z
   .object({
     name: z.string().trim().min(1).max(300),

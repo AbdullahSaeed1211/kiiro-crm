@@ -9,6 +9,7 @@ import { loadTaskContexts } from './task-contexts'
 import type { TaskListQuery, TaskListResult, TaskSort, TaskSortKey } from './types'
 import type { Where } from 'payload'
 import { workflowOrThrow } from '@/server/workflow-result'
+import { taskDueWhere } from '../task-due-filter'
 
 // Every list page shows 50 rows with server pagination (decision D-34).
 const PAGE_SIZE = 50
@@ -136,7 +137,9 @@ export async function listTasks(query: TaskListQuery, requestContext?: RequestCo
   const context = requestContext ?? (await getRequestContext())
   const tasks = createTaskRepository(context.req)
   const workflow = workflowOrThrow(await tasks.loadTaskWorkflow())
-  const where = taskWhere(query, workflow, String(context.actor.id))
+  const where = {
+    and: [taskWhere(query, workflow, String(context.actor.id)), await taskDueWhere(query.due ?? '')],
+  }
   const args = { context, workflow, query, where }
   if (query.sort.key === 'dueAt') return listDueTasks(args)
   if (query.sort.key === 'title') return listTitleTasks(args)

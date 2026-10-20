@@ -23,4 +23,10 @@ export function todayAsDueAt(now: number, timeZone: string): number {
   return Date.parse(`${todayIn(now, timeZone)}T00:00:00.000Z`)
 }
 
+/** Exclusive end of the current calendar week, represented in the same UTC-date format as task due dates. */
+export function weekEndAfter(today: number, startsOn: 0 | 1): number {
+  const weekday = new Date(today).getUTCDay()
+  return today + (7 - ((weekday - startsOn + 7) % 7)) * DAY_MS
+}
+
 export { DAY_MS }

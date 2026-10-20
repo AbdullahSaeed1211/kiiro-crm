@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateTaskViews } from './revalidate-task-views'
 import { setTaskDates } from '@ops/module-work'
 import { asId } from '@ops/kernel'
 import { z } from 'zod'
@@ -35,7 +35,6 @@ export async function rescheduleTask(input: unknown): Promise<ActionResult> {
     expectedUpdatedAt: updatedAt,
   })
   if (!result.ok) return actionError(result.error.code, result.error.message)
-  revalidatePath('/calendar')
-  revalidatePath('/timeline')
+  revalidateTaskViews(taskId)
   return actionOk()
 }

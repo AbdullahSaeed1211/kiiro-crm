@@ -4,9 +4,12 @@ import { Button } from '@ops/ui/components/ui/button'
 import { useState } from 'react'
 import { useGuardedTransition } from '../../use-guarded-transition'
 import { resetMemberTwoFactor } from '../../../../server/actions/settings/two-factor'
+import { settingText } from '../../../../i18n/settings-form-copy'
+import { useLocale } from '../../../../i18n/locale-context'
 
 /** Owners clear a teammate's two-step sign-in after a lost phone. */
 export function ResetTwoFactorButton({ userId, name }: Readonly<{ userId: string; name: string }>) {
+  const locale = useLocale()
   const [message, setMessage] = useState<string | null>(null)
   const [pending, startTransition] = useGuardedTransition(setMessage)
   return (
@@ -15,19 +18,19 @@ export function ResetTwoFactorButton({ userId, name }: Readonly<{ userId: string
         variant="ghost"
         size="sm"
         disabled={pending}
-        aria-label={`Reset two-step sign-in for ${name}`}
+        aria-label={`${settingText('Reset two-step sign-in for', locale)} ${name}`}
         onClick={() => {
           startTransition(async () => {
             const result = await resetMemberTwoFactor({ userId })
-            setMessage(result.ok ? 'Reset.' : result.error.message)
+            setMessage(result.ok ? settingText('Reset.', locale) : settingText(result.error.message, locale))
           })
         }}
       >
-        Reset two-step
+        {settingText('Reset two-step', locale)}
       </Button>
       {message === null ? null : (
         <span role="status" className="text-xs">
-          {message}
+          {settingText(message, locale)}
         </span>
       )}
     </span>

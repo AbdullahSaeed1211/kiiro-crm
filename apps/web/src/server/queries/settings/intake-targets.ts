@@ -9,6 +9,7 @@ const LEAD_TARGETS = [
   ['phone', 'Phone'],
   ['companyName', 'Company'],
   ['notes', 'Notes'],
+  ['nextActionAt', 'Next action date'],
 ] as const
 
 /** Where an intake answer can go: a built-in lead field, a lead custom field (`custom:<key>`), or nowhere. */

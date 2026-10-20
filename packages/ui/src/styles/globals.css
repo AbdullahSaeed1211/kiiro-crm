@@ -8,6 +8,17 @@
 @source "../../../../apps/web/src/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
+/* Month content cannot resize surrounding weeks as task data arrives. */
+.ops-calendar-grid {
+  grid-auto-rows: 7rem;
+}
+
+@media (min-width: 40rem) {
+  .ops-calendar-grid {
+    grid-auto-rows: 8rem;
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);

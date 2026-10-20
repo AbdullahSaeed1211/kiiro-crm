@@ -8,6 +8,9 @@ import { listLeads, parseLeadSearch, parseLeadStages } from '../../../../server/
 import { BOARD_LIMIT } from '../../../../server/crm/board-limit'
 import { LeadBoard } from '../LeadBoard'
 import { leadViews } from '../lead-views'
+import { catalogFor } from '../../../../i18n/locale'
+import { LEAD_VIEWS_COPY } from '../../../../i18n/lead-views-copy'
+import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 
 export const metadata: Metadata = { title: 'Lead board' }
 export const dynamic = 'force-dynamic'
@@ -15,6 +18,8 @@ export const dynamic = 'force-dynamic'
 export default async function LeadBoardPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
+  const locale = await loadWorkspaceLocale()
+  const viewsCopy = catalogFor(LEAD_VIEWS_COPY, locale)
   const params = await searchParams
   const result = await listLeads({
     q: parseLeadSearch(params.q),
@@ -52,9 +57,9 @@ export default async function LeadBoardPage({
           count={result.total}
           actions={
             <ViewSwitcher
-              label="Lead views"
+              label={viewsCopy.label}
               active="board"
-              views={leadViews({ tableHref, boardHref: '/leads/board' })}
+              views={leadViews({ tableHref, boardHref: '/leads/board', copy: viewsCopy })}
             />
           }
         />

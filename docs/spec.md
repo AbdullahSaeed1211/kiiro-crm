@@ -896,7 +896,7 @@ Rate limits are per Cloudflare location and eventually consistent, so Turnstile,
 |---|---|---|---|
 | `invitations.expire` | hourly | `jobRuns (job, hourStart)` | Pending past `expiresAt` → expired |
 | `tasks.dueSoon` | every run | notification `(taskId, due_soon, dueLocalDate)` | Open tasks due within 24 h (tenant timezone) → notify assignees |
-| `tasks.overdue` | first run after 09:00 tenant time | `(taskId, overdue, localDate)` | Open tasks with `dueAt` < start of today → notify assignees |
+| `tasks.overdue` | every 15-minute scheduler window | `(taskId, overdue, localDate)` | Open tasks due before the tenant's current calendar day notify assignees; UTC calendar-date storage determines the cutoff. Daily deduplication prevents repeated alerts. |
 | `digest.send` | every run | `(userId, digest, localDate)` | Users whose `digestLocalTime` passed today: overdue, due today, new assignments, mentions |
 | `records.stalled` | first run after 09:00 tenant time | `(recordId, stalled, localDate)` | Leads/deals/projects in a non-terminal stage longer than `stalledDays` → notify owner |
 | `intake.cleanup` | daily | `jobRuns (job, localDate)` | Delete `rejected_*` submissions older than 30 days |
@@ -1039,8 +1039,15 @@ Stepper (vertical left on ≥ md, top on mobile); each step saves on Continue; B
 6 **Import** (optional): link to `/settings/import`.
 7 **Done**: checklist (sender verified, team invited, intake connected, first record) → sets `onboardedAt` → `/`.
 
-### 17.3 Dashboard `/`
-Grid `md:grid-cols-2 xl:grid-cols-3`. Cards: **My overdue** (count + 5 rows) · **Due this week** (5 rows) · **New leads, 7 days** (count + CSS bar per source) · **Pipeline** (open deal stages: count + summed value as CSS bars; staff scoped) · **Stalled** (5 rows) · **Recent activity** (10 entries; manager_up team-wide, staff scoped). Each card: title, "View all" link, empty text.
+### 17.3 Today `/`
+Three attention queues: overdue tasks, leads needing follow-up and tasks due from today through the current calendar week. Each queue shows its exact visible count and up to five rows. Rows identify the work, its project or related record and responsible people, with one action. View all opens the matching filtered list. Calendar dates use the tenant timezone and configured week boundary.
+
+Owners and managers see permitted team queues. Staff see their own assigned tasks and owned leads. A lead needs follow-up when its next action is due by today or it remains in the initial workflow stage. This label does not claim that email reply detection exists. Completed, failed and cancelled workflow stages are excluded.
+
+An empty workspace offers Add your first lead, or Add your first task when CRM is disabled. Existing completed records prevent a false first-run state. Reporting and repeating schedules have secondary links; their detail does not compete with daily actions. [The agency acceptance checklist](ux/agency-daily-work.md) owns the remaining UX and release evidence.
+
+#### Repeating work `/tasks/repeating`
+The task workspace includes a Repeating view. Each row represents a current nonterminal schedule carrier, with its context, responsible people, cadence and next scheduled calendar day. A schedule due today shows today. Earlier unfinished occurrences remain in All tasks. Completing a schedule or catching up elapsed periods advances the carrier without duplicating active schedule rows. Add repeating work opens a task form with a monthly cadence selected and requires a due date.
 
 ### 17.4 My tasks `/my-tasks`
 Header: title, switch "Include tasks I created" (`mine=assigned|created`), quick-add input (title + Enter → task assigned to me, default workflow, no due date).

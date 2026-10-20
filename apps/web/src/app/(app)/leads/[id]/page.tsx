@@ -11,6 +11,7 @@ import { LeadDuplicateNotice } from '../LeadDuplicateNotice'
 import { RecordCustomFields } from '../../record-custom-fields'
 import { ArchiveRecordControl } from '../../archive-record-control'
 import { RecordNotesTab } from '../../record-notes-tab'
+import { RecordCallLogsTab } from '../../record-call-logs-tab'
 
 export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ id: string }> }>): Promise<Metadata> {
@@ -38,6 +39,7 @@ export default async function LeadPage({ params }: Readonly<{ params: Promise<{ 
             details: <RecordDetails type="lead" id={data.item.lead.id} />,
             customFields: <RecordCustomFields type="lead" id={data.item.lead.id} />,
             notes: <RecordNotesTab recordType="lead" recordId={data.item.lead.id} />,
+            calls: <RecordCallLogsTab recordType="lead" recordId={data.item.lead.id} />,
             archive: <ArchiveRecordControl type="lead" id={data.item.lead.id} label={data.item.lead.title} />,
           }}
         />

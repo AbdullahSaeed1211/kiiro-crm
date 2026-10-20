@@ -7,7 +7,12 @@ import {
   taskDatesSchema,
   updateProjectSchema,
   updateTaskSchema,
+  createContentItemSchema,
+  createDeliverableSchema,
+  respondToDeliverableSchema,
+  updateContentItemSchema,
 } from '@ops/module-work'
+import { logCallSchema } from '@ops/module-crm'
 import { inviteMemberSchema, saveGroupSchema, saveMemberSchema } from '@ops/module-identity'
 import type { Result } from '@ops/kernel'
 import { z } from 'zod'
@@ -104,6 +109,47 @@ const API_CONTRACTS = {
     path: '/api/v1/projects/:id/members/:memberId',
     summary: 'Remove a member from a project.',
     body: expectedVersionSchema,
+    success: 200,
+  },
+  'calls.create': {
+    method: 'POST',
+    path: '/api/v1/calls',
+    summary: 'Log a call against a visible lead or contact.',
+    body: logCallSchema,
+    success: 201,
+  },
+  'projects.deliverables.create': {
+    method: 'POST',
+    path: '/api/v1/projects/:id/deliverables',
+    summary: 'Create a draft deliverable for a project.',
+    body: createDeliverableSchema.omit({ projectId: true }),
+    success: 201,
+  },
+  'deliverables.respond': {
+    method: 'POST',
+    path: '/api/v1/deliverables/:id/response',
+    summary: 'Record a client response or re-send a deliverable.',
+    body: respondToDeliverableSchema.omit({ deliverableId: true }),
+    success: 200,
+  },
+  'content.list': {
+    method: 'GET',
+    path: '/api/v1/content',
+    summary: 'List project content items scheduled in a date range.',
+    success: 200,
+  },
+  'content.create': {
+    method: 'POST',
+    path: '/api/v1/content',
+    summary: 'Create a content calendar draft or scheduled item.',
+    body: createContentItemSchema,
+    success: 201,
+  },
+  'content.update': {
+    method: 'PATCH',
+    path: '/api/v1/content/:id',
+    summary: 'Update a project content item while it is still at expectedUpdatedAt.',
+    body: updateContentItemSchema.omit({ contentItemId: true }),
     success: 200,
   },
   'invitations.create': {

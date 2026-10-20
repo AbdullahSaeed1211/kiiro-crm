@@ -17,6 +17,9 @@ import { getRequestContext } from '@/server/container'
 import { ClientDashboardView } from './client-dashboard'
 import { ArchiveWorkControl } from '../../archive-work-control'
 import ProjectActions from './ProjectActions'
+import { DeliverablesTab } from './deliverables-tab'
+import { AGENCY_WORK_COPY } from '../../../../i18n/agency-work-copy'
+import { ProjectRetainerControl } from './ProjectRetainerControl'
 import {
   ProjectBoardContent,
   ProjectDetails,
@@ -34,6 +37,8 @@ function projectTabs({
   stages,
   projectId,
   dashboard,
+  deliverables,
+  agencyCopy,
   copy,
 }: Readonly<{
   copy: ProjectPageCopy
@@ -42,6 +47,8 @@ function projectTabs({
   stages: readonly ProjectStage[]
   projectId: string
   dashboard: { readonly label: string; readonly content: React.ReactNode }
+  deliverables: React.ReactNode
+  agencyCopy: Readonly<Record<string, string>>
 }>) {
   return [
     { id: 'dashboard', label: dashboard.label, content: dashboard.content },
@@ -60,6 +67,7 @@ function projectTabs({
       label: copy.list,
       content: <ProjectTaskList tasks={tasks} copy={copy} />,
     },
+    { id: 'deliverables', label: agencyCopy.deliverables, content: deliverables },
   ]
 }
 
@@ -88,6 +96,31 @@ async function dashboardFor(input: {
   }
 }
 
+function ProjectPageActions({
+  projectId,
+  projectName,
+  createTaskLabel,
+  contentLabel,
+}: Readonly<{ projectId: string; projectName: string; createTaskLabel: string; contentLabel: string }>) {
+  return (
+    <div className="grid w-full gap-2 md:flex md:w-auto md:items-center">
+      <Link
+        className="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        href={`/tasks/new?projectId=${encodeURIComponent(projectId)}`}
+      >
+        {createTaskLabel}
+      </Link>
+      <Link
+        className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-accent"
+        href={`/content-calendar?projectId=${encodeURIComponent(projectId)}`}
+      >
+        {contentLabel}
+      </Link>
+      <ArchiveWorkControl type="project" id={projectId} label={projectName} />
+    </div>
+  )
+}
+
 /** Project record with overview, board, and list tabs. */
 export default async function ProjectPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
@@ -103,6 +136,8 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
     locale: model.locale,
     timeZone: model.timeZone,
   })
+  const deliverables = await DeliverablesTab({ projectId: project.id, people: model.people })
+  const agencyCopy = catalogFor(AGENCY_WORK_COPY, model.locale)
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.projects, href: '/projects' }]} />
@@ -117,18 +152,17 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
             stages: model.taskStages,
             projectId: project.id,
             dashboard,
+            deliverables,
+            agencyCopy,
             copy,
           })}
           actions={
-            <div className="grid w-full gap-2 md:flex md:w-auto md:items-center">
-              <Link
-                className="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}
-              >
-                {copy.createTask}
-              </Link>
-              <ArchiveWorkControl type="project" id={project.id} label={project.name} />
-            </div>
+            <ProjectPageActions
+              projectId={project.id}
+              projectName={project.name}
+              createTaskLabel={copy.createTask}
+              contentLabel={agencyCopy.contentTitle}
+            />
           }
           aside={
             <div className="grid gap-4">
@@ -138,6 +172,12 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
                 organizationName={organizationName}
                 locale={model.locale}
                 timeZone={model.timeZone}
+              />
+              <ProjectRetainerControl
+                projectId={project.id}
+                retainer={project.retainer}
+                updatedAt={project.updatedAt}
+                locale={model.locale}
               />
               <section className="ops-detail-card rounded-lg border p-4">
                 <h2 className="mb-3 font-medium">{copy.members}</h2>

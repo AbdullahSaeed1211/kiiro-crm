@@ -24,20 +24,21 @@ export const metadata: Metadata = { title: 'Projects' }
 import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
 import { catalogFor } from '../../../i18n/locale'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
+import { CRM_LIST_CONTROLS_COPY, type CrmListControlsCopy } from '../../../i18n/crm-list-controls-copy'
 export const dynamic = 'force-dynamic'
 
 type Model = Awaited<ReturnType<typeof loadWorkReadModel>>
 type Project = Model['projects'][number]
 
-const COLUMNS: DataTableColumn[] = [
-  { id: 'name', header: 'Name', hideable: false },
-  { id: 'stage', header: 'Stage' },
-  { id: 'members', header: 'Members' },
-  { id: 'progress', header: 'Progress' },
-  { id: 'target', header: 'Target end' },
+const columns = (copy: CrmListControlsCopy): DataTableColumn[] => [
+  { id: 'name', header: copy.projectName, hideable: false },
+  { id: 'stage', header: copy.stage },
+  { id: 'members', header: copy.members, defaultHidden: true },
+  { id: 'progress', header: copy.progress },
+  { id: 'target', header: copy.targetEnd, defaultHidden: true },
 ]
 
-function ProgressBar({ done, total }: Readonly<{ done: number; total: number }>) {
+function ProgressBar({ done, total, label }: Readonly<{ done: number; total: number; label: string }>) {
   const percentage = total === 0 ? 0 : Math.round((done / total) * 100)
   return (
     <div className="min-w-32 space-y-1.5">
@@ -52,13 +53,16 @@ function ProgressBar({ done, total }: Readonly<{ done: number; total: number }>)
         <div className="h-full rounded-full bg-primary" style={{ width: `${String(percentage)}%` }} />
       </div>
       <span className="text-xs tabular-nums text-muted-foreground">
-        {done}/{total} done
+        {done}/{total} {label}
       </span>
     </div>
   )
 }
 
-function rowOf(project: Project, shared: Readonly<{ model: Model; progress: Progress | undefined }>): DataTableRow {
+function rowOf(
+  project: Project,
+  shared: Readonly<{ model: Model; progress: Progress | undefined; doneLabel: string; teammateLabel: string }>,
+): DataTableRow {
   const { model, progress } = shared
   return {
     id: project.id,
@@ -70,9 +74,11 @@ function rowOf(project: Project, shared: Readonly<{ model: Model; progress: Prog
       ),
       stage: <Badge variant="secondary">{project.stage}</Badge>,
       members: (
-        <AvatarStack users={project.memberIds.map((id) => ({ id, name: model.people.get(id) ?? 'Teammate' }))} />
+        <AvatarStack
+          users={project.memberIds.map((id) => ({ id, name: model.people.get(id) ?? shared.teammateLabel }))}
+        />
       ),
-      progress: <ProgressBar done={progress?.done ?? 0} total={progress?.total ?? 0} />,
+      progress: <ProgressBar done={progress?.done ?? 0} total={progress?.total ?? 0} label={shared.doneLabel} />,
       target:
         project.targetEndAt === null ? (
           <EmptyValue />
@@ -83,13 +89,14 @@ function rowOf(project: Project, shared: Readonly<{ model: Model; progress: Prog
   }
 }
 
-const SORT_OPTIONS = [
-  { value: 'name', label: 'Name: A to Z' },
-  { value: '-name', label: 'Name: Z to A' },
-  { value: 'target', label: 'Target end: soonest' },
-] as const
-
-const sortMenu = (value: string): ListSort => ({ value, options: SORT_OPTIONS })
+const sortMenu = (value: string, copy: CrmListControlsCopy): ListSort => ({
+  value,
+  options: [
+    { value: 'name', label: copy.projectNameAsc },
+    { value: '-name', label: copy.projectNameDesc },
+    { value: 'target', label: copy.targetEndSoonest },
+  ],
+})
 
 const NO_TARGET = Number.POSITIVE_INFINITY
 const PAGE_SIZE = 50
@@ -147,6 +154,7 @@ async function loadView(params: SearchParams) {
 export default async function ProjectsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
   const locale = await loadWorkspaceLocale()
   const help = catalogFor(SECTION_HELP_COPY, locale)
+  const copy = catalogFor(CRM_LIST_CONTROLS_COPY, locale)
   const { query, stage, sort, model, matched, page, shown, progress } = await loadView(await searchParams)
   const stages = [...new Set(model.projects.map((project) => project.stage))]
   return (
@@ -167,22 +175,29 @@ export default async function ProjectsPage({ searchParams }: Readonly<{ searchPa
           }
         />
         <ListViewBar
-          searchLabel="Search projects"
+          searchLabel={copy.searchProjects}
           query={query}
           filters={[
             {
               name: 'stage',
-              label: 'Filter by stage',
-              allLabel: 'All stages',
+              label: copy.projectStage,
+              allLabel: copy.allStages,
               value: stage,
               options: stages.map((name) => ({ value: name, label: name })),
             },
           ]}
-          sort={sortMenu(sort)}
+          sort={sortMenu(sort, copy)}
         />
         <DataTable
-          columns={COLUMNS}
-          rows={shown.map((project) => rowOf(project, { model, progress: progress.get(project.id) }))}
+          columns={columns(copy)}
+          rows={shown.map((project) =>
+            rowOf(project, {
+              model,
+              progress: progress.get(project.id),
+              doneLabel: copy.done,
+              teammateLabel: copy.teammate,
+            }),
+          )}
           pagination={paginationFor({
             page,
             pageSize: PAGE_SIZE,

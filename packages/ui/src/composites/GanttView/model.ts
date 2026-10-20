@@ -145,8 +145,10 @@ export function ganttColumns(labels: GanttColumnLabels, locale?: string): IColum
   const format = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' })
   const template = (value: unknown) => (value instanceof Date ? format.format(value) : '')
   return [
-    { id: 'text', header: labels.title, flexgrow: 1 },
-    { id: 'start', header: labels.start, width: 88, align: 'center', template },
-    { id: 'end', header: labels.due, width: 88, align: 'center', template },
+    { id: 'text', header: [{ id: 'text', text: labels.title }], flexgrow: 1 },
+    { id: 'start', header: [{ id: 'start', text: labels.start }], width: 88, align: 'center', template },
+    { id: 'end', header: [{ id: 'end', text: labels.due }], width: 88, align: 'center', template },
+    // SVAR's compact chart view fits to this action-column id even in read-only timelines.
+    { id: 'add-task', header: [{ id: 'add-task', text: '' }], width: 1, hidden: true, resize: false },
   ]
 }

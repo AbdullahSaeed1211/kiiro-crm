@@ -2,7 +2,7 @@ import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { asId } from '@ops/kernel'
-import { canMarkTaskOwnerOnly } from '@ops/module-work'
+import { canMarkTaskOwnerOnly, TASK_REPEATS } from '@ops/module-work'
 import type { Metadata } from 'next'
 import { NewTaskForm } from './NewTaskForm'
 import { loadTaskContexts } from '../../../../server/queries/work/tasks/task-contexts'
@@ -10,6 +10,8 @@ import type { TaskListItem } from '../../../../server/queries/work/tasks/types'
 import { loadWorkReadModel } from '../../../../server/queries/work/read-models'
 import { getRequestContext } from '@/server/container'
 import { firstParam } from '../../search-params'
+import { taskFormLabels } from '../../../../i18n/task-form-copy'
+import { TASK_COPY } from '../../../../i18n/work-copy'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'New task' }
@@ -46,6 +48,7 @@ export default async function NewTaskPage({
   const query = await searchParams
   const context = await getRequestContext()
   const model = await loadWorkReadModel(context, 'projects')
+  const copy = taskFormLabels(model.locale)
   const projectId = projectIdOf(model.projects, firstParam(query.projectId))
   const recordContext = await recordContextOf(context, {
     type: relatedTypeOf(firstParam(query.relatedType)),
@@ -53,9 +56,11 @@ export default async function NewTaskPage({
   })
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Tasks', href: '/tasks' }, { label: 'New task' }]} />
+      <AppHeader
+        breadcrumbs={[{ label: TASK_COPY[model.locale].allTasks, href: '/tasks' }, { label: copy.pageTitle }]}
+      />
       <PageContent>
-        <PageHeader title="New task" description="Add work, choose its project, and set a due date." />
+        <PageHeader title={copy.pageTitle} description={copy.captureHelp} />
         <NewTaskForm
           projects={model.projects.map(({ id, name }) => ({ value: id, label: name }))}
           projectId={projectId}
@@ -63,6 +68,7 @@ export default async function NewTaskPage({
           relatedId={recordContext.id}
           relatedLabel={recordContext.label?.label ?? null}
           initialTitle={firstParam(query.title) ?? ''}
+          initialRepeat={TASK_REPEATS.find((value) => value === firstParam(query.repeat)) ?? 'none'}
           canMarkOwnerOnly={canMarkTaskOwnerOnly(context.actor)}
           cancelHref={recordContext.label?.href ?? (projectId === '' ? '/tasks' : `/projects/${projectId}`)}
         />

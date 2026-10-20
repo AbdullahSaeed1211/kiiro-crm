@@ -1,4 +1,4 @@
-import { CalendarMonth, type CalendarEvent } from '@ops/ui/composites/CalendarMonth'
+import type { CalendarEvent } from '@ops/ui/composites/CalendarMonth'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -14,6 +14,7 @@ import { assigneeOptions, validAssignee } from '../tasks/assignee-options'
 import { taskHref } from '../task-navigation'
 import { moveTaskOnCalendar } from './move-task'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
+import { CalendarWorkspace } from './calendar-workspace'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Calendar' }
@@ -29,6 +30,32 @@ function carriedQuery({ mine, assignee }: Readonly<{ mine: boolean; assignee: st
     .filter(Boolean)
     .join('&')
 }
+
+function calendarReturnTo({
+  year,
+  month,
+  mine,
+  assignee,
+}: Readonly<{
+  year: number
+  month: number
+  mine: boolean
+  assignee: string
+}>): string {
+  const params = new URLSearchParams(carriedQuery({ mine, assignee }))
+  params.set('year', String(year))
+  params.set('month', String(month + 1))
+  return `/calendar?${params.toString()}`
+}
+
+const dateFormatter = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+const dueFormatter = dateFormatter('UTC')
 
 /** Month calendar for scoped tasks, grouped by due date. */
 export default async function CalendarPage({
@@ -49,13 +76,9 @@ export default async function CalendarPage({
   const year = model.calendarYear
   const month = model.calendarMonth
   const copy = TASK_COPY[model.locale]
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: model.timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
+  const formatter = dateFormatter(model.timeZone)
   const monthPrefix = `${String(year).padStart(4, '0')}-${String(month + 1).padStart(2, '0')}-`
+  const returnTo = calendarReturnTo({ year, month, mine, assignee })
   const events: CalendarEvent[] = model.tasks
     .filter(
       (task): task is typeof task & { readonly dueAt: number } =>
@@ -64,8 +87,8 @@ export default async function CalendarPage({
     .map((task) => ({
       id: task.id,
       title: task.title,
-      date: formatDateISO(task.dueAt, formatter),
-      href: taskHref(task.id, '/calendar'),
+      date: formatDateISO(task.dueAt, dueFormatter),
+      href: taskHref(task.id, returnTo),
       color: eventColor(task.priority),
       moveToken: JSON.stringify({ dueAt: task.dueAt, startAt: task.startAt, updatedAt: task.updatedAt }),
     }))
@@ -94,16 +117,21 @@ export default async function CalendarPage({
             {catalogFor(CALENDAR_COPY, model.locale).capped.replace('{count}', String(events.length))}
           </p>
         ) : null}
-        <CalendarMonth
-          year={year}
-          month={month}
-          weekStartsOn={model.weekStartsOn}
-          locale={model.locale}
-          labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore, today: copy.today }}
-          events={events}
-          today={formatter.format(Date.now())}
-          onMove={moveTaskOnCalendar}
-          query={carriedQuery({ mine, assignee })}
+        <CalendarWorkspace
+          people={Array.from(people, ([id, name]) => ({ id, name }))}
+          initialAssignee={assignee || model.actorId}
+          copy={catalogFor(CALENDAR_COPY, model.locale)}
+          calendar={{
+            year,
+            month,
+            weekStartsOn: model.weekStartsOn,
+            locale: model.locale,
+            labels: { previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore, today: copy.today },
+            events,
+            today: formatter.format(Date.now()),
+            onMove: moveTaskOnCalendar,
+            query: carriedQuery({ mine, assignee }),
+          }}
         />
       </PageContent>
     </>

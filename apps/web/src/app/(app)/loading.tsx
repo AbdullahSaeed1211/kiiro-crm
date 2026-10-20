@@ -1,4 +1,6 @@
 import { TableSkeleton } from '@ops/ui/composites/TableSkeleton'
+import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { PageContent } from '@ops/ui/composites/AppShell'
 
 /**
  * Fallback while any page without its own `loading.tsx` renders on the server, so a click shows the page's shape
@@ -6,8 +8,11 @@ import { TableSkeleton } from '@ops/ui/composites/TableSkeleton'
  */
 export default function AppLoading() {
   return (
-    <div className="px-4 py-3 md:px-6 md:py-4">
-      <TableSkeleton rows={8} columns={5} />
-    </div>
+    <>
+      <AppHeader breadcrumbs={[]} />
+      <PageContent>
+        <TableSkeleton rows={8} columns={5} />
+      </PageContent>
+    </>
   )
 }

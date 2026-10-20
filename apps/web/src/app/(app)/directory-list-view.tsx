@@ -166,8 +166,8 @@ function contactColumns(copy: DirectoryCopy, view: DirectoryUrlOptions): DataTab
     { id: 'name', header: copy.colName, sortHref: sortHref('/contacts', { query, sort: nameSort }), hideable: false },
     { id: 'organization', header: copy.colOrganization },
     { id: 'email', header: copy.colEmail },
-    { id: 'phone', header: copy.colPhone },
-    { id: 'owner', header: copy.colOwner },
+    { id: 'phone', header: copy.colPhone, defaultHidden: true },
+    { id: 'owner', header: copy.colOwner, defaultHidden: true },
   ]
 }
 function contactRows(items: readonly ContactListItem[], copy: DirectoryCopy): DataTableRow[] {

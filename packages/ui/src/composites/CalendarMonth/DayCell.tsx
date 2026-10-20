@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@ops/ui/components/ui/button'
 import { stagePillClass, type StageColor } from '../StagePill/stage'
 import type { CalendarEvent, CalendarMove } from './types'
+import { DayActions } from './DayActions'
 
 const DRAG_TYPE = 'application/x-ops-calendar-event'
 
@@ -15,6 +16,7 @@ function EventCell({ event, movable }: Readonly<{ event: CalendarEvent; movable:
   return (
     <Link
       href={event.href ?? `?event=${event.id}`}
+      scroll={false}
       data-task-link-id={event.id}
       draggable={movable && event.moveToken !== undefined}
       onDragStart={(drag) => {
@@ -90,7 +92,7 @@ function EventList({
   const visible = isExpanded ? events : events.slice(0, maxVisible)
   const hidden = events.length - maxVisible
   return (
-    <div className="mt-1 space-y-1">
+    <div className="mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain">
       {visible.map((event) => (
         <EventCell key={event.id} event={event} movable={movable} />
       ))}
@@ -121,6 +123,47 @@ function EventList({
   )
 }
 
+function DayHeading({
+  date,
+  day,
+  isToday,
+  creation,
+}: Readonly<{
+  date: string
+  day: number
+  isToday: boolean
+  creation?: Readonly<{ label: string; onCreate: (date: string) => void }> | undefined
+}>) {
+  return (
+    <div className="flex shrink-0 items-center justify-between">
+      <time
+        dateTime={date}
+        aria-current={isToday ? 'date' : undefined}
+        className={
+          isToday
+            ? 'inline-grid size-5 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground'
+            : 'text-xs font-medium text-muted-foreground'
+        }
+      >
+        {day}
+      </time>
+      {creation === undefined ? null : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`${creation.label}: ${date}`}
+          onClick={() => {
+            creation.onCreate(date)
+          }}
+        >
+          +
+        </Button>
+      )}
+    </div>
+  )
+}
+
 export function DayCell({
   date,
   day,
@@ -129,7 +172,9 @@ export function DayCell({
   moreLabel,
   onMove,
   isToday = false,
+  creation,
 }: Readonly<{
+  creation?: Readonly<{ label: string; onCreate: (date: string) => void }> | undefined
   isToday?: boolean
   date: string | null
   day: number
@@ -141,31 +186,23 @@ export function DayCell({
   const { over, problem, handlers } = useDropTarget(date, onMove)
 
   if (date === null) {
-    return <div className="min-h-20 border-b border-r bg-muted/10 p-1 sm:min-h-28 sm:p-2" />
+    return <div className="h-28 border-b border-r bg-muted/10 p-1 sm:h-32 sm:p-2" />
   }
 
   return (
-    <div
-      className={`min-h-20 min-w-0 border-b border-r p-1 sm:min-h-28 sm:p-2 ${over ? 'bg-accent/40' : ''}`}
-      {...handlers}
-    >
-      <time
-        dateTime={date}
-        {...(isToday ? { 'aria-current': 'date' as const } : {})}
-        className={
-          isToday
-            ? 'inline-grid size-5 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground'
-            : 'text-xs font-medium text-muted-foreground'
-        }
+    <DayActions date={date} creation={creation}>
+      <div
+        className={`flex h-28 min-w-0 flex-col overflow-hidden border-b border-r p-1 sm:h-32 sm:p-2 ${over ? 'bg-accent/40' : ''}`}
+        {...handlers}
       >
-        {day}
-      </time>
-      {problem === undefined ? null : (
-        <p role="alert" className="text-xs text-destructive">
-          {problem}
-        </p>
-      )}
-      <EventList events={events} maxVisible={maxVisible} moreLabel={moreLabel} movable={onMove !== undefined} />
-    </div>
+        <DayHeading date={date} day={day} isToday={isToday} creation={creation} />
+        {problem === undefined ? null : (
+          <p role="alert" className="text-xs text-destructive">
+            {problem}
+          </p>
+        )}
+        <EventList events={events} maxVisible={maxVisible} moreLabel={moreLabel} movable={onMove !== undefined} />
+      </div>
+    </DayActions>
   )
 }

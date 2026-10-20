@@ -2,6 +2,7 @@ import type { RecordCopy } from './record-copy-type'
 
 export const RECORD_COPY_ES: RecordCopy = {
   tabNotes: 'Notas',
+  tabCalls: 'Llamadas',
   tabActivity: 'Actividad',
   tabTasks: 'Tareas',
   tabFiles: 'Archivos',

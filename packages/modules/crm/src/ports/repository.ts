@@ -1,6 +1,14 @@
 import type { Clock, Id, Result } from '@ops/kernel'
 import type { Actor, Can, FieldDefinition, StageStore, UnitOfWork, Workflow } from '@ops/platform'
-import type { ContactRecord, CrmDrafts, CrmRecords, CrmRecordType, DealRecord, LookupRecord } from './records'
+import type {
+  CallLogRecord,
+  ContactRecord,
+  CrmDrafts,
+  CrmRecords,
+  CrmRecordType,
+  DealRecord,
+  LookupRecord,
+} from './records'
 
 /** A record an owner or manager archived, as the archive screen lists it. */
 export interface ArchivedRecord {
@@ -20,6 +28,8 @@ export type LookupKind = 'source' | 'lostReason'
  * `changeStage`, so `loadRecord` and `saveStage` must support the `lead` and `deal` record types.
  */
 export interface CrmRepository extends StageStore {
+  createCallLog(input: Omit<CallLogRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<CallLogRecord>
+  listCallLogs(recordType: 'lead' | 'contact', recordId: Id): Promise<readonly CallLogRecord[]>
   get<T extends CrmRecordType>(type: T, id: Id): Promise<CrmRecords[T] | undefined>
   list<T extends CrmRecordType>(type: T): Promise<readonly CrmRecords[T][]>
   create<T extends CrmRecordType>(type: T, draft: CrmDrafts[T]): Promise<Result<CrmRecords[T]>>

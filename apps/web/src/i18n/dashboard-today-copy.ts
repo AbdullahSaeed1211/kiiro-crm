@@ -1,35 +1,66 @@
 import type { Locale } from './locale'
 
-export interface DashboardTodayCopy {
-  readonly title: string
-  readonly viewAll: string
-  readonly overdue: string
-  readonly today: string
-  readonly noReply: string
-  readonly emptyTitle: string
-  readonly emptyBody: string
-  readonly more: string
-}
-
-export const DASHBOARD_TODAY_COPY: Readonly<Record<Locale, DashboardTodayCopy>> = {
+export const DASHBOARD_TODAY_COPY = {
   en: {
-    title: 'Leads to follow up today',
-    viewAll: 'See all follow-ups',
-    overdue: 'Late',
-    today: 'Today',
-    noReply: 'Needs a reply',
-    emptyTitle: 'No follow-ups due',
-    emptyBody: 'Your leads have no late or due actions.',
-    more: '{count} more',
+    title: 'Today',
+    description: 'What needs your attention, in one place.',
+    team: 'Your team’s work',
+    mine: 'Your work',
+    newTask: 'New task',
+    newLead: 'New lead',
+    overdue: 'Overdue',
+    waiting: 'Leads to follow up',
+    week: 'Due this week',
+    openTask: 'Open task',
+    followUp: 'Follow up',
+    viewAll: 'View all',
+    noOverdue: 'Nothing overdue. You’re on track.',
+    noWaiting: 'No leads waiting for your next step.',
+    noWeek: 'Nothing else due this week.',
+    dueToday: 'Due today',
+    due: 'Due {date}',
+    noDate: 'No date set',
+    unassigned: 'Unassigned',
+    internal: 'Internal work',
+    noCompany: 'New enquiry',
+    startTitle: 'Add your first lead',
+    startBody: 'Start with someone you want to work with. Keep their details and next steps together.',
+    startLead: 'Add a lead',
+    startTaskTitle: 'Add your first task',
+    startTaskBody: 'Write down what needs doing, choose who owns it, and set a due date.',
+    startTask: 'Add a task',
+    figures: 'View reports',
+    repeating: 'Repeating work',
   },
   es: {
-    title: 'Clientes potenciales por seguir hoy',
-    viewAll: 'Ver todos los seguimientos',
-    overdue: 'Atrasado',
-    today: 'Hoy',
-    noReply: 'Necesita respuesta',
-    emptyTitle: 'No hay seguimientos pendientes',
-    emptyBody: 'Tus clientes potenciales no tienen acciones atrasadas ni para hoy.',
-    more: '{count} más',
+    title: 'Hoy',
+    description: 'Lo que necesita tu atención, en un solo lugar.',
+    team: 'El trabajo de tu equipo',
+    mine: 'Tu trabajo',
+    newTask: 'Nueva tarea',
+    newLead: 'Nuevo prospecto',
+    overdue: 'Vencido',
+    waiting: 'Prospectos para seguimiento',
+    week: 'Vence esta semana',
+    openTask: 'Abrir tarea',
+    followUp: 'Dar seguimiento',
+    viewAll: 'Ver todo',
+    noOverdue: 'Nada vencido. Todo está al día.',
+    noWaiting: 'No hay prospectos esperando el siguiente paso.',
+    noWeek: 'No hay más tareas para esta semana.',
+    dueToday: 'Vence hoy',
+    due: 'Vence el {date}',
+    noDate: 'Sin fecha',
+    unassigned: 'Sin asignar',
+    internal: 'Trabajo interno',
+    noCompany: 'Nueva consulta',
+    startTitle: 'Añade tu primer prospecto',
+    startBody: 'Empieza con alguien con quien quieras trabajar. Guarda sus datos y próximos pasos juntos.',
+    startLead: 'Añadir prospecto',
+    startTaskTitle: 'Añade tu primera tarea',
+    startTaskBody: 'Escribe lo que hay que hacer, asigna un responsable y elige una fecha.',
+    startTask: 'Añadir tarea',
+    figures: 'Ver informes',
+    repeating: 'Trabajo recurrente',
   },
-}
+} satisfies Record<Locale, Record<string, string>>
