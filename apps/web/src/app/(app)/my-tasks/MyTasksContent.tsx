@@ -81,7 +81,7 @@ function TaskRow({
             <MissedPeriods task={task} copy={copy} />
           </div>
         </div>
-        <TaskCompleteButton taskId={task.id} updatedAt={task.updatedAt} />
+        <TaskCompleteButton taskId={task.id} title={task.title} updatedAt={task.updatedAt} />
       </div>
     </li>
   )

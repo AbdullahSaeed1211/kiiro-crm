@@ -20,6 +20,10 @@ export interface MyTasksCopy {
   readonly emptyDescription: string
   readonly completeTask: string
   readonly completeFailed: string
+  /** Toast after ticking a task off; `{title}` is the task. */
+  readonly completed: string
+  readonly undo: string
+  readonly undoFailed: string
 }
 
 export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
@@ -42,6 +46,9 @@ export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
     emptyDescription: 'New work assigned to you will appear here.',
     completeTask: 'Complete task',
     completeFailed: 'The task was not completed. Refresh and try again.',
+    completed: 'Completed “{title}”',
+    undo: 'Undo',
+    undoFailed: 'The task could not be reopened. Refresh and try again.',
   },
   es: {
     title: 'Mis tareas',
@@ -62,5 +69,8 @@ export const MY_TASKS_COPY: Readonly<Record<Locale, MyTasksCopy>> = {
     emptyDescription: 'El trabajo nuevo que te asignen aparecerá aquí.',
     completeTask: 'Completar tarea',
     completeFailed: 'No se completó la tarea. Actualiza e inténtalo de nuevo.',
+    completed: 'Completada «{title}»',
+    undo: 'Deshacer',
+    undoFailed: 'No se pudo reabrir la tarea. Actualiza e inténtalo de nuevo.',
   },
 }
