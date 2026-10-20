@@ -14,8 +14,16 @@ export function priorityIcon(priority: string): LucideIcon {
   return PRIORITY_ICON[priority] ?? Minus
 }
 
-/** The priority icon and its name. A priority outside the known set shows as its raw value. */
-export function PriorityCell({ priority, locale }: Readonly<{ priority: string; locale: Locale }>) {
+/**
+ * The priority icon and its name. A priority outside the known set shows as its raw value; `hideNone` shows nothing for
+ * a task with no priority, for rows where an empty label only adds noise.
+ */
+export function PriorityCell({
+  priority,
+  locale,
+  hideNone = false,
+}: Readonly<{ priority: string; locale: Locale; hideNone?: boolean }>) {
+  if (hideNone && priority === 'none') return null
   const Icon = priorityIcon(priority)
   const label = TASK_COPY[locale][priority === 'none' ? 'noPriority' : priority] ?? priority
   return (

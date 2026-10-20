@@ -38,7 +38,7 @@ function TeamTaskRow({ task, model }: Readonly<{ task: MyTaskModel['teamTasks'][
       </Link>
       {project === undefined ? null : <p className="truncate text-xs text-muted-foreground">{project}</p>}
       <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm">
-        <PriorityCell priority={task.priority} locale={model.locale} />
+        <PriorityCell priority={task.priority} locale={model.locale} hideNone />
         <DueCell dueAt={task.dueAt} locale={model.locale} />
       </div>
     </li>
@@ -74,7 +74,7 @@ function TaskRow({
           {project === undefined ? null : <p className="truncate text-xs text-muted-foreground">{project}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm">
             {stageInfo && <StagePill name={stageInfo.name} color={toStageColor(stageInfo.color)} size="sm" />}
-            <PriorityCell priority={task.priority} locale={model.locale} />
+            <PriorityCell priority={task.priority} locale={model.locale} hideNone />
             <span className={overdue ? 'text-destructive' : undefined}>
               <DueCell dueAt={task.dueAt} locale={model.locale} />
             </span>
