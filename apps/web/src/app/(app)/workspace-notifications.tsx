@@ -49,6 +49,23 @@ async function loadUnreadCount(signal: AbortSignal): Promise<number> {
   }
 }
 
+const MINUTE = ['minute', 60_000] as const
+const UNITS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[] = [
+  ['day', 86_400_000],
+  ['hour', 3_600_000],
+  ['minute', 60_000],
+]
+
+/** "5 minutes ago" in the workspace language, or nothing when the time is missing or unreadable. */
+function timeAgo(createdAt: string | undefined, locale: Locale): string {
+  const then = createdAt === undefined ? Number.NaN : Date.parse(createdAt)
+  if (Number.isNaN(then)) return ''
+  const elapsed = then - Date.now()
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  const [unit, size] = UNITS.find(([, ms]) => Math.abs(elapsed) >= ms) ?? MINUTE
+  return formatter.format(Math.round(elapsed / size), unit)
+}
+
 const humanize = (value = 'Update') => value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
 
 function notificationCopy(item: NotificationItem): string {
@@ -65,6 +82,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
   const [items, setItems] = useState<readonly NotificationItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [markingAll, setMarkingAll] = useState(false)
   const copy = NOTIFICATION_COPY[locale]
   const shellCopy = SHELL_COPY[locale]
 
@@ -105,6 +123,23 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
       controller.abort()
     }
   }, [open])
+
+  const unread = items.filter((item) => item.readAt === undefined)
+  const markAllRead = async () => {
+    setMarkingAll(true)
+    const results = await Promise.all(
+      unread.map((item) =>
+        fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
+          .then((response) => (response.ok ? item.id : null))
+          .catch(() => null),
+      ),
+    )
+    const done = new Set(results.filter((id): id is string => id !== null))
+    setItems((current) => current.map((entry) => (done.has(entry.id) ? { ...entry, readAt: Date.now() } : entry)))
+    setCount((current) => Math.max(0, current - done.size))
+    setError(done.size === unread.length ? null : copy.readFailed)
+    setMarkingAll(false)
+  }
 
   const select = async (item: NotificationItem) => {
     if (item.readAt === undefined) {
@@ -147,6 +182,20 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
             {error}
           </p>
         )}
+        {unread.length === 0 ? null : (
+          <div className="px-4">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={markingAll}
+              onClick={() => {
+                void markAllRead()
+              }}
+            >
+              {markingAll ? copy.markingAll : copy.markAllRead}
+            </Button>
+          </div>
+        )}
         <div className="space-y-2 overflow-y-auto px-4 pb-6">
           {loading ? (
             <p className="py-8 text-center text-sm text-muted-foreground" aria-live="polite">
@@ -173,7 +222,12 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
                 <span>
                   <span className="block text-sm font-medium">{notificationCopy(item)}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    {shellCopy[item.recordType ?? ''] ?? humanize(item.recordType ?? item.type)}
+                    {[
+                      shellCopy[item.recordType ?? ''] ?? humanize(item.recordType ?? item.type),
+                      timeAgo(item.createdAt, locale),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                 </span>
               </span>

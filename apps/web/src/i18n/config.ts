@@ -165,6 +165,8 @@ export const NOTIFICATION_COPY: Readonly<Record<Locale, Readonly<Record<string, 
     loading: 'Loading updates…',
     caughtUp: 'You’re all caught up.',
     readFailed: 'Could not mark this notification as read. Try again.',
+    markAllRead: 'Mark all as read',
+    markingAll: 'Marking…',
   },
   es: {
     label: 'Notificaciones',
@@ -172,6 +174,8 @@ export const NOTIFICATION_COPY: Readonly<Record<Locale, Readonly<Record<string, 
     loading: 'Cargando novedades…',
     caughtUp: 'Estás al día.',
     readFailed: 'No se pudo marcar la notificación como leída. Inténtalo de nuevo.',
+    markAllRead: 'Marcar todo como leído',
+    markingAll: 'Marcando…',
   },
 }
 
