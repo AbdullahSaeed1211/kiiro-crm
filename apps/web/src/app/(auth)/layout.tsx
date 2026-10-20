@@ -18,10 +18,8 @@ export default async function AuthLayout({ children }: Readonly<{ children: Reac
   const appName = brand.appName
   return (
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
       <body>
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <main className="ops-auth-shell">
             <section className="ops-auth-panel">

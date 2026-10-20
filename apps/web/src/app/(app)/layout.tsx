@@ -70,10 +70,8 @@ export default async function AppLayout({ children, modal }: Readonly<{ children
   const sidebarOpen = cookieStore.get(SIDEBAR_COOKIE)?.value !== 'false'
   return (
     <html lang={locale} suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
       <body style={themeStyle(settings)}>
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <LocaleProvider locale={locale}>
             <AppFrame
