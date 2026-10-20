@@ -15,6 +15,8 @@ export type RecordFieldConfig = Readonly<{
   description?: string
   options?: readonly SelectOption[]
   disabled?: boolean
+  /** On screens wider than a phone, this field shares a row with the next one that is also `half`. */
+  half?: boolean
   inputMode?: 'text' | 'email' | 'tel' | 'url' | 'numeric' | 'decimal'
 }>
 

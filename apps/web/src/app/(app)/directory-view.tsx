@@ -27,21 +27,15 @@ export function DirectoryListHeader({
 
 export function DirectoryFormIntro({ kind, edit }: Readonly<{ kind: 'organization' | 'contact'; edit?: boolean }>) {
   const organization = kind === 'organization'
-  const label = organization ? 'Organization' : 'Contact'
+  const noun = organization ? 'organization' : 'contact'
   return (
-    <div className="mb-6 max-w-2xl">
-      <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        <span className="size-2 rounded-full bg-primary" />
-        {label}
-      </div>
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {edit ? `Edit ${label.toLowerCase()}` : `New ${label.toLowerCase()}`}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {organization
+    <PageHeader
+      title={edit ? `Edit ${noun}` : `New ${noun}`}
+      description={
+        organization
           ? 'Keep company details and relationships easy for the whole team to trust.'
-          : 'Add a person and connect them to the organization they represent.'}
-      </p>
-    </div>
+          : 'Add a person and connect them to the organization they represent.'
+      }
+    />
   )
 }

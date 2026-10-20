@@ -54,14 +54,14 @@ export function DirectoryForm({
   const organizationFields: RecordFieldConfig[] = [
     { name: 'name', label: 'Organization name', required: true, placeholder: 'e.g. Northstar Labs' },
     { name: 'website', label: 'Website', type: 'url', placeholder: 'https://…' },
-    { name: 'email', label: 'Email', type: 'email', placeholder: 'hello@company.com' },
-    { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 0100' },
+    { name: 'email', label: 'Email', type: 'email', placeholder: 'hello@company.com', half: true },
+    { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 0100', half: true },
   ]
   const contactFields: RecordFieldConfig[] = [
-    { name: 'firstName', label: 'First name', required: true, placeholder: 'e.g. Ada' },
-    { name: 'lastName', label: 'Last name', placeholder: 'e.g. Lovelace' },
-    { name: 'email', label: 'Email', type: 'email', placeholder: 'ada@company.com' },
-    { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 0100' },
+    { name: 'firstName', label: 'First name', required: true, placeholder: 'e.g. Ada', half: true },
+    { name: 'lastName', label: 'Last name', placeholder: 'e.g. Lovelace', half: true },
+    { name: 'email', label: 'Email', type: 'email', placeholder: 'ada@company.com', half: true },
+    { name: 'phone', label: 'Phone', type: 'tel', placeholder: '+1 555 0100', half: true },
     {
       name: 'organizationId',
       label: 'Organization',
@@ -86,10 +86,11 @@ export function DirectoryForm({
         </p>
       )}
       <RecordForm
+        className="ops-detail-card rounded-lg border bg-card p-5"
         fields={fields}
         initialValues={initialValues}
         labels={{
-          submit: id === undefined ? 'Create record' : 'Save changes',
+          submit: id === undefined ? `Create ${kind}` : 'Save changes',
           saving: 'Saving…',
           cancel: 'Cancel',
           required: 'This field is required.',

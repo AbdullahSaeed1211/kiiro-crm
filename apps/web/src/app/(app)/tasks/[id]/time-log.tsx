@@ -11,7 +11,7 @@ export async function TimeLog({ taskId }: Readonly<{ taskId: string }>) {
   const entries = await listTaskTime(await getProductContext(), taskId)
   const total = entries.reduce((sum, entry) => sum + entry.minutes, 0)
   return (
-    <section aria-label="Time" className="space-y-2 px-4 pb-4 text-sm">
+    <section aria-label="Time" className="space-y-2 text-sm">
       <h3 className="font-medium">
         Time{' '}
         <span className="font-normal text-muted-foreground">{entries.length === 0 ? '' : formatDuration(total)}</span>

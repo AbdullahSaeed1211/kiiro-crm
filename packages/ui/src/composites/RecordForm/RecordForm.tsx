@@ -102,7 +102,7 @@ function RecordField({ field, value, error, pending, setValue }: RecordFieldProp
     'aria-describedby': error !== undefined || field.description !== undefined ? `${id}-help` : undefined,
   }
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn('flex flex-col gap-2', field.half === true ? null : 'sm:col-span-2')}>
       <Label htmlFor={id}>
         {field.label}
         {field.required ? <span aria-hidden="true"> *</span> : null}
@@ -146,7 +146,7 @@ export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCan
   return (
     <form
       ref={formRef}
-      className={cn('flex max-w-2xl flex-col gap-5', className)}
+      className={cn('grid max-w-2xl grid-cols-1 gap-5 sm:grid-cols-2', className)}
       onSubmit={(event) => void submit(event)}
       noValidate
     >
@@ -160,7 +160,7 @@ export function RecordForm({ fields, initialValues = {}, labels, onSubmit, onCan
           setValue={setValue}
         />
       ))}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 sm:col-span-2">
         {onCancel === undefined ? null : (
           <Button
             type="button"

@@ -11,19 +11,20 @@ import { ensureSource } from '../../../server/actions/settings/lists'
 
 const fields = (copy: LeadFormCopy, sources: readonly { id: string; name: string }[]): readonly RecordFieldConfig[] => [
   { name: 'title', label: copy.title, placeholder: copy.titlePlaceholder, required: true },
-  { name: 'firstName', label: copy.firstName, placeholder: copy.firstNamePlaceholder },
-  { name: 'lastName', label: copy.lastName, placeholder: copy.lastNamePlaceholder },
+  { name: 'firstName', label: copy.firstName, placeholder: copy.firstNamePlaceholder, half: true },
+  { name: 'lastName', label: copy.lastName, placeholder: copy.lastNamePlaceholder, half: true },
   { name: 'companyName', label: copy.company, placeholder: copy.companyPlaceholder },
-  { name: 'email', label: copy.email, type: 'email', placeholder: 'jane@acme.test' },
-  { name: 'phone', label: copy.phone, type: 'tel', placeholder: '+1 555 000 0000' },
+  { name: 'email', label: copy.email, type: 'email', placeholder: 'jane@acme.test', half: true },
+  { name: 'phone', label: copy.phone, type: 'tel', placeholder: '+1 555 000 0000', half: true },
   {
     name: 'sourceId',
     label: copy.source,
     type: 'select',
     placeholder: copy.sourcePlaceholder,
+    half: true,
     options: sources.map((source) => ({ value: source.id, label: source.name })),
   },
-  { name: 'newSource', label: copy.newSource, placeholder: copy.newSourcePlaceholder, maxLength: 120 },
+  { name: 'newSource', label: copy.newSource, placeholder: copy.newSourcePlaceholder, maxLength: 120, half: true },
 ]
 
 export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: string; name: string }[] }>) {
@@ -38,6 +39,7 @@ export function LeadCreateForm({ sources }: Readonly<{ sources: readonly { id: s
         </p>
       )}
       <RecordForm
+        className="ops-detail-card rounded-lg border bg-card p-5"
         fields={fields(copy, sources)}
         labels={{ submit: copy.submit, saving: copy.saving, cancel: copy.cancel, required: copy.required }}
         onCancel={() => {
