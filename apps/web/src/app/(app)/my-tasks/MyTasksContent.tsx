@@ -1,4 +1,3 @@
-import { EmptyValue } from '@ops/ui/composites/DataTable'
 import { missedPeriods, type MyTaskBuckets } from '@ops/module-work'
 import { StagePill } from '@ops/ui/composites/StagePill'
 import { toStageColor } from '@ops/ui/composites/StagePill/stage'
@@ -22,7 +21,9 @@ const PRIORITY_ICON: Record<string, LucideIcon> = {
   urgent: CircleAlert,
 }
 
+/** The priority icon and name; a task with no priority shows nothing, since there is nothing to tell. */
 function PriorityCell({ priority, locale }: Readonly<{ priority: string; locale: Locale }>) {
+  if (priority === 'none') return null
   const Icon = PRIORITY_ICON[priority] ?? Minus
   const labels: Record<Locale, Record<string, string>> = {
     en: {
@@ -53,7 +54,7 @@ function PriorityCell({ priority, locale }: Readonly<{ priority: string; locale:
 }
 
 function DueCell({ dueAt, locale }: Readonly<{ dueAt: number | null; locale: Locale }>) {
-  if (dueAt === null) return <EmptyValue />
+  if (dueAt === null) return null
   return (
     <time dateTime={new Date(dueAt).toISOString()} className="tabular-nums">
       {formatDate(dueAt, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
