@@ -13,6 +13,7 @@ import {
   Handshake,
   LayoutDashboard,
   ListTodo,
+  LogOut,
   Mail,
   ReceiptText,
   Settings,
@@ -97,6 +98,14 @@ function navGroups({
   return groups
 }
 
+async function logOut() {
+  try {
+    await fetch('/api/users/logout', { method: 'POST', credentials: 'same-origin' })
+  } finally {
+    window.location.assign('/login')
+  }
+}
+
 function SidebarAccount({
   name,
   email,
@@ -127,6 +136,16 @@ function SidebarAccount({
         </span>
         <span className="text-sm group-data-[collapsible=icon]:hidden">{settingsLabel}</span>
       </a>
+      <button
+        type="button"
+        className="ops-sidebar-user w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={() => void logOut()}
+      >
+        <span className="grid size-8 place-items-center">
+          <LogOut className="size-4" aria-hidden />
+        </span>
+        <span className="text-sm group-data-[collapsible=icon]:hidden">{SHELL_COPY[locale].logout}</span>
+      </button>
     </div>
   )
 }

@@ -18,7 +18,13 @@ const EXPORTS = [
   ['deals', 'Deals'],
 ] as const
 
-export default function ImportSettingsPage() {
+const IMPORT_TYPES = ['organization', 'contact', 'lead'] as const
+
+export default async function ImportSettingsPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly type?: string }> }>) {
+  const requested = (await searchParams).type
+  const initialType = IMPORT_TYPES.find((type) => type === requested) ?? 'contact'
   return (
     <SettingsPage
       title="Import & export"
@@ -45,7 +51,7 @@ export default function ImportSettingsPage() {
         </div>
       </SettingsForm>
       <SettingsForm>
-        <ImportForm />
+        <ImportForm initialType={initialType} />
       </SettingsForm>
       <SettingsForm>
         <h2 className="text-sm font-medium">Export</h2>

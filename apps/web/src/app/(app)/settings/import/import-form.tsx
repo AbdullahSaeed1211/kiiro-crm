@@ -151,8 +151,8 @@ function isReadyToCheck(state: Readonly<{ hasFile: boolean; mappingReady: boolea
 }
 
 /** Pick a record type and a CSV file, check it, then import it; every row is reported. */
-export function ImportForm() {
-  const [type, setType] = useState<ImportType>('contact')
+export function ImportForm({ initialType = 'contact' }: Readonly<{ initialType?: ImportType }>) {
+  const [type, setType] = useState<ImportType>(initialType)
   const file = useCsvFile()
   const mapping = useColumnPicks(type, file.csv)
   const job = useImportRun({ type, csv: file.csv, names: mapping.names })

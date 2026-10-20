@@ -32,8 +32,9 @@ export type KanbanBoardProps = Readonly<{
   columnAction?: (stage: KanbanStage) => ReactNode
 }>
 
-// Drag needs a fine pointer and at least the md breakpoint (D-43); the card menu covers the rest.
-const DRAG_QUERY = '(min-width: 48rem) and (pointer: fine)'
+// Drag needs a fine pointer somewhere on the device (D-43); the card menu covers touch-only screens. The width is not
+// checked: a half-width desktop window used to lose drag and drop, and a phone has no fine pointer to begin with.
+const DRAG_QUERY = '(any-pointer: fine)'
 const NO_CARDS: readonly KanbanCard[] = []
 
 function subscribeDragQuery(onChange: () => void) {

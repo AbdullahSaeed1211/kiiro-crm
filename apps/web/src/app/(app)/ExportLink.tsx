@@ -4,6 +4,22 @@ import { EXPORT_COPY } from '../../i18n/export-copy'
 import { getProductContext } from '../../server/auth/context'
 import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
+/** Opens the import page with this record type chosen, shown to owners and managers only. */
+export async function ImportLink({ type }: Readonly<{ type: 'organization' | 'contact' | 'lead' }>) {
+  const { actor } = await getProductContext()
+  if (actor.role !== 'owner' && actor.role !== 'manager') return null
+  const copy = catalogFor(EXPORT_COPY, await loadWorkspaceLocale())
+  return (
+    <a
+      className={buttonVariants({ variant: 'outline' })}
+      href={`/settings/import?type=${type}`}
+      title={copy.importHint}
+    >
+      {copy.importLink}
+    </a>
+  )
+}
+
 /** Download link for a list's CSV, shown to owners and managers only (the same people the export allows). */
 export async function ExportLink({ kind }: Readonly<{ kind: 'leads' | 'deals' | 'contacts' | 'organizations' }>) {
   const { actor } = await getProductContext()

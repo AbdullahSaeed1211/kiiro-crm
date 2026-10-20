@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ExportLink } from '../ExportLink'
+import { ExportLink, ImportLink } from '../ExportLink'
 import { DirectoryListHeader, OrganizationsTable } from '../directory-view'
 import {
   listOrganizations,
@@ -25,6 +25,7 @@ export default async function OrganizationsPage({
       total={result.total}
       actions={
         <>
+          <ImportLink type="organization" />
           <ExportLink kind="organizations" />
           <OrganizationCreateDialogClient />
         </>

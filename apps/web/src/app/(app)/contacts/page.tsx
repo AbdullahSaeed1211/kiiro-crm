@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ExportLink } from '../ExportLink'
+import { ExportLink, ImportLink } from '../ExportLink'
 import { DirectoryListHeader, ContactsTable } from '../directory-view'
 import { listContacts, parseDirectoryPage, parseDirectorySort, queryValue } from '../../../server/crm/directory/data'
 import { ContactCreateDialogClient } from '../quick-create/ContactCreateDialogClient'
@@ -20,6 +20,7 @@ export default async function ContactsPage({
       total={result.total}
       actions={
         <>
+          <ImportLink type="contact" />
           <ExportLink kind="contacts" />
           <ContactCreateDialogClient />
         </>

@@ -172,7 +172,7 @@ runtime white-label; lead intake from existing websites; inbound + outbound emai
 | D-40 | Inbound routing | Custom-domain tenants: Email Routing subdomain `in.<host>` → tenant Worker. Platform-domain tenants: shared `in.<PLATFORM_DOMAIN>` → `ops-mail-router` Worker (zone limit: 30 Email Routing + Sending domains per zone) |
 | D-41 | Platform sender | Single onboarded sending subdomain `notify.<PLATFORM_DOMAIN>`, address `no-reply@notify.<PLATFORM_DOMAIN>` |
 | D-42 | Rate limiting | Workers `ratelimits` bindings (permissive, per location) + Payload lockout + Turnstile + dedupe |
-| D-43 | Mobile board | Drag disabled on coarse pointers and below `md`; stage change via card menu |
+| D-43 | Mobile board | Drag disabled when the device has no fine pointer (`any-pointer: fine`); stage change via card menu |
 | D-44 | Search | Case-insensitive `LIKE` per record type (§12.2); FTS5 deferred to a Phase 3 ADR |
 | D-45 | Import | `@payloadcms/plugin-import-export` in Payload admin (synchronous mode); no custom CSV parser |
 | D-46 | Password policy | 12–128 characters, must not equal the email; enforced on every set-password path (§12) |
