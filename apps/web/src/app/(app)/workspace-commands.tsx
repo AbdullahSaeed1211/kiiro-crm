@@ -1,4 +1,4 @@
-import { CommandGroup, CommandItem } from '@ops/ui/components/ui/command'
+import { CommandGroup, CommandItem, CommandShortcut } from '@ops/ui/components/ui/command'
 import {
   Building2,
   CalendarDays,
@@ -11,8 +11,16 @@ import {
   ListTodo,
   UserPlus,
 } from 'lucide-react'
+import { GO_KEYS, NEW_TASK_KEY } from './workspace-shortcuts'
 
 type Copy = Readonly<Record<string, string>>
+
+/** The keys that reach a command directly, shown beside it: "G T" to go to Tasks, "C" for a new task. */
+function shortcutFor(href: string): string | undefined {
+  if (href === '/tasks/new') return NEW_TASK_KEY.toUpperCase()
+  const key = Object.keys(GO_KEYS).find((candidate) => GO_KEYS[candidate] === href)
+  return key === undefined ? undefined : `G ${key.toUpperCase()}`
+}
 
 const NAVIGATION = [
   ['dashboard', '/', LayoutDashboard],
@@ -70,6 +78,7 @@ export function WorkspaceCommands({
             >
               <Icon aria-hidden />
               <span>{shellCopy[key]}</span>
+              <CommandShortcut>{shortcutFor(href)}</CommandShortcut>
             </CommandItem>
           ))}
         </CommandGroup>
@@ -86,6 +95,7 @@ export function WorkspaceCommands({
             >
               <Icon aria-hidden />
               <span>{copy[key]}</span>
+              <CommandShortcut>{shortcutFor(href)}</CommandShortcut>
             </CommandItem>
           ))}
         </CommandGroup>

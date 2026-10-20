@@ -14,10 +14,11 @@ import {
 import { Building2, Contact, FolderKanban, Handshake, ListTodo, Search, UserPlus } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { taskHref } from './task-navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { SEARCH_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
 import { readApi } from './api-client'
 import { WorkspaceCommands } from './workspace-commands'
+import { useWorkspaceShortcuts } from './workspace-shortcuts'
 
 interface SearchResult {
   readonly recordType: string
@@ -81,6 +82,17 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [])
+
+  const openSearch = useCallback(() => {
+    setOpen(true)
+  }, [])
+  const go = useCallback(
+    (href: string) => {
+      router.push(href)
+    },
+    [router],
+  )
+  useWorkspaceShortcuts({ openSearch, go })
 
   useEffect(() => {
     if (query.trim().length < 2) {
