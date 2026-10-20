@@ -113,30 +113,35 @@ export default async function ProjectPage({ params }: Readonly<{ params: Promise
             copy,
           })}
           actions={
-            <div className="grid w-full gap-2 md:w-auto">
+            <div className="grid w-full gap-2 md:flex md:w-auto md:items-center">
               <Link
-                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}
               >
                 {copy.createTask}
               </Link>
               <ArchiveWorkControl type="project" id={project.id} label={project.name} />
-              <ProjectActions
-                projectId={project.id}
-                updatedAt={project.updatedAt}
-                memberIds={project.memberIds}
-                people={[...model.people.entries()]}
-              />
             </div>
           }
           aside={
-            <ProjectDetails
-              copy={copy}
-              project={project}
-              organizationName={organizationName}
-              locale={model.locale}
-              timeZone={model.timeZone}
-            />
+            <div className="grid gap-4">
+              <ProjectDetails
+                copy={copy}
+                project={project}
+                organizationName={organizationName}
+                locale={model.locale}
+                timeZone={model.timeZone}
+              />
+              <section className="ops-detail-card rounded-lg border p-4">
+                <h2 className="mb-3 font-medium">{copy.members}</h2>
+                <ProjectActions
+                  projectId={project.id}
+                  updatedAt={project.updatedAt}
+                  memberIds={project.memberIds}
+                  people={[...model.people.entries()]}
+                />
+              </section>
+            </div>
           }
         />
       </PageContent>

@@ -46,7 +46,7 @@ export default function ProjectActions({
   }
 
   return (
-    <div className="ops-project-actions grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+    <div className="ops-project-actions grid w-full gap-2">
       <div className="flex min-w-0 gap-2">
         <NativeSelect
           className="min-w-0 flex-1"
