@@ -1,6 +1,8 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { ExportLink } from '../ExportLink'
 import { TABLE_LABELS } from '../../../i18n/table-labels'
+import { LIST_COPY, type ListCopy } from '../../../i18n/list-copy'
+import { PersonCell } from '../person-cell'
 import {
   type DataTableColumn,
   type DataTablePaginationState,
@@ -34,7 +36,7 @@ import { catalogFor } from '../../../i18n/locale'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 export const dynamic = 'force-dynamic'
 
-function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number]): DataTableRow {
+function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number], copy: ListCopy): DataTableRow {
   return {
     id: String(item.deal.id),
     cells: {
@@ -45,21 +47,21 @@ function rowOf(item: Awaited<ReturnType<typeof getDealListData>>['items'][number
       ),
       stage: <StagePill name={item.stage.name} color={toStageColor(item.stage.color)} size="sm" />,
       value: <span className="tabular-nums">{formatMoney(item.deal.value)}</span>,
-      organization: item.organizationName ?? <span className="text-muted-foreground">—</span>,
-      owner: item.ownerName ?? <span className="text-muted-foreground">Unassigned</span>,
+      organization: <PersonCell name={item.organizationName} empty="—" />,
+      owner: <PersonCell name={item.ownerName} empty={copy.unassigned} />,
       expectedCloseAt: <span className="tabular-nums">{formatDate(item.deal.expectedCloseAt)}</span>,
     },
   }
 }
 
-function columns(): DataTableColumn[] {
+function columns(copy: ListCopy): DataTableColumn[] {
   return [
-    { id: 'title', header: 'Title', hideable: false },
-    { id: 'stage', header: 'Stage' },
-    { id: 'value', header: 'Value', numeric: true },
-    { id: 'organization', header: 'Organization' },
-    { id: 'owner', header: 'Owner' },
-    { id: 'expectedCloseAt', header: 'Expected close' },
+    { id: 'title', header: copy.colTitle, hideable: false },
+    { id: 'stage', header: copy.colStage },
+    { id: 'value', header: copy.colValue, numeric: true },
+    { id: 'organization', header: copy.colOrganization },
+    { id: 'owner', header: copy.colOwner },
+    { id: 'expectedCloseAt', header: copy.colExpectedClose },
   ]
 }
 function pagination(
@@ -167,8 +169,8 @@ export default async function DealsPage({
         <BulkTable
           bulk={bulk}
           key={`${rawQuery}:${stageId ?? ''}:${String(page)}`}
-          columns={columns()}
-          rows={data.items.map(rowOf)}
+          columns={columns(catalogFor(LIST_COPY, locale))}
+          rows={data.items.map((item) => rowOf(item, catalogFor(LIST_COPY, locale)))}
           mobileCard={{ cells: ['title', 'stage', 'value', 'organization'] }}
           pagination={pagination({ page, total: data.total, query: rawQuery, stageId })}
           labels={catalogFor(TABLE_LABELS, locale)}

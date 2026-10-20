@@ -1,4 +1,8 @@
 import { TABLE_LABELS } from '../../../i18n/table-labels'
+import { LIST_COPY, type ListCopy } from '../../../i18n/list-copy'
+import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
+import { initials } from '@ops/ui/lib/initials'
+import { PersonCell } from '../person-cell'
 import { ExportLink, ImportLink } from '../ExportLink'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
@@ -28,50 +32,87 @@ import { catalogFor, type Locale } from '../../../i18n/locale'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 export const dynamic = 'force-dynamic'
 
-const TABLE_COLUMNS: DataTableColumn[] = [
-  { id: 'title', header: 'Title', hideable: false },
-  { id: 'stage', header: 'Stage' },
-  { id: 'owner', header: 'Owner' },
-  { id: 'source', header: 'Source' },
-  { id: 'email', header: 'Email' },
-  { id: 'phone', header: 'Phone' },
-  { id: 'created', header: 'Created' },
+const tableColumns = (copy: ListCopy): DataTableColumn[] => [
+  { id: 'title', header: copy.colTitle, hideable: false },
+  { id: 'stage', header: copy.colStage },
+  { id: 'owner', header: copy.colOwner },
+  { id: 'nextAction', header: copy.colNextAction },
+  { id: 'source', header: copy.colSource },
+  { id: 'email', header: copy.colEmail },
+  { id: 'phone', header: copy.colPhone },
+  { id: 'created', header: copy.colCreated },
 ]
 
-function date(value: number): string {
-  return formatDate(value, undefined, { dateStyle: 'medium' })
+function date(value: number, locale: Locale): string {
+  return formatDate(value, locale, { dateStyle: 'medium' })
 }
 
-function ResponseOverdueBadge() {
+/** The company, or the person, a lead is about: the line that tells two leads apart at a glance. */
+function leadSubject(lead: LeadItem['lead']): string | null {
+  const person = [lead.firstName, lead.lastName].filter(Boolean).join(' ')
+  return lead.companyName ?? (person === '' ? null : person)
+}
+
+function NextActionCell({ at, ctx }: Readonly<{ at: number | null; ctx: RowContext }>) {
+  if (at === null) return <EmptyValue />
+  const late = at < ctx.now
+  return (
+    <time dateTime={new Date(at).toISOString()} className={late ? 'font-medium text-destructive' : undefined}>
+      {date(at, ctx.locale)}
+      {late ? ` · ${ctx.copy.overdue}` : ''}
+    </time>
+  )
+}
+
+function ResponseOverdueBadge({ label }: Readonly<{ label: string }>) {
   return (
     <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-400">
-      Response overdue
+      {label}
     </span>
   )
 }
 
-function row(item: Awaited<ReturnType<typeof listLeads>>['items'][number]): DataTableRow {
+function LeadTitleCell({ lead }: Readonly<{ lead: LeadItem['lead'] }>) {
+  const subject = leadSubject(lead)
+  return (
+    <span className="inline-flex min-w-0 items-center gap-2.5">
+      <Avatar size="sm" aria-hidden className="shrink-0 rounded-md">
+        <AvatarFallback className="rounded-md text-[10px] font-semibold">
+          {initials(subject ?? lead.title)}
+        </AvatarFallback>
+      </Avatar>
+      <span className="min-w-0">
+        <a href={`/leads/${lead.id}`} className="block truncate font-medium hover:underline">
+          {lead.title}
+        </a>
+        {subject === null ? null : <span className="block truncate text-xs text-muted-foreground">{subject}</span>}
+      </span>
+    </span>
+  )
+}
+
+type LeadItem = Awaited<ReturnType<typeof listLeads>>['items'][number]
+type RowContext = Readonly<{ copy: ListCopy; locale: Locale; now: number }>
+
+function row(item: LeadItem, ctx: RowContext): DataTableRow {
   const lead = item.lead
   return {
     id: lead.id,
     cells: {
-      title: (
-        <a href={`/leads/${lead.id}`} className="font-medium hover:underline">
-          {lead.title}
-        </a>
-      ),
+      title: <LeadTitleCell lead={lead} />,
       stage: (
         <span className="inline-flex items-center gap-1.5">
           <StageDot color={item.stage.color} />
           {item.stage.name}
-          {item.responseOverdue ? <ResponseOverdueBadge /> : null}
+          {item.responseOverdue ? <ResponseOverdueBadge label={ctx.copy.responseOverdue} /> : null}
         </span>
       ),
-      owner: item.owner?.name ?? <EmptyValue />,
+      owner: <PersonCell name={item.owner?.name ?? null} empty="—" />,
+      nextAction: <NextActionCell at={lead.nextActionAt} ctx={ctx} />,
       source: item.source?.name ?? <EmptyValue />,
       email: lead.email ?? <EmptyValue />,
       phone: lead.phone ?? <EmptyValue />,
-      created: <time dateTime={new Date(lead.createdAt).toISOString()}>{date(lead.createdAt)}</time>,
+      created: <time dateTime={new Date(lead.createdAt).toISOString()}>{date(lead.createdAt, ctx.locale)}</time>,
     },
   }
 }
@@ -161,8 +202,8 @@ function LeadTable({
           : null
       }
       key={`${String(result.page)}:${String(result.total)}`}
-      columns={TABLE_COLUMNS}
-      rows={result.items.map(row)}
+      columns={tableColumns(catalogFor(LIST_COPY, locale))}
+      rows={result.items.map((item) => row(item, { copy: catalogFor(LIST_COPY, locale), locale, now: Date.now() }))}
       pagination={paginationFor({ ...result, href: (page) => pageHref(params, page) })}
       labels={catalogFor(TABLE_LABELS, locale)}
       mobileCard={{ cells: ['title', 'stage', 'owner', 'created'] }}

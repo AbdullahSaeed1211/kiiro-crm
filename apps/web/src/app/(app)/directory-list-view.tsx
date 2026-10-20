@@ -23,20 +23,13 @@ import { formatDate } from '../../i18n/format'
 import { ListViewBar, type ListSort } from './list-view-bar'
 import { initials } from '@ops/ui/lib/initials'
 import { ListEmpty } from './ListEmpty'
+import { PersonCell } from './person-cell'
 import { catalogFor } from '../../i18n/locale'
 import { DIRECTORY_COPY, type DirectoryCopy } from '../../i18n/directory-copy'
 import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
 function OwnerCell({ owner, copy }: Readonly<{ owner: PersonSummary | null; copy: DirectoryCopy }>) {
-  if (owner === null) return <span className="text-muted-foreground">{copy.unassigned}</span>
-  return (
-    <span className="inline-flex items-center gap-2">
-      <Avatar size="sm">
-        <AvatarFallback>{initials(owner.name)}</AvatarFallback>
-      </Avatar>
-      <span>{owner.name}</span>
-    </span>
-  )
+  return <PersonCell name={owner?.name ?? null} empty={copy.unassigned} />
 }
 function DateCell({ value, locale }: Readonly<{ value: number; locale: string }>) {
   return (
