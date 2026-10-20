@@ -1,6 +1,6 @@
 import { LocaleProvider } from '../../i18n/locale-context'
 import '@ops/ui/globals.css'
-import { ThemeProvider } from '@ops/ui'
+import { THEME_INIT_SCRIPT, ThemeProvider } from '@ops/ui'
 import { Toaster } from '@ops/ui/components/ui/sonner'
 import { cookies } from 'next/headers'
 import { Geist, Geist_Mono } from 'next/font/google'
@@ -70,6 +70,9 @@ export default async function AppLayout({ children, modal }: Readonly<{ children
   const sidebarOpen = cookieStore.get(SIDEBAR_COOKIE)?.value !== 'false'
   return (
     <html lang={locale} suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body style={themeStyle(settings)}>
         <ThemeProvider>
           <LocaleProvider locale={locale}>

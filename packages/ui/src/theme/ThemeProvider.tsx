@@ -5,6 +5,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 export type ThemeChoice = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'workspace-theme'
+
+/**
+ * Runs in the page head, before first paint, so a dark theme never flashes light while the app loads. A saved choice
+ * wins; with none saved the system setting decides (decision D-19). Keep it in step with `ThemeProvider` below.
+ */
+export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem('${STORAGE_KEY}');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch(e){}`
 const ThemeContext = createContext<Readonly<{ theme: ThemeChoice; setTheme: (theme: ThemeChoice) => void }> | null>(
   null,
 )
@@ -29,7 +35,9 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
-    const choice: ThemeChoice = saved === 'dark' ? 'dark' : 'light'
+    // With no saved choice the system decides, but the state holds the theme in effect so the switch shows the right icon.
+    const system: ThemeChoice = prefersDark() ? 'dark' : 'light'
+    const choice: ThemeChoice = saved === 'dark' || saved === 'light' ? saved : system
     setThemeState(choice)
     applyTheme(choice)
   }, [])

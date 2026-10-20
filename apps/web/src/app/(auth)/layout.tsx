@@ -1,5 +1,5 @@
 import '@ops/ui/globals.css'
-import { ThemeProvider } from '@ops/ui'
+import { THEME_INIT_SCRIPT, ThemeProvider } from '@ops/ui'
 import { Geist, Geist_Mono } from 'next/font/google'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -18,6 +18,9 @@ export default async function AuthLayout({ children }: Readonly<{ children: Reac
   const appName = brand.appName
   return (
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>
         <ThemeProvider>
           <main className="ops-auth-shell">
