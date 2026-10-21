@@ -9,6 +9,7 @@ export const LOCALE_LABELS: Readonly<Record<Locale, string>> = {
 export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
     dashboard: 'Today',
+    salesWorkspace: 'Sales workspace',
     myTasks: 'My tasks',
     inbox: 'Inbox',
     leads: 'Leads',
@@ -22,12 +23,16 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     reports: 'Figures',
     billing: 'Billing',
     crm: 'CRM',
+    crmGroup: 'CRM',
     work: 'Work',
+    workGroup: 'Delivery',
     settings: 'Settings',
+    loadingPage: 'Loading page',
     logout: 'Log out',
   },
   es: {
     dashboard: 'Hoy',
+    salesWorkspace: 'Espacio de ventas',
     myTasks: 'Mis tareas',
     inbox: 'Bandeja de entrada',
     leads: 'Prospectos',
@@ -41,8 +46,11 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     reports: 'Indicadores',
     billing: 'Facturación',
     crm: 'CRM',
+    crmGroup: 'CRM',
     work: 'Trabajo',
+    workGroup: 'Entregas',
     settings: 'Configuración',
+    loadingPage: 'Cargando página',
     logout: 'Cerrar sesión',
   },
 }

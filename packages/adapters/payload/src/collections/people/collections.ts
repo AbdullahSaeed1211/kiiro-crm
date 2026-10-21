@@ -3,7 +3,7 @@ import { authHooks } from '../../hooks/auth/auth'
 import { canUseAdmin } from '../../access/spike-access'
 import { ADMIN_GROUPS } from '../fields'
 import { peopleAccess, userFieldRead } from './access'
-import { INVITATION_STATUS_VALUES, PEOPLE_COLLECTIONS, PEOPLE_ROLE_VALUES } from './values'
+import { INVITATION_STATUS_VALUES, PEOPLE_COLLECTIONS, PEOPLE_ROLE_VALUES, WORK_PROFILE_VALUES } from './values'
 
 /** Nobody reads or writes these through the API; the sign-in and Profile code use the Local API with `overrideAccess`. */
 const noAccess = { read: () => false, create: () => false, update: () => false } as const
@@ -63,6 +63,15 @@ export const peopleUsersCollection: CollectionConfig = {
     useAsTitle: 'name',
     fields: [
       text('name', { required: true, maxLength: 120 }),
+      {
+        name: 'workProfile',
+        type: 'select',
+        options: [...WORK_PROFILE_VALUES],
+        defaultValue: 'delivery',
+        required: true,
+        index: true,
+        access: { read: userFieldRead('workProfile') },
+      },
       text('avatar', { maxLength: 500, access: { read: userFieldRead('avatar') } }),
       text('invitationId', { maxLength: 120, access: { read: () => false, update: () => false } }),
       {

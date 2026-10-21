@@ -13,6 +13,7 @@ import {
   intakeDedupeKey,
   isAllowedOrigin,
   mappedLead,
+  mappedScheduleItems,
   sha256Hex,
   text,
   titleOf,
@@ -73,7 +74,13 @@ export async function submitIntake(deps: SubmitIntakeDeps, payload: unknown): Pr
   const prepared = await prepare(deps, payload)
   if (!prepared.ok) return prepared.result
   const existing = await deps.store.findByDedupeKey(prepared.dedupeKey)
-  if (existing !== undefined) return duplicate(deps.form.successMessage, existing.recordRef)
+  if (existing !== undefined) {
+    if (existing.status === 'accepted' && existing.recoverable === true) {
+      const recordRef = await ensureAcceptedLead(deps, existing.id, existing.payload)
+      return duplicate(deps.form.successMessage, recordRef)
+    }
+    return duplicate(deps.form.successMessage, existing.recordRef)
+  }
   return createAccepted(deps, prepared)
 }
 
@@ -97,16 +104,55 @@ async function createAccepted(
     status: 'accepted',
   })
   if (!inserted.ok) return err(inserted.error)
-  if (inserted.value.status === 'duplicate') return duplicate(deps.form.successMessage, inserted.value.recordRef)
-  const lead = await deps.store.createLead(mappedLead(deps.form, prepared.payload))
+  if (inserted.value.status === 'duplicate')
+    return recoverConcurrentSubmission(deps, prepared.dedupeKey, inserted.value.recordRef)
+  return persistAcceptedSubmission(deps, prepared.payload, inserted.value.id)
+}
+
+async function recoverConcurrentSubmission(
+  deps: SubmitIntakeDeps,
+  dedupeKey: string,
+  fallback: { readonly type: 'lead'; readonly id: string } | undefined,
+): Promise<IntakeResult> {
+  // A concurrent request may win the unique dedupe insert before its lead is persisted.
+  // Re-read the accepted submission and idempotently ensure its lead and schedule exist.
+  const concurrent = await deps.store.findByDedupeKey(dedupeKey)
+  if (concurrent?.status === 'accepted' && concurrent.recoverable === true) {
+    const recordRef = await ensureAcceptedLead(deps, concurrent.id, concurrent.payload)
+    return duplicate(deps.form.successMessage, recordRef)
+  }
+  return duplicate(deps.form.successMessage, concurrent?.recordRef ?? fallback)
+}
+
+async function ensureAcceptedLead(
+  deps: SubmitIntakeDeps,
+  submissionId: string,
+  payload: IntakePayload,
+): Promise<{ readonly type: 'lead'; readonly id: string }> {
+  const recovered = await deps.store.createLead(mappedLead(deps.form, payload), {
+    submissionId,
+    items: mappedScheduleItems(deps.form, payload),
+  })
+  return { type: 'lead', id: recovered.id }
+}
+
+async function persistAcceptedSubmission(
+  deps: SubmitIntakeDeps,
+  payload: IntakePayload,
+  submissionId: string,
+): Promise<IntakeResult> {
+  const lead = await deps.store.createLead(mappedLead(deps.form, payload), {
+    submissionId,
+    items: mappedScheduleItems(deps.form, payload),
+  })
   const record = { type: 'lead' as const, id: lead.id }
-  const message = text(prepared.payload, 'message')
+  const message = text(payload, 'message')
   if (message !== undefined) await deps.store.addComment({ record, body: message })
   await deps.store.notify({
     userIds: deps.form.notifyUserIds,
     groupIds: deps.form.notifyGroupIds,
     record,
-    title: titleOf(prepared.payload),
+    title: titleOf(payload),
   })
   return ok({ status: 'accepted', message: deps.form.successMessage, recordRef: record })
 }

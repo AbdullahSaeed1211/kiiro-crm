@@ -20,6 +20,7 @@ import { campaignQueueCollection } from './campaign-queue'
 import { callLogsCollection, contentItemsCollection, deliverablesCollection } from './agency-work'
 import { demoManifestsCollection } from './demo-manifests'
 import { webhookDeliveriesCollection } from './webhook-deliveries'
+import { scheduleItemsCollection } from './schedule-items'
 import { intakeFormsCollection, intakeSubmissionsCollection } from './intake'
 import { leadsCollection } from './leads'
 import { lostReasonsCollection, sourcesCollection } from './lookups'
@@ -72,4 +73,5 @@ export const spikeCollections: readonly CollectionConfig[] = [
   callLogsCollection,
   deliverablesCollection,
   contentItemsCollection,
+  scheduleItemsCollection,
 ]

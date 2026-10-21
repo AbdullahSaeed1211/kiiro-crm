@@ -5,6 +5,8 @@ import type { StageColor } from '../StagePill/stage'
 export interface CalendarEvent {
   readonly id: string
   readonly title: string
+  /** Full event text for hover/focus help when the calendar chip is visually truncated. */
+  readonly tooltip?: string
   readonly date: string
   readonly href?: string
   /** Tint of the event chip; omitted means neutral. */

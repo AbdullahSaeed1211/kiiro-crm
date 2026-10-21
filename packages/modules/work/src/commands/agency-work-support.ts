@@ -6,7 +6,7 @@ export const PROJECT_RECORD = 'project' as const
 /** Activity verb used when an agency work item changes. */
 export const FIELD_CHANGED = 'field.changed' as const
 /** Validation message when a project has nobody eligible to own new work. */
-export const NO_PROJECT_MEMBER = 'Add a project member before assigning this item.'
+const NO_PROJECT_MEMBER = 'Add a project member before assigning this item.'
 /** Validation message when an owner is not an active project member. */
 export const INVALID_PROJECT_MEMBER = 'Choose someone responsible for this project.'
 /** Validation message for incomplete scheduled or published content. */
@@ -40,7 +40,7 @@ export async function editableProject(deps: WorkDeps, projectId: Id) {
 }
 
 /** Checks whether a user is the project owner or an assigned member. */
-export function projectStaff(project: { readonly ownerId: Id | null; readonly memberIds: readonly Id[] }, userId: Id) {
+function projectStaff(project: { readonly ownerId: Id | null; readonly memberIds: readonly Id[] }, userId: Id) {
   return project.ownerId === userId || project.memberIds.includes(userId)
 }
 

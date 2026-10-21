@@ -1,4 +1,10 @@
-import { domainError, type DomainError, type IntakeForm, type IntakePayload } from './contracts'
+import {
+  domainError,
+  type DomainError,
+  type IntakeForm,
+  type IntakePayload,
+  type IntakeScheduleSeed,
+} from './contracts'
 
 const MAX_PAYLOAD_BYTES = 16 * 1024
 
@@ -94,21 +100,57 @@ export function mappedLead(form: IntakeForm, payload: IntakePayload): Readonly<R
   }
   const customData: Record<string, unknown> = {}
   for (const [incoming, target] of Object.entries(form.fieldMap)) {
-    if (target === 'ignore' || payload[incoming] === undefined) continue
-    if (target === 'nextActionAt' && !isUnixTimestamp(payload[incoming])) continue
-    if (target.startsWith('custom:')) customData[target.slice('custom:'.length)] = payload[incoming]
-    else lead[target] = payload[incoming]
+    if (payload[incoming] === undefined) continue
+    mapLeadField({ lead, customData, target, value: payload[incoming] })
   }
   if (Object.keys(customData).length > 0) lead['customData'] = customData
   return Object.fromEntries(Object.entries(lead).filter(([, value]) => value !== undefined))
+}
+
+function mapLeadField({
+  lead,
+  customData,
+  target,
+  value,
+}: Readonly<{
+  lead: Record<string, unknown>
+  customData: Record<string, unknown>
+  target: string
+  value: unknown
+}>): void {
+  if (target === 'ignore' || target === 'appointmentAt') return
+  if (target === 'nextActionAt' && !isUnixTimestamp(value)) return
+  if (target.startsWith('custom:')) {
+    customData[target.slice('custom:'.length)] = value
+    return
+  }
+  lead[target] = value
 }
 
 /** Intake records with a mapped follow-up date must receive an epoch in milliseconds. */
 export function validMappedLeadDates(form: IntakeForm, payload: IntakePayload): boolean {
   return Object.entries(form.fieldMap).every(([incoming, target]) => {
     const value = payload[incoming]
-    return target !== 'nextActionAt' || value === undefined || value === null || value === '' || isUnixTimestamp(value)
+    return (
+      (target !== 'nextActionAt' && target !== 'appointmentAt') ||
+      value === undefined ||
+      value === null ||
+      value === '' ||
+      isUnixTimestamp(value)
+    )
   })
+}
+
+/** Extracts explicitly mapped appointment and callback times; custom legacy fields remain inert. */
+export function mappedScheduleItems(form: IntakeForm, payload: IntakePayload): readonly IntakeScheduleSeed[] {
+  const result: IntakeScheduleSeed[] = []
+  for (const [sourceField, target] of Object.entries(form.fieldMap)) {
+    const value = payload[sourceField]
+    if (!isUnixTimestamp(value)) continue
+    if (target === 'appointmentAt') result.push({ kind: 'appointment', startsAt: value, sourceField })
+    if (target === 'nextActionAt') result.push({ kind: 'callback', startsAt: value, sourceField })
+  }
+  return result
 }
 
 function isUnixTimestamp(value: unknown): value is number {

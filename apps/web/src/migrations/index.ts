@@ -25,6 +25,8 @@ import * as migration_20261003_130000_billing_documents from './20261003_130000_
 import * as migration_20261007_090000_task_owner_only from './20261007_090000_task_owner_only';
 import * as migration_20261020_202916_agency_workflows from './20261020_202916_agency_workflows';
 import * as migration_20261020_205729_agency_content_drafts from './20261020_205729_agency_content_drafts';
+import * as migration_20261020_213109_sales_schedules_profiles from './20261020_213109_sales_schedules_profiles';
+import * as migration_20261020_213831_intake_lead_recovery from './20261020_213831_intake_lead_recovery';
 
 export const migrations = [
   {
@@ -160,6 +162,16 @@ export const migrations = [
   {
     up: migration_20261020_205729_agency_content_drafts.up,
     down: migration_20261020_205729_agency_content_drafts.down,
-    name: '20261020_205729_agency_content_drafts'
+    name: '20261020_205729_agency_content_drafts',
+  },
+  {
+    up: migration_20261020_213109_sales_schedules_profiles.up,
+    down: migration_20261020_213109_sales_schedules_profiles.down,
+    name: '20261020_213109_sales_schedules_profiles',
+  },
+  {
+    up: migration_20261020_213831_intake_lead_recovery.up,
+    down: migration_20261020_213831_intake_lead_recovery.down,
+    name: '20261020_213831_intake_lead_recovery'
   },
 ];

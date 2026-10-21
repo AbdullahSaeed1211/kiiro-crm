@@ -82,7 +82,13 @@ function memberWrites(req: PayloadRequest) {
         payload.update({
           collection: PEOPLE_COLLECTIONS.users,
           id,
-          data: { role: access.role, active: access.active, groups: [...access.groups], reportsTo: access.reportsTo },
+          data: {
+            role: access.role,
+            active: access.active,
+            workProfile: access.workProfile,
+            groups: [...access.groups],
+            reportsTo: access.reportsTo,
+          },
           overrideAccess: false,
           req,
         }),

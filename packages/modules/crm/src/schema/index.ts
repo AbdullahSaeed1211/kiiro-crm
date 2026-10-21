@@ -12,6 +12,7 @@ const optionalEmail = z.preprocess(
 )
 const epoch = z.number().nonnegative()
 const optionalEpoch = epoch.nullable().optional()
+const scheduleEpoch = epoch.int().max(8_640_000_000_000_000)
 const idList = z.array(id).default([])
 const customData = z.record(z.string(), z.unknown()).optional()
 
@@ -33,6 +34,34 @@ export const logCallSchema = z.strictObject({
   outcome: z.enum(['answered', 'no_answer', 'voicemail', 'follow_up']),
   notes: z.string().trim().max(5_000).nullable().optional(),
 })
+
+export const createScheduleItemSchema = z
+  .object({
+    kind: z.enum(['appointment', 'callback']),
+    recordType: z.enum(['lead', 'contact']),
+    recordId: id,
+    startsAt: scheduleEpoch,
+    assigneeIds: idList.optional(),
+    title: optionalText,
+    notes: z.string().trim().max(5_000).nullable().optional(),
+  })
+  .strict()
+
+export const updateScheduleItemSchema = z
+  .object({
+    id,
+    expectedUpdatedAt: scheduleEpoch,
+    patch: z
+      .object({
+        startsAt: scheduleEpoch.optional(),
+        assigneeIds: z.array(id).optional(),
+        status: z.enum(['scheduled', 'completed', 'cancelled']).optional(),
+        title: optionalText,
+        notes: z.string().trim().max(5_000).nullable().optional(),
+      })
+      .strict(),
+  })
+  .strict()
 
 export const createOrganizationSchema = z
   .object({

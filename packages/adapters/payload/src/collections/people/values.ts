@@ -1,4 +1,4 @@
-import type { Role } from '@ops/platform'
+import type { Role, WorkProfile } from '@ops/platform'
 
 export const PEOPLE_COLLECTIONS = {
   users: 'users',
@@ -8,6 +8,7 @@ export const PEOPLE_COLLECTIONS = {
 } as const
 
 export const PEOPLE_ROLE_VALUES = ['owner', 'manager', 'staff'] as const satisfies readonly Role[]
+export const WORK_PROFILE_VALUES = ['sales', 'delivery', 'consultant'] as const satisfies readonly WorkProfile[]
 export const INVITATION_STATUS_VALUES = ['pending', 'accepting', 'accepted', 'revoked', 'expired'] as const
 export const NOTIFICATION_PREF_TYPES = [
   'assigned',

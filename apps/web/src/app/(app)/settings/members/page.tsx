@@ -9,12 +9,12 @@ import {
 import { InviteMemberForm, InvitationActions, MemberActions } from '../member-forms'
 import { ResetTwoFactorButton } from './reset-two-factor-button'
 import { SettingsForm, SettingsPage } from '../settings-shell'
-import { requireRole } from '../../../../server/auth/context'
-import { getWorkspaceSettings } from '../../../../server/auth/context'
+import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { can } from '@ops/platform'
 import { formatDate } from '../../../../i18n/format'
 import { normalizeLocale } from '../../../../i18n/config'
 import { settingText } from '../../../../i18n/settings-form-copy'
+import type { Role, WorkProfile } from '@ops/platform'
 
 export const metadata: Metadata = { title: 'Members' }
 export const dynamic = 'force-dynamic'
@@ -24,11 +24,60 @@ type AccessRow = Readonly<{
   name: string
   email: string
   role: string
+  workProfile: WorkProfile
   status: string
   locale: 'en' | 'es'
   lastInvitation: string
   actions?: ReactNode
 }>
+
+function workProfileName(profile: WorkProfile): string {
+  const names: Readonly<Record<WorkProfile, string>> = {
+    sales: 'Sales',
+    delivery: 'Delivery',
+    consultant: 'Consultant',
+  }
+  return names[profile]
+}
+
+function memberWorkProfile(profile: unknown): WorkProfile {
+  return profile === 'sales' || profile === 'consultant' ? profile : 'delivery'
+}
+
+function roleName(role: string): string {
+  return role === 'manager' ? 'Admin' : role
+}
+
+type MemberAccessFormValue = Parameters<typeof MemberActions>[0]['member']
+
+function memberActions(
+  input: Readonly<{
+    canManage: boolean
+    isOwner: boolean
+    id: string
+    name: string
+    member: MemberAccessFormValue
+    groups: readonly { id: string; name: string }[]
+    reports: readonly { id: string; name: string }[]
+    roles: readonly Role[]
+    locale: 'en' | 'es'
+  }>,
+): ReactNode {
+  if (!input.canManage)
+    return <span className="text-xs text-muted-foreground">{settingText('Managed by role policy', input.locale)}</span>
+  return (
+    <>
+      {input.isOwner ? <ResetTwoFactorButton userId={input.id} name={input.name} /> : null}
+      <MemberActions
+        action={saveMember}
+        groups={input.groups}
+        reports={input.reports}
+        roles={input.roles}
+        member={input.member}
+      />
+    </>
+  )
+}
 
 function AccessCards({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
   return (
@@ -41,10 +90,16 @@ function AccessCards({ rows }: Readonly<{ rows: readonly AccessRow[] }>) {
               <p className="break-all text-xs text-muted-foreground">{row.email}</p>
             </div>
             <span className="shrink-0 text-xs capitalize text-muted-foreground">
-              {settingText(row.role, row.locale)}
+              {settingText(roleName(row.role), row.locale)}
             </span>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+            <div>
+              <dt>{settingText('Work area', row.locale)}</dt>
+              <dd className="mt-0.5 text-sm text-foreground">
+                {settingText(workProfileName(row.workProfile), row.locale)}
+              </dd>
+            </div>
             <div>
               <dt>{settingText('Status', row.locale)}</dt>
               <dd className="mt-0.5 text-sm capitalize text-foreground">{row.status}</dd>
@@ -81,7 +136,12 @@ function AccessTable({ rows, locale }: Readonly<{ rows: readonly AccessRow[]; lo
                 <span className="block">{row.name}</span>
                 <span className="block break-all text-xs text-muted-foreground">{row.email}</span>
               </td>
-              <td className="break-words py-2 pr-3 capitalize">{settingText(row.role, row.locale)}</td>
+              <td className="break-words py-2 pr-3 capitalize">
+                {settingText(roleName(row.role), row.locale)}
+                <span className="block text-xs text-muted-foreground">
+                  {settingText(workProfileName(row.workProfile), row.locale)}
+                </span>
+              </td>
               <td className="break-words py-2 pr-3 capitalize">{row.status}</td>
               <td className="break-words py-2 text-xs text-muted-foreground">{row.lastInvitation}</td>
               <td className="py-2 pl-3">{row.actions}</td>
@@ -121,42 +181,41 @@ export default async function MembersSettingsPage() {
   const groupOptions = groups.docs.map((group) => ({ id: group.id, name: group.name }))
   const reportOptions = users.docs.map((user) => ({ id: user.id, name: user.name || user.email }))
   const rows: AccessRow[] = [
-    ...users.docs.map((user) => ({
+    ...users.docs.map((user): AccessRow => ({
       id: user.id,
       name: user.name || user.email,
       email: user.email,
       locale,
       role: user.role,
+      workProfile: memberWorkProfile(user.workProfile),
       status: user.active === true ? settingText('Active', locale) : settingText('Inactive', locale),
       lastInvitation: settingText('Not sent', locale),
-      actions: can(context.actor, 'manage_members', { type: 'users', role: user.role }) ? (
-        <>
-          {context.actor.role === 'owner' ? (
-            <ResetTwoFactorButton userId={user.id} name={user.name || user.email} />
-          ) : null}
-          <MemberActions
-            action={saveMember}
-            groups={groupOptions}
-            reports={reportOptions.filter((report) => report.id !== user.id)}
-            member={{
-              id: user.id,
-              role: user.role,
-              active: user.active === true,
-              groups: (user.groups ?? []).map((group) => (typeof group === 'string' ? group : group.id)),
-              reportsTo: typeof user.reportsTo === 'string' ? user.reportsTo : '',
-            }}
-          />
-        </>
-      ) : (
-        <span className="text-xs text-muted-foreground">{settingText('Managed by role policy', locale)}</span>
-      ),
+      actions: memberActions({
+        canManage: can(context.actor, 'manage_members', { type: 'users', role: user.role }),
+        isOwner: context.actor.role === 'owner',
+        id: user.id,
+        name: user.name || user.email,
+        groups: groupOptions,
+        reports: reportOptions.filter((report) => report.id !== user.id),
+        roles: context.actor.role === 'owner' ? ['staff', 'manager', 'owner'] : ['staff'],
+        locale,
+        member: {
+          id: user.id,
+          role: user.role,
+          workProfile: memberWorkProfile(user.workProfile),
+          active: user.active === true,
+          groups: (user.groups ?? []).map((group) => (typeof group === 'string' ? group : group.id)),
+          reportsTo: typeof user.reportsTo === 'string' ? user.reportsTo : '',
+        },
+      }),
     })),
-    ...invitations.docs.map((invitation) => ({
+    ...invitations.docs.map((invitation): AccessRow => ({
       id: invitation.id,
       name: invitation.email,
       email: invitation.email,
       locale,
       role: invitation.role,
+      workProfile: memberWorkProfile(undefined),
       status: settingText(invitation.status, locale),
       lastInvitation:
         typeof invitation.createdAt === 'string'

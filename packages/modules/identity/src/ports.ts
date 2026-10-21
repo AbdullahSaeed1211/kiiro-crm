@@ -1,5 +1,5 @@
 import type { Id, Result } from '@ops/kernel'
-import type { Actor, Can, Role } from '@ops/platform'
+import type { Actor, Can, Role, WorkProfile } from '@ops/platform'
 
 /** An invitation as the membership commands read it. */
 export interface InvitationRecord {
@@ -13,6 +13,7 @@ export interface InvitationRecord {
 export interface MemberAccess {
   readonly role: Role
   readonly active: boolean
+  readonly workProfile: WorkProfile
   readonly groups: readonly Id[]
   readonly reportsTo: Id | null
 }

@@ -3,6 +3,8 @@
 import { useState, type DragEvent } from 'react'
 import Link from 'next/link'
 import { Button } from '@ops/ui/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@ops/ui/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ops/ui/components/ui/tooltip'
 import { stagePillClass, type StageColor } from '../StagePill/stage'
 import type { CalendarEvent, CalendarMove } from './types'
 import { DayActions } from './DayActions'
@@ -13,35 +15,78 @@ const eventClass = (color: StageColor | undefined): string =>
   color === undefined ? 'bg-muted text-foreground' : `${stagePillClass(color)} text-foreground`
 
 function EventCell({ event, movable }: Readonly<{ event: CalendarEvent; movable: boolean }>) {
+  const fullText = event.tooltip ?? event.title
   return (
-    <Link
-      href={event.href ?? `?event=${event.id}`}
-      scroll={false}
-      data-task-link-id={event.id}
-      draggable={movable && event.moveToken !== undefined}
-      onDragStart={(drag) => {
-        drag.dataTransfer.setData(DRAG_TYPE, JSON.stringify({ id: event.id, token: event.moveToken, from: event.date }))
-        drag.dataTransfer.effectAllowed = 'move'
-      }}
-      className={`block truncate rounded px-1.5 py-1 text-left text-xs ${eventClass(event.color)}`}
-    >
-      {event.title}
-    </Link>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Link
+            href={event.href ?? `?event=${event.id}`}
+            scroll={false}
+            data-task-link-id={event.id}
+            aria-label={fullText}
+            title={fullText}
+            draggable={movable && event.moveToken !== undefined}
+            onDragStart={(drag) => {
+              drag.dataTransfer.setData(
+                DRAG_TYPE,
+                JSON.stringify({ id: event.id, token: event.moveToken, from: event.date }),
+              )
+              drag.dataTransfer.effectAllowed = 'move'
+            }}
+            className={`block truncate rounded px-1.5 py-1 text-left text-xs ${eventClass(event.color)}`}
+          />
+        }
+      >
+        {event.title}
+      </TooltipTrigger>
+      <TooltipContent align="start" className="max-w-xs whitespace-normal text-left">
+        {fullText}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
-function MoreButton({ count, label, onClick }: Readonly<{ count: number; label: string; onClick: () => void }>) {
+function MoreButton({
+  count,
+  label,
+  date,
+  events,
+  movable,
+}: Readonly<{
+  count: number
+  label: string
+  date: string
+  events: readonly CalendarEvent[]
+  movable: boolean
+}>) {
+  const moreLabel = label.replace('{count}', String(count))
   return (
-    <Button
-      type="button"
-      variant="link"
-      size="xs"
-      onClick={onClick}
-      className="text-muted-foreground"
-      aria-label={`Show ${String(count)} more task${count === 1 ? '' : 's'}`}
-    >
-      {label.replace('{count}', String(count))}
-    </Button>
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            className="max-w-full overflow-hidden px-0 text-[10px] text-muted-foreground sm:text-xs"
+            aria-label={moreLabel}
+          />
+        }
+      >
+        {moreLabel}
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        aria-label={`${date}: ${moreLabel}`}
+        className="max-h-[min(70vh,24rem)] w-72 max-w-[calc(100vw-2rem)] gap-1 overflow-y-auto p-2"
+      >
+        <p className="px-1 py-1 text-xs font-medium text-muted-foreground">{date}</p>
+        {events.map((event) => (
+          <EventCell key={event.id} event={event} movable={movable} />
+        ))}
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -83,41 +128,27 @@ function useDropTarget(date: string | null, onMove: CalendarMove | undefined) {
 }
 
 function EventList({
+  date,
   events,
   maxVisible,
   moreLabel,
   movable,
-}: Readonly<{ events: readonly CalendarEvent[]; maxVisible: number; moreLabel: string; movable: boolean }>) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const visible = isExpanded ? events : events.slice(0, maxVisible)
-  const hidden = events.length - maxVisible
+}: Readonly<{
+  date: string
+  events: readonly CalendarEvent[]
+  maxVisible: number
+  moreLabel: string
+  movable: boolean
+}>) {
+  const visible = events.slice(0, maxVisible)
+  const hidden = events.slice(maxVisible)
   return (
-    <div className="mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain">
+    <div className="mt-1 min-h-0 flex-1 space-y-0.5 overflow-hidden">
       {visible.map((event) => (
         <EventCell key={event.id} event={event} movable={movable} />
       ))}
-      {hidden > 0 && !isExpanded ? (
-        <MoreButton
-          count={hidden}
-          label={moreLabel}
-          onClick={() => {
-            setIsExpanded(true)
-          }}
-        />
-      ) : null}
-      {isExpanded && hidden > 0 ? (
-        <Button
-          type="button"
-          variant="link"
-          size="xs"
-          onClick={() => {
-            setIsExpanded(false)
-          }}
-          className="text-muted-foreground"
-          aria-label="Show fewer tasks"
-        >
-          − Show less
-        </Button>
+      {hidden.length > 0 ? (
+        <MoreButton count={hidden.length} label={moreLabel} date={date} events={hidden} movable={movable} />
       ) : null}
     </div>
   )
@@ -201,7 +232,13 @@ export function DayCell({
             {problem}
           </p>
         )}
-        <EventList events={events} maxVisible={maxVisible} moreLabel={moreLabel} movable={onMove !== undefined} />
+        <EventList
+          date={date}
+          events={events}
+          maxVisible={maxVisible}
+          moreLabel={moreLabel}
+          movable={onMove !== undefined}
+        />
       </div>
     </DayActions>
   )

@@ -1,4 +1,4 @@
-import { can, isManagerUp, type Actor } from '@ops/platform'
+import { can, isManagerUp, workProfileAllows, type Actor } from '@ops/platform'
 import type { Access, Where } from 'payload'
 import { COLLECTIONS, FIELDS, RECORD_TYPES, type SpikeCollectionSlug } from '../contracts/names'
 import { resolveActor } from './actor'
@@ -16,8 +16,40 @@ const managedByLeads: Omit<CollectionAccess, 'read'> = { create: managerUp, upda
 const systemWrites: Omit<CollectionAccess, 'read'> = { create: systemOnly, update: systemOnly, delete: systemOnly }
 
 function scopedRecord(recordType: string): CollectionAccess {
-  return { read: scoped(recordType), create: anyActive, update: scoped(recordType), delete: managerUp }
+  return {
+    read: scoped(recordType),
+    create: (args) => createScopedRecord(recordType, args),
+    update: scoped(recordType),
+    delete: managerUp,
+  }
 }
+
+async function createScopedRecord(recordType: string, { req, data }: Parameters<Access>[0]): Promise<boolean> {
+  const actor = await resolveActor(req)
+  return actor?.active === true && mayCreateScopedRecord(actor, recordType, data)
+}
+
+function mayCreateScopedRecord(actor: Actor, recordType: string, data: unknown): boolean {
+  const document = typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {}
+  const parentValue = document['project']
+  const parentId = parentValue === undefined || parentValue === null ? null : actor.id
+  const ownerOnly = document['ownerOnly'] === true
+  const relatedRecordType = typeof document['relatedType'] === 'string' ? document['relatedType'] : null
+  return (
+    (!ownerOnly || actor.role === 'owner') &&
+    workProfileAllows(actor, { type: recordType, parentId, ownerOnly, relatedRecordType })
+  )
+}
+
+function scheduleReadRule(actor: Actor): Where {
+  if (isManagerUp(actor)) return {}
+  if (actor.workProfile !== 'sales') return { id: { exists: false } }
+  const assignedToActor: Where = { assignees: { contains: actor.id } }
+  const salesRecord: Where = { recordType: { in: ['lead', 'contact'] as string[] } }
+  return { and: [assignedToActor, salesRecord] }
+}
+
+export const personalScheduleRead = allow(scheduleReadRule)
 
 // Owners update every user, managers staff users and themselves, staff only themselves (spec §11.1). Field-level
 // limits (a manager promoting staff, staff editing only name and avatar) arrive with the M3 collection hooks.
@@ -64,6 +96,7 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.demoManifests]: { read: ownerOnly, ...systemWrites },
   [COLLECTIONS.campaignQueue]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.callLogs]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.scheduleItems]: { read: personalScheduleRead, ...systemWrites },
   [COLLECTIONS.deliverables]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.contentItems]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.auditEvents]: { read: managerUp, ...systemWrites },

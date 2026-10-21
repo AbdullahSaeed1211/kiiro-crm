@@ -12,6 +12,7 @@ import { userFieldRead } from '../../src/collections/people/access'
 import { invitationExpiresAt, invitationUsable } from '../../src/collections/people/invitations'
 
 const EMAIL = 'person@example.test'
+const ROLE_PERMISSION_ERROR = 'outside your role permissions'
 
 // The auth suite intentionally keeps boundary cases together.
 // eslint-disable-next-line max-lines-per-function -- the fixture covers the complete auth hook matrix in one scenario.
@@ -62,7 +63,7 @@ describe('people auth invariants', () => {
         originalDoc: { id: 's1', role: 'staff' },
         req: staffReq,
       } as never),
-    ).rejects.toThrow('outside your role permissions')
+    ).rejects.toThrow(ROLE_PERMISSION_ERROR)
     const managerReq = { user: { id: 'm1', role: 'manager', active: true }, payload: {} }
     await expect(
       enforceUserMutation({
@@ -71,7 +72,7 @@ describe('people auth invariants', () => {
         originalDoc: { id: 's2', role: 'staff' },
         req: managerReq,
       } as never),
-    ).rejects.toThrow('outside your role permissions')
+    ).rejects.toThrow(ROLE_PERMISSION_ERROR)
     await expect(
       enforceUserMutation({
         operation: 'update',
@@ -79,7 +80,27 @@ describe('people auth invariants', () => {
         originalDoc: { id: 'm1', role: 'manager' },
         req: managerReq,
       } as never),
-    ).rejects.toThrow('outside your role permissions')
+    ).rejects.toThrow(ROLE_PERMISSION_ERROR)
+  })
+
+  it('lets a manager change a staff work profile without permitting role promotion', async () => {
+    const managerReq = { user: { id: 'm1', role: 'manager', active: true }, payload: {} }
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { role: 'staff', workProfile: 'sales' },
+        originalDoc: { id: 's2', role: 'staff', workProfile: 'delivery' },
+        req: managerReq,
+      } as never),
+    ).resolves.toMatchObject({ workProfile: 'sales' })
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { role: 'manager', workProfile: 'sales' },
+        originalDoc: { id: 's2', role: 'staff', workProfile: 'delivery' },
+        req: managerReq,
+      } as never),
+    ).rejects.toThrow(ROLE_PERMISSION_ERROR)
   })
 
   it('hides staff-only user fields from direct collection reads', async () => {
@@ -90,6 +111,8 @@ describe('people auth invariants', () => {
     await expect(userFieldRead('name')({ req } as never)).resolves.toBe(true)
     await expect(userFieldRead('role')({ req } as never)).resolves.toBe(true)
     await expect(userFieldRead('active')({ req } as never)).resolves.toBe(false)
+    await expect(userFieldRead('workProfile')({ req, id: 's1' } as never)).resolves.toBe(true)
+    await expect(userFieldRead('workProfile')({ req, id: 's2' } as never)).resolves.toBe(false)
     await expect(userFieldRead('groups')({ req } as never)).resolves.toBe(false)
     await expect(userFieldRead('reportsTo')({ req } as never)).resolves.toBe(false)
   })

@@ -5,7 +5,7 @@ import type { CalendarEvent, CalendarMove } from './types'
 
 export type { CalendarEvent, CalendarMove }
 
-const MAX_VISIBLE_EVENTS = 4
+const MAX_VISIBLE_EVENTS = 2
 const pad = (value: number): string => String(value).padStart(2, '0')
 const dateKey = (input: { readonly year: number; readonly month: number; readonly day: number }): string =>
   `${String(input.year).padStart(4, '0')}-${pad(input.month + 1)}-${pad(input.day)}`

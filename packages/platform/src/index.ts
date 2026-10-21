@@ -18,10 +18,11 @@ export type {
   ScopeDefinition,
   ScopeExtension,
   ScopeFilter,
+  WorkProfile,
 } from './contracts/access'
 export type { MailAttachment, MailMessage, MailSender, StageStore, UnitOfWork } from './contracts/ports'
 export type { NotificationInput, NotificationStore, NotificationType } from './contracts/notifications'
-export { can, inScope, isManagerUp } from './permissions/policy'
+export { can, inScope, isManagerUp, workProfileAllows } from './permissions/policy'
 export { createScopeFilter, MATCH_NOTHING } from './permissions/scope'
 export { changeStage, type ChangeStageDeps } from './workflows/change-stage'
 export {

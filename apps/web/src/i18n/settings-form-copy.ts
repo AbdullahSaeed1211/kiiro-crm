@@ -1,5 +1,6 @@
 import type { Locale } from './locale'
 import { SETTINGS_PROFILE_COPY } from './settings-profile-copy'
+import { SETTINGS_MEMBER_COPY } from './settings-member-copy'
 
 const en: Readonly<Record<string, string>> = {
   'Workspace name': 'Workspace name',
@@ -215,8 +216,8 @@ const es: Readonly<Record<string, string>> = {
   accepted: 'Aceptada',
 }
 
-export const SETTINGS_FORM_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = { en, es }
+const SETTINGS_FORM_COPY: Readonly<Record<Locale, Readonly<Partial<Record<string, string>>>>> = { en, es }
 
 export function settingText(value: string, locale: Locale): string {
-  return SETTINGS_FORM_COPY[locale][value] ?? value
+  return SETTINGS_FORM_COPY[locale][value] ?? SETTINGS_MEMBER_COPY[locale][value] ?? value
 }

@@ -20,7 +20,9 @@ interface UserRecord extends TypeWithID {
 }
 
 const SELF_UPDATE_FIELDS = new Set(['name', 'avatar', 'password'])
-const STAFF_MANAGEMENT_FIELDS = new Set(['name', 'avatar', 'password', 'active', 'groups', 'reportsTo'])
+const SELF_PRIVILEGED_FIELDS = new Set(['role', 'active', 'workProfile'])
+const STAFF_MANAGEMENT_FIELDS = new Set(['name', 'avatar', 'password', 'active', 'groups', 'reportsTo', 'workProfile'])
+const PAYLOAD_MANAGED_FIELDS = new Set(['id', 'createdAt', 'updatedAt'])
 const ownerLocks = new WeakMap<object, Promise<void>>()
 const ownerReleases = new WeakMap<object, () => void>()
 
@@ -64,6 +66,19 @@ export function passwordPolicy(password: unknown, email: unknown): true | string
 
 function valueOf(record: UserRecord | undefined, key: keyof UserRecord): unknown {
   return record?.[key]
+}
+
+function changedFields(data: Partial<UserRecord>, originalDoc: UserRecord | undefined): string[] {
+  const original = originalDoc as (UserRecord & Record<string, unknown>) | undefined
+  return Object.entries(data)
+    .filter(
+      ([key, value]) =>
+        !PAYLOAD_MANAGED_FIELDS.has(key) &&
+        !PRIVATE_USER_FIELDS.has(key) &&
+        key !== 'sessions' &&
+        !Object.is(value, original?.[key]),
+    )
+    .map(([key]) => key)
 }
 
 /**
@@ -168,13 +183,16 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
     return onlyPrivateFieldChanges(data, originalDoc)
   const actor = await resolveActor(req)
   if (actor?.active !== true) throw new APIError('You do not have permission to update this user.', 403, null, true)
-  if (actor.role === 'owner') return data
   const isSelf = String(originalDoc?.id) === String(actor.id)
+  const changed = changedFields(data, originalDoc)
+  if (isSelf && changed.some((key) => SELF_PRIVILEGED_FIELDS.has(key)))
+    throw new APIError('This user update is outside your role permissions.', 403, null, true)
+  if (actor.role === 'owner') return data
   const allowed = new Set<string>()
   if (isSelf) SELF_UPDATE_FIELDS.forEach((field) => allowed.add(field))
   if (actor.role === 'manager' && originalDoc?.role === 'staff')
     STAFF_MANAGEMENT_FIELDS.forEach((field) => allowed.add(field))
-  if (Object.keys(data).some((key) => !allowed.has(key)))
+  if (changed.some((key) => !allowed.has(key)))
     throw new APIError('This user update is outside your role permissions.', 403, null, true)
   return data
 }

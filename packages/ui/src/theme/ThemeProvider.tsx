@@ -8,9 +8,10 @@ const STORAGE_KEY = 'workspace-theme'
 
 /**
  * Runs in the page head, before first paint, so a dark theme never flashes light while the app loads. A saved choice
- * wins; with none saved the system setting decides (decision D-19). Keep it in step with `ThemeProvider` below.
+ * wins; with none saved the initial theme is light. An explicit `system` choice follows the device setting.
+ * Keep this in step with `ThemeProvider` below.
  */
-export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem('${STORAGE_KEY}');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch(e){}`
+export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem('${STORAGE_KEY}');var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch(e){}`
 const ThemeContext = createContext<Readonly<{ theme: ThemeChoice; setTheme: (theme: ThemeChoice) => void }> | null>(
   null,
 )
@@ -29,23 +30,20 @@ function applyTheme(theme: ThemeChoice) {
   })
 }
 
-/** Persistent light and dark theme switching with a system default (decision D-19). */
+/** Persistent light, dark, and system theme switching with a light default. */
 export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [theme, setThemeState] = useState<ThemeChoice>('light')
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
-    // With no saved choice the system decides, but the state holds the theme in effect so the switch shows the right icon.
-    const system: ThemeChoice = prefersDark() ? 'dark' : 'light'
-    const choice: ThemeChoice = saved === 'dark' || saved === 'light' ? saved : system
+    const choice: ThemeChoice = saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'light'
     setThemeState(choice)
     applyTheme(choice)
   }, [])
 
   const setTheme = (choice: ThemeChoice) => {
     setThemeState(choice)
-    if (choice === 'system') window.localStorage.removeItem(STORAGE_KEY)
-    else window.localStorage.setItem(STORAGE_KEY, choice)
+    window.localStorage.setItem(STORAGE_KEY, choice)
     applyTheme(choice)
   }
 

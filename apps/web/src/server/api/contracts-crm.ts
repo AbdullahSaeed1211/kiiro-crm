@@ -12,11 +12,46 @@ import {
   updateDealSchema,
   updateLeadSchema,
   updateOrganizationSchema,
+  createScheduleItemSchema,
+  updateScheduleItemSchema,
 } from '@ops/module-crm'
 import type { ApiContract } from './contract-types'
 
 /** CRM record endpoints (spec §12): organizations, contacts, leads and deals. */
 export const CRM_CONTRACTS = {
+  'schedule.get': {
+    method: 'GET',
+    path: '/api/v1/schedule-items/:id',
+    summary: 'One callback or appointment visible to the signed-in user.',
+    success: 200,
+  },
+  'schedule.list': {
+    method: 'GET',
+    path: '/api/v1/schedule-items',
+    summary:
+      'List callbacks and appointments in a bounded epoch-millisecond range; staff see their assignments, managers may request scope=team.',
+    query: [
+      { name: 'from', description: 'Inclusive UTC Unix milliseconds.' },
+      { name: 'to', description: 'Inclusive UTC Unix milliseconds; range is limited to 93 days.' },
+      { name: 'scope', description: 'mine or manager-only team.' },
+      { name: 'assignee', description: 'Optional assigned user id; manager-only.' },
+    ],
+    success: 200,
+  },
+  'schedule.create': {
+    method: 'POST',
+    path: '/api/v1/schedule-items',
+    summary: 'Create a callback or appointment for a visible lead or contact.',
+    body: createScheduleItemSchema,
+    success: 201,
+  },
+  'schedule.update': {
+    method: 'PATCH',
+    path: '/api/v1/schedule-items/:id',
+    summary: 'Update a visible callback or appointment while it is still at expectedUpdatedAt.',
+    body: updateScheduleItemSchema.omit({ id: true }),
+    success: 200,
+  },
   'leads.list': {
     method: 'GET',
     path: '/api/v1/leads',

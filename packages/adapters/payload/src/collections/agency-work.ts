@@ -1,4 +1,4 @@
-import { isManagerUp } from '@ops/platform'
+import { isManagerUp, workProfileAllows, type Actor } from '@ops/platform'
 import type { Access, CollectionConfig, PayloadRequest, Where } from 'payload'
 import { COLLECTIONS, FIELDS } from '../contracts/names'
 import { resolveActor } from '../access/actor'
@@ -25,13 +25,21 @@ function agencyCollection({
   return { ...spikeCollection(definition), access }
 }
 
-const projectScope: Access = allow((actor): Where => {
+const NO_PROJECT_ACCESS: Where = { id: { exists: false } }
+
+function projectScopeRule(actor: Actor): Where {
   if (isManagerUp(actor)) return {}
+  if (!workProfileAllows(actor, { type: 'project' })) return NO_PROJECT_ACCESS
   const ownerIds = [actor.id, ...actor.reportIds]
   return {
     or: [{ 'project.owner': { in: ownerIds } }, { 'project.members': { contains: actor.id } }],
   }
-})
+}
+
+const projectScope: Access = async ({ req }) => {
+  const actor = await resolveActor(req)
+  return actor?.active === true ? projectScopeRule(actor) : false
+}
 
 const projectAccess = {
   read: projectScope,

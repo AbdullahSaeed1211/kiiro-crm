@@ -8,6 +8,7 @@ import type {
   CrmRecordType,
   DealRecord,
   LookupRecord,
+  ScheduleItemRecord,
 } from './records'
 
 /** A record an owner or manager archived, as the archive screen lists it. */
@@ -30,6 +31,29 @@ export type LookupKind = 'source' | 'lostReason'
 export interface CrmRepository extends StageStore {
   createCallLog(input: Omit<CallLogRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<CallLogRecord>
   listCallLogs(recordType: 'lead' | 'contact', recordId: Id): Promise<readonly CallLogRecord[]>
+  listRecentCallLogs(callerId: Id, limit: number): Promise<readonly CallLogRecord[]>
+  isActiveUser(id: Id, recordType?: 'lead' | 'contact'): Promise<boolean>
+  createScheduleItem(input: Omit<ScheduleItemRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<ScheduleItemRecord>
+  getScheduleItem(id: Id): Promise<ScheduleItemRecord | undefined>
+  findScheduleItemBySourceKey(sourceKey: string): Promise<ScheduleItemRecord | undefined>
+  findScheduleItemForRecord(input: {
+    readonly kind: ScheduleItemRecord['kind']
+    readonly recordType: ScheduleItemRecord['recordType']
+    readonly recordId: Id
+  }): Promise<ScheduleItemRecord | undefined>
+  listScheduleItems(input: {
+    readonly from: number
+    readonly to: number
+    readonly assigneeId?: Id
+    readonly recordType?: 'lead' | 'contact'
+  }): Promise<readonly ScheduleItemRecord[]>
+  updateScheduleItem(
+    id: Id,
+    patch: Partial<
+      Omit<ScheduleItemRecord, 'id' | 'recordType' | 'recordId' | 'sourceKey' | 'createdAt' | 'updatedAt'>
+    >,
+    expectedUpdatedAt: number,
+  ): Promise<ScheduleItemRecord | undefined>
   get<T extends CrmRecordType>(type: T, id: Id): Promise<CrmRecords[T] | undefined>
   list<T extends CrmRecordType>(type: T): Promise<readonly CrmRecords[T][]>
   create<T extends CrmRecordType>(type: T, draft: CrmDrafts[T]): Promise<Result<CrmRecords[T]>>

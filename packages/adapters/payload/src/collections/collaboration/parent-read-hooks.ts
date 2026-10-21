@@ -1,4 +1,3 @@
-import { isManagerUp } from '@ops/platform'
 import { NotFound, type CollectionAfterOperationHook, type PayloadRequest } from 'payload'
 import { resolveActor } from '../../access/actor'
 import { canReadParentReference } from './fields'
@@ -46,15 +45,15 @@ async function readablePage(req: PayloadRequest, page: Page): Promise<Page> {
 }
 
 /**
- * Keeps comments and attachments inside the scope of their parent record. Managers and system reads see everything;
- * for everyone else a list drops unreadable parents' rows and a single read of one is a not-found.
+ * Keeps comments, attachments and schedule entries inside their parent's read scope, including managers.
+ * Trusted system reads bypass filtering; other lists drop unreadable parents and single reads return not-found.
  */
 export const filterToReadableParents: CollectionAfterOperationHook = async (input) => {
   const { result, req, args } = input
   const operation: unknown = Reflect.get(input, 'operation')
   if (Reflect.get(args, 'overrideAccess') === true) return result
   const actor = await resolveActor(req)
-  if (actor === undefined || isManagerUp(actor)) return result
+  if (actor === undefined) return result
   if (operation === 'find') return readablePage(req, result as Page)
   if (operation === 'findByID' && !(await mayRead(req, result))) throw new NotFound()
   return result

@@ -9,7 +9,8 @@ import type {
 } from '@ops/module-crm'
 import type { PayloadRequest, Sort, Where } from 'payload'
 import { domainError, err, ok, type Result } from '@ops/kernel'
-import type { Workflow } from '@ops/platform'
+import type { Id } from '@ops/kernel'
+import { workProfileAllows, type Workflow } from '@ops/platform'
 import { COLLECTIONS } from '../../contracts/names'
 import { fieldOf, idOf, textOf, type Doc } from '../documents'
 import { createAsSystem, findAsUser, pageAsUser, updateAndMap } from '../local-api'
@@ -18,6 +19,8 @@ import { archiveAccess } from './archive-store'
 import { createAsUser } from './local-writes'
 import { CRM_COLLECTIONS, toCrmData, toCrmRecord } from './record-codecs'
 import { createCrmStageStore, firstWorkflow, whereId } from './stage-store'
+import { scheduleItems } from './schedule-store'
+import { toActor } from '../../access/actor'
 
 type RecordAccess = Pick<CrmRepository, 'get' | 'list' | 'create' | 'update' | 'archive' | 'listArchived' | 'restore'>
 
@@ -26,7 +29,17 @@ type Directory = Pick<
   'findContactByEmail' | 'loadDefaultWorkflow' | 'listLookups' | 'loadFieldDefinitions'
 >
 
-type Calls = Pick<CrmRepository, 'createCallLog' | 'listCallLogs'>
+type Calls = Pick<CrmRepository, 'createCallLog' | 'listCallLogs' | 'listRecentCallLogs' | 'isActiveUser'>
+
+async function activeUserCanReadRecord(req: PayloadRequest, id: Id, recordType?: 'lead' | 'contact'): Promise<boolean> {
+  const docs = await findAsUser(req, {
+    collection: COLLECTIONS.users,
+    where: { and: [{ id: { equals: id } }, { active: { equals: true } }] },
+    limit: 1,
+  })
+  const actor = docs[0] === undefined ? undefined : toActor(docs[0])
+  return actor !== undefined && (recordType === undefined || workProfileAllows(actor, { type: recordType }))
+}
 
 interface CallLogFields {
   readonly id: ReturnType<typeof idOf>
@@ -107,6 +120,16 @@ function calls(req: PayloadRequest): Calls {
       })
       return docs.flatMap((doc) => mapCallLog(doc) ?? [])
     },
+    listRecentCallLogs: async (callerId, limit) => {
+      const docs = await findAsUser(req, {
+        collection: COLLECTIONS.callLogs,
+        where: { caller: { equals: callerId } },
+        sort: '-occurredAt',
+        limit: Math.min(50, Math.max(1, limit)),
+      })
+      return docs.flatMap((doc) => mapCallLog(doc) ?? [])
+    },
+    isActiveUser: (id, recordType) => activeUserCanReadRecord(req, id, recordType),
   }
 }
 
@@ -201,7 +224,7 @@ function directory(req: PayloadRequest): Directory {
 
 /** `CrmRepository` on the Payload Local API: reads, creates and compare-and-set updates apply the request user's access. */
 export function createCrmRepository(req: PayloadRequest): CrmRepository {
-  return { ...createCrmStageStore(req), ...recordAccess(req), ...directory(req), ...calls(req) }
+  return { ...createCrmStageStore(req), ...recordAccess(req), ...directory(req), ...calls(req), ...scheduleItems(req) }
 }
 
 /** Reads one permission-scoped CRM page without materializing the entire collection. */

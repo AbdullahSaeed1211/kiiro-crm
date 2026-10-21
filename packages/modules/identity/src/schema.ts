@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const role = z.enum(['owner', 'manager', 'staff'])
 const text = z.string().trim().min(1)
+const workProfile = z.enum(['sales', 'delivery', 'consultant'])
 
 /** Input of `inviteMember`. */
 export const inviteMemberSchema = z.object({ email: z.string().trim().toLowerCase().pipe(z.email()), role })
@@ -13,6 +14,7 @@ export const recordIdSchema = z.object({ id: text })
 export const saveMemberSchema = z.object({
   id: text,
   role,
+  workProfile: workProfile.default('delivery'),
   active: z
     .union([z.boolean(), z.literal('true'), z.literal('false')])
     .transform((value) => value === true || value === 'true'),

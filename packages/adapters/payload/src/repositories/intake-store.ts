@@ -1,11 +1,12 @@
-import { domainError, err, ok } from '@ops/kernel'
-import type { IntakeForm, IntakeStore, IntakeSubmission } from '@ops/module-intake'
-import { formFieldsSchema } from '@ops/module-intake'
+import type { IntakeStore } from '@ops/module-intake'
 import type { Payload } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
-import { fieldOf, idOf, idsOf, numberOf, textOf, type Doc } from './documents'
+import { fieldOf, idOf, idsOf, type Doc } from './documents'
 import { insertUnique } from './unique-insert'
 import { toWorkflow } from './workflow-mapping'
+import { createIntakeSubmissionStore } from './intake-submission-store'
+
+export { findIntakeForm, toIntakeForm } from './intake-submission-store'
 
 interface LoosePayload {
   create(options: Readonly<Record<string, unknown>>): Promise<Doc>
@@ -13,132 +14,6 @@ interface LoosePayload {
 }
 
 const loose = (payload: object): LoosePayload => payload as LoosePayload
-
-function relationId(value: unknown): string | undefined {
-  if (typeof value === 'string' || typeof value === 'number') return String(value)
-  return typeof value === 'object' && value !== null ? relationId(Reflect.get(value, 'id')) : undefined
-}
-
-function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
-}
-
-function stringMap(value: unknown): Record<string, string> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
-  return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
-  )
-}
-
-/** Maps one Payload intake form document into the domain contract. */
-// The decoder validates every required and optional persistence field in one place.
-// eslint-disable-next-line complexity -- relation normalization accepts Payload's scalar and populated shapes.
-export function toIntakeForm(doc: Doc): IntakeForm | undefined {
-  const id = idOf(fieldOf(doc, 'id'))
-  const key = textOf(doc, 'key')
-  const name = textOf(doc, 'name')
-  if (id === undefined || key === undefined || name === undefined) return undefined
-  const optional = (keyName: string): string | undefined => textOf(doc, keyName) ?? undefined
-  const defaultOwnerId = relationId(fieldOf(doc, 'defaultOwner'))
-  const defaultSourceId = relationId(fieldOf(doc, 'defaultSource'))
-  const redirectUrl = optional('redirectUrl')
-  const emailAlias = optional('emailAlias')
-  const questions = formFieldsSchema.safeParse(fieldOf(doc, 'formFields') ?? [])
-  if (!questions.success) return undefined
-  return {
-    id,
-    key,
-    name,
-    active: fieldOf(doc, 'active') === true,
-    targetRecordType: 'lead',
-    fieldMap: stringMap(fieldOf(doc, 'fieldMap')),
-    formFields: questions.data,
-    allowedOrigins: stringList(fieldOf(doc, 'allowedOrigins')),
-    requireTurnstile: fieldOf(doc, 'requireTurnstile') === true,
-    serverKeyHashes: stringList(fieldOf(doc, 'serverKeyHashes')),
-    ...(defaultOwnerId === undefined ? {} : { defaultOwnerId }),
-    defaultAssigneeIds: idsOf(fieldOf(doc, 'defaultAssignees')).map(String),
-    ...(defaultSourceId === undefined ? {} : { defaultSourceId }),
-    notifyUserIds: idsOf(fieldOf(doc, 'notifyUsers')).map(String),
-    notifyGroupIds: idsOf(fieldOf(doc, 'notifyGroups')).map(String),
-    successMessage: textOf(doc, 'successMessage') ?? 'Thanks. We will be in touch.',
-    ...(redirectUrl === undefined ? {} : { redirectUrl }),
-    ...(emailAlias === undefined ? {} : { emailAlias }),
-  }
-}
-
-/** Loads one active intake form by public key or email alias. */
-export async function findIntakeForm(payload: Payload, field: 'key' | 'emailAlias', value: string) {
-  const page = await payload.find({
-    collection: COLLECTIONS.intakeForms,
-    where: { and: [{ [field]: { equals: value } }, { active: { equals: true } }] },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return page.docs[0] === undefined ? undefined : toIntakeForm(page.docs[0])
-}
-
-// The decoder validates the persisted discriminants before exposing the domain object.
-// eslint-disable-next-line complexity -- this decoder validates the complete persisted submission shape.
-function toSubmission(doc: Doc): IntakeSubmission | undefined {
-  const id = idOf(fieldOf(doc, 'id'))
-  const formId = relationId(fieldOf(doc, 'form'))
-  const channel = textOf(doc, 'channel') as IntakeSubmission['channel'] | undefined
-  const receivedAt = numberOf(doc, 'receivedAt')
-  const status = textOf(doc, 'status') as IntakeSubmission['status'] | undefined
-  if (id === undefined || formId === undefined || channel === undefined || receivedAt === null || status === undefined)
-    return undefined
-  const recordId = textOf(doc, 'recordId')
-  return {
-    id,
-    formId,
-    channel,
-    receivedAt,
-    origin: textOf(doc, 'origin') ?? '',
-    ipHash: textOf(doc, 'ipHash') ?? '',
-    userAgent: textOf(doc, 'userAgent') ?? '',
-    payload: typeof fieldOf(doc, 'payload') === 'object' ? (fieldOf(doc, 'payload') as Record<string, unknown>) : {},
-    dedupeKey: textOf(doc, 'dedupeKey') ?? '',
-    status,
-    ...(recordId === undefined ? {} : { recordRef: { type: 'lead', id: recordId } }),
-  }
-}
-
-/** Payload-backed intake command store with unique-key dedupe and system-only writes. */
-const submissionStore = (
-  payload: Payload,
-): Pick<IntakeStore, 'findByDedupeKey' | 'insertSubmission' | 'markDuplicate'> => ({
-  findByDedupeKey: async (dedupeKey) => {
-    const page = await payload.find({
-      collection: COLLECTIONS.intakeSubmissions,
-      where: { dedupeKey: { equals: dedupeKey } },
-      limit: 1,
-      depth: 0,
-      overrideAccess: true,
-    })
-    return page.docs[0] === undefined ? undefined : toSubmission(page.docs[0])
-  },
-  insertSubmission: async (submission) => {
-    const created = await insertUnique(payload, {
-      collection: COLLECTIONS.intakeSubmissions,
-      field: 'dedupeKey',
-      value: submission.dedupeKey,
-      data: { ...submission, form: submission.formId },
-    })
-    if (created === 'duplicate') return ok({ id: '', ...submission, status: 'duplicate' })
-    const page = await payload.find({
-      collection: COLLECTIONS.intakeSubmissions,
-      where: { dedupeKey: { equals: submission.dedupeKey } },
-      limit: 1,
-      depth: 0,
-      overrideAccess: true,
-    })
-    const stored = page.docs[0] === undefined ? undefined : toSubmission(page.docs[0])
-    return stored === undefined ? err(domainError('INTERNAL', 'submission could not be loaded')) : ok(stored)
-  },
-  markDuplicate: () => Promise.resolve(),
-})
 
 /**
  * Where a new lead starts: the first lead workflow's default stage. A lead saved without a stage is never shown on
@@ -160,16 +35,118 @@ async function startingStage(payload: Payload) {
     : { workflow: workflow.id, stageId: workflow.defaultStageId, stageEnteredAt: Date.now() }
 }
 
-async function createLead(payload: Payload, data: Readonly<Record<string, unknown>>) {
-  const doc = await loose(payload).create({
-    collection: COLLECTIONS.leads,
-    data: { ...data, ...(await startingStage(payload)) },
+async function createLead(
+  payload: Payload,
+  data: Readonly<Record<string, unknown>>,
+  schedule?: Parameters<IntakeStore['createLead']>[1],
+) {
+  const submissionId = schedule?.submissionId
+  const doc = await ensureLead(payload, data, submissionId)
+  const id = idOf(fieldOf(doc, 'id'))
+  if (id === undefined) throw new Error('lead create returned no id')
+  if (submissionId !== undefined) await linkSubmission(payload, submissionId, id)
+  await ensureIntakeSchedule({ payload, lead: doc, recordId: id, schedule })
+  return { id }
+}
+
+async function linkSubmission(payload: Payload, submissionId: string, recordId: string): Promise<void> {
+  await loose(payload).update({
+    collection: COLLECTIONS.intakeSubmissions,
+    id: submissionId,
+    data: { recordId },
     overrideAccess: true,
     depth: 0,
   })
-  const id = idOf(fieldOf(doc, 'id'))
-  if (id === undefined) throw new Error('lead create returned no id')
-  return { id }
+}
+
+async function ensureIntakeSchedule(input: {
+  readonly payload: Payload
+  readonly lead: Doc
+  readonly recordId: string
+  readonly schedule?: Parameters<IntakeStore['createLead']>[1]
+}): Promise<void> {
+  const { payload, lead, recordId, schedule } = input
+  for (const item of schedule?.items ?? []) {
+    const sourceKey = `intake:${schedule?.submissionId ?? ''}:${item.sourceField}:${item.kind}`
+    const assignees = idsOf(fieldOf(lead, 'assignees')).map(String)
+    const owner = idOf(fieldOf(lead, 'owner'))
+    const routedAssignees = [...new Set([...assignees, ...(owner === undefined ? [] : [owner])])]
+    const data = {
+      kind: item.kind,
+      recordType: 'lead',
+      recordId,
+      assignees: routedAssignees,
+      startsAt: item.startsAt,
+      status: 'scheduled',
+      title: null,
+      notes: null,
+      sourceKey,
+    }
+    const saved = await ensureScheduleItem(payload, sourceKey, data)
+    if (idOf(fieldOf(saved, 'id')) === undefined) throw new Error('schedule item save returned no id')
+  }
+}
+
+async function ensureLead(
+  payload: Payload,
+  data: Readonly<Record<string, unknown>>,
+  submissionId?: string,
+): Promise<Doc> {
+  if (submissionId === undefined) {
+    return loose(payload).create({
+      collection: COLLECTIONS.leads,
+      data: { ...data, ...(await startingStage(payload)) },
+      overrideAccess: true,
+      depth: 0,
+    })
+  }
+  const existing = await findLeadBySubmission(payload, submissionId)
+  if (existing !== undefined) return existing
+  await insertUnique(payload, {
+    collection: COLLECTIONS.leads,
+    field: 'intakeSubmissionId',
+    value: submissionId,
+    data: { ...data, intakeSubmissionId: submissionId, ...(await startingStage(payload)) },
+  })
+  const saved = await findLeadBySubmission(payload, submissionId)
+  if (saved === undefined) throw new Error('lead create returned no document')
+  return saved
+}
+
+async function findLeadBySubmission(payload: Payload, submissionId: string): Promise<Doc | undefined> {
+  const page = await payload.find({
+    collection: COLLECTIONS.leads,
+    where: { intakeSubmissionId: { equals: submissionId } },
+    limit: 1,
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return page.docs.at(0)
+}
+
+async function ensureScheduleItem(
+  payload: Payload,
+  sourceKey: string,
+  data: Readonly<Record<string, unknown>>,
+): Promise<Doc> {
+  await insertUnique(payload, {
+    collection: COLLECTIONS.scheduleItems,
+    field: 'sourceKey',
+    value: sourceKey,
+    data,
+  })
+  const page = await payload.find({
+    collection: COLLECTIONS.scheduleItems,
+    where: { sourceKey: { equals: sourceKey } },
+    limit: 1,
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const saved = page.docs.at(0)
+  if (saved === undefined) throw new Error('schedule item save returned no document')
+  return saved
 }
 
 /** Writes a visitor's message as a note authored by the workspace owner, so the comment rules see an active author. */
@@ -217,8 +194,8 @@ async function notifyUsers(payload: Payload, input: Parameters<IntakeStore['noti
 /** Payload-backed intake command store with unique-key dedupe and system-only writes. */
 export function createIntakeStore(payload: Payload): IntakeStore {
   return {
-    ...submissionStore(payload),
-    createLead: (data) => createLead(payload, data),
+    ...createIntakeSubmissionStore(payload),
+    createLead: (data, schedule) => createLead(payload, data, schedule),
     addComment: (input) => addOwnerNote(payload, input),
     notify: (input) => notifyUsers(payload, input),
   }

@@ -6,6 +6,7 @@ import { nextOccurrence } from '../domain/recurrence'
 import { hasOpenChildren } from '../domain/rules'
 import { rankBetween } from '../domain/rank'
 import type { WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
+import { taskResource } from './task-access'
 
 const conflict = <T>(message: string): WorkResult<T> => err(domainError('CONFLICT', message))
 const CONFLICT_OPEN_SUBTASKS = 'parent task has open subtasks'
@@ -122,22 +123,11 @@ function validateTaskForMove(task: WorkTaskRecord, expectedUpdatedAt: number): W
 }
 
 function authorizeTaskUpdate(deps: WorkDeps, task: WorkTaskRecord): WorkResult<null> {
-  if (
-    !deps.can(deps.actor, 'update', {
-      type: 'task',
-      assigneeIds: task.assigneeIds,
-      ...(task.groupId === null ? {} : { groupId: task.groupId }),
-    })
-  )
-    return fail('FORBIDDEN', FORBIDDEN_UPDATE_TASK)
+  if (!deps.can(deps.actor, 'update', taskResource(task))) return fail('FORBIDDEN', FORBIDDEN_UPDATE_TASK)
   return ok(null)
 }
 
-/**
- * A repeating task that was just completed leaves its next occurrence behind: same title, people, project and priority,
- * dated one step after this one's due date, in the workflow's first stage. The finished task stops repeating, so
- * reopening and completing it again cannot make a second copy. A failure here never undoes the completion.
- */
+/** Completion leaves one next-dated occurrence and disables the finished task's repeat to prevent duplicates. */
 async function spawnNextOccurrence(deps: WorkDeps, done: WorkTaskRecord): Promise<WorkTaskRecord> {
   if (done.repeat === 'none' || done.dueAt === null) return done
   const workflow = await deps.repo.loadDefaultWorkflow('task')

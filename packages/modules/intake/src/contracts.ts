@@ -44,13 +44,24 @@ export interface IntakeSubmission {
   readonly dedupeKey: string
   readonly status: IntakeSubmissionStatus
   readonly recordRef?: { readonly type: 'lead'; readonly id: string }
+  /** True only for submissions written with the idempotent lead/schedule recovery protocol. */
+  readonly recoverable?: boolean
+}
+/** An event time explicitly mapped by the tenant's intake configuration. */
+export interface IntakeScheduleSeed {
+  readonly kind: 'appointment' | 'callback'
+  readonly startsAt: number
+  readonly sourceField: string
 }
 /** Persistence and side effects required by `submitIntake`. */
 export interface IntakeStore {
   findByDedupeKey(dedupeKey: string): Promise<IntakeSubmission | undefined>
   insertSubmission(submission: Omit<IntakeSubmission, 'id'>): Promise<Result<IntakeSubmission>>
   markDuplicate(dedupeKey: string, recordRef?: IntakeSubmission['recordRef']): Promise<void>
-  createLead(input: Readonly<Record<string, unknown>>): Promise<{ readonly id: string }>
+  createLead(
+    input: Readonly<Record<string, unknown>>,
+    schedule?: Readonly<{ submissionId: string; items: readonly IntakeScheduleSeed[] }>,
+  ): Promise<{ readonly id: string }>
   addComment(input: {
     readonly record: { readonly type: 'lead'; readonly id: string }
     readonly body: string

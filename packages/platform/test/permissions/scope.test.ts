@@ -52,3 +52,52 @@ describe('createScopeFilter', () => {
     expect(scopeFilter(actor('staff'), 'unknown')).toBe(MATCH_NOTHING)
   })
 })
+
+const salesTaskFilter = {
+  and: [
+    { field: 'ownerOnly', op: 'neq' as const, value: true },
+    { field: 'project', op: 'exists' as const, value: false },
+    {
+      or: [
+        { field: 'relatedType', op: 'eq' as const, value: null },
+        { field: 'relatedType', op: 'in' as const, value: ['lead', 'contact', 'deal'] },
+      ],
+    },
+  ],
+}
+
+const profileScope = createScopeFilter({
+  lead: { ownerField: 'owner' },
+  project: { ownerField: 'owner' },
+  task: {
+    assigneesField: 'assignees',
+    filter: (current) => (current.workProfile === 'sales' ? salesTaskFilter : undefined),
+  },
+})
+
+const salesProfileActor = actor('staff', {
+  workProfile: 'sales',
+  recordTypes: ['lead', 'task'],
+  unlinkedRecordTypes: ['task'],
+  relatedRecordTypes: ['lead', 'contact', 'deal'],
+  groupIds: [asId('group-a')],
+})
+
+describe('profile scopes', () => {
+  it('excludes projects from sales staff and filters every task branch to standalone tasks', () => {
+    const sales = salesProfileActor
+    expect(profileScope(sales, 'project')).toBe(MATCH_NOTHING)
+    expect(profileScope(sales, 'lead')).toEqual({ or: [{ field: 'owner', op: 'in', value: ['user-1'] }] })
+    expect(profileScope(sales, 'task')).toEqual({
+      and: [{ or: [{ field: 'assignees', op: 'in', value: ['user-1'] }] }, salesTaskFilter],
+    })
+  })
+
+  it('keeps owner-only tasks out of manager scope while owners remain unrestricted', () => {
+    const privateTasks = createScopeFilter({
+      task: { assigneesField: 'assignees', managerFilter: { field: 'ownerOnly', op: 'neq', value: true } },
+    })
+    expect(privateTasks(actor('manager'), 'task')).toEqual({ field: 'ownerOnly', op: 'neq', value: true })
+    expect(privateTasks(actor('owner'), 'task')).toBeUndefined()
+  })
+})

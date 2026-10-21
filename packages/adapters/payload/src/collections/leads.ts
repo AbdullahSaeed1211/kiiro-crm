@@ -36,6 +36,13 @@ export const leadsCollection = spikeCollection({
     epochMs('nextActionAt', { index: true }),
     epochMs('convertedAt', { index: true }),
     relationshipTo('convertedDeal', COLLECTIONS.deals),
+    {
+      name: 'intakeSubmissionId',
+      type: 'text',
+      unique: true,
+      admin: { hidden: true },
+      access: { create: () => false, read: () => false, update: () => false },
+    },
     customDataField(),
   ],
 })

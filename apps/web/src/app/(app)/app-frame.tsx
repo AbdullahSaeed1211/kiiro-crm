@@ -1,103 +1,14 @@
 'use client'
 
 import { AppShell } from '@ops/ui/composites/AppShell'
-import { AppSidebar, type NavGroup } from '@ops/ui/composites/AppSidebar'
-import {
-  Building2,
-  ChartNoAxesCombined,
-  CircleCheckBig,
-  Contact,
-  FolderKanban,
-  Handshake,
-  LayoutDashboard,
-  ListTodo,
-  LogOut,
-  Mail,
-  ReceiptText,
-  Settings,
-  UserPlus,
-  type LucideIcon,
-} from 'lucide-react'
+import { AppSidebar } from '@ops/ui/composites/AppSidebar'
+import { LogOut, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useEffect, type ReactNode } from 'react'
+import type { WorkProfile } from '@ops/platform'
 import { WorkspaceTools } from './workspace-tools'
+import { navGroups, routeCopyKey } from './app-navigation'
 import { SHELL_COPY, type Locale } from '../../i18n/config'
-
-type NavLink = readonly [key: string, href: string, icon: LucideIcon]
-
-const GENERAL: readonly NavLink[] = [
-  ['dashboard', '/', LayoutDashboard],
-  ['myTasks', '/my-tasks', CircleCheckBig],
-]
-
-const CRM: readonly NavLink[] = [
-  ['leads', '/leads', UserPlus],
-  ['deals', '/deals', Handshake],
-  ['organizations', '/organizations', Building2],
-  ['contacts', '/contacts', Contact],
-]
-
-const WORK: readonly NavLink[] = [
-  ['projects', '/projects', FolderKanban],
-  ['tasks', '/tasks', ListTodo],
-]
-
-// Exact match for the dashboard, prefix match for sections with detail routes (spec §16.2).
-// Calendar and Timeline are views of Tasks, so Tasks stays lit while either is open.
-const TASK_VIEW_PATHS = ['/calendar', '/timeline']
-
-function isActive(pathname: string, href: string): boolean {
-  if (href === '/') return pathname === '/'
-  if (href === '/tasks' && TASK_VIEW_PATHS.some((path) => pathname.startsWith(path))) return true
-  return pathname === href || pathname.startsWith(`${href}/`)
-}
-
-function navGroups({
-  pathname,
-  modules,
-  terminology,
-  role,
-  locale,
-}: Readonly<{
-  pathname: string
-  modules: Readonly<Record<string, boolean>>
-  terminology: Readonly<Record<string, unknown>>
-  role: string
-  locale: Locale
-}>): NavGroup[] {
-  const copy = SHELL_COPY[locale]
-  const label = (key: string, fallback: string) => {
-    const value = terminology[key]
-    return typeof value === 'string' && value !== '' ? value : fallback
-  }
-  const item = ([key, href, icon]: NavLink) => ({
-    label: label(key, copy[key] ?? key),
-    href,
-    icon,
-    active: isActive(pathname, href),
-  })
-  const groups: NavGroup[] = [{ id: 'general', items: GENERAL.map(item) }]
-  if (modules.mail && (role === 'owner' || role === 'manager'))
-    groups[0] = { id: 'general', items: [...GENERAL.map(item), item(['inbox', '/inbox', Mail])] }
-  if (modules.crm)
-    groups.push({
-      id: 'crm',
-      label: label('crmGroup', copy.crm),
-      items: CRM.map(item),
-    })
-  if (modules.work)
-    groups.push({
-      id: 'work',
-      label: label('workGroup', copy.work),
-      items: [
-        ...WORK.map(item),
-        ...(role === 'owner' || role === 'manager'
-          ? [item(['reports', '/reports', ChartNoAxesCombined]), item(['billing', '/billing', ReceiptText])]
-          : []),
-      ],
-    })
-  return groups
-}
 
 async function logOut() {
   try {
@@ -161,6 +72,7 @@ export function AppFrame({
   userName,
   userEmail,
   role,
+  workProfile,
   locale,
   children,
 }: Readonly<{
@@ -172,6 +84,7 @@ export function AppFrame({
   userName: string
   userEmail: string
   role: string
+  workProfile: WorkProfile
   locale: Locale
   children: ReactNode
 }>) {
@@ -179,7 +92,7 @@ export function AppFrame({
   useEffect(() => {
     const segment = pathname.split('/').find(Boolean)
     const copy = SHELL_COPY[locale]
-    const segmentKey = segment === 'my-tasks' ? 'myTasks' : segment
+    const segmentKey = routeCopyKey(segment)
     const label =
       segmentKey === undefined
         ? copy.dashboard
@@ -215,7 +128,7 @@ export function AppFrame({
         <AppSidebar
           appName={appName}
           logo={<img className="size-6 object-contain" src={compactLogoUrl} alt="" width={24} height={24} />}
-          groups={navGroups({ pathname, modules, terminology, role, locale })}
+          groups={navGroups({ pathname, modules, terminology, role, workProfile, locale })}
           footer={<SidebarAccount name={userName} email={userEmail} role={role} locale={locale} />}
         />
       }

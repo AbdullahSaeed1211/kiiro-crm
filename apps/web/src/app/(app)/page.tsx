@@ -8,33 +8,59 @@ import { hasDashboardRecords } from '../../server/queries/dashboard'
 import { loadDashboardWork, type DashboardWork } from '../../server/queries/work/dashboard-work'
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { TodayTaskQueue } from './today-work'
-import { TodayActions, TodayStart } from './today-start'
+import { TodayActions, TodayStart, type HomeProfile } from './today-start'
 import { DashboardFollowUps } from './DashboardFollowUps'
 
 export const metadata: Metadata = { title: 'Today' }
 export const dynamic = 'force-dynamic'
 
-function TodayContent({ work, context }: Readonly<{ work: DashboardWork; context: RequestContext }>) {
+function profileTitle(profile: HomeProfile, copy: (typeof DASHBOARD_TODAY_COPY)['en']): string {
+  if (profile === 'sales') return copy.salesTitle
+  if (profile === 'delivery') return copy.deliveryTitle
+  if (profile === 'consultant') return copy.consultantTitle
+  return copy.title
+}
+
+function profileFocus(profile: HomeProfile, copy: (typeof DASHBOARD_TODAY_COPY)['en']): string {
+  if (profile === 'sales') return copy.salesFocus
+  if (profile === 'delivery') return copy.deliveryFocus
+  if (profile === 'consultant') return copy.consultantFocus
+  return copy.adminFocus
+}
+
+function todayLinks(profile: HomeProfile, work: DashboardWork): readonly { href: string; label: string }[] {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
+  const links: { href: string; label: string }[] = []
+  if (profile === 'sales') links.push({ href: '/sales', label: copy.salesWorkspace })
+  if (profile === 'delivery' && work.workEnabled) links.push({ href: '/projects', label: copy.projects })
+  if (profile === 'consultant') links.push({ href: '/my-tasks', label: copy.myTasks })
+  if (profile !== 'consultant' && work.workEnabled) links.push({ href: '/tasks/repeating', label: copy.repeating })
+  if (profile === 'admin') links.push({ href: '/reports', label: copy.figures })
+  return links
+}
+
+function TodayContent({
+  work,
+  context,
+  profile,
+}: Readonly<{ work: DashboardWork; context: RequestContext; profile: HomeProfile }>) {
+  const copy = DASHBOARD_TODAY_COPY[work.locale]
+  const showFollowUps = work.crmEnabled && (profile === 'admin' || profile === 'sales')
+  const links = todayLinks(profile, work)
   return (
     <>
       <p className="text-sm text-muted-foreground">
-        {work.team ? copy.team : copy.mine}. {copy.description}
+        {profileFocus(profile, copy)} {copy.description}
       </p>
       {work.workEnabled ? <TodayTaskQueue work={work} kind="overdue" /> : null}
-      {work.crmEnabled ? <DashboardFollowUps context={context} locale={work.locale} dayStart={work.dayStart} /> : null}
+      {showFollowUps ? <DashboardFollowUps context={context} locale={work.locale} dayStart={work.dayStart} /> : null}
       {work.workEnabled ? <TodayTaskQueue work={work} kind="dueWeek" /> : null}
-      <nav className="flex flex-wrap gap-5 text-sm text-muted-foreground">
-        {work.workEnabled ? (
-          <Link href="/tasks/repeating" className="underline-offset-4 hover:text-foreground hover:underline">
-            {copy.repeating}
+      <nav aria-label={copy.quickLinks} className="flex flex-wrap gap-5 text-sm text-muted-foreground">
+        {links.map((link) => (
+          <Link key={link.href} href={link.href} className="underline-offset-4 hover:text-foreground hover:underline">
+            {link.label}
           </Link>
-        ) : null}
-        {work.team ? (
-          <Link href="/reports" className="underline-offset-4 hover:text-foreground hover:underline">
-            {copy.figures}
-          </Link>
-        ) : null}
+        ))}
       </nav>
     </>
   )
@@ -46,6 +72,8 @@ export default async function DashboardPage() {
   const [work, hasRecords] = await Promise.all([loadDashboardWork(context), hasDashboardRecords(context)])
   const firstRun = !hasRecords
   const copy = DASHBOARD_TODAY_COPY[work.locale]
+  const profile: HomeProfile = work.team ? 'admin' : (context.actor.workProfile ?? 'delivery')
+  const title = profileTitle(profile, copy)
   const date = new Intl.DateTimeFormat(work.locale, {
     weekday: 'long',
     month: 'long',
@@ -54,15 +82,19 @@ export default async function DashboardPage() {
   }).format(Date.now())
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: copy.title }]} />
+      <AppHeader breadcrumbs={[{ label: title }]} />
       <PageContent>
         <div className="mx-auto grid w-full max-w-5xl gap-5">
           <PageHeader
-            title={copy.title}
+            title={title}
             description={date}
-            actions={firstRun ? undefined : <TodayActions work={work} />}
+            actions={firstRun ? undefined : <TodayActions work={work} profile={profile} />}
           />
-          {firstRun ? <TodayStart work={work} /> : <TodayContent work={work} context={context} />}
+          {firstRun ? (
+            <TodayStart work={work} profile={profile} />
+          ) : (
+            <TodayContent work={work} context={context} profile={profile} />
+          )}
         </div>
       </PageContent>
     </>

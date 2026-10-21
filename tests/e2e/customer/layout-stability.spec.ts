@@ -11,6 +11,7 @@ const SWITCHER_GROUPS: readonly (readonly string[])[] = [
 /** Every main surface, so a new shift on any of them fails here. */
 const SHIFT_ROUTES = [
   '/',
+  '/sales',
   '/leads',
   '/leads/board',
   '/leads/follow-ups',

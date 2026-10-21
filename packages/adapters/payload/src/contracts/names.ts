@@ -26,6 +26,7 @@ export const COLLECTIONS = {
   demoManifests: 'demoManifests',
   campaignQueue: 'campaignQueue',
   callLogs: 'callLogs',
+  scheduleItems: 'scheduleItems',
   deliverables: 'deliverables',
   contentItems: 'contentItems',
 } as const

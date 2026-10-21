@@ -4,6 +4,7 @@ import type { TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/w
 import { fail, isManagerUp } from './input'
 import { parseCreate, parseUpdate, type ParsedTaskDraft } from './task-input'
 import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
+import { taskResource } from './task-access'
 export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
 const OWNER_ONLY_FORBIDDEN = 'Only owners and managers can mark a task owner only.'
 
@@ -20,14 +21,9 @@ const createOwnerOnlyAllowed = (deps: WorkDeps, value: boolean): boolean => !val
 const updateOwnerOnlyAllowed = (deps: WorkDeps, value: boolean | undefined): boolean =>
   value === undefined || canMarkTaskOwnerOnly(deps.actor)
 
-const resource = (task: WorkTaskRecord) => ({
-  type: 'task',
-  assigneeIds: task.assigneeIds,
-  ...(task.groupId === null ? {} : { groupId: task.groupId }),
-})
 /** True when the actor may edit the task; screens use it to show controls the commands will accept. */
 export const canUpdateTask = (deps: Pick<WorkDeps, 'actor' | 'can'>, task: WorkTaskRecord) =>
-  deps.can(deps.actor, 'update', resource(task))
+  deps.can(deps.actor, 'update', taskResource(task))
 const canUpdate = canUpdateTask
 /** Owners and managers may assign anyone in any group; staff may only assign themselves, inside their own groups. */
 const assignmentAllowed = (deps: WorkDeps, ids: readonly Id[], groupId: Id | null) =>
@@ -57,7 +53,7 @@ async function parentFor(deps: WorkDeps, id: Id | null): Promise<WorkResult<Work
   if (id === null) return ok(null)
   const parent = await deps.repo.getTask(id)
   if (parent === undefined) return fail('NOT_FOUND', 'parent task not found')
-  if (!deps.can(deps.actor, 'read', resource(parent))) return fail('FORBIDDEN', 'parent task is outside your scope')
+  if (!deps.can(deps.actor, 'read', taskResource(parent))) return fail('FORBIDDEN', 'parent task is outside your scope')
   const records = await ancestorsOf(deps, parent)
   if (hasAncestorCycle(parent, records)) return fail('VALIDATION', 'task hierarchy contains a cycle')
   return subtaskDepth(parent, records) >= MAX_SUBTASK_DEPTH
@@ -120,7 +116,15 @@ export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkRe
   const parsed = parseCreate(input)
   if (!parsed.ok) return parsed
   const draft = parsed.value
-  if (!deps.can(deps.actor, 'create', { type: 'task' })) return fail('FORBIDDEN', 'not allowed to create tasks')
+  if (
+    !deps.can(deps.actor, 'create', {
+      type: 'task',
+      parentId: draft.projectId,
+      relatedRecordType: draft.relatedType,
+      ownerOnly: draft.ownerOnly,
+    })
+  )
+    return fail('FORBIDDEN', 'not allowed to create tasks')
 
   const workflowResult = await deps.repo.loadDefaultWorkflow('task')
   if (!workflowResult.ok) return workflowResult

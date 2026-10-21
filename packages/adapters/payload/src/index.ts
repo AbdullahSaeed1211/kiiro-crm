@@ -32,6 +32,7 @@ export {
   NOTIFICATION_PREF_TYPES,
   PEOPLE_COLLECTIONS,
   PEOPLE_ROLE_VALUES,
+  WORK_PROFILE_VALUES,
   peopleAccess,
   peopleCollections,
   peopleGroupsCollection,

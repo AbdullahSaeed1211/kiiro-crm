@@ -8,7 +8,9 @@ import { isTerminalCategory } from '../../src/collections/workflow-rules'
 import { COLLECTIONS, RECORD_TYPES } from '../../src/contracts/names'
 import { createTaskRepository } from '../../src/repositories'
 import { createUnitOfWork } from '../../src/uow/unit-of-work'
-import { requestAs, SEEDED_EMAILS, type LocalStack, type SpikeCase } from './local-stack'
+import { writeScheduleAssignments } from '../../src/repositories/schedule-conditional-write'
+import { fieldOf, idsOf } from '../../src/repositories/documents'
+import { requestAs, userByEmail, SEEDED_EMAILS, type LocalStack, type SpikeCase } from './local-stack'
 
 const DAY_MS = 86_400_000
 const TASK_TITLE = 'Review service-page hierarchy'
@@ -117,6 +119,55 @@ async function expectOneConcurrentWriteWins(stack: LocalStack): Promise<void> {
   expect(results.filter((result) => result !== undefined)).toHaveLength(1)
 }
 
+async function createScheduleRaceItem(payload: Payload, now: number, ownerId: string | number) {
+  return payload.create({
+    collection: COLLECTIONS.scheduleItems,
+    data: {
+      kind: 'appointment',
+      recordType: 'lead',
+      recordId: 'local-race-parent',
+      startsAt: now,
+      status: 'scheduled',
+      assignees: [ownerId],
+    },
+    overrideAccess: true,
+    depth: 0,
+  })
+}
+
+async function expectOneScheduleAssignmentWins({ payload, now }: LocalStack): Promise<void> {
+  const owner = await userByEmail(payload, SEEDED_EMAILS.owner)
+  const manager = await userByEmail(payload, SEEDED_EMAILS.manager)
+  const item = await createScheduleRaceItem(payload, now, owner.id)
+  const version = fieldOf(item, 'updatedAt')
+  if (typeof version !== 'string') throw new Error('Schedule version missing')
+  const base = {
+    collection: COLLECTIONS.scheduleItems,
+    id: String(item.id),
+    expectedUpdatedAt: version,
+    updatedAt: new Date(Date.parse(version) + 1).toISOString(),
+  }
+  const candidates = [
+    { title: 'Owner meeting', user: String(owner.id) },
+    { title: 'Manager meeting', user: String(manager.id) },
+  ]
+  const results = await Promise.all(
+    candidates.map((candidate) =>
+      writeScheduleAssignments(payload, { ...base, data: { title: candidate.title } }, [candidate.user]),
+    ),
+  )
+  expect(results.filter(Boolean)).toHaveLength(1)
+  const winner = candidates[results.findIndex(Boolean)]
+  const saved = await payload.findByID({
+    collection: COLLECTIONS.scheduleItems,
+    id: item.id,
+    overrideAccess: true,
+    depth: 0,
+  })
+  expect(fieldOf(saved, 'title')).toBe(winner?.title)
+  expect(idsOf(fieldOf(saved, 'assignees')).map(String)).toEqual([winner?.user])
+}
+
 /** Compare-and-set behavior of `changeStage` and the Payload task repository on local D1. */
 export const CONFLICT_CASES: readonly SpikeCase[] = [
   [
@@ -129,4 +180,8 @@ export const CONFLICT_CASES: readonly SpikeCase[] = [
   ],
   ['saveDates with a stale expectedUpdatedAt returns undefined and writes nothing', expectStaleDatesRefused],
   ['two concurrent saveDates with the same expectedUpdatedAt: exactly one succeeds', expectOneConcurrentWriteWins],
+  [
+    'concurrent schedule edits with equal proposed timestamps keep the winning title and assignees together',
+    expectOneScheduleAssignmentWins,
+  ],
 ]

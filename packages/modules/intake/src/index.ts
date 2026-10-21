@@ -18,6 +18,7 @@ export type {
   IntakeStore,
   IntakeSubmission,
   IntakeSubmissionStatus,
+  IntakeScheduleSeed,
   IntakeTurnstileVerifier,
   SubmitIntakeDeps,
 } from './contracts'

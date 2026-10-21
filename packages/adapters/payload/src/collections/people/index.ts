@@ -7,5 +7,11 @@ export {
   notificationPrefsCollection,
 } from './collections'
 export { peopleAccess } from './access'
-export { PEOPLE_COLLECTIONS, PEOPLE_ROLE_VALUES, INVITATION_STATUS_VALUES, NOTIFICATION_PREF_TYPES } from './values'
+export {
+  PEOPLE_COLLECTIONS,
+  PEOPLE_ROLE_VALUES,
+  WORK_PROFILE_VALUES,
+  INVITATION_STATUS_VALUES,
+  NOTIFICATION_PREF_TYPES,
+} from './values'
 export { createInvitationToken, hashInvitationToken, invitationExpiresAt, invitationUsable } from './invitations'

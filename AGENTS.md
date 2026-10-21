@@ -68,6 +68,11 @@ Each one caused a real defect here.
 - Do not disable lint for a whole file. Use a scoped `eslint-disable-next-line <rule> -- <reason>`; `check:disables` rejects a directive that names no rule.
 - User-facing copy is short, plain English and always localization-ready: no text in a component. Each page or feature has its own `*-copy.ts` in `apps/web/src/i18n/` (not one shared file) with an `en` and an `es` entry; server code picks it with `catalogFor(X_COPY, locale)` and client components with `catalogFor(X_COPY, useLocale())` from `locale-context.tsx`.
 - Never send a raw exception message to the browser. Catch with `actionFailure(error, context, fallback)`.
+- A collection with `systemOnly` update access rejects the generic user-checked CAS path. Command-authorized writes need their scoped system-write adapter; verify a real edit after creation, as required by the agency workflow acceptance checklist.
+- An HTTP 200 can contain an application error boundary. Browser gates must check the expected content and console, not only the response status; the reported localhost error exposed this gap.
+- Loading placeholders cover unresolved data, not stable page titles, navigation or available actions. Match the final content geometry; the task loaders obscured static controls and caused avoidable layout changes.
+- Open a persisted event from the sales desk during calendar verification. Rendering an empty calendar missed a server callback passed into a client dialog; cross-boundary props must remain serializable.
+- Multi-record scheduling follows the non-transactional recovery contract in decision D-36. Check interrupted submission retry and duplicate prevention; a returned error does not itself roll back prior writes.
 
 ## Verifying a change
 
@@ -87,6 +92,8 @@ Add a test only for a bug that neither a response nor a type can reveal: removed
 ## Working in parallel
 
 Several agents may work at once in one checkout. Each task names the files it owns, and no two running tasks own the same file. Workers do not commit or push; the lead reviews and commits. Report completion once, when the task is done or blocked. Credentials, deploys and remote migrations stay with the lead.
+
+The lead starts integrated browser and API verification after the affected workers freeze their files and the compiler passes. Mid-refactor imports caused repeated temporary failures during calendar and member checks. Reproduce a reported failure with a fresh request; old server logs do not establish the current failure.
 
 A lead that delegates a refactor diffs the result against `HEAD` for removed checks, changed error messages and weakened types before committing. A delegated refactor can pass lint, typecheck and tests while dropping validation.
 

@@ -101,6 +101,7 @@ export interface Config {
     callLogs: CallLog;
     deliverables: Deliverable;
     contentItems: ContentItem;
+    scheduleItems: ScheduleItem;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -142,6 +143,7 @@ export interface Config {
     callLogs: CallLogsSelect<false> | CallLogsSelect<true>;
     deliverables: DeliverablesSelect<false> | DeliverablesSelect<true>;
     contentItems: ContentItemsSelect<false> | ContentItemsSelect<true>;
+    scheduleItems: ScheduleItemsSelect<false> | ScheduleItemsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -192,6 +194,7 @@ export interface UserAuthOperations {
 export interface User {
   id: string;
   name: string;
+  workProfile: 'sales' | 'delivery' | 'consultant';
   avatar?: string | null;
   invitationId?: string | null;
   role: 'owner' | 'manager' | 'staff';
@@ -363,6 +366,7 @@ export interface Lead {
    */
   convertedAt?: number | null;
   convertedDeal?: (string | null) | Deal;
+  intakeSubmissionId?: string | null;
   customData?:
     | {
         [k: string]: unknown;
@@ -1211,6 +1215,27 @@ export interface ContentItem {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scheduleItems".
+ */
+export interface ScheduleItem {
+  id: string;
+  kind: 'appointment' | 'callback';
+  recordType: 'lead' | 'contact';
+  recordId: string;
+  assignees?: (string | User)[] | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  startsAt: number;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  title?: string | null;
+  notes?: string | null;
+  sourceKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1368,6 +1393,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'contentItems';
         value: string | ContentItem;
+      } | null)
+    | ({
+        relationTo: 'scheduleItems';
+        value: string | ScheduleItem;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1417,6 +1446,7 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  workProfile?: T;
   avatar?: T;
   invitationId?: T;
   role?: T;
@@ -1530,6 +1560,7 @@ export interface LeadsSelect<T extends boolean = true> {
   nextActionAt?: T;
   convertedAt?: T;
   convertedDeal?: T;
+  intakeSubmissionId?: T;
   customData?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2019,6 +2050,23 @@ export interface ContentItemsSelect<T extends boolean = true> {
   publishAt?: T;
   status?: T;
   owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scheduleItems_select".
+ */
+export interface ScheduleItemsSelect<T extends boolean = true> {
+  kind?: T;
+  recordType?: T;
+  recordId?: T;
+  assignees?: T;
+  startsAt?: T;
+  status?: T;
+  title?: T;
+  notes?: T;
+  sourceKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }

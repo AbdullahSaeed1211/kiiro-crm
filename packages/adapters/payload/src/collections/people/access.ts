@@ -29,9 +29,14 @@ export const selfOnly = (field = 'id'): Access => allowPeople((actor) => ({ [fie
 const STAFF_VISIBLE_FIELDS = new Set(['name', 'email', 'avatar', 'role'])
 export const userFieldRead =
   (field: string): FieldAccess =>
-  async ({ req }) => {
+  async ({ req, id }) => {
     const actor = await resolveActor(req)
-    return actor?.active === true && (actor.role !== 'staff' || STAFF_VISIBLE_FIELDS.has(field))
+    return (
+      actor?.active === true &&
+      (actor.role !== 'staff' ||
+        STAFF_VISIBLE_FIELDS.has(field) ||
+        (field === 'workProfile' && String(actor.id) === String(id)))
+    )
   }
 
 export const peopleAccess = {

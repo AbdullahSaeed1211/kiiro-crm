@@ -78,6 +78,7 @@ export async function saveMember(deps: IdentityDeps, input: unknown): Promise<Re
   return deps.repo.updateMember(asId(id), {
     role: access.role,
     active: access.active,
+    workProfile: access.workProfile,
     groups: access.groups.map(asId),
     reportsTo: access.reportsTo === null ? null : asId(access.reportsTo),
   })

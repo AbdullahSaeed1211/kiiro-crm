@@ -12,7 +12,7 @@ export type {
   PipelineFields,
 } from './ports/records'
 export type { ArchivedRecord, CrmDeps, CrmRepository, LookupKind } from './ports/repository'
-export type { CallLogRecord } from './ports/records'
+export type { CallLogRecord, ScheduleItemRecord } from './ports/records'
 export * from './commands/public'
 export { setCustomFieldsSchema } from './schema'
 export { STANDARD_STAGE_FIELDS } from './domain/stage-requirements'
@@ -32,6 +32,7 @@ export { FOLLOW_UP_BUCKETS, groupFollowUps, type FollowUpBucket } from './domain
 export { leadRulesSchema, nextOwner, responseOverdue, ruleFor, type LeadRule } from './domain/lead-rules'
 export {
   convertLeadSchema,
+  createScheduleItemSchema,
   logCallSchema,
   createContactSchema,
   createDealSchema,
@@ -44,6 +45,7 @@ export {
   updateDealSchema,
   updateLeadSchema,
   updateOrganizationSchema,
+  updateScheduleItemSchema,
 } from './schema'
 export {
   ALL_EVENTS,

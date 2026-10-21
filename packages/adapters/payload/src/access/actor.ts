@@ -1,11 +1,59 @@
 import { asId, type Id } from '@ops/kernel'
-import type { Actor, Role } from '@ops/platform'
+import type { Actor, Role, WorkProfile } from '@ops/platform'
 import type { PayloadRequest } from 'payload'
-import { COLLECTIONS, FIELDS } from '../contracts/names'
+import { COLLECTIONS, FIELDS, RECORD_TYPES } from '../contracts/names'
 
 const ROLES: ReadonlySet<string> = new Set(['owner', 'manager', 'staff'])
+const WORK_PROFILES: ReadonlySet<string> = new Set(['sales', 'delivery', 'consultant'])
+const PROFILE_ACCESS: Readonly<
+  Record<
+    WorkProfile,
+    Readonly<{ records: readonly string[]; unlinked: readonly string[]; related?: readonly string[] }>
+  >
+> = {
+  sales: {
+    records: [
+      RECORD_TYPES.organizations,
+      RECORD_TYPES.contacts,
+      RECORD_TYPES.leads,
+      RECORD_TYPES.deals,
+      RECORD_TYPES.tasks,
+    ],
+    unlinked: [RECORD_TYPES.tasks],
+    related: [RECORD_TYPES.leads, RECORD_TYPES.contacts, RECORD_TYPES.deals],
+  },
+  delivery: {
+    records: [RECORD_TYPES.organizations, RECORD_TYPES.contacts, RECORD_TYPES.projects, RECORD_TYPES.tasks],
+    unlinked: [],
+  },
+  consultant: {
+    records: [RECORD_TYPES.organizations, RECORD_TYPES.contacts, RECORD_TYPES.projects, RECORD_TYPES.tasks],
+    unlinked: [],
+  },
+}
 const MAX_REPORT_DEPTH = 5
 const actors = new WeakMap<PayloadRequest, Promise<Actor | undefined>>()
+
+function roleOf(user: object): { readonly role: Role; readonly known: boolean } {
+  const roleValue = read(user, FIELDS.role)
+  const known = typeof roleValue === 'string' && ROLES.has(roleValue)
+  return { role: known ? (roleValue as Role) : 'staff', known }
+}
+
+function workProfileOf(user: object): WorkProfile {
+  const value = read(user, 'workProfile')
+  return typeof value === 'string' && WORK_PROFILES.has(value) ? (value as WorkProfile) : 'delivery'
+}
+
+function profilePermissions(role: Role, profile: WorkProfile) {
+  const value = role === 'staff' ? PROFILE_ACCESS[profile] : undefined
+  if (value === undefined) return {}
+  return {
+    recordTypes: value.records,
+    unlinkedRecordTypes: value.unlinked,
+    ...(value.related === undefined ? {} : { relatedRecordTypes: value.related }),
+  }
+}
 
 // Documents are read by key because the generated user type differs per app.
 function read(doc: object, key: string): unknown {
@@ -27,11 +75,18 @@ function idsOf(value: unknown): Id[] {
 export function toActor(user: object, reportIds: readonly Id[] = []): Actor | undefined {
   const id = idOf(read(user, 'id'))
   if (id === undefined) return undefined
-  const roleValue = read(user, FIELDS.role)
-  const known = typeof roleValue === 'string' && ROLES.has(roleValue)
-  const role = known ? (roleValue as Role) : 'staff'
+  const { role, known } = roleOf(user)
+  const workProfile = workProfileOf(user)
   const active = known && read(user, FIELDS.active) === true
-  return { id, role, active, groupIds: idsOf(read(user, FIELDS.groups)), reportIds }
+  return {
+    id,
+    role,
+    active,
+    workProfile,
+    ...profilePermissions(role, workProfile),
+    groupIds: idsOf(read(user, FIELDS.groups)),
+    reportIds,
+  }
 }
 
 /** Ids of users reporting to `managerId` directly or indirectly, up to five levels (spec §9.10). */

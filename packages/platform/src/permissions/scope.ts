@@ -1,6 +1,6 @@
 import type { FilterCondition, FilterNode } from '@ops/kernel'
 import type { Actor, ScopeDefinition, ScopeFilter } from '../contracts/access'
-import { isManagerUp } from './policy'
+import { workProfileAllows } from './policy'
 
 /** Filter that matches no rows, because every record has an id. */
 export const MATCH_NOTHING: FilterCondition = { field: 'id', op: 'exists', value: false }
@@ -27,11 +27,21 @@ function branches(actor: Actor, definition: ScopeDefinition): FilterNode[] {
  * and {@link MATCH_NOTHING} for inactive actors and record types without a definition.
  */
 export function createScopeFilter(definitions: Readonly<Record<string, ScopeDefinition>>): ScopeFilter {
-  return (actor, recordType) => {
-    if (!actor.active) return MATCH_NOTHING
-    if (isManagerUp(actor)) return undefined
-    const definition = definitions[recordType]
-    const nodes = definition === undefined ? [] : branches(actor, definition)
-    return nodes.length === 0 ? MATCH_NOTHING : { or: nodes }
-  }
+  return (actor, recordType) => buildScope(actor, recordType, definitions[recordType])
+}
+
+function buildScope(actor: Actor, recordType: string, definition: ScopeDefinition | undefined): FilterNode | undefined {
+  if (!actor.active) return MATCH_NOTHING
+  if (actor.role === 'owner') return undefined
+  if (actor.role === 'manager') return definition?.managerFilter
+  return staffScope(actor, recordType, definition)
+}
+
+function staffScope(actor: Actor, recordType: string, definition: ScopeDefinition | undefined): FilterNode {
+  if (!workProfileAllows(actor, { type: recordType })) return MATCH_NOTHING
+  const nodes = definition === undefined ? [] : branches(actor, definition)
+  if (nodes.length === 0) return MATCH_NOTHING
+  const scope: FilterNode = { or: nodes }
+  const filter = definition?.filter?.(actor)
+  return filter === undefined ? scope : { and: [scope, filter] }
 }

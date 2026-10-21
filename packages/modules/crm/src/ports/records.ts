@@ -97,6 +97,23 @@ export interface CallLogRecord {
   readonly updatedAt: number
 }
 
+/** A callback or client meeting attached to one visible lead/contact and assigned to workspace staff. */
+export interface ScheduleItemRecord {
+  readonly id: Id
+  readonly kind: 'appointment' | 'callback'
+  readonly recordType: 'lead' | 'contact'
+  readonly recordId: Id
+  readonly assigneeIds: readonly Id[]
+  readonly startsAt: number
+  readonly status: 'scheduled' | 'completed' | 'cancelled'
+  readonly title: string | null
+  readonly notes: string | null
+  /** Stable private key for an intake-created event or the lead's synchronized callback. */
+  readonly sourceKey: string | null
+  readonly createdAt: number
+  readonly updatedAt: number
+}
+
 /** Record type to record shape. */
 export interface CrmRecords {
   readonly organization: OrganizationRecord

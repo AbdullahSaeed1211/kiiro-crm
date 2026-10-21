@@ -39,6 +39,7 @@ export {
   setTaskDates,
   updateTask,
 } from './commands/tasks'
+export { taskResource } from './commands/task-access'
 export { TASK_REPEATS, missedPeriods, nextOccurrence, nextRunAfter, type TaskRepeat } from './domain/recurrence'
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'

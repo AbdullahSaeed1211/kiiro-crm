@@ -35,14 +35,19 @@ describe('spike access', () => {
     expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager', { active: false })))).toBe(false)
   })
 
-  it('lets managers read every task and scopes staff to assignments, groups and project membership', async () => {
-    expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager')))).toBe(true)
+  it('keeps owner-only tasks private and scopes staff to assignments, groups and project membership', async () => {
+    expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager')))).toEqual({ ownerOnly: { not_equals: true } })
     const staff = request(user('s1', 'staff', { groups: [{ id: 'g1' }] }))
     expect(await SPIKE_ACCESS.tasks.read(staff)).toEqual({
-      or: [
-        { assignees: { in: ['s1'] } },
-        { group: { in: ['g1'] } },
-        { and: [{ 'project.members': { in: ['s1'] } }, { ownerOnly: { not_equals: true } }] },
+      and: [
+        {
+          or: [
+            { assignees: { in: ['s1'] } },
+            { group: { in: ['g1'] } },
+            { and: [{ 'project.members': { in: ['s1'] } }, { ownerOnly: { not_equals: true } }] },
+          ],
+        },
+        { ownerOnly: { not_equals: true } },
       ],
     })
   })
@@ -88,8 +93,17 @@ describe('toActor', () => {
       id: '7',
       role: 'staff',
       active: true,
+      workProfile: 'delivery',
+      recordTypes: ['organization', 'contact', 'project', 'task'],
+      unlinkedRecordTypes: [],
       groupIds: ['g1', 'g2'],
       reportIds: [],
+    })
+    expect(toActor({ id: 's1', role: 'staff', active: true, workProfile: 'sales' })).toMatchObject({
+      workProfile: 'sales',
+      recordTypes: ['organization', 'contact', 'lead', 'deal', 'task'],
+      unlinkedRecordTypes: ['task'],
+      relatedRecordTypes: ['lead', 'contact', 'deal'],
     })
   })
 })

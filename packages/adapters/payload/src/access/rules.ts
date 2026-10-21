@@ -1,4 +1,4 @@
-import type { Id } from '@ops/kernel'
+import type { FilterNode, Id } from '@ops/kernel'
 import { createScopeFilter, isManagerUp, type Actor, type ScopeDefinition, type ScopeExtension } from '@ops/platform'
 import type { Access, Where } from 'payload'
 import { FIELDS, RECORD_TYPES } from '../contracts/names'
@@ -16,6 +16,26 @@ const visibleProjectTask: ScopeExtension = (actor) => ({
   and: [memberOf(`${FIELDS.project}.${FIELDS.members}`)(actor), { field: 'ownerOnly', op: 'neq', value: true }],
 })
 
+const notOwnerOnly = { field: 'ownerOnly', op: 'neq', value: true } as const
+
+function taskProfileFilter(actor: Actor): FilterNode | undefined {
+  if (actor.role !== 'staff') return undefined
+  if (actor.workProfile === 'sales')
+    return {
+      and: [
+        notOwnerOnly,
+        { field: 'project', op: 'exists' as const, value: false },
+        {
+          or: [
+            { field: 'relatedType', op: 'eq' as const, value: null },
+            { field: 'relatedType', op: 'in' as const, value: ['lead', 'contact', 'deal'] },
+          ],
+        },
+      ],
+    }
+  return notOwnerOnly
+}
+
 /** Staff scope of the spike record types (spec §9.10): project members also see the project's tasks. */
 export const SPIKE_SCOPES: Readonly<Record<string, ScopeDefinition>> = {
   [RECORD_TYPES.organizations]: { ownerField: FIELDS.owner },
@@ -24,6 +44,8 @@ export const SPIKE_SCOPES: Readonly<Record<string, ScopeDefinition>> = {
     assigneesField: FIELDS.assignees,
     groupField: FIELDS.group,
     extensions: [visibleProjectTask],
+    filter: taskProfileFilter,
+    managerFilter: notOwnerOnly,
   },
   [RECORD_TYPES.contacts]: { ownerField: FIELDS.owner },
   [RECORD_TYPES.leads]: { ownerField: FIELDS.owner, assigneesField: FIELDS.assignees },

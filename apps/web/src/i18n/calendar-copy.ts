@@ -12,6 +12,10 @@ export interface CalendarCopy {
   readonly saving: string
   readonly failed: string
   readonly hint: string
+  readonly callback: string
+  readonly appointment: string
+  readonly lead: string
+  readonly dueDate: string
 }
 
 export const CALENDAR_COPY: Readonly<Record<Locale, CalendarCopy>> = {
@@ -25,7 +29,12 @@ export const CALENDAR_COPY: Readonly<Record<Locale, CalendarCopy>> = {
     saving: 'Saving…',
     failed: 'Could not save. Your details are still here. Try again.',
     hint: 'Right-click a day or use + to add a task. Click a task to edit its details and assignees.',
-    capped: 'This month has more tasks than fit here. The first {count} are shown. Use the Tasks page to see them all.',
+    callback: 'Callback',
+    appointment: 'Appointment',
+    lead: 'Lead',
+    dueDate: 'Due date',
+    capped:
+      'Some tasks are omitted by the calendar limit; {count} tasks are loaded. Appointments and callbacks are shown by scheduled time.',
   },
   es: {
     add: 'Añadir tarea',
@@ -37,7 +46,11 @@ export const CALENDAR_COPY: Readonly<Record<Locale, CalendarCopy>> = {
     saving: 'Guardando…',
     failed: 'No se pudo guardar. Tus datos siguen aquí. Inténtalo de nuevo.',
     hint: 'Haz clic derecho en un día o usa + para añadir una tarea. Haz clic en una tarea para editar sus detalles y responsables.',
+    callback: 'Seguimiento',
+    appointment: 'Cita',
+    lead: 'Prospecto',
+    dueDate: 'Fecha de vencimiento',
     capped:
-      'Este mes tiene más tareas de las que caben aquí. Se muestran las primeras {count}. Usa la página de Tareas para verlas todas.',
+      'Algunas tareas se omiten por el límite del calendario; se cargaron {count} tareas. Las citas y seguimientos se muestran por su hora programada.',
   },
 }

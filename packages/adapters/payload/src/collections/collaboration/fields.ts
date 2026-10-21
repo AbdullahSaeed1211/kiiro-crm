@@ -69,7 +69,7 @@ export async function canReadParentReference(
       collection: payloadCollection(collection),
       id: reference.recordId,
       depth: 0,
-      overrideAccess: isManagerUp(actor),
+      overrideAccess: false,
       user: req.user,
       req,
     })

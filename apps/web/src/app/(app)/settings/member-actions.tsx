@@ -8,6 +8,7 @@ import type { MemberAction } from './form-utils'
 import { Button } from '@ops/ui/components/ui/button'
 import { settingText } from '../../../i18n/settings-form-copy'
 import { useLocale } from '../../../i18n/locale-context'
+import type { Role, WorkProfile } from '@ops/platform'
 
 function ReportsToSelect({
   value,
@@ -58,8 +59,61 @@ function SaveAccessButton({ pending, onSave }: Readonly<{ pending: boolean; onSa
   )
 }
 
+function WorkProfileSelect({
+  value,
+  pending,
+  onChange,
+}: Readonly<{ value: WorkProfile; pending: boolean; onChange: (value: WorkProfile) => void }>) {
+  const locale = useLocale()
+  return (
+    <label className="grid gap-1">
+      <span className="font-medium">{settingText('Work area', locale)}</span>
+      <NativeSelect
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value as WorkProfile)
+        }}
+        disabled={pending}
+      >
+        <option value="sales">{settingText('Sales', locale)}</option>
+        <option value="delivery">{settingText('Delivery', locale)}</option>
+        <option value="consultant">{settingText('Consultant', locale)}</option>
+      </NativeSelect>
+    </label>
+  )
+}
+
+function RoleSelect({
+  value,
+  roles,
+  pending,
+  onChange,
+}: Readonly<{ value: string; roles: readonly Role[]; pending: boolean; onChange: (value: string) => void }>) {
+  const locale = useLocale()
+  return (
+    <label className="grid gap-1">
+      <span className="font-medium">{settingText('Role', locale)}</span>
+      <NativeSelect
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value)
+        }}
+        disabled={pending || roles.length < 2}
+      >
+        {roles.map((role) => (
+          <option key={role} value={role}>
+            {settingText(role === 'manager' ? 'Admin' : role, locale)}
+          </option>
+        ))}
+      </NativeSelect>
+    </label>
+  )
+}
+
 function MemberAccessForm({
   role,
+  workProfile,
+  roles,
   active,
   selectedGroups,
   reportsTo,
@@ -68,12 +122,15 @@ function MemberAccessForm({
   pending,
   message,
   onRoleChange,
+  onWorkProfileChange,
   onActiveChange,
   onGroupsChange,
   onReportsToChange,
   onSave,
 }: Readonly<{
   role: string
+  workProfile: WorkProfile
+  roles: readonly Role[]
   active: boolean
   selectedGroups: string[]
   reportsTo: string
@@ -82,6 +139,7 @@ function MemberAccessForm({
   pending: boolean
   message: string | undefined
   onRoleChange: (value: string) => void
+  onWorkProfileChange: (value: WorkProfile) => void
   onActiveChange: (checked: boolean) => void
   onGroupsChange: (values: string[]) => void
   onReportsToChange: (value: string) => void
@@ -90,20 +148,8 @@ function MemberAccessForm({
   const locale = useLocale()
   return (
     <div className="mt-3 grid gap-3 rounded-md border bg-muted/20 p-3 text-xs">
-      <label className="grid gap-1">
-        <span className="font-medium">{settingText('Role', locale)}</span>
-        <NativeSelect
-          value={role}
-          onChange={(event) => {
-            onRoleChange(event.target.value)
-          }}
-          disabled={pending}
-        >
-          <option value="staff">{settingText('Staff', locale)}</option>
-          <option value="manager">{settingText('Manager', locale)}</option>
-          <option value="owner">{settingText('Owner', locale)}</option>
-        </NativeSelect>
-      </label>
+      <RoleSelect value={role} roles={roles} pending={pending} onChange={onRoleChange} />
+      <WorkProfileSelect value={workProfile} pending={pending} onChange={onWorkProfileChange} />
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -139,14 +185,24 @@ export function MemberActions({
   groups,
   reports,
   action,
+  roles,
 }: Readonly<{
-  member: { id: string; role: string; active: boolean; groups: readonly string[]; reportsTo: string }
+  member: {
+    id: string
+    role: string
+    active: boolean
+    workProfile: WorkProfile
+    groups: readonly string[]
+    reportsTo: string
+  }
   groups: readonly { id: string; name: string }[]
   reports: readonly { id: string; name: string }[]
   action: MemberAction
+  roles: readonly Role[]
 }>) {
   const locale = useLocale()
   const [role, setRole] = useState(member.role)
+  const [workProfile, setWorkProfile] = useState(member.workProfile)
   const [active, setActive] = useState(member.active)
   const [selectedGroups, setSelectedGroups] = useState<string[]>([...member.groups])
   const [reportsTo, setReportsTo] = useState(member.reportsTo)
@@ -157,7 +213,7 @@ export function MemberActions({
     setPending(true)
     setMessage(undefined)
     try {
-      const result = await action({ id: member.id, role, active, groups: selectedGroups, reportsTo })
+      const result = await action({ id: member.id, role, workProfile, active, groups: selectedGroups, reportsTo })
       setMessage(result.ok ? settingText('Access saved.', locale) : settingText(result.error.message, locale))
     } catch (error) {
       setMessage(
@@ -178,6 +234,8 @@ export function MemberActions({
       </summary>
       <MemberAccessForm
         role={role}
+        workProfile={workProfile}
+        roles={roles}
         active={active}
         selectedGroups={selectedGroups}
         reportsTo={reportsTo}
@@ -186,6 +244,7 @@ export function MemberActions({
         pending={pending}
         message={message === undefined ? undefined : settingText(message, locale)}
         onRoleChange={setRole}
+        onWorkProfileChange={setWorkProfile}
         onActiveChange={setActive}
         onGroupsChange={setSelectedGroups}
         onReportsToChange={setReportsTo}

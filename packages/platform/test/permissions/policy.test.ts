@@ -53,6 +53,49 @@ describe('can', () => {
   })
 })
 
+describe('profile access', () => {
+  it('limits sales staff to sales records and standalone tasks', () => {
+    const sales = actor('staff', {
+      workProfile: 'sales',
+      recordTypes: ['organization', 'contact', 'lead', 'deal', 'task'],
+      unlinkedRecordTypes: ['task'],
+      relatedRecordTypes: ['lead', 'contact', 'deal'],
+    })
+    expect(can(sales, 'read', { type: 'lead', ownerId: sales.id })).toBe(true)
+    expect(can(sales, 'create', { type: 'deal' })).toBe(true)
+    expect(can(sales, 'read', { type: 'project' })).toBe(false)
+    expect(can(sales, 'create', { type: 'task', parentId: asId('project-1') })).toBe(false)
+    expect(can(sales, 'create', { type: 'task', parentId: null })).toBe(true)
+    expect(can(sales, 'create', { type: 'task', parentId: null, relatedRecordType: 'unknown' })).toBe(false)
+    expect(can(sales, 'create', { type: 'task', parentId: null, relatedRecordType: 'lead' })).toBe(true)
+  })
+
+  it('limits delivery and consultant staff to delivery records while preserving agency-wide manager access', () => {
+    const delivery = actor('staff', {
+      workProfile: 'delivery',
+      recordTypes: ['organization', 'contact', 'project', 'task'],
+    })
+    const consultant = actor('staff', {
+      workProfile: 'consultant',
+      recordTypes: ['organization', 'contact', 'project', 'task'],
+    })
+    expect(can(delivery, 'read', { type: 'project', ownerId: delivery.id })).toBe(true)
+    expect(can(delivery, 'read', { type: 'contact', ownerId: delivery.id })).toBe(true)
+    expect(can(delivery, 'read', { type: 'lead' })).toBe(false)
+    expect(can(consultant, 'read', { type: 'task', assigneeIds: [consultant.id] })).toBe(true)
+    expect(can(consultant, 'read', { type: 'deal' })).toBe(false)
+    expect(can(actor('manager'), 'read', { type: 'deal' })).toBe(true)
+    expect(can(actor('owner'), 'read', { type: 'project' })).toBe(true)
+  })
+
+  it('keeps owner-only tasks exclusive to owners even when a manager is assigned', () => {
+    const privateTask: AccessResource = { type: 'task', assigneeIds: [asId('manager-1')], ownerOnly: true }
+    expect(can(actor('manager'), 'read', privateTask)).toBe(false)
+    expect(can(actor('manager'), 'update', privateTask)).toBe(false)
+    expect(can(actor('owner'), 'read', privateTask)).toBe(true)
+  })
+})
+
 describe('inScope', () => {
   const staff = actor('staff', { reportIds: [asId('report-1')] })
 
