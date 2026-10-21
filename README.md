@@ -59,6 +59,20 @@ Taken from the demo workspace, where every name, company and number is fictional
 | **Data**            | CSV import of organizations, contacts, leads and deals with a dry-run check and per-row report, CSV export of organizations, contacts, leads and deals, and an archive with restore.                                                                                                          |
 | **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                                                  |
 
+## UX standard
+
+Every screen must make the agency's next action obvious. This is an acceptance requirement for new and changed UI, not a claim that every existing screen meets it.
+
+- Give each screen one clear primary action, with plain labels and useful defaults.
+- Show only the information needed for the current task. Put advanced controls under a clearly labelled “More” menu or in details.
+- Ask for fields only when they are needed. Keep optional inputs collapsed until relevant, and avoid redundant confirmations for reversible actions.
+- Show immediate pending, success and failure feedback. Preserve entered data on failure and prevent duplicate submissions.
+- Keep navigation, titles and available actions stable while data loads. Reserve space for changing content instead of replacing static UI with skeletons.
+- Keep common actions usable on a phone and by keyboard. Dialogs must close predictably and return focus to their trigger.
+- Preserve permissions, required validation and audit data when simplifying presentation. Never hide an error or silently treat a failed save as success.
+
+For attendance, put **Check in / Check out** first and history below. Keep earlier-time reporting optional; show audit timestamps in record details rather than crowding the main view. This is the target presentation; the stored timestamp and access rules remain in [spec §10.2](docs/spec.md#102-work-opsmodule-work).
+
 ## Agency pilot priorities
 
 The next acceptance pass focuses on daily agency work. These are verification and refinement priorities, not a claim that every workflow is complete:

@@ -76,6 +76,8 @@ Each one caused a real defect here.
 
 ## Verifying a change
 
+Every UI change must satisfy the [README UX standard](README.md#ux-standard). The owner's simplicity requirement applies across the app, including attendance. Check the primary action, progressive disclosure, loading stability, mobile behavior and keyboard interactions before calling a screen complete. Record existing violations in the UX backlog rather than weakening the standard or removing validation, permissions or audit data.
+
 Verify behavior against the running app, not with a new test file. The `verify-change` skill has the full procedure; in short:
 
 ```sh
