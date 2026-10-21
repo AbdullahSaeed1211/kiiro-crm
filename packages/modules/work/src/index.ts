@@ -63,3 +63,5 @@ export {
   updateTaskSchema,
 } from './schema'
 export { playbookPlan, playbookSchema, playbooksSchema, type Playbook, type WonDeal } from './domain/playbooks'
+export { checkIn, checkOut, listAttendance, attendancePunchSchema, attendanceCheckoutSchema } from './attendance'
+export type { AttendanceRecord, AttendanceRepository, AttendanceDeps } from './attendance'

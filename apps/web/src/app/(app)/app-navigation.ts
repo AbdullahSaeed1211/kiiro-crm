@@ -4,6 +4,7 @@ import {
   Building2,
   ChartNoAxesCombined,
   CircleCheckBig,
+  Clock,
   Contact,
   FolderKanban,
   Handshake,
@@ -22,6 +23,7 @@ type NavLink = readonly [key: string, href: string, icon: LucideIcon]
 const GENERAL: readonly NavLink[] = [
   ['dashboard', '/', LayoutDashboard],
   ['myTasks', '/my-tasks', CircleCheckBig],
+  ['attendance', '/attendance', Clock],
 ]
 const SALES_DESK: NavLink = ['salesWorkspace', '/sales', PhoneCall]
 const CRM: readonly NavLink[] = [

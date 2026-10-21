@@ -708,6 +708,8 @@ Invariants: personal tasks (no project, no related record) allowed; subtasks inh
 Commands: `createProject`, `updateProject`, `addProjectMember`, `removeProjectMember`, `createTask`, `updateTask`, `moveTask` (stage + rank), `completeTask`, `reopenTask`, `setTaskDates`.
 Query `myTasksBuckets(actor, timeZone, now)` → `{ overdue, today, next7Days, later, noDueDate }` (non-terminal stages only).
 
+Attendance at `/attendance` records self check-in and check-out. Each session retains separate employee-reported and server-received timestamps: `reportedCheckInAt`, `submittedAt`, `reportedCheckOutAt` and `checkOutSubmittedAt`, all Unix UTC milliseconds. The authenticated session determines the employee; clients cannot supply identity or receipt timestamps. Staff see their own records; owners and managers can also view the team. Only the employee can close their own session. One open session per employee is enforced by a unique database key, and repeated checkout preserves the original receipt time. Original timestamps cannot be edited. Reported times cannot be in the future, more than 30 days old, before the previous session ended, or before the current check-in when checking out. Backdating by more than one minute requires a note. The browser displays local time. Shift schedules, automatic late/absent labels, geolocation and payroll calculations are not defined.
+
 ### 10.3 Intake (`@ops/module-intake`)
 Custom forms are tenant-owned input surfaces for the agency's own sales and for managed-client intake. Owners and managers must be able to create, preview, publish, disable and edit forms without a code change. A form definition must control its questions, labels, field types, required flags, display order and validation. Each answer maps to a built-in lead field, a tenant-defined lead field, or a retained submission answer. Form settings choose the lead source, owner, assignees and notification recipients from tenant data. Every accepted submission retains its original answers and the created lead reference, even after the form definition changes. Published browser forms keep the origin, Turnstile, size and deduplication protections below.
 
@@ -862,6 +864,8 @@ AND scope filter, ordered by `updatedAt` desc, 5 results per type, 20 total. D1 
 
 
 ### 12.3 Product API
+Attendance uses `GET /api/v1/attendance` for personal history, `GET /api/v1/attendance?view=team` for owners and managers, `POST /api/v1/attendance` for check-in and `POST /api/v1/attendance/check-out` for check-out. Both writes accept optional `reportedAt` (Unix milliseconds) and `note`; check-out also requires `sessionId`. History returns the latest 100 sessions.
+
 The product API exposes module use cases over JSON for scripts, integrations and verification. The contract registry `apps/web/src/server/api/contracts.ts` is the list of endpoints: each entry gives the method, path, summary, success status and body schema, and `GET /api/v1` serves it with every body as JSON Schema. Today it covers tasks (`/api/v1/tasks`: list, get, create, update, move, complete, reopen, dates) and projects (`/api/v1/projects`: list, get, create, update, add and remove members).
 
 - Authentication is the Payload session cookie from `POST /api/v1/auth/login`; without an active session every endpoint returns 401.

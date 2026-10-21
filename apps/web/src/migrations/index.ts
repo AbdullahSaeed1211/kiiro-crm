@@ -28,6 +28,8 @@ import * as migration_20261020_205729_agency_content_drafts from './20261020_205
 import * as migration_20261020_213109_sales_schedules_profiles from './20261020_213109_sales_schedules_profiles';
 import * as migration_20261020_213831_intake_lead_recovery from './20261020_213831_intake_lead_recovery';
 
+import * as migration_20261022_090000_attendance from './20261022_090000_attendance';
+
 export const migrations = [
   {
     up: migration_20260913_131654_initial.up,
@@ -174,4 +176,5 @@ export const migrations = [
     down: migration_20261020_213831_intake_lead_recovery.down,
     name: '20261020_213831_intake_lead_recovery'
   },
+  { up: migration_20261022_090000_attendance.up, down: migration_20261022_090000_attendance.down, name: '20261022_090000_attendance' },
 ];

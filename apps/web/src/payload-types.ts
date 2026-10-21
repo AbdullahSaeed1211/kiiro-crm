@@ -93,6 +93,7 @@ export interface Config {
     emailMessages: EmailMessage;
     jobRuns: JobRun;
     timeEntries: TimeEntry;
+    attendance: Attendance;
     webhookDeliveries: WebhookDelivery;
     demoManifests: DemoManifest;
     auditEvents: AuditEvent;
@@ -135,6 +136,7 @@ export interface Config {
     emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
     jobRuns: JobRunsSelect<false> | JobRunsSelect<true>;
     timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
+    attendance: AttendanceSelect<false> | AttendanceSelect<true>;
     webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
     demoManifests: DemoManifestsSelect<false> | DemoManifestsSelect<true>;
     auditEvents: AuditEventsSelect<false> | AuditEventsSelect<true>;
@@ -1012,6 +1014,35 @@ export interface TimeEntry {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "attendance".
+ */
+export interface Attendance {
+  id: string;
+  user: string | User;
+  openKey?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  reportedCheckInAt: number;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  submittedAt: number;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  reportedCheckOutAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  checkOutSubmittedAt?: number | null;
+  note?: string | null;
+  checkOutNote?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "webhookDeliveries".
  */
 export interface WebhookDelivery {
@@ -1361,6 +1392,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'timeEntries';
         value: string | TimeEntry;
+      } | null)
+    | ({
+        relationTo: 'attendance';
+        value: string | Attendance;
       } | null)
     | ({
         relationTo: 'webhookDeliveries';
@@ -1917,6 +1952,22 @@ export interface TimeEntriesSelect<T extends boolean = true> {
   minutes?: T;
   day?: T;
   note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "attendance_select".
+ */
+export interface AttendanceSelect<T extends boolean = true> {
+  user?: T;
+  openKey?: T;
+  reportedCheckInAt?: T;
+  submittedAt?: T;
+  reportedCheckOutAt?: T;
+  checkOutSubmittedAt?: T;
+  note?: T;
+  checkOutNote?: T;
   updatedAt?: T;
   createdAt?: T;
 }

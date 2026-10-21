@@ -22,11 +22,13 @@ import { BILLING_CONTRACTS } from './contracts-billing'
 import { CRM_CONTRACTS } from './contracts-crm'
 import { EXPORT_CONTRACTS } from './contracts-export'
 import { EXTRA_CONTRACTS, listQuery } from './contracts-extra'
+import { ATTENDANCE_CONTRACTS } from './contracts-attendance'
 
 /** One endpoint of the product API: the single source for its route, its body validation and `GET /api/v1`. */
 
 /** The product API, keyed by a stable contract id. */
 const API_CONTRACTS = {
+  ...ATTENDANCE_CONTRACTS,
   'tasks.list': {
     method: 'GET',
     path: '/api/v1/tasks',

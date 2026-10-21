@@ -105,6 +105,10 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
     read: allow((actor) => isManagerUp(actor) || { user: { equals: actor.id } }),
     ...systemWrites,
   },
+  [COLLECTIONS.attendance]: {
+    read: allow((actor) => isManagerUp(actor) || { user: { equals: actor.id } }),
+    ...systemWrites,
+  },
   [COLLECTIONS.intakeForms]: { read: managerUp, ...managedByLeads },
   [COLLECTIONS.intakeSubmissions]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.contacts]: scopedRecord(RECORD_TYPES.contacts),

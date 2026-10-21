@@ -22,6 +22,7 @@ export const COLLECTIONS = {
   lostReasons: 'lostReasons',
   stageTransitions: 'stageTransitions',
   timeEntries: 'timeEntries',
+  attendance: 'attendance',
   webhookDeliveries: 'webhookDeliveries',
   demoManifests: 'demoManifests',
   campaignQueue: 'campaignQueue',
