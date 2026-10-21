@@ -40,6 +40,12 @@ The existing database integration suite passed eighteen cases, including a concu
 
 Fresh local API checks confirmed manager edits to staff work profiles, denied manager role promotion and denied staff self-escalation. Sales excluded project delivery; delivery and consultant profiles excluded leads and deals. An unrelated staff task and unassigned sales events returned not found. Shared project membership still permits reading other assignees' tasks in that project; personal calendars narrow tasks to the signed-in person. Temporary profile changes were restored and read back.
 
+### Production release observed, 2026-10-22
+
+Commit `ca12c5b` and tag `v0.10.1` are pushed. The Mirch tenant deployment completed with health, login-page, R2 and email-acceptance smoke checks passing. The live health endpoint reported version `v0.10.1` and migration `20261020_213831_intake_lead_recovery`. No database reset was performed.
+
+In the existing authenticated production browser session, the calendar rendered its full task-title and due-date preview, crowded days opened a More popover, and the sales desk rendered without captured console errors. The outbound form's booking answer now maps to `appointmentAt` and its callback answer to `nextActionAt`; both question-specific timezones remained `America/New_York` after reload. Historical custom-field values were preserved, not backfilled into new events. Production timing measurements and acceptance of all fourteen daily-work rows remain separate work; this release does not establish those outcomes.
+
 ### Daily work acceptance
 
 All rows are pending final acceptance. Local source files and passing checks are evidence of implementation, not evidence of deployment.
