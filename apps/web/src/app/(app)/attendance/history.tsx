@@ -6,27 +6,32 @@ import { buttonVariants } from '@ops/ui/components/ui/button'
 import { DataTable } from '@ops/ui/composites/DataTable'
 import type { AttendanceCopy } from '@/i18n/attendance-copy'
 
-export function attendanceTime(value: number | null, locale: string) {
+export function attendanceTime(value: number | null, { locale, zone }: { locale: string; zone: string }) {
   return value === null ? (
     '—'
   ) : (
-    <time dateTime={new Date(value).toISOString()} title={String(value)} suppressHydrationWarning>
-      {new Date(value).toLocaleString(locale)}
+    <time dateTime={new Date(value).toISOString()} title={String(value)}>
+      {new Date(value).toLocaleString(locale, { timeZone: zone })}
     </time>
   )
 }
 function attendanceRow(
   r: AttendanceRecord,
-  { names, copy, locale }: { names: Readonly<Record<string, string>>; copy: AttendanceCopy; locale: string },
+  {
+    names,
+    copy,
+    locale,
+    zone,
+  }: { names: Readonly<Record<string, string>>; copy: AttendanceCopy; locale: string; zone: string },
 ) {
   return {
     id: r.id,
     cells: {
       person: names[r.userId] ?? copy.person,
-      started: attendanceTime(r.reportedCheckInAt, locale),
-      received: attendanceTime(r.submittedAt, locale),
-      ended: r.reportedCheckOutAt === null ? copy.open : attendanceTime(r.reportedCheckOutAt, locale),
-      endReceived: attendanceTime(r.checkOutSubmittedAt, locale),
+      started: attendanceTime(r.reportedCheckInAt, { locale, zone }),
+      received: attendanceTime(r.submittedAt, { locale, zone }),
+      ended: r.reportedCheckOutAt === null ? copy.open : attendanceTime(r.reportedCheckOutAt, { locale, zone }),
+      endReceived: attendanceTime(r.checkOutSubmittedAt, { locale, zone }),
       hours:
         r.reportedCheckOutAt === null ? '—' : ((r.reportedCheckOutAt - r.reportedCheckInAt) / 3_600_000).toFixed(2),
       note: [r.note, r.checkOutNote].filter(Boolean).join(' · ') || '—',
@@ -40,6 +45,7 @@ export function AttendanceHistory({
   admin,
   copy,
   locale,
+  zone,
 }: Readonly<{
   records: readonly AttendanceRecord[]
   names: Readonly<Record<string, string>>
@@ -47,6 +53,7 @@ export function AttendanceHistory({
   admin: boolean
   copy: AttendanceCopy
   locale: string
+  zone: string
 }>) {
   const columns = [
     { id: 'person', header: copy.person },
@@ -57,7 +64,7 @@ export function AttendanceHistory({
     { id: 'hours', header: copy.hours, numeric: true },
     { id: 'note', header: copy.note },
   ]
-  const rows = records.map((r) => attendanceRow(r, { names, copy, locale }))
+  const rows = records.map((r) => attendanceRow(r, { names, copy, locale, zone }))
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
       <Link href="/attendance" className={buttonVariants({ variant: team ? 'ghost' : 'secondary', size: 'sm' })}>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useSyncExternalStore } from 'react'
 import type { AttendanceRecord } from '@ops/module-work'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
@@ -9,16 +10,25 @@ import { ATTENDANCE_COPY, type AttendanceCopy } from '@/i18n/attendance-copy'
 import { usePunch } from './use-punch'
 import { AttendanceHistory, attendanceTime } from './history'
 
-function AttendancePunch({ open, copy }: Readonly<{ open: AttendanceRecord | null; copy: AttendanceCopy }>) {
+const subscribeZone = () => () => undefined
+const browserZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+const serverZone = () => 'UTC'
+
+function AttendancePunch({
+  open,
+  copy,
+  zone,
+}: Readonly<{ open: AttendanceRecord | null; copy: AttendanceCopy; zone: string }>) {
   const locale = useLocale(),
     punch = usePunch(open, copy)
-  const zone = typeof window === 'undefined' ? '' : Intl.DateTimeFormat().resolvedOptions().timeZone
   return (
     <section className="grid max-w-xl gap-4 rounded-xl border bg-card p-5" aria-label={copy.mine}>
       <div>
         <h2 className="font-medium">{open === null ? copy.away : copy.working}</h2>
         {open === null ? null : (
-          <p className="mt-1 text-sm text-muted-foreground">{attendanceTime(open.reportedCheckInAt, locale)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {attendanceTime(open.reportedCheckInAt, { locale, zone })}
+          </p>
         )}
       </div>
       <label className="flex min-h-8 items-center gap-2 text-sm">
@@ -56,7 +66,7 @@ function AttendancePunch({ open, copy }: Readonly<{ open: AttendanceRecord | nul
           </label>
         </div>
       ) : null}
-      <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+      <p className="text-xs text-muted-foreground">
         {copy.zone} {zone}
       </p>
       <label className="grid gap-1 text-sm">
@@ -94,15 +104,16 @@ export function AttendanceWorkspace(
 ) {
   const locale = useLocale(),
     copy = ATTENDANCE_COPY[locale]
+  const zone = useSyncExternalStore(subscribeZone, browserZone, serverZone)
   return (
     <div className="grid gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{copy.title}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{copy.description}</p>
       </header>
-      <AttendancePunch open={props.open} copy={copy} />
+      <AttendancePunch open={props.open} copy={copy} zone={zone} />
       <p className="text-xs text-muted-foreground">{copy.audit}</p>
-      <AttendanceHistory {...props} copy={copy} locale={locale} />
+      <AttendanceHistory {...props} copy={copy} locale={locale} zone={zone} />
     </div>
   )
 }
