@@ -213,7 +213,7 @@ function ContentCalendarBody({
         ) : null}
         <CalendarMonth
           year={year}
-          month={month}
+          month={month - 1}
           events={events}
           locale={locale === 'es' ? 'es-ES' : 'en-US'}
           weekStartsOn={weekStartsOn}

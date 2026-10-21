@@ -54,6 +54,7 @@ export default async function ContentCalendarPage({
             <p className="mt-1 text-sm text-muted-foreground">{copy.contentDescription}</p>
           </div>
           <ContentCalendarView
+            key={`${String(selectedYear)}-${String(selectedMonth)}-${selectedProjectId}`}
             initialItems={items}
             projects={model.projects.map(({ id, name }) => ({ id, name }))}
             selectedProjectId={selectedProjectId}
