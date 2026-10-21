@@ -22,7 +22,7 @@ ops-platform gives an agency or service team one place to win work and deliver i
 
 It is **white-label by construction**. No tenant is the product: names, domains, colours and people live in one file per customer (`tenants/<slug>.jsonc`) and in that customer's own settings. Every tenant runs as its own Cloudflare Worker with its own D1 database and R2 bucket, so there are no shared rows and no cross-tenant queries.
 
-The first tenant, Mirch Media, runs in production. The authoritative product specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
+The first tenant, Mirch Media, runs at [crm.mirchmedia.com](https://crm.mirchmedia.com/). Sign in at [/login](https://crm.mirchmedia.com/login); [/api/v1/health](https://crm.mirchmedia.com/api/v1/health) reports the deployed version and migration. The authoritative product specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
 
 ## Screenshots
 
@@ -44,19 +44,31 @@ Taken from the demo workspace, where every name, company and number is fictional
 
 ## What it does
 
-| Area                | Capabilities                                                                                                                                                                                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a hosted form builder with a public page and embed code; a lead-assignment rule that hands new leads to people in turn. |
-| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                                               |
-| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal.                          |
-| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                                         |
-| **Work**            | Tasks with a table, board, calendar and a timeline coloured by stage; projects with members and progress; subtasks; a mobile layout throughout.                                                                                                                         |
-| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                                               |
-| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                                                  |
-| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                                          |
-| **Reporting**       | Figures with owner breakdowns, and pipeline charts: open pipeline, revenue won per month, win rate, deals and leads by stage, lead sources.                                                                                                                             |
-| **Data**            | CSV import of organizations, contacts, leads and deals with a dry-run check and per-row report, CSV export of organizations, contacts, leads and deals, and an archive with restore.                                                                                    |
-| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                            |
+| Area                | Capabilities                                                                                                                                                                                                                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a hosted form builder with a public page and embed code; a lead-assignment rule that hands new leads to people in turn.                       |
+| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                                                                     |
+| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal.                                                |
+| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                                                               |
+| **Work**            | Tasks with a table, board, calendar and a timeline coloured by stage; projects with members and progress; subtasks; a mobile layout throughout.                                                                                                                                               |
+| **Attendance**      | Self check-in/out at `/attendance`, personal history and an owner/manager team view. Employee-reported and server-received times are stored separately as Unix milliseconds and displayed in the employee's local timezone. Rules live in [spec §10.2](docs/spec.md#102-work-opsmodule-work). |
+| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                                                                     |
+| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                                                                        |
+| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                                                                |
+| **Reporting**       | Figures with owner breakdowns, and pipeline charts: open pipeline, revenue won per month, win rate, deals and leads by stage, lead sources.                                                                                                                                                   |
+| **Data**            | CSV import of organizations, contacts, leads and deals with a dry-run check and per-row report, CSV export of organizations, contacts, leads and deals, and an archive with restore.                                                                                                          |
+| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                                                  |
+
+## Agency pilot priorities
+
+The next acceptance pass focuses on daily agency work. These are verification and refinement priorities, not a claim that every workflow is complete:
+
+1. Walk through each staff role. Confirm assigned clients, tasks and personal calendars are visible, and unrelated restricted work stays hidden.
+2. Validate the content workflow from work orders through design delivery, review and approval, then publishing in GoHighLevel. For Mirch Media, work orders are supplied by the 23rd and designs are due by the 3rd of the following month. Keep Drive assets as links; do not infer designer deadlines from historical publishing dates.
+3. Refine the Today screen around overdue work, upcoming deliveries, callbacks and approvals, with a clear next action for each item.
+4. Configure actual working hours and shift timezones before adding automatic late/absent labels or missed-checkout reminders. Unix timestamps define storage, not an employee's shift.
+
+Attendance is available at [/attendance](https://crm.mirchmedia.com/attendance). Automatic shift-based attendance rules remain undefined; [spec §10.2](docs/spec.md#102-work-opsmodule-work) owns the attendance contract. The broader engineering work is tracked in the [roadmap](docs/roadmap.md) and [backlogs](docs/backlog/).
 
 ## Architecture
 
