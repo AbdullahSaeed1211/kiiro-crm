@@ -44,13 +44,13 @@ export function ProjectRetainerControl({
         />
         {spanish ? 'Proyecto de retención' : 'Retainer project'}
       </label>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         {spanish
           ? 'Incluye este proyecto en los indicadores de entrega de retención. El presupuesto no se registra aquí.'
           : 'Include this project in retainer delivery figures. Budget is not recorded here.'}
       </p>
       {error === undefined ? null : (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}

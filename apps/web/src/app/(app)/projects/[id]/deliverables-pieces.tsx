@@ -63,7 +63,7 @@ function DeliverableDetails({
   return (
     <div>
       <h3 className="font-medium">{item.title}</h3>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         {statusLabel(item, copy)}
         {item.ownerName ? ` · ${item.ownerName}` : ''}
       </p>
@@ -86,7 +86,7 @@ function DeliverableDetails({
         </a>
       ) : null}
       {item.respondedAt !== null ? (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           {copy.responseBy}: {item.responderName ?? ''} · {responseAt}
         </p>
       ) : null}

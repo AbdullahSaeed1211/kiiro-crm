@@ -150,7 +150,7 @@ function ActivationControl({
 function PauseNote({ enabled }: Readonly<{ enabled: boolean }>) {
   const copy = catalogFor(MONTHLY_DESIGN_COPY, useLocale())
   if (enabled) return null
-  return <p className="-mt-3 text-xs text-muted-foreground">{copy.pauseNote}</p>
+  return <p className="-mt-3 text-sm text-muted-foreground">{copy.pauseNote}</p>
 }
 
 function TimingFields({
@@ -183,7 +183,7 @@ function TimingFields({
             onChange((current) => ({ ...current, dueDay }))
           }}
         />
-        <p className="text-xs text-muted-foreground sm:col-span-2">{copy.monthEndNote}</p>
+        <p className="text-sm text-muted-foreground sm:col-span-2">{copy.monthEndNote}</p>
       </div>
     </details>
   )
