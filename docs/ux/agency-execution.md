@@ -75,7 +75,7 @@ The deployment dry run targets only Mirch. GitHub repository and production-envi
 
 Full write journeys ran only against local fixture accounts. Production data was queried read-only for provenance and account existence. Successful deployment and local acceptance do not establish complete authenticated production UX acceptance.
 
-## Next release acceptance
+## Scoped workbench acceptance
 
 The Today, Agenda and content packages are frozen for integration. Eight selected Playwright journeys passed across desktop Chromium and phone WebKit: core layouts, scoped Agenda/task-panel return, Today Mine/Team drilldowns and content editing with discard protection. The content journey reloads the record and confirms its exact publication timestamp is unchanged after a title edit. New captures require an explicit project rather than silently selecting the first client project.
 
@@ -83,4 +83,15 @@ Recurring task successors preserve `ownerOnly`. A local API reproduction exposed
 
 All 382 unit cases and 18 database integration cases passed. Formatting, typecheck, lint, dependency boundaries, unused-code, duplication threshold, brand, vocabulary, documentation, tenant isolation, STE and i18n checks passed. The additional formatter audit exposed seven pre-existing hardcoded display locales outside this package; the content editor uses the tenant formatter, and the calendar ISO-key formatter is explicitly classified as non-display. These remaining audit findings are not closed by this release.
 
-Production deployment of these packages remains pending until the pushed source, release tag and smoke result are recorded below. The earlier production authentication limitation still applies.
+These packages are deployed as `v0.10.6`. The earlier production authentication limitation still applies. The package rows above distinguish local UX acceptance from authenticated production acceptance.
+
+| Field                   | Observed result                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| Pushed source and tag   | `858f3843c6e56660ad3586d2ead167213f6710a4` on `origin/main`; pushed tag `v0.10.6` points to that source |
+| Release command         | `OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag v0.10.6 --execute`, using existing operator credentials     |
+| Build and deploy        | OpenNext production build and size check passed; deployment exited 0                                    |
+| Smoke results           | Health 200, login 200, authenticated R2 put/get/delete passed, email accepted                           |
+| Live health             | Version `v0.10.6`, migration `20261022_090000_attendance`                                               |
+| Active Worker           | `6ebd211a-63ae-4d40-a7af-cd35b5c47c0f`, 100% traffic                                                    |
+| Previous Worker         | `5d14ca02-0e13-4f89-90c8-ce9fe17ac159`; code-only recovery follows the rollback runbook above           |
+| Post-deploy D1 bookmark | `00000f8c-00000000-0000510c-48a3ef4f68c422fc7c5021bce71e896e`; no reset or restore performed            |
