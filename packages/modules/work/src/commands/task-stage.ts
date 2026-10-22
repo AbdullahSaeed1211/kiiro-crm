@@ -145,6 +145,7 @@ async function spawnNextOccurrence(deps: WorkDeps, done: WorkTaskRecord): Promis
     priority: done.priority,
     assigneeIds: done.assigneeIds,
     groupId: done.groupId,
+    ownerOnly: done.ownerOnly,
     startAt: done.startAt === null ? null : done.startAt + (dueAt - done.dueAt),
     dueAt,
     repeat: done.repeat,

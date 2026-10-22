@@ -1,6 +1,6 @@
 import { asId, ok } from '@ops/kernel'
 import { describe, expect, it } from 'vitest'
-import { createProject, createTask, moveTask, updateTask } from '../src'
+import { completeTask, createProject, createTask, moveTask, updateTask } from '../src'
 import type { ProjectDraft, WorkRepository, WorkTaskRecord } from '../src'
 import { hasOpenChildren, myTasksBuckets, orderByRank, rankBetween, rebalanceRanks, subtaskDepth } from '../src'
 import { actor, createMemoryRepo, depsFor, project, task } from './memory-work'
@@ -130,6 +130,22 @@ describe('updateTask rejects protected patches and stale updates', () => {
   })
 })
 describe('owner-only tasks', () => {
+  it('preserves owner-only visibility when completing a repeating task', async () => {
+    const current = task('private-repeat', { ownerOnly: true, repeat: 'monthly', dueAt: Date.UTC(2026, 9, 23) })
+    let successorVisibility: boolean | undefined
+    const repo: WorkRepository = {
+      ...createMemoryRepo(),
+      getTask: () => Promise.resolve(current),
+      saveTaskMove: () => Promise.resolve({ ...current, stageCategory: 'done_success', completedAt: 10 }),
+      createTask: (input) => {
+        successorVisibility = input.ownerOnly
+        return Promise.resolve(ok(task('successor', input)))
+      },
+    }
+    const result = await completeTask(depsFor({ actor: actor('owner', 'owner'), repo }), current.id, current.updatedAt)
+    expect(result.ok).toBe(true)
+    expect(successorVisibility).toBe(true)
+  })
   it('lets only owners and managers set the mark, and staff never change it', async () => {
     const staffCreate = await createTask(depsFor(), { title: 'secret', ownerOnly: true })
     expect(!staffCreate.ok && staffCreate.error.code).toBe('FORBIDDEN')
