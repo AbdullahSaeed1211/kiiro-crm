@@ -741,6 +741,12 @@ input[data-slot='command-input']:not([type='checkbox']):not([type='radio']):focu
     white-space: normal;
   }
 
+  .ops-project-record .ops-record-title-row > h1 {
+    flex-basis: auto;
+    width: auto;
+    max-width: 100%;
+  }
+
   .ops-record-actions {
     width: 100%;
     justify-content: flex-start;

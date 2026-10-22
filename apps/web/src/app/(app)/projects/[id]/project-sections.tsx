@@ -16,24 +16,14 @@ export interface ProjectStage {
 
 export function ProjectOverview({
   description,
-  taskCount,
   copy,
-}: Readonly<{ description: string | null; taskCount: number; copy: ProjectPageCopy }>) {
+}: Readonly<{ description: string | null; copy: ProjectPageCopy }>) {
+  if (description === null || description.trim() === '') return null
   return (
-    <div className="max-w-3xl space-y-5">
-      <section className="border-b pb-5">
-        <h2 className="mb-2 text-sm font-semibold">{copy.description}</h2>
-        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-          {description === null || description.trim() === '' ? copy.noDescription : description}
-        </p>
-      </section>
-      <section>
-        <h2 className="mb-2 text-sm font-semibold">{copy.work}</h2>
-        <p className="text-sm text-muted-foreground">
-          {taskCount === 1 ? copy.taskCountOne : copy.taskCountOther.replace('{count}', String(taskCount))}
-        </p>
-      </section>
-    </div>
+    <section className="max-w-3xl border-t pt-4">
+      <h2 className="mb-2 text-sm font-semibold">{copy.description}</h2>
+      <p className="whitespace-pre-wrap text-sm text-muted-foreground">{description}</p>
+    </section>
   )
 }
 

@@ -17,7 +17,17 @@ export function ArchiveWorkButton({
   type,
   id,
   label,
-}: Readonly<{ type: 'task' | 'project'; id: string; label: string }>) {
+  menu = false,
+  open,
+  onOpenChange,
+}: Readonly<{
+  type: 'task' | 'project'
+  id: string
+  label: string
+  menu?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}>) {
   const copy = catalogFor(ARCHIVE_COPY, useLocale())
   const router = useRouter()
   const [message, setMessage] = useState<string>()
@@ -30,16 +40,25 @@ export function ArchiveWorkButton({
   return (
     <>
       <ConfirmDialog
+        open={open}
+        onOpenChange={onOpenChange}
         title={copy.confirmTitle.replace('{name}', label)}
         description={type === 'task' ? copy.confirmTask : copy.confirmProject}
         labels={{ cancel: copy.cancel, confirm: copy.archive, confirming: copy.archiving }}
         destructive
         onConfirm={archive}
         trigger={
-          <Button variant="outline" size="sm" type="button">
-            <Archive aria-hidden />
-            {copy.archive}
-          </Button>
+          open === undefined ? (
+            <Button
+              variant={menu ? 'ghost' : 'outline'}
+              size="sm"
+              type="button"
+              className={menu ? 'w-full justify-start' : undefined}
+            >
+              <Archive aria-hidden />
+              {copy.archive}
+            </Button>
+          ) : undefined
         }
       />
       {message === undefined ? null : (

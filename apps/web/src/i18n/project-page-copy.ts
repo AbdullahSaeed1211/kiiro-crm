@@ -19,6 +19,7 @@ export interface ProjectPageCopy {
   readonly noProjectTasksHelp: string
   readonly noTasksYet: string
   readonly createTask: string
+  readonly more: string
   readonly details: string
   readonly organization: string
   readonly notLinked: string
@@ -45,6 +46,7 @@ export const PROJECT_PAGE_COPY: Readonly<Record<Locale, ProjectPageCopy>> = {
     noProjectTasksHelp: 'Create a task from the Tasks workspace, then assign it to this project.',
     noTasksYet: 'No tasks in this project yet.',
     createTask: 'Create task',
+    more: 'More',
     details: 'Details',
     organization: 'Organization',
     notLinked: 'Not linked',
@@ -69,6 +71,7 @@ export const PROJECT_PAGE_COPY: Readonly<Record<Locale, ProjectPageCopy>> = {
     noProjectTasksHelp: 'Crea una tarea desde Tareas y asígnala a este proyecto.',
     noTasksYet: 'Este proyecto aún no tiene tareas.',
     createTask: 'Crear tarea',
+    more: 'Más',
     details: 'Detalles',
     organization: 'Organización',
     notLinked: 'Sin vincular',

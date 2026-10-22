@@ -22,7 +22,7 @@ export interface ClientDashboardCopy {
 
 export const CLIENT_DASHBOARD_COPY: Readonly<Record<'en' | 'es', ClientDashboardCopy>> = {
   en: {
-    tab: 'Dashboard',
+    tab: 'Summary',
     open: 'Open tasks',
     overdue: 'Overdue',
     dueSoon: 'Due in 7 days',
@@ -55,7 +55,7 @@ export const CLIENT_DASHBOARD_COPY: Readonly<Record<'en' | 'es', ClientDashboard
     },
   },
   es: {
-    tab: 'Panel',
+    tab: 'Resumen',
     open: 'Tareas abiertas',
     overdue: 'Vencidas',
     dueSoon: 'Vencen en 7 días',
