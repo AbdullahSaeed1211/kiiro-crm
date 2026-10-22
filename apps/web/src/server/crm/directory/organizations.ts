@@ -4,6 +4,7 @@ import { getRequestContext, type RequestContext } from '@/server/container'
 import { listActivities } from './activities'
 import { listEmailMessages, listProjects, listRecordAttachments, listRelatedTasks } from './helpers'
 import { nextOrganizationTask } from './next-organization-task'
+import { organizationReadiness, type OrganizationReadiness } from './organization-readiness'
 import { loadPeople } from '../../people'
 import type {
   ActivityItem,
@@ -70,12 +71,12 @@ async function organizationDetails(context: RequestContext, record: Organization
     listRelatedTasks(context, 'organization', record.id),
     listRecordAttachments(context, 'organization', record.id),
   ])
-  const nextDueTask = await nextOrganizationTask(
-    context,
-    record.id,
-    projects.map((project) => project.id),
-  )
-  return { people, projects, activity, emailMessages, relatedTasks, nextDueTask, attachments }
+  const projectIds = projects.map((project) => project.id)
+  const [nextDueTask, readiness] = await Promise.all([
+    nextOrganizationTask(context, record.id, projectIds),
+    organizationReadiness(context, record.id, projectIds),
+  ])
+  return { people, projects, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments }
 }
 
 export async function listOrganizations(
@@ -149,6 +150,7 @@ export async function getOrganization(id: string): Promise<{
   readonly emailMessages: readonly EmailThreadMessage[]
   readonly relatedTasks: readonly RelatedTask[]
   readonly nextDueTask: RelatedTask | null
+  readonly readiness: OrganizationReadiness
   readonly attachments: readonly RecordAttachment[]
 } | null> {
   const context = await getRequestContext()
@@ -173,6 +175,7 @@ export async function getOrganization(id: string): Promise<{
     emailMessages: details.emailMessages,
     relatedTasks: details.relatedTasks,
     nextDueTask: details.nextDueTask,
+    readiness: details.readiness,
     attachments: details.attachments,
   }
 }

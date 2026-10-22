@@ -2,7 +2,7 @@
 
 import { Check, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ops/ui/components/ui/tabs'
@@ -116,7 +116,6 @@ export function RecordPageLayout({
   className,
 }: RecordPageLayoutProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const fallbackTab = defaultTab ?? tabs[0]?.id
   const requestedTab = searchParams.get('tab')
@@ -124,7 +123,7 @@ export function RecordPageLayout({
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', value)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    window.history.replaceState(null, '', `${pathname}?${params.toString()}`)
   }
   return (
     <div className={cn('ops-record-page flex min-h-0 flex-col gap-4', className)}>

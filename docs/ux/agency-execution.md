@@ -127,3 +127,25 @@ The deployment command was interrupted before its final result was captured. On 
 | Enablement                        | Existing projects remain opted out. A manager must open a project, set up Monthly design work, select designers and save. Default issue/delivery days are 23 and 3. |
 
 Authenticated production workflow acceptance remains unverified. Local browser and real-driver checks, public live routes and internal infrastructure probes are separate evidence; none establishes a completed production user journey.
+
+## Client delivery and interaction close-out
+
+The client overview shows its earliest dated open task, the client owner, overdue open-task count and deliverables awaiting a client response. Counts use the authenticated request and visible project relationships. Empty values remain explicit; they do not imply that delivery is complete. Project links retain the route to the underlying work.
+
+Deliverable creation retains its title, link and selected file when saving fails. Response controls retain the staff note on failure or conflict. Refresh status loads the latest version without discarding that draft; retry requires an explicit action. A local phone browser completed conflict, refresh, retained note and approval. The displayed recorder is the authenticated staff member, not a claim that the client authenticated or approved through a portal. The existing versioned command persists response actor and time.
+
+The generic application loading boundary replaced Today briefly when opening an intercepted task panel. The pending overlay has its own loading boundary; the generic application fallback is removed. A browser regression observed the unwanted fallback before the repair and its absence afterward. The existing shift checks use a buffered `PerformanceObserver`; unsupported browsers are marked unmeasured rather than reported as zero. Geometry checks still run on those browsers.
+
+Eight selected route-health journeys passed across desktop Chromium and 390 px phone WebKit. They cover contextual and canonical task detail, history, Escape, close controls, source focus, pending workspace preservation from Today and Tasks, and personal Agenda return. Client overviews rendered at 1440 px and 390 px without horizontal overflow or error boundaries. Full static checks, all 397 unit cases, all 18 database integration cases, the Next.js production build and size check passed before the final approval recovery refinement. Final typecheck, lint, dependency boundaries, unused-code and i18n checks passed after that refinement. Final artifact and deployment evidence remain pending.
+
+Record tabs contain their loaded content already. Changing the tab updates the URL through the native history integration instead of requesting another server render. A local Chromium pass switched through all five project tabs in 61-178 ms per click with zero RSC requests. Reload restored the selected tab. This measurement covers loaded-tab switching, not the initial project read. The initial project page still loads the work read model and its supporting data.
+
+### Role and recurrence observations
+
+Local owner and manager accounts could read team calendars. Staff team-calendar requests, billing reads and member-list reads returned 403. Two staff accounts temporarily given the Sales profile could read their own fixture leads and appointments; cross-account lead and event reads and a cross-account lead edit returned 404. Delivery and Consultant profiles could not list or read an assigned sales lead; creation returned 403. Profiles were restored and read back after these checks.
+
+A staff account completed an assigned weekly fixture task. The API returned the completed occurrence and one successor due seven days later. The Repeating view showed the successor and Weekly cadence before and after reload. Fixture leads and tasks were archived and appointments cancelled. No production role, attendance or work record was changed for acceptance.
+
+An authenticated owner session on production rendered Today, the populated calendar, crowded-day disclosure and Repeating. Opening and closing a task returned to Today and restored trigger focus. These observations establish the inspected owner read paths only. Other production roles and production approval writes remain unverified. The earlier unavailable-login observation remains part of its historical release evidence.
+
+The client worker attempted the existing local demo seeder before creating its bounded verification fixture. That seed failed with a D1 emulator error and may have left partial local data. No database reset or cleanup purge was performed. Production data was unaffected. A streamed staff not-found page can return HTTP 200 while its protected content remains absent and its API returns 403; the older parity test's status-only assertion remains unresolved.

@@ -12,6 +12,7 @@ import type {
   RecordAttachment,
   RelatedTask,
 } from '../../server/crm/directory/data'
+import type { OrganizationReadiness } from '../../server/crm/directory/organization-readiness'
 import { personLabel } from '../../server/crm/directory/data'
 import { Activity, DetailCard, Meta, recordTabs } from './record-view-primitives'
 import { ArchiveRecordControl } from './archive-record-control'
@@ -21,7 +22,8 @@ import { RecordDetails } from './record-details'
 import { OrganizationOverview } from './organization-overview'
 import { catalogFor } from '../../i18n/locale'
 import { RECORD_COPY, type RecordCopy } from '../../i18n/record-copy'
-import { DIRECTORY_COPY } from '../../i18n/directory-copy'
+import { ORGANIZATION_OVERVIEW_COPY } from '../../i18n/organization-overview-copy'
+import type { OrganizationOverviewCopy } from '../../i18n/organization-overview-copy'
 import { loadWorkspaceLocale } from '../../server/queries/work/read-models'
 
 function organizationTabs(
@@ -88,8 +90,10 @@ function organizationOverviewTab(
     organizationId: string
     relations: OrganizationRelations
     nextDueTask: RelatedTask | null
+    owner: PersonSummary | null
+    readiness: OrganizationReadiness
     copy: RecordCopy
-    nextDueTaskLabel: string
+    overviewCopy: OrganizationOverviewCopy
     locale: string
   }>,
 ) {
@@ -112,14 +116,15 @@ export async function OrganizationRecordView({
     emailMessages: readonly EmailThreadMessage[]
     relatedTasks: readonly RelatedTask[]
     nextDueTask: RelatedTask | null
+    readiness: OrganizationReadiness
     attachments: readonly RecordAttachment[]
   }
   outboundEmailEnabled: boolean
 }>) {
-  const { record, owner, relations, activity, emailMessages, relatedTasks, nextDueTask, attachments } = data
+  const { record, owner, relations, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments } = data
   const locale = await loadWorkspaceLocale()
   const copy = catalogFor(RECORD_COPY, locale)
-  const directoryCopy = catalogFor(DIRECTORY_COPY, locale)
+  const overviewCopy = catalogFor(ORGANIZATION_OVERVIEW_COPY, locale)
   const tabs = organizationTabs({
     record,
     activity,
@@ -157,8 +162,10 @@ export async function OrganizationRecordView({
               organizationId: record.id,
               relations,
               nextDueTask,
+              owner,
+              readiness,
               copy,
-              nextDueTaskLabel: directoryCopy.nextDueTask,
+              overviewCopy,
               locale,
             }),
             ...tabs,

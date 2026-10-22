@@ -2,8 +2,11 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ops/ui/co
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { OrganizationRelations, RelatedTask } from '../../server/crm/directory/data'
+import type { OrganizationReadiness } from '../../server/crm/directory/organization-readiness'
+import type { PersonSummary } from '../../server/crm/directory/data'
 import { formatDate } from '../../i18n/format'
 import type { RecordCopy } from '../../i18n/record-copy'
+import type { OrganizationOverviewCopy } from '../../i18n/organization-overview-copy'
 import { RelationList, RelationRow } from './record-view-primitives'
 import { taskHref } from './task-navigation'
 
@@ -48,12 +51,12 @@ function RelationSectionCard({ section }: Readonly<{ section: RelationSection }>
 
 function NextDueTaskCard({
   task,
-  label,
+  copy,
   locale,
   organizationId,
 }: Readonly<{
   task: RelatedTask
-  label: string
+  copy: OrganizationOverviewCopy
   locale: string
   organizationId: string
 }>) {
@@ -61,11 +64,12 @@ function NextDueTaskCard({
   return (
     <Card size="sm" className="min-w-0">
       <CardHeader>
-        <CardTitle>{label}</CardTitle>
+        <CardTitle>{copy.nextDueItem}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-wrap items-baseline justify-between gap-2">
         <Link
           href={taskHref(task.id, `/organizations/${organizationId}`)}
+          data-task-link-id={task.id}
           className="min-w-0 truncate font-medium hover:underline"
         >
           {task.title}
@@ -81,19 +85,82 @@ function NextDueTaskCard({
   )
 }
 
+function OrganizationSummary({
+  organizationId,
+  nextDueTask,
+  owner,
+  readiness,
+  overviewCopy,
+  locale,
+}: Readonly<{
+  organizationId: string
+  nextDueTask: RelatedTask | null
+  owner: PersonSummary | null
+  readiness: OrganizationReadiness
+  overviewCopy: OrganizationOverviewCopy
+  locale: string
+}>) {
+  return (
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {nextDueTask === null ? (
+        <Card size="sm" className="min-w-0">
+          <CardHeader>
+            <CardTitle>{overviewCopy.nextDueItem}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">{overviewCopy.noDueItems}</CardContent>
+        </Card>
+      ) : (
+        <NextDueTaskCard task={nextDueTask} copy={overviewCopy} locale={locale} organizationId={organizationId} />
+      )}
+      <Card size="sm" className="min-w-0">
+        <CardHeader>
+          <CardTitle>{overviewCopy.responsiblePerson}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">{owner?.name ?? overviewCopy.noResponsiblePerson}</CardContent>
+      </Card>
+      <Card size="sm" className="min-w-0">
+        <CardHeader>
+          <CardTitle>{overviewCopy.overdueWork}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums">{readiness.overdueTaskCount}</span>
+          <span className="text-sm text-muted-foreground">
+            {readiness.overdueTaskCount === 0 ? overviewCopy.noOverdueWork : overviewCopy.taskUnit}
+          </span>
+        </CardContent>
+      </Card>
+      <Card size="sm" className="min-w-0">
+        <CardHeader>
+          <CardTitle>{overviewCopy.awaitingClientResponse}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums">{readiness.pendingApprovalCount}</span>
+          <span className="text-sm text-muted-foreground">
+            {readiness.pendingApprovalCount === 0 ? overviewCopy.noPendingResponses : overviewCopy.deliverableUnit}
+          </span>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export function OrganizationOverview({
   organizationId,
   relations,
   nextDueTask,
+  owner,
+  readiness,
   copy,
-  nextDueTaskLabel,
+  overviewCopy,
   locale,
 }: Readonly<{
   organizationId: string
   relations: OrganizationRelations
   nextDueTask: RelatedTask | null
+  owner: PersonSummary | null
+  readiness: OrganizationReadiness
   copy: RecordCopy
-  nextDueTaskLabel: string
+  overviewCopy: OrganizationOverviewCopy
   locale: string
 }>) {
   const sections = [
@@ -140,9 +207,14 @@ export function OrganizationOverview({
   ] as const
   return (
     <div className="grid gap-4">
-      {nextDueTask === null ? null : (
-        <NextDueTaskCard task={nextDueTask} label={nextDueTaskLabel} locale={locale} organizationId={organizationId} />
-      )}
+      <OrganizationSummary
+        organizationId={organizationId}
+        nextDueTask={nextDueTask}
+        owner={owner}
+        readiness={readiness}
+        overviewCopy={overviewCopy}
+        locale={locale}
+      />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sections.map((section) => (
           <RelationSectionCard key={section.label} section={section} />

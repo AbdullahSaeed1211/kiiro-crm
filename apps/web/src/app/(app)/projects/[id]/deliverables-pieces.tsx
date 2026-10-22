@@ -3,11 +3,14 @@
 import type { DeliverableRecord } from '@ops/module-work'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
-import { useRef, useState, type ChangeEvent } from 'react'
 import { z } from 'zod'
 import type { AgencyWorkCopy } from '../../../../i18n/agency-work-copy'
 
-export type DeliverableItem = DeliverableRecord & { readonly ownerName: string; readonly responderName: string | null }
+export type DeliverableItem = DeliverableRecord & {
+  readonly ownerName: string
+  readonly responderName: string | null
+  readonly responseDraft?: string
+}
 export type ResponseStatus = 'sent_to_client' | 'approved' | 'changes_requested'
 export interface NewDeliverableInput {
   readonly projectId: string
@@ -15,6 +18,8 @@ export interface NewDeliverableInput {
   readonly linkUrl: string | null
   readonly file: File | null
 }
+
+type AsyncOutcome = Promise<boolean>
 
 const uploadResponseSchema = z.object({ data: z.object({ id: z.string() }) })
 
@@ -38,6 +43,15 @@ function statusLabel(item: DeliverableItem, copy: AgencyWorkCopy): string {
 function responseTimestamp(item: DeliverableItem, locale: string): string {
   if (item.respondedAt === null) return ''
   return new Date(item.respondedAt).toLocaleString(locale === 'es' ? 'es-ES' : 'en-US')
+}
+
+function retainedResponseDraft(item: DeliverableItem, copy: AgencyWorkCopy) {
+  if (item.status === 'sent_to_client' || !item.responseDraft) return null
+  return (
+    <p className="mt-2 text-sm text-muted-foreground">
+      {copy.responseDraftRetained}: {item.responseDraft}
+    </p>
+  )
 }
 
 function DeliverableDetails({
@@ -77,6 +91,7 @@ function DeliverableDetails({
         </p>
       ) : null}
       {item.responseNote ? <p className="mt-2 text-sm">{item.responseNote}</p> : null}
+      {retainedResponseDraft(item, copy)}
     </div>
   )
 }
@@ -86,18 +101,21 @@ function DeliverableResponseControls({
   copy,
   pending,
   onResponse,
+  note,
+  onNoteChange,
 }: Readonly<{
   item: DeliverableItem
   copy: AgencyWorkCopy
   pending: boolean
-  onResponse: (input: { item: DeliverableItem; status: ResponseStatus; note: string }) => void
+  onResponse: (input: { item: DeliverableItem; status: ResponseStatus; note: string }) => AsyncOutcome
+  note: string
+  onNoteChange: (note: string) => void
 }>) {
-  const [note, setNote] = useState('')
   const recordResponse = (status: ResponseStatus) => () => {
-    onResponse({ item, status, note })
+    void onResponse({ item, status, note })
   }
   const recordSent = () => {
-    onResponse({ item, status: 'sent_to_client', note: '' })
+    void onResponse({ item, status: 'sent_to_client', note: '' })
   }
   return (
     <>
@@ -107,8 +125,9 @@ function DeliverableResponseControls({
             aria-label={copy.response}
             placeholder={`${copy.response} (${copy.optional})`}
             value={note}
+            disabled={pending}
             onChange={(event) => {
-              setNote(event.target.value)
+              onNoteChange(event.target.value)
             }}
             maxLength={5_000}
           />
@@ -129,93 +148,35 @@ function DeliverableResponseControls({
   )
 }
 
-export function DeliverableComposer({
-  projectId,
-  copy,
-  pending,
-  onCreate,
-}: Readonly<{
-  projectId: string
-  copy: AgencyWorkCopy
-  pending: boolean
-  onCreate: (input: NewDeliverableInput) => void
-}>) {
-  const fileInput = useRef<HTMLInputElement>(null)
-  const [title, setTitle] = useState('')
-  const [linkUrl, setLinkUrl] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  function submit() {
-    const value = title.trim()
-    if (value === '') return
-    onCreate({ projectId, title: value, linkUrl: linkUrl.trim() || null, file })
-    setTitle('')
-    setLinkUrl('')
-    setFile(null)
-    if (fileInput.current !== null) fileInput.current.value = ''
-  }
-  return (
-    <form
-      className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.7fr)_minmax(10rem,0.7fr)_auto]"
-      action={submit}
-    >
-      <label className="grid gap-1.5 text-sm">
-        <span>{copy.title}</span>
-        <Input
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value)
-          }}
-          maxLength={300}
-          required
-        />
-      </label>
-      <label className="grid gap-1.5 text-sm">
-        <span>
-          {copy.link} ({copy.optional})
-        </span>
-        <Input
-          type="url"
-          value={linkUrl}
-          onChange={(event) => {
-            setLinkUrl(event.target.value)
-          }}
-          maxLength={2_000}
-        />
-      </label>
-      <label className="grid gap-1.5 text-sm">
-        <span>{copy.file}</span>
-        <Input
-          ref={fileInput}
-          type="file"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            setFile(event.target.files?.[0] ?? null)
-          }}
-        />
-      </label>
-      <Button type="submit" className="self-end" size="sm" disabled={pending || title.trim() === ''}>
-        {pending ? copy.saving : copy.create}
-      </Button>
-    </form>
-  )
-}
-
 export function DeliverableRow({
   item,
   locale,
   copy,
   pending,
   onResponse,
+  onResponseNoteChange,
 }: Readonly<{
   item: DeliverableItem
   locale: string
   copy: AgencyWorkCopy
   pending: boolean
-  onResponse: (input: { item: DeliverableItem; status: ResponseStatus; note: string }) => void
+  onResponse: (input: { item: DeliverableItem; status: ResponseStatus; note: string }) => AsyncOutcome
+  onResponseNoteChange: (deliverableId: string, note: string) => void
 }>) {
+  const responseDraft = item.responseDraft ?? ''
   return (
     <li className="grid gap-3 rounded-lg border bg-card p-4">
       <DeliverableDetails item={item} locale={locale} copy={copy} />
-      <DeliverableResponseControls item={item} copy={copy} pending={pending} onResponse={onResponse} />
+      <DeliverableResponseControls
+        item={item}
+        copy={copy}
+        pending={pending}
+        onResponse={onResponse}
+        note={responseDraft}
+        onNoteChange={(note) => {
+          onResponseNoteChange(item.id, note)
+        }}
+      />
     </li>
   )
 }
@@ -226,12 +187,14 @@ export function DeliverablesList({
   copy,
   pending,
   onResponse,
+  onResponseNoteChange,
 }: Readonly<{
   items: readonly DeliverableItem[]
   locale: string
   copy: AgencyWorkCopy
   pending: boolean
-  onResponse: (input: { item: DeliverableItem; status: ResponseStatus; note: string }) => void
+  onResponse: (input: { item: DeliverableItem; status: ResponseStatus; note: string }) => AsyncOutcome
+  onResponseNoteChange: (deliverableId: string, note: string) => void
 }>) {
   return items.length === 0 ? (
     <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">{copy.emptyDeliverables}</p>
@@ -245,6 +208,7 @@ export function DeliverablesList({
           copy={copy}
           pending={pending}
           onResponse={onResponse}
+          onResponseNoteChange={onResponseNoteChange}
         />
       ))}
     </ul>

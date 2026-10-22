@@ -63,6 +63,20 @@ const CORE_LAYOUT_ROUTES = new Set(['/', TASK_PATH, '/calendar', '/timeline', '/
 
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!PerformanceObserver.supportedEntryTypes.includes('layout-shift')) return
+    const holder = window as unknown as { __routeShifts: { startTime: number; value: number }[] }
+    holder.__routeShifts = []
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        const shift = entry as PerformanceEntry & { value: number }
+        holder.__routeShifts.push({ startTime: shift.startTime, value: shift.value })
+      }
+    }).observe({ type: 'layout-shift', buffered: true })
+  })
+})
+
 function tryLock(): boolean {
   try {
     mkdirSync(SIGN_IN_LOCK)
@@ -109,11 +123,19 @@ async function availableDetailRoutes(page: Page): Promise<string[]> {
   return routes
 }
 
-async function recordedLayoutShiftSince(page: Page, startedAt: number): Promise<number> {
-  return page.evaluate((start) => {
-    const shifts = performance.getEntriesByType('layout-shift') as (PerformanceEntry & { value?: number })[]
-    return shifts.filter((entry) => entry.startTime >= start).reduce((sum, entry) => sum + (entry.value ?? 0), 0)
+async function expectNoLayoutShift(page: Page, startedAt: number, message: string): Promise<void> {
+  const value = await page.evaluate((start) => {
+    const shifts = (window as unknown as { __routeShifts?: { startTime: number; value: number }[] }).__routeShifts
+    return shifts?.filter((entry) => entry.startTime >= start).reduce((sum, entry) => sum + entry.value, 0)
   }, startedAt)
+  if (value === undefined) {
+    test.info().annotations.push({
+      type: 'not measured',
+      description: 'Layout Shift API unavailable; geometry checks still run.',
+    })
+    return
+  }
+  expect(value, message).toBe(0)
 }
 
 async function expectCalendarPanelOpen(page: Page) {
@@ -155,10 +177,7 @@ async function openTaskSourcePanel(
   await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/, { timeout: ROUTE_BUDGET_MS })
   expect(new URL(page.url()).searchParams.get('returnTo')).toBe(input.sourceUrl)
   await expect(page.getByRole('dialog', { name: input.title })).toBeVisible()
-  expect(
-    await recordedLayoutShiftSince(page, openStartedAt),
-    `opening a task from ${input.sourceUrl} should not shift its source`,
-  ).toBe(0)
+  await expectNoLayoutShift(page, openStartedAt, `opening a task from ${input.sourceUrl} should not shift its source`)
 }
 
 async function closeTaskSourcePanel(page: Page, title: string, sourceUrl: string): Promise<void> {
@@ -320,10 +339,7 @@ async function verifyTaskPanelHistoryAndEscape(page: Page, title: string) {
   const closeStartedAt = await page.evaluate(() => performance.now())
   await page.keyboard.press('Escape')
   await expectCalendarPanelClosed(page)
-  expect(
-    await recordedLayoutShiftSince(page, closeStartedAt),
-    'closing a task panel should not shift the calendar',
-  ).toBe(0)
+  await expectNoLayoutShift(page, closeStartedAt, 'closing a task panel should not shift the calendar')
   await expect(calendarTaskLink(page, title)).toBeFocused()
 }
 
@@ -358,7 +374,7 @@ async function verifyCanonicalTaskPage(page: Page, taskHref: string, title: stri
   await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0)
   const [titleBox, headerBox] = await Promise.all([
     page.getByRole('heading', { name: title, exact: true }).boundingBox(),
-    page.locator('header.ops-app-header').boundingBox(),
+    page.locator('header.ops-app-header').filter({ visible: true }).boundingBox(),
   ])
   if (titleBox === null || headerBox === null) throw new Error('canonical task page is missing its layout regions')
   // The task content starts below the app header instead of being drawn into it.
@@ -390,10 +406,7 @@ async function verifyCalendarTaskPanelOpen(page: Page): Promise<CalendarTask> {
   const openStartedAt = await page.evaluate(() => performance.now())
   await calendarTaskLink(page, task.title).click()
   await expectCalendarPanelOpen(page)
-  expect(
-    await recordedLayoutShiftSince(page, openStartedAt),
-    'opening a task panel should not shift the calendar',
-  ).toBe(0)
+  await expectNoLayoutShift(page, openStartedAt, 'opening a task panel should not shift the calendar')
   expect(await calendar.boundingBox()).toEqual(calendarBox)
   await verifyTaskPanelScrollContainment(page, task.title)
   await page.screenshot({ path: test.info().outputPath('task-panel.png'), fullPage: true })
@@ -639,6 +652,81 @@ test('task details preserve origin in contextual mode and render canonically whe
   await verifyTaskPanelCloseControls(page, task.title)
   await verifyTaskSourceInteractions(page, task)
 })
+
+async function watchTaskLoading(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const holder = window as unknown as { __taskPanelLoaderFlashed: boolean }
+    holder.__taskPanelLoaderFlashed = false
+    const observer = new MutationObserver(() => {
+      if (document.querySelector('main [aria-busy="true"]') !== null) holder.__taskPanelLoaderFlashed = true
+    })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true })
+  })
+}
+
+function deferredSignal(): { promise: Promise<void>; resolve: () => void } {
+  let resolve!: () => void
+  const promise = new Promise<void>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
+async function holdTaskRequest(page: Page, href: string) {
+  const path = new URL(href, page.url()).pathname
+  const held = deferredSignal()
+  const requested = deferredSignal()
+  await page.route(`**${path}?**`, async (route) => {
+    if (route.request().headers()['next-router-prefetch'] === '1') {
+      await route.continue()
+      return
+    }
+    requested.resolve()
+    await held.promise
+    await route.continue()
+  })
+  return { requested: requested.promise, release: held.resolve }
+}
+
+async function pendingTodayTask(page: Page) {
+  const trigger = page.locator('a[data-task-link-id]').filter({ visible: true }).first()
+  await expect(trigger).toBeVisible()
+  const href = await trigger.getAttribute('href')
+  if (href === null) throw new Error('Today task has no contextual URL')
+  await watchTaskLoading(page)
+  const pending = await holdTaskRequest(page, href)
+  return { trigger, pending }
+}
+
+async function verifyPendingTaskSource(page: Page, source: string, heading: string): Promise<void> {
+  await page.goto(source)
+  const { trigger, pending } = await pendingTodayTask(page)
+  try {
+    await trigger.click()
+    await pending.requested
+    await expect(page.getByRole('heading', { name: new RegExp(`^${heading}(?: \\d+)?$`) })).toBeVisible()
+    await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0)
+  } finally {
+    pending.release()
+  }
+  await expect(page.getByRole('dialog')).toBeVisible()
+  expect(
+    await page.evaluate(() => (window as unknown as { __taskPanelLoaderFlashed: boolean }).__taskPanelLoaderFlashed),
+  ).toBe(false)
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL((url) => url.pathname === source)
+  await expect(trigger).toBeFocused()
+}
+
+for (const [source, heading] of [
+  ['/', 'Today'],
+  ['/tasks', 'Open tasks'],
+] as const) {
+  test(`a pending task panel keeps the ${heading} workspace visible`, async ({ page }) => {
+    await signIn(page)
+    await verifyPendingTaskSource(page, source, heading)
+  })
+}
 
 test('calendar agenda retains personal scope and task-panel origin', async ({ page }) => {
   await signIn(page)
