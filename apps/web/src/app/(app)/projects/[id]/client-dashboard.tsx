@@ -21,8 +21,28 @@ function Areas({
   const rows = dashboard.areas.filter((row) => row.area !== 'collections')
   if (rows.length < 2) return null
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="min-w-0">
+      <ul className="divide-y rounded-lg border bg-card text-sm sm:hidden">
+        {rows.map((row) => (
+          <li key={row.area} className="min-w-0 px-3 py-2.5">
+            <p className="font-medium">{copy.areas[row.area] ?? row.area}</p>
+            <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+              <span>
+                {copy.open}: {row.open}
+              </span>
+              <span className={row.overdue > 0 ? 'text-destructive' : undefined}>
+                {copy.overdue}: {row.overdue}
+              </span>
+              {row.nextDueAt === null ? null : (
+                <span>
+                  {copy.nextDue}: {dateOf(row.nextDueAt, locale)}
+                </span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <table className="hidden w-full text-sm sm:table">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="py-2">{copy.area}</th>
@@ -59,7 +79,7 @@ export function ClientDashboardView({
   locale: string
 }>) {
   return (
-    <div className="grid max-w-4xl gap-5">
+    <div className="grid min-w-0 max-w-4xl gap-5">
       <dl className="grid grid-cols-2 divide-x divide-y rounded-lg border bg-card sm:grid-cols-4 sm:divide-y-0">
         <Tile label={copy.open} value={dashboard.open} />
         <Tile label={copy.overdue} value={dashboard.overdue} alert={dashboard.overdue > 0} />

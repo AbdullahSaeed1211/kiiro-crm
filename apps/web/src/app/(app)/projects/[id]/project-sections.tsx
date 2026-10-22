@@ -22,7 +22,7 @@ export function ProjectOverview({
   return (
     <section className="max-w-3xl border-t pt-4">
       <h2 className="mb-2 text-sm font-semibold">{copy.description}</h2>
-      <p className="whitespace-pre-wrap text-sm text-muted-foreground">{description}</p>
+      <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{description}</p>
     </section>
   )
 }
