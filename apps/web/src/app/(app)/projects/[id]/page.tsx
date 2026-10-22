@@ -59,7 +59,7 @@ function projectTabs({
       id: 'dashboard',
       label: dashboard.label,
       content: (
-        <div className="grid gap-6">
+        <div className="grid min-w-0 grid-cols-1 gap-6">
           {dashboard.content}
           <ProjectOverview description={description} copy={copy} />
         </div>

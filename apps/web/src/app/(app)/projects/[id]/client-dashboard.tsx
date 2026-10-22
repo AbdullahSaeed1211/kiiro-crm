@@ -79,7 +79,7 @@ export function ClientDashboardView({
   locale: string
 }>) {
   return (
-    <div className="grid min-w-0 max-w-4xl gap-5">
+    <div className="grid w-full min-w-0 max-w-4xl grid-cols-1 gap-5">
       <dl className="grid grid-cols-2 divide-x divide-y rounded-lg border bg-card sm:grid-cols-4 sm:divide-y-0">
         <Tile label={copy.open} value={dashboard.open} />
         <Tile label={copy.overdue} value={dashboard.overdue} alert={dashboard.overdue > 0} />
