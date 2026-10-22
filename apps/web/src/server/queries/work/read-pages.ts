@@ -2,7 +2,7 @@ import { getWorkspaceSettings } from '../../auth/context'
 import type { getRequestContext } from '@/server/container'
 import type { Where } from 'payload'
 
-export type ReadPurpose = 'full' | 'dashboard' | 'projects' | 'reports'
+export type ReadPurpose = 'full' | 'dashboard' | 'projects' | 'reports' | 'assignments'
 type WorkContext = Awaited<ReturnType<typeof getRequestContext>>
 
 function requestOptions(context: WorkContext) {
@@ -25,6 +25,14 @@ function projectPage(context: WorkContext, request: ReturnType<typeof requestOpt
       ...request,
       sort: 'name',
       select: { id: true, name: true, stageId: true, members: true, targetEndAt: true },
+    })
+  }
+  if (purpose === 'assignments') {
+    return context.payload.find({
+      collection: 'projects',
+      ...request,
+      sort: 'name',
+      select: { id: true, name: true, stageId: true, owner: true, members: true, targetEndAt: true },
     })
   }
   return context.payload.find({ collection: 'projects', ...request, sort: 'name' })
@@ -52,6 +60,14 @@ function workflowPage(context: WorkContext, request: ReturnType<typeof requestOp
 
 function userPage(context: WorkContext, request: ReturnType<typeof requestOptions>, purpose: ReadPurpose) {
   if (purpose === 'dashboard') return Promise.resolve(null)
+  if (purpose === 'assignments') {
+    return context.payload.find({
+      collection: 'users',
+      ...request,
+      where: { active: { equals: true } },
+      select: { id: true, name: true },
+    })
+  }
   const select = purpose === 'reports' || purpose === 'projects' ? { select: { id: true, name: true } as const } : {}
   return context.payload.find({ collection: 'users', ...request, ...select })
 }
@@ -88,6 +104,16 @@ function getTaskSelect(purpose: ReadPurpose) {
       dueAt: true,
       assignees: true,
       completedAt: true,
+    } as const
+  }
+  if (purpose === 'assignments') {
+    return {
+      id: true,
+      title: true,
+      stageId: true,
+      assignees: true,
+      project: true,
+      dueAt: true,
     } as const
   }
   return undefined

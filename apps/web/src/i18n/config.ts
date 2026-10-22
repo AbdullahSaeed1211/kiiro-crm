@@ -1,16 +1,14 @@
 export { normalizeLocale, SUPPORTED_LOCALES, type Locale } from './locale'
 import type { Locale } from './locale'
 
-export const LOCALE_LABELS: Readonly<Record<Locale, string>> = {
-  en: 'English',
-  es: 'Español',
-}
+export const LOCALE_LABELS: Readonly<Record<Locale, string>> = { en: 'English', es: 'Español' }
 
 export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
     dashboard: 'Today',
     salesWorkspace: 'Sales workspace',
     myTasks: 'My tasks',
+    teamAssignments: 'Team assignments',
     attendance: 'Attendance',
     inbox: 'Inbox',
     leads: 'Leads',
@@ -40,6 +38,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     dashboard: 'Hoy',
     salesWorkspace: 'Espacio de ventas',
     myTasks: 'Mis tareas',
+    teamAssignments: 'Asignaciones del equipo',
     attendance: 'Asistencia',
     inbox: 'Bandeja de entrada',
     leads: 'Prospectos',

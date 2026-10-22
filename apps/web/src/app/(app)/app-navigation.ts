@@ -17,6 +17,7 @@ import {
   ReceiptText,
   Repeat2,
   UserPlus,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { SHELL_COPY, type Locale } from '../../i18n/config'
@@ -124,7 +125,10 @@ function todayAndWorkGroups({
   const groups: NavGroup[] = [{ id: 'today', items: TODAY.map(item) }]
   if (!modules.work) return [{ ...groups[0], items: [...TODAY, MY_TASKS].map(item) }]
 
-  const workLinks = workProfile === 'sales' && !isAdminRole(role) ? [MY_TASKS] : [MY_TASKS, ...WORK]
+  const workLinks =
+    workProfile === 'sales' && !isAdminRole(role)
+      ? [MY_TASKS]
+      : [MY_TASKS, ...WORK, ...(isAdminRole(role) ? ([['teamAssignments', '/team', Users]] as const) : [])]
   groups.push({ id: 'work', label: navLabel({ terminology, copy, key: 'workGroup' }), items: workLinks.map(item) })
   return groups
 }
