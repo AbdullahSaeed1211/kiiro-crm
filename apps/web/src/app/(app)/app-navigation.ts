@@ -2,10 +2,12 @@ import type { WorkProfile } from '@ops/platform'
 import type { NavGroup } from '@ops/ui/composites/AppSidebar'
 import {
   Building2,
+  CalendarDays,
   ChartNoAxesCombined,
   CircleCheckBig,
   Clock,
   Contact,
+  FileText,
   FolderKanban,
   Handshake,
   LayoutDashboard,
@@ -13,6 +15,7 @@ import {
   Mail,
   PhoneCall,
   ReceiptText,
+  Repeat2,
   UserPlus,
   type LucideIcon,
 } from 'lucide-react'
@@ -20,29 +23,38 @@ import { SHELL_COPY, type Locale } from '../../i18n/config'
 
 type NavLink = readonly [key: string, href: string, icon: LucideIcon]
 
-const GENERAL: readonly NavLink[] = [
+const TODAY: readonly NavLink[] = [
   ['dashboard', '/', LayoutDashboard],
-  ['myTasks', '/my-tasks', CircleCheckBig],
   ['attendance', '/attendance', Clock],
 ]
+const MY_TASKS: NavLink = ['myTasks', '/my-tasks', CircleCheckBig]
 const SALES_DESK: NavLink = ['salesWorkspace', '/sales', PhoneCall]
-const CRM: readonly NavLink[] = [
+const SALES: readonly NavLink[] = [
   ['leads', '/leads', UserPlus],
   ['deals', '/deals', Handshake],
+]
+const CLIENTS: readonly NavLink[] = [
   ['organizations', '/organizations', Building2],
   ['contacts', '/contacts', Contact],
 ]
-const STAFF_CRM: readonly NavLink[] = [CRM[2], CRM[3]]
 const WORK: readonly NavLink[] = [
-  ['projects', '/projects', FolderKanban],
   ['tasks', '/tasks', ListTodo],
+  ['projects', '/projects', FolderKanban],
+  ['calendar', '/calendar', CalendarDays],
+  ['contentCalendar', '/content-calendar', FileText],
+  ['repeatingTasks', '/tasks/repeating', Repeat2],
 ]
-const TASK_VIEW_PATHS = ['/calendar', '/timeline']
 
 function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/'
-  if (href === '/tasks' && TASK_VIEW_PATHS.some((path) => pathname.startsWith(path))) return true
+  if (href === '/tasks') return isTaskRouteActive(pathname)
   return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function isTaskRouteActive(pathname: string): boolean {
+  // Calendar has its own link; repeating tasks have their own entry. Timeline
+  // remains a task view even though it has no separate top-level navigation.
+  return pathname.startsWith('/timeline') || (pathname.startsWith('/tasks') && !pathname.startsWith('/tasks/repeating'))
 }
 
 function isAdminRole(role: string): boolean {
@@ -62,6 +74,21 @@ function navLabel({
   return typeof value === 'string' && value !== '' ? value : (copy[key] ?? key)
 }
 
+function clientGroupLabel({
+  terminology,
+  copy,
+}: Readonly<{
+  terminology: Readonly<Record<string, unknown>>
+  copy: Readonly<Record<string, string>>
+}>): string {
+  const clients = terminology.clientsGroup
+  if (typeof clients === 'string' && clients !== '') return clients
+  // Existing workspaces customize the organization term; keep it for the group
+  // heading while using the new customer-facing default in other workspaces.
+  const organizations = terminology.organizations
+  return typeof organizations === 'string' && organizations !== '' ? organizations : copy.clientsGroup
+}
+
 function createNavItem({
   pathname,
   terminology,
@@ -79,45 +106,87 @@ function createNavItem({
   })
 }
 
-function generalGroup({
+function todayAndWorkGroups({
+  modules,
   role,
   workProfile,
-  modules,
+  terminology,
+  copy,
   item,
 }: Readonly<{
+  modules: Readonly<Record<string, boolean>>
   role: string
   workProfile: WorkProfile
-  modules: Readonly<Record<string, boolean>>
+  terminology: Readonly<Record<string, unknown>>
+  copy: Readonly<Record<string, string>>
   item: (link: NavLink) => NavGroup['items'][number]
-}>): NavGroup {
-  const isAdmin = isAdminRole(role)
-  const showSalesDesk = modules.crm && (isAdmin || workProfile === 'sales')
-  const links = showSalesDesk ? [SALES_DESK, ...GENERAL] : GENERAL
-  const inbox: readonly NavLink[] = modules.mail && isAdmin ? [['inbox', '/inbox', Mail]] : []
-  return { id: 'general', items: [...links, ...inbox].map(item) }
+}>): NavGroup[] {
+  const groups: NavGroup[] = [{ id: 'today', items: TODAY.map(item) }]
+  if (!modules.work) return [{ ...groups[0], items: [...TODAY, MY_TASKS].map(item) }]
+
+  const workLinks = workProfile === 'sales' && !isAdminRole(role) ? [MY_TASKS] : [MY_TASKS, ...WORK]
+  groups.push({ id: 'work', label: navLabel({ terminology, copy, key: 'workGroup' }), items: workLinks.map(item) })
+  return groups
 }
 
-function workGroup({
+function clientAndSalesGroups({
+  modules,
+  terminology,
+  copy,
   role,
   workProfile,
-  enabled,
-  label,
   item,
 }: Readonly<{
+  modules: Readonly<Record<string, boolean>>
+  terminology: Readonly<Record<string, unknown>>
+  copy: Readonly<Record<string, string>>
   role: string
   workProfile: WorkProfile
-  enabled: boolean
-  label: string
   item: (link: NavLink) => NavGroup['items'][number]
-}>): NavGroup | null {
-  const isAdmin = isAdminRole(role)
-  if (!enabled || (!isAdmin && workProfile === 'sales')) return null
-  const adminLinks: readonly NavLink[] = [
-    ['reports', '/reports', ChartNoAxesCombined],
-    ['billing', '/billing', ReceiptText],
+}>): NavGroup[] {
+  if (!modules.crm) return []
+  const groups: NavGroup[] = [
+    { id: 'clients', label: clientGroupLabel({ terminology, copy }), items: CLIENTS.map(item) },
   ]
-  const links = isAdmin ? [...WORK, ...adminLinks] : WORK
-  return { id: 'work', label, items: links.map(item) }
+  if (isAdminRole(role) || workProfile === 'sales') {
+    groups.push({
+      id: 'sales',
+      label: navLabel({ terminology, copy, key: 'salesGroup' }),
+      items: [SALES_DESK, ...SALES].map(item),
+    })
+  }
+  return groups
+}
+
+function adminUtilityGroups({
+  modules,
+  role,
+  terminology,
+  copy,
+  item,
+}: Readonly<{
+  modules: Readonly<Record<string, boolean>>
+  role: string
+  terminology: Readonly<Record<string, unknown>>
+  copy: Readonly<Record<string, string>>
+  item: (link: NavLink) => NavGroup['items'][number]
+}>): NavGroup[] {
+  if (!isAdminRole(role)) return []
+  const groups: NavGroup[] = []
+  if (modules.work) groups.push({ id: 'reports', items: [item(['reports', '/reports', ChartNoAxesCombined])] })
+
+  const utilities: readonly NavLink[] = [
+    ...(modules.mail ? ([['inbox', '/inbox', Mail]] as const) : []),
+    ...(modules.work ? ([['billing', '/billing', ReceiptText]] as const) : []),
+  ]
+  if (utilities.length > 0) {
+    groups.push({
+      id: 'utilities',
+      label: navLabel({ terminology, copy, key: 'utilitiesGroup' }),
+      items: utilities.map(item),
+    })
+  }
+  return groups
 }
 
 export function navGroups({
@@ -137,24 +206,17 @@ export function navGroups({
 }>): NavGroup[] {
   const copy = SHELL_COPY[locale]
   const item = createNavItem({ pathname, terminology, copy })
-  const groups: NavGroup[] = [generalGroup({ role, workProfile, modules, item })]
-  if (modules.crm) {
-    const crmLinks = isAdminRole(role) || workProfile === 'sales' ? CRM : STAFF_CRM
-    groups.push({ id: 'crm', label: navLabel({ terminology, copy, key: 'crmGroup' }), items: crmLinks.map(item) })
-  }
-  const work = workGroup({
-    role,
-    workProfile,
-    enabled: modules.work,
-    label: navLabel({ terminology, copy, key: 'workGroup' }),
-    item,
-  })
-  if (work !== null) groups.push(work)
-  return groups
+  return [
+    ...todayAndWorkGroups({ modules, role, workProfile, terminology, copy, item }),
+    ...clientAndSalesGroups({ modules, terminology, copy, role, workProfile, item }),
+    ...adminUtilityGroups({ modules, role, terminology, copy, item }),
+  ]
 }
 
 export function routeCopyKey(segment: string | undefined): string | undefined {
   if (segment === 'my-tasks') return 'myTasks'
   if (segment === 'sales') return 'salesWorkspace'
+  if (segment === 'content-calendar') return 'contentCalendar'
+  if (segment === 'repeating') return 'repeatingTasks'
   return segment
 }

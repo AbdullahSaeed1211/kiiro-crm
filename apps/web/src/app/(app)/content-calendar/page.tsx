@@ -6,6 +6,7 @@ import { catalogFor } from '../../../i18n/locale'
 import { AGENCY_WORK_COPY } from '../../../i18n/agency-work-copy'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
 import { ContentCalendarView } from './content-calendar-view'
+import { LoadFailure } from '../load-failure'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,7 @@ export default async function ContentCalendarPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<{ month?: string; year?: string; projectId?: string }> }>) {
   const params = await searchParams
-  const model = await loadWorkReadModel()
-  const context = await getRequestContext()
+  const [model, context] = await Promise.all([loadWorkReadModel(), getRequestContext()])
   const now = new Date()
   const period = calendarPeriod({ month: params.month, year: params.year, now })
   const selectedMonth = period.month
@@ -53,15 +53,19 @@ export default async function ContentCalendarPage({
             <h1 className="text-2xl font-semibold tracking-tight">{copy.contentTitle}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{copy.contentDescription}</p>
           </div>
-          <ContentCalendarView
-            key={`${String(selectedYear)}-${String(selectedMonth)}-${selectedProjectId}`}
-            initialItems={items}
-            projects={model.projects.map(({ id, name }) => ({ id, name }))}
-            selectedProjectId={selectedProjectId}
-            year={selectedYear}
-            month={selectedMonth}
-            weekStartsOn={model.weekStartsOn}
-          />
+          {result.ok ? (
+            <ContentCalendarView
+              key={`${String(selectedYear)}-${String(selectedMonth)}-${selectedProjectId}`}
+              initialItems={items}
+              projects={model.projects.map(({ id, name }) => ({ id, name }))}
+              selectedProjectId={selectedProjectId}
+              year={selectedYear}
+              month={selectedMonth}
+              weekStartsOn={model.weekStartsOn}
+            />
+          ) : (
+            <LoadFailure title={copy.contentTitle} />
+          )}
         </div>
       </PageContent>
     </>

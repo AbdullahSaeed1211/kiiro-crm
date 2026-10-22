@@ -8,6 +8,7 @@ import { getWorkspaceSettings } from '@/server/auth/context'
 import { normalizeLocale } from '@/i18n/locale'
 import { ATTENDANCE_COPY } from '@/i18n/attendance-copy'
 import { AttendanceWorkspace } from './workspace'
+import { LoadFailure } from '../load-failure'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,29 +21,38 @@ export default async function AttendancePage({ searchParams }: Readonly<{ search
     listAttendance(deps, team),
     deps.repo.open(context.actor.id),
     getWorkspaceSettings(),
-    context.payload.find({
-      collection: 'users',
-      depth: 0,
-      limit: 0,
-      pagination: false,
-      overrideAccess: false,
-      req: context.req,
-    }),
+    team
+      ? context.payload.find({
+          collection: 'users',
+          depth: 0,
+          limit: 0,
+          pagination: false,
+          overrideAccess: false,
+          req: context.req,
+          select: { id: true, name: true },
+        })
+      : Promise.resolve({ docs: [] }),
   ])
   const locale = normalizeLocale(settings.locale)
-  const names = Object.fromEntries(people.docs.map((person) => [person.id, person.name || person.email]))
+  const names = Object.fromEntries(
+    people.docs.map((person) => [person.id, person.name || ATTENDANCE_COPY[locale].person]),
+  )
   return (
     <>
       <AppHeader breadcrumbs={[{ label: ATTENDANCE_COPY[locale].title }]} />
       <PageContent>
-        <AttendanceWorkspace
-          key={team ? 'team' : 'mine'}
-          records={result.ok ? result.value : []}
-          open={open ?? null}
-          names={names}
-          team={team}
-          admin={isManagerUp(context.actor)}
-        />
+        {result.ok ? (
+          <AttendanceWorkspace
+            key={team ? 'team' : 'mine'}
+            records={result.value}
+            open={open ?? null}
+            names={names}
+            team={team}
+            admin={isManagerUp(context.actor)}
+          />
+        ) : (
+          <LoadFailure title={ATTENDANCE_COPY[locale].title} />
+        )}
       </PageContent>
     </>
   )

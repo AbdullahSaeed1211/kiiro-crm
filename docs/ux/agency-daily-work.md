@@ -2,6 +2,8 @@
 
 This is the acceptance checklist for the owner's fourteen requested improvements. Implementation alone does not close a row. The release lead records the behavior observed locally and on the deployed tenant before marking it accepted.
 
+The [agency UX simplification plan](../plans/agency-ux-simplification.md) proposes the next refinement sequence based on production and source review. Use its batches to implement changes; retain this checklist as the acceptance ledger.
+
 ## Product decisions
 
 Staff start with the next action, its client or internal project, its responsible person and its due date. Today summarizes attention queues. My tasks is the execution workspace. Reports hold comparisons and trends.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { AttendanceRecord } from '@ops/module-work'
 import type { ActionResult } from '@/server/action-result'
@@ -23,11 +23,25 @@ async function sendPunch(open: AttendanceRecord | null, body: object): Promise<A
   return response.json()
 }
 
+function punchBody({
+  open,
+  reportedAt,
+  note,
+}: Readonly<{ open: AttendanceRecord | null; reportedAt: number | null; note: string }>) {
+  const body: Record<string, string | number> = { note }
+  if (open !== null) body.sessionId = open.id
+  if (reportedAt !== null) body.reportedAt = reportedAt
+  return body
+}
+
 function usePunchSubmission(open: AttendanceRecord | null, copy: AttendanceCopy, onSaved: () => void) {
   const router = useRouter()
+  const saving = useRef(false)
   const [pending, setPending] = useState(false),
     [error, setError] = useState('')
   async function save(body: object) {
+    if (saving.current) return
+    saving.current = true
     setPending(true)
     setError('')
     try {
@@ -42,6 +56,7 @@ function usePunchSubmission(open: AttendanceRecord | null, copy: AttendanceCopy,
     } catch {
       setError(copy.error)
     } finally {
+      saving.current = false
       setPending(false)
     }
   }
@@ -53,9 +68,11 @@ export function usePunch(open: AttendanceRecord | null, copy: AttendanceCopy) {
     [day, setDay] = useState<number | null>(null)
   const [time, setTime] = useState(''),
     [note, setNote] = useState('')
+  const [noteVisible, setNoteVisible] = useState(false)
   const { pending, error, setError, save } = usePunchSubmission(open, copy, () => {
     setEarlier(false)
     setNote('')
+    setNoteVisible(false)
   })
   function submit() {
     const reportedAt = earlier ? reportedTimestamp(day, time) : null
@@ -63,11 +80,7 @@ export function usePunch(open: AttendanceRecord | null, copy: AttendanceCopy) {
       setError(copy.invalid)
       return
     }
-    void save({
-      ...(open === null ? {} : { sessionId: open.id }),
-      ...(reportedAt === null ? {} : { reportedAt }),
-      note,
-    })
+    void save(punchBody({ open, reportedAt, note: earlier || noteVisible ? note : '' }))
   }
   return {
     earlier,
@@ -78,6 +91,8 @@ export function usePunch(open: AttendanceRecord | null, copy: AttendanceCopy) {
     setTime,
     note,
     setNote,
+    noteVisible,
+    setNoteVisible,
     pending,
     error,
     submit,

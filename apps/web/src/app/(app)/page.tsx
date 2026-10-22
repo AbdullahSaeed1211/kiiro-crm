@@ -31,6 +31,7 @@ function profileFocus(profile: HomeProfile, copy: (typeof DASHBOARD_TODAY_COPY)[
 function todayLinks(profile: HomeProfile, work: DashboardWork): readonly { href: string; label: string }[] {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   const links: { href: string; label: string }[] = []
+  links.push({ href: '/attendance', label: copy.attendance })
   if (profile === 'sales') links.push({ href: '/sales', label: copy.salesWorkspace })
   if (profile === 'delivery' && work.workEnabled) links.push({ href: '/projects', label: copy.projects })
   if (profile === 'consultant') links.push({ href: '/my-tasks', label: copy.myTasks })
@@ -52,7 +53,8 @@ function TodayContent({
       <p className="text-sm text-muted-foreground">
         {profileFocus(profile, copy)} {copy.description}
       </p>
-      {work.workEnabled ? <TodayTaskQueue work={work} kind="overdue" /> : null}
+      {work.workEnabled ? <TodayTaskQueue work={work} kind="dueToday" /> : null}
+      {work.workEnabled && work.overdue.count > 0 ? <TodayTaskQueue work={work} kind="overdue" /> : null}
       {showFollowUps ? <DashboardFollowUps context={context} locale={work.locale} dayStart={work.dayStart} /> : null}
       {work.workEnabled ? <TodayTaskQueue work={work} kind="dueWeek" /> : null}
       <nav aria-label={copy.quickLinks} className="flex flex-wrap gap-5 text-sm text-muted-foreground">

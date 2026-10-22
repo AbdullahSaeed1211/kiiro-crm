@@ -152,7 +152,7 @@ async function openTaskSourcePanel(
 ): Promise<void> {
   const openStartedAt = await page.evaluate(() => performance.now())
   await input.taskLink.click()
-  await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/)
+  await expect(page).toHaveURL(/\/tasks\/[^?]+\?panel=1/, { timeout: ROUTE_BUDGET_MS })
   expect(new URL(page.url()).searchParams.get('returnTo')).toBe(input.sourceUrl)
   await expect(page.getByRole('dialog', { name: input.title })).toBeVisible()
   expect(
@@ -160,8 +160,6 @@ async function openTaskSourcePanel(
     `opening a task from ${input.sourceUrl} should not shift its source`,
   ).toBe(0)
 }
-
-const isPhone = (page: Page): boolean => (page.viewportSize()?.width ?? 0) <= 650
 
 async function closeTaskSourcePanel(page: Page, title: string, sourceUrl: string): Promise<void> {
   await page.keyboard.press('Escape')
@@ -659,14 +657,8 @@ test('organization edit form preserves saved business contact fields', async ({ 
   await expect(page.getByLabel('Phone')).toHaveValue(organization.phone)
 })
 
-async function expectSettingsGroups(page: Page, settingsNav: Locator): Promise<void> {
-  if (isPhone(page)) {
-    // A phone shows the sections as one picker with the same groups.
-    const picker = settingsNav.getByRole('combobox', { name: 'Settings section' })
-    await expect(picker).toBeVisible()
-    await expect(picker.locator('optgroup[label="Workspace"]')).toHaveCount(1)
-    return
-  }
+async function expectSettingsGroups(settingsNav: Locator): Promise<void> {
+  await settingsNav.getByText('All settings', { exact: true }).click()
   await expect(settingsNav.getByRole('heading', { name: 'Workspace' })).toBeVisible()
   await expect(settingsNav.getByRole('heading', { name: 'People & access' })).toBeVisible()
   await expect(settingsNav.getByRole('heading', { name: 'Work configuration' })).toBeVisible()
@@ -676,13 +668,66 @@ test('settings IA and command palette expose useful, non-dead defaults', async (
   await signIn(page)
   await page.goto('/settings/general')
   const settingsNav = page.getByRole('navigation', { name: 'Settings' })
-  await expectSettingsGroups(page, settingsNav)
+  await expectSettingsGroups(settingsNav)
   await page.getByRole('button', { name: 'Search workspace' }).click()
   await expect(page.getByText('Navigate', { exact: true })).toBeVisible()
   await expect(page.getByText('Create', { exact: true })).toBeVisible()
   await expect(page.getByRole('group', { name: 'Navigate' }).getByText('Tasks', { exact: true })).toBeVisible()
   await page.screenshot({ path: test.info().outputPath('command-palette.png'), fullPage: true })
   await page.keyboard.press('Escape')
+})
+
+async function closeLocalAttendance(page: Page) {
+  const checkOut = page.getByRole('button', { name: 'Check out now', exact: true })
+  if (await checkOut.isVisible()) {
+    await checkOut.click()
+    await expect(page.getByRole('heading', { name: 'You are checked out' })).toBeVisible()
+  }
+}
+
+async function verifyAttendanceRetry(page: Page) {
+  await expect(page.getByLabel('Note', { exact: true })).toHaveCount(0)
+  await page.getByRole('checkbox', { name: 'Add note', exact: true }).check()
+  await page.getByLabel('Note', { exact: true }).fill('Local attendance review')
+  const checkIn = page.getByRole('button', { name: 'Check in now', exact: true })
+  await page.route('**/api/v1/attendance', async (route) => {
+    await route.abort()
+  })
+  await checkIn.click()
+  await expect(page.getByRole('alert').filter({ hasText: 'Attendance could not be saved' })).toBeVisible()
+  await expect(page.getByLabel('Note', { exact: true })).toHaveValue('Local attendance review')
+  await page.unroute('**/api/v1/attendance')
+  await checkIn.click()
+  await expect(page.getByRole('heading', { name: 'You are checked in' })).toBeVisible()
+}
+
+async function verifyAttendanceDetails(page: Page) {
+  const entry = page
+    .locator('details')
+    .filter({ has: page.getByText('Still checked in', { exact: true }) })
+    .first()
+  await entry.locator('summary').click()
+  await expect(entry.getByText('Check-in submitted', { exact: true })).toBeVisible()
+  await expect(entry.getByText('Local attendance review', { exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath('attendance-details.png'), fullPage: true })
+}
+
+test('attendance preserves a failed submission and reveals audit details after check-in and checkout', async ({
+  page,
+}) => {
+  if (process.env['E2E_BASE_URL'])
+    throw new Error('Attendance write checks require the default local fixture environment.')
+  await signIn(page)
+  await page.goto('/attendance')
+  await closeLocalAttendance(page)
+  await verifyAttendanceRetry(page)
+  await verifyAttendanceDetails(page)
+  await page.getByRole('button', { name: 'Check out now', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'You are checked out' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'You are checked out' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Attendance views' })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath('attendance.png'), fullPage: true })
 })
 
 async function createStaffInvitation(page: Page): Promise<{ readonly email: string; readonly token: string }> {
@@ -806,13 +851,14 @@ test('staff My Tasks is assignment-scoped and member administration is denied', 
   await page.getByLabel('Email').fill(staffEmail)
   await page.getByLabel('Password', { exact: true }).fill(DEV_PASSWORD)
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/\/$/, { timeout: ROUTE_BUDGET_MS })
 
   await page.goto('/my-tasks')
   await verifyStaffTaskScope(page, fixture)
 
-  const denied = await page.goto(MEMBERS_PATH)
-  expect(denied?.status()).toBe(404)
+  const denied = await page.request.get('/api/v1/members')
+  expect(denied.status()).toBe(403)
+  await page.goto(MEMBERS_PATH)
   await expect(page.getByRole('heading', { name: 'Members', exact: true })).toHaveCount(0)
 })
 

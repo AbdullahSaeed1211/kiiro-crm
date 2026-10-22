@@ -3,6 +3,7 @@ import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { listActivities } from './activities'
 import { listEmailMessages, listProjects, listRecordAttachments, listRelatedTasks } from './helpers'
+import { nextOrganizationTask } from './next-organization-task'
 import { loadPeople } from '../../people'
 import type {
   ActivityItem,
@@ -58,6 +59,23 @@ async function openDealCounts(
     counts.set(id, (counts.get(id) ?? 0) + 1)
   }
   return counts
+}
+
+async function organizationDetails(context: RequestContext, record: OrganizationRecord) {
+  const [people, projects, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
+    loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
+    listProjects(context, record.id),
+    listActivities(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
+    listEmailMessages(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
+    listRelatedTasks(context, 'organization', record.id),
+    listRecordAttachments(context, 'organization', record.id),
+  ])
+  const nextDueTask = await nextOrganizationTask(
+    context,
+    record.id,
+    projects.map((project) => project.id),
+  )
+  return { people, projects, activity, emailMessages, relatedTasks, nextDueTask, attachments }
 }
 
 export async function listOrganizations(
@@ -130,6 +148,7 @@ export async function getOrganization(id: string): Promise<{
   readonly activity: readonly ActivityItem[]
   readonly emailMessages: readonly EmailThreadMessage[]
   readonly relatedTasks: readonly RelatedTask[]
+  readonly nextDueTask: RelatedTask | null
   readonly attachments: readonly RecordAttachment[]
 } | null> {
   const context = await getRequestContext()
@@ -141,25 +160,19 @@ export async function getOrganization(id: string): Promise<{
     listCrmPage(context.req, { type: 'deal', where, page: 1, limit: RELATED_LIMIT }),
   ])
   if (record === undefined) return null
-  const [people, projects, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
-    loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
-    listProjects(context, record.id),
-    listActivities(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
-    listEmailMessages(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
-    listRelatedTasks(context, 'organization', record.id),
-    listRecordAttachments(context, 'organization', record.id),
-  ])
+  const details = await organizationDetails(context, record)
   return {
     record,
-    owner: record.ownerId === null ? null : (people.get(record.ownerId) ?? null),
+    owner: record.ownerId === null ? null : (details.people.get(record.ownerId) ?? null),
     relations: {
       contacts: contacts.records,
       deals: deals.records,
-      projects,
+      projects: details.projects,
     },
-    activity,
-    emailMessages,
-    relatedTasks,
-    attachments,
+    activity: details.activity,
+    emailMessages: details.emailMessages,
+    relatedTasks: details.relatedTasks,
+    nextDueTask: details.nextDueTask,
+    attachments: details.attachments,
   }
 }

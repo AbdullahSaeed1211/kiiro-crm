@@ -4,6 +4,8 @@ import type { Locale } from './locale'
 export interface DirectoryCopy {
   readonly organizationsTitle: string
   readonly contactsTitle: string
+  readonly more: string
+  readonly nextDueTask: string
   readonly unassigned: string
   readonly colName: string
   readonly colWebsite: string
@@ -50,6 +52,8 @@ export const DIRECTORY_COPY: Readonly<Record<Locale, DirectoryCopy>> = {
   en: {
     organizationsTitle: 'Organizations',
     contactsTitle: 'Contacts',
+    more: 'More',
+    nextDueTask: 'Next due task',
     unassigned: 'Unassigned',
     colName: 'Name',
     colWebsite: 'Website',
@@ -94,6 +98,8 @@ export const DIRECTORY_COPY: Readonly<Record<Locale, DirectoryCopy>> = {
   es: {
     organizationsTitle: 'Organizaciones',
     contactsTitle: 'Contactos',
+    more: 'Más',
+    nextDueTask: 'Próxima tarea pendiente',
     unassigned: 'Sin asignar',
     colName: 'Nombre',
     colWebsite: 'Sitio web',

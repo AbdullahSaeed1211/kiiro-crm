@@ -4,6 +4,8 @@ import { Button } from '@ops/ui/components/ui/button'
 import { ErrorState } from '@ops/ui/composites/ErrorState'
 import { useEffect } from 'react'
 import { isStaleAssetError, reloadOnce } from './stale-assets'
+import { ERROR_COPY } from '@/i18n/error-copy'
+import { useLocale } from '@/i18n/locale-context'
 
 /** Error boundary for every signed-in page: the sidebar stays, and the page offers a retry instead of going blank. */
 export default function AppError({
@@ -11,16 +13,17 @@ export default function AppError({
   reset,
 }: Readonly<{ error: Error & { digest?: string }; reset: () => void }>) {
   const stale = isStaleAssetError(error)
+  const copy = ERROR_COPY[useLocale()]
   const reference = error.digest === undefined ? '' : ` (${error.digest})`
   useEffect(() => {
     if (stale) reloadOnce()
   }, [stale])
   return (
-    <div className="flex min-h-svh flex-col px-4 py-3 md:px-6 md:py-4">
+    <div className="flex flex-1 flex-col px-4 py-8 md:px-6">
       <ErrorState
-        title={stale ? 'A newer version is available' : 'This page could not be shown'}
-        description={stale ? 'Reloading to pick up the latest version.' : `Something went wrong.${reference}`}
-        action={<Button onClick={stale ? reloadOnce : reset}>{stale ? 'Reload' : 'Try again'}</Button>}
+        title={stale ? copy.newerVersion : copy.pageFailed}
+        description={stale ? copy.reloading : `${copy.loadFailed}${reference}`}
+        action={<Button onClick={stale ? reloadOnce : reset}>{stale ? copy.reload : copy.retry}</Button>}
       />
     </div>
   )

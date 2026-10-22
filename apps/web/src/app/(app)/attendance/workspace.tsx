@@ -14,6 +14,113 @@ const subscribeZone = () => () => undefined
 const browserZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 const serverZone = () => 'UTC'
 
+function EarlierTimeFields({
+  punch,
+  copy,
+  locale,
+  zone,
+}: Readonly<{ punch: ReturnType<typeof usePunch>; copy: AttendanceCopy; locale: string; zone: string }>) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <DateField
+        label={copy.day}
+        value={punch.day}
+        locale={locale}
+        placeholder={copy.choose}
+        clearLabel={copy.clear}
+        disabled={punch.pending}
+        onChange={punch.setDay}
+      />
+      <label className="grid gap-1 text-sm">
+        {copy.time}
+        <Input
+          type="time"
+          value={punch.time}
+          disabled={punch.pending}
+          onChange={(event) => {
+            punch.setTime(event.target.value)
+          }}
+        />
+      </label>
+      <p className="text-xs text-muted-foreground sm:col-span-2">
+        {copy.zone} {zone}
+      </p>
+      <label className="grid gap-1 text-sm sm:col-span-2">
+        {copy.reason}
+        <Input
+          value={punch.note}
+          maxLength={500}
+          disabled={punch.pending}
+          onChange={(event) => {
+            punch.setNote(event.target.value)
+          }}
+          placeholder={copy.reasonHint}
+        />
+      </label>
+    </div>
+  )
+}
+
+function OptionalNote({ punch, copy }: Readonly<{ punch: ReturnType<typeof usePunch>; copy: AttendanceCopy }>) {
+  return (
+    <div className="grid gap-2">
+      <label className="flex min-h-8 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={punch.noteVisible}
+          disabled={punch.pending}
+          onChange={(event) => {
+            punch.setNoteVisible(event.target.checked)
+          }}
+        />
+        {copy.addNote}
+      </label>
+      {punch.noteVisible ? (
+        <label className="grid gap-1 text-sm">
+          {copy.note}
+          <Input
+            value={punch.note}
+            maxLength={500}
+            disabled={punch.pending}
+            onChange={(event) => {
+              punch.setNote(event.target.value)
+            }}
+            placeholder={copy.noteHint}
+          />
+        </label>
+      ) : null}
+    </div>
+  )
+}
+
+function AttendanceOptions({
+  punch,
+  copy,
+  locale,
+  zone,
+}: Readonly<{ punch: ReturnType<typeof usePunch>; copy: AttendanceCopy; locale: string; zone: string }>) {
+  return (
+    <div className="grid gap-3 border-t pt-3">
+      <label className="flex min-h-8 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={punch.earlier}
+          disabled={punch.pending}
+          onChange={(event) => {
+            punch.setEarlier(event.target.checked)
+          }}
+        />
+        {copy.earlier}
+      </label>
+      {punch.earlier ? (
+        <EarlierTimeFields punch={punch} copy={copy} locale={locale} zone={zone} />
+      ) : (
+        <OptionalNote punch={punch} copy={copy} />
+      )}
+    </div>
+  )
+}
+
 function AttendancePunch({
   open,
   copy,
@@ -31,59 +138,10 @@ function AttendancePunch({
           </p>
         )}
       </div>
-      <label className="flex min-h-8 items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={punch.earlier}
-          disabled={punch.pending}
-          onChange={(event) => {
-            punch.setEarlier(event.target.checked)
-          }}
-        />
-        {copy.earlier}
-      </label>
-      {punch.earlier ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <DateField
-            label={copy.day}
-            value={punch.day}
-            locale={locale}
-            placeholder={copy.choose}
-            clearLabel={copy.clear}
-            disabled={punch.pending}
-            onChange={punch.setDay}
-          />
-          <label className="grid gap-1 text-sm">
-            {copy.time}
-            <Input
-              type="time"
-              value={punch.time}
-              disabled={punch.pending}
-              onChange={(event) => {
-                punch.setTime(event.target.value)
-              }}
-            />
-          </label>
-        </div>
-      ) : null}
-      <p className="text-xs text-muted-foreground">
-        {copy.zone} {zone}
-      </p>
-      <label className="grid gap-1 text-sm">
-        {copy.note}
-        <Input
-          value={punch.note}
-          maxLength={500}
-          disabled={punch.pending}
-          onChange={(event) => {
-            punch.setNote(event.target.value)
-          }}
-          placeholder={copy.noteHint}
-        />
-      </label>
       <Button disabled={punch.pending} onClick={punch.submit} className="justify-self-start">
         {punch.label}
       </Button>
+      <AttendanceOptions punch={punch} copy={copy} locale={locale} zone={zone} />
       {punch.error ? (
         <p role="alert" className="text-sm text-destructive">
           {punch.error}
@@ -112,7 +170,9 @@ export function AttendanceWorkspace(
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{copy.description}</p>
       </header>
       <AttendancePunch open={props.open} copy={copy} zone={zone} />
-      <p className="text-xs text-muted-foreground">{copy.audit}</p>
+      <p className="text-xs text-muted-foreground">
+        {copy.zone} {zone}
+      </p>
       <AttendanceHistory {...props} copy={copy} locale={locale} zone={zone} />
     </div>
   )

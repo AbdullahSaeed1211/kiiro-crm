@@ -1,6 +1,6 @@
 import type { Where } from 'payload'
 import { asId, type Id } from '@ops/kernel'
-import { todayAsDueAt, weekEndAfter } from '@ops/module-work'
+import { DAY_MS, todayAsDueAt, weekEndAfter } from '@ops/module-work'
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
@@ -33,6 +33,7 @@ export interface DashboardWork {
   readonly crmEnabled: boolean
   readonly workEnabled: boolean
   readonly overdue: TaskSection
+  readonly dueToday: TaskSection
   readonly dueWeek: TaskSection
 }
 const relation = (value: unknown): Id | null => (typeof value === 'string' ? asId(value) : null)
@@ -94,7 +95,7 @@ async function enrich(context: RequestContext, sections: readonly TaskSection[])
   }))
 }
 
-type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueWeek'> & { readonly weekEnd: number }
+type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'dueWeek'> & { readonly weekEnd: number }
 
 function dashboardScope(
   settings: Awaited<ReturnType<typeof getWorkspaceSettings>>,
@@ -121,19 +122,30 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     ...(workflow.closed.length ? [{ stageId: { not_in: workflow.closed } }] : []),
     ...(scope.team ? [] : [{ assignees: { contains: String(context.actor.id) } }]),
   ]
-  const [overdue, dueWeek] = await Promise.all([
+  const [overdue, dueToday, dueWeek] = await Promise.all([
     taskSection(context, { and: [...clauses, { dueAt: { less_than: scope.dayStart } }] }),
     taskSection(context, {
-      and: [...clauses, { dueAt: { greater_than_equal: scope.dayStart } }, { dueAt: { less_than: scope.weekEnd } }],
+      and: [
+        ...clauses,
+        { dueAt: { greater_than_equal: scope.dayStart } },
+        { dueAt: { less_than: scope.dayStart + DAY_MS } },
+      ],
+    }),
+    taskSection(context, {
+      and: [
+        ...clauses,
+        { dueAt: { greater_than_equal: scope.dayStart + DAY_MS } },
+        { dueAt: { less_than: scope.weekEnd } },
+      ],
     }),
   ])
-  const enriched = await enrich(context, [overdue, dueWeek])
-  return { overdue: enriched[0] ?? empty, dueWeek: enriched[1] ?? empty }
+  const enriched = await enrich(context, [overdue, dueToday, dueWeek])
+  return { overdue: enriched[0] ?? empty, dueToday: enriched[1] ?? empty, dueWeek: enriched[2] ?? empty }
 }
 
 /** Owners see team queues; staff see assigned work. Calendar-date comparisons match the task screens. */
 export async function loadDashboardWork(context: RequestContext): Promise<DashboardWork> {
   const scope = dashboardScope(await getWorkspaceSettings(), context)
-  if (!scope.workEnabled) return { ...scope, overdue: empty, dueWeek: empty }
+  if (!scope.workEnabled) return { ...scope, overdue: empty, dueToday: empty, dueWeek: empty }
   return { ...scope, ...(await dashboardQueues(context, scope)) }
 }

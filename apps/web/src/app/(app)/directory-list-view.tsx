@@ -83,10 +83,15 @@ function organizationColumns(copy: DirectoryCopy, view: DirectoryUrlOptions): Da
       sortHref: sortHref('/organizations', { query, sort: nameSort }),
       hideable: false,
     },
-    { id: 'website', header: copy.colWebsite },
+    { id: 'website', header: copy.colWebsite, defaultHidden: true },
     { id: 'owner', header: copy.colOwner },
     { id: 'deals', header: copy.colOpenDeals, numeric: true },
-    { id: 'updated', header: copy.colUpdated, sortHref: sortHref('/organizations', { query, sort: dateSort }) },
+    {
+      id: 'updated',
+      header: copy.colUpdated,
+      sortHref: sortHref('/organizations', { query, sort: dateSort }),
+      defaultHidden: true,
+    },
   ]
 }
 function organizationRows(

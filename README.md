@@ -73,6 +73,8 @@ Every screen must make the agency's next action obvious. This is an acceptance r
 
 For attendance, put **Check in / Check out** first and history below. Keep earlier-time reporting optional; show audit timestamps in record details rather than crowding the main view. This is the target presentation; the stored timestamp and access rules remain in [spec §10.2](docs/spec.md#102-work-opsmodule-work).
 
+The [agency UX simplification plan](docs/plans/agency-ux-simplification.md) turns this standard into ordered work, with production observations, six source-level references and acceptance criteria. Its [agent execution backlog](docs/plans/agency-ux-simplification.md#agent-execution-backlog) defines work packages, dependencies, completion-driven coordination and push/deployment evidence. It is a proposal, not a completed release.
+
 ## Agency pilot priorities
 
 The next acceptance pass focuses on daily agency work. These are verification and refinement priorities, not a claim that every workflow is complete:
