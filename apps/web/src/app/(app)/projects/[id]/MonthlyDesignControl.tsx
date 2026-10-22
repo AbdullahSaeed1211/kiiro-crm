@@ -89,8 +89,11 @@ export function MonthlyDesignControl({
         }}
       />
       <MonthlyDesignSummary config={config} people={people} preview={preview} locale={locale} copy={copy} />
-      <p className="text-xs text-muted-foreground">{copy.actualPosting}</p>
-      <p className="text-xs text-muted-foreground">{copy.futureOnly}</p>
+      {config === null ? null : (
+        <p className="text-sm text-muted-foreground">
+          {copy.actualPosting} {copy.futureOnly}
+        </p>
+      )}
       {canManage ? (
         <div hidden={!editing} key={updatedAt}>
           <MonthlyDesignForm
@@ -128,7 +131,7 @@ function MonthlyDesignHeading({
         <h2 id="monthly-design-heading" className="font-medium">
           {copy.title}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{configStatus(config, copy)}</p>
+        {config === null ? null : <p className="mt-1 text-sm text-muted-foreground">{configStatus(config, copy)}</p>}
       </div>
       {canManage && !editing ? <ManageButton config={config} copy={copy} onEdit={onEdit} /> : null}
     </div>
