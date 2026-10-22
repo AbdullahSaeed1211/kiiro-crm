@@ -1,17 +1,42 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import { createDueSoonJob, createScheduledJobs, handleCronRequest, rejectUnauthorized } from '@ops/adapter-cloudflare'
+import {
+  createDueSoonJob,
+  createScheduledJobs,
+  handleCronRequest,
+  rejectUnauthorized,
+  type CronJob,
+} from '@ops/adapter-cloudflare'
+import { ok } from '@ops/kernel'
 import {
   createDueItemSource,
   createJobRunStore,
   createJobSources,
   createNotificationStore,
+  createScheduleDueItemSource,
+  runMonthlyDesignOrders,
   SETTINGS_GLOBAL,
 } from '@ops/adapter-payload'
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 import { runDailyBackup } from '../../../../backup/daily-backup'
 import { sendNextRound } from '../../../../newsletter/queue'
 import { catchUpRepeatingTasks } from '../../../../work/repeat-catch-up'
+
+function agencyJobs(payload: Payload, timeZone: string): readonly CronJob[] {
+  return [
+    {
+      name: 'work.monthlyDesign',
+      run: async (window) => ok(await runMonthlyDesignOrders(payload, window.end, timeZone)),
+    },
+    createDueSoonJob({
+      name: 'schedule.dueSoon',
+      source: createScheduleDueItemSource(payload),
+      notifications: createNotificationStore(payload),
+      timeZone,
+      runs: createJobRunStore(payload),
+    }),
+  ]
+}
 
 /** Receives the cron trigger the Worker entry forwards and runs the background jobs (spec §13). */
 export async function POST(request: Request): Promise<Response> {
@@ -50,5 +75,8 @@ export async function POST(request: Request): Promise<Response> {
   await runDailyBackup(env, Date.now()).catch((error: unknown) => {
     console.error('[backup.daily]', error)
   })
-  return handleCronRequest(request, { secret: env.INTERNAL_SECRET, jobs })
+  return handleCronRequest(request, {
+    secret: env.INTERNAL_SECRET,
+    jobs: [...agencyJobs(payload, settings.timezone), ...jobs],
+  })
 }

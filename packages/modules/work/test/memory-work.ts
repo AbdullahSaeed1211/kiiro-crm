@@ -1,6 +1,6 @@
-import { asId, ok } from '@ops/kernel'
+import { asId, ok, type Id } from '@ops/kernel'
 import type { Actor, Workflow } from '@ops/platform'
-import type { ProjectRecord, WorkDeps, WorkRepository, WorkTaskRecord } from '../src'
+import type { MonthlyDesignConfig, ProjectRecord, WorkDeps, WorkRepository, WorkTaskRecord } from '../src'
 
 /** In-memory fixtures and a stub repository for work use-case tests. */
 export const task = (id: string, extra: Partial<WorkTaskRecord> = {}): WorkTaskRecord => ({
@@ -45,7 +45,7 @@ const workflow: Workflow = {
     { id: asId('done'), name: 'Done', category: 'done_success', color: 'green', position: 1 },
   ],
 }
-export const project = (id = 'project'): ProjectRecord => ({
+export const project = (id = 'project', extra: Partial<ProjectRecord> = {}): ProjectRecord => ({
   id: asId(id),
   name: id,
   organizationId: null,
@@ -58,8 +58,10 @@ export const project = (id = 'project'): ProjectRecord => ({
   startAt: null,
   targetEndAt: null,
   description: null,
+  monthlyDesign: null,
   createdAt: 0,
   updatedAt: 1,
+  ...extra,
 })
 export const createMemoryRepo = (): WorkRepository =>
   ({
@@ -73,6 +75,9 @@ export const createMemoryRepo = (): WorkRepository =>
     createProject: () => Promise.resolve(ok(project())),
     updateTask: () => Promise.resolve(undefined),
     saveTaskMove: () => Promise.resolve(undefined),
+    addActivity: () => Promise.resolve(),
+    addTransition: () => Promise.resolve(),
+    updateProjectMonthlyDesign: (_id: Id, config: MonthlyDesignConfig) => Promise.resolve({ config, updatedAt: 2 }),
   }) as unknown as WorkRepository
 export const depsFor = (input: Partial<WorkDeps> = {}): WorkDeps => ({
   actor: actor('staff'),

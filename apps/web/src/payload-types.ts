@@ -512,6 +512,7 @@ export interface Project {
 export interface Task {
   id: string;
   title: string;
+  monthlyOccurrenceKey?: string | null;
   description?: string | null;
   project?: (string | null) | Project;
   relatedType?: ('organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal') | null;
@@ -1653,6 +1654,7 @@ export interface ProjectsSelect<T extends boolean = true> {
  */
 export interface TasksSelect<T extends boolean = true> {
   title?: T;
+  monthlyOccurrenceKey?: T;
   description?: T;
   project?: T;
   relatedType?: T;

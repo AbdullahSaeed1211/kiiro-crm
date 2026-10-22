@@ -69,6 +69,13 @@ export const tasksCollection = spikeCollection({
   },
   fields: [
     textField('title', { required: true, maxLength: TASK_TITLE_MAX }),
+    {
+      name: 'monthlyOccurrenceKey',
+      type: 'text',
+      unique: true,
+      admin: { hidden: true },
+      access: { create: () => false, update: () => false, read: () => false },
+    },
     { name: 'description', type: 'textarea', maxLength: PROJECT_DESCRIPTION_MAX },
     relationshipTo(FIELDS.project, COLLECTIONS.projects),
     ...recordReference({}, { type: 'relatedType', id: 'relatedId' }),

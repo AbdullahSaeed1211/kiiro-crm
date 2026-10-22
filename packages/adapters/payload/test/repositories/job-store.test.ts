@@ -6,6 +6,7 @@ import { createJobRunStore, createJobSources } from '../../src/repositories/job-
 
 const AT = Date.UTC(2026, 8, 14, 12)
 const OVERDUE_JOB = 'tasks.overdue'
+const DIGEST_JOB = 'digest.send'
 
 interface PayloadCall {
   readonly method: 'find' | 'create' | 'update' | 'delete'
@@ -67,13 +68,25 @@ describe('createJobRunStore', () => {
   })
 
   it('treats a concurrent unique insert as a skipped claim and rethrows other errors', async () => {
+    let reads = 0
     const duplicate = callsFor({
-      find: () => ({ docs: [] }),
+      find: () => {
+        reads += 1
+        return reads === 1 ? { docs: [] } : { docs: [{ id: 'same-window', job: DIGEST_JOB, windowStart: 7 }] }
+      },
       create: () => {
-        throw new Error('UNIQUE constraint failed: job_runs.job_window')
+        throw new Error('Payload create failed', {
+          cause: new Error('D1_ERROR: UNIQUE constraint failed: job_runs.job_window'),
+        })
       },
     })
-    expect(await duplicate.store.claim('digest.send', 'digest.send:7')).toBe(false)
+    expect(await duplicate.store.claim(DIGEST_JOB, `${DIGEST_JOB}:7`)).toBe(false)
+    const readsAfterRace = duplicate.calls.filter((call) => call.method === 'find')
+    expect(readsAfterRace).toHaveLength(2)
+    expect(readsAfterRace[1]?.args).toMatchObject({
+      collection: 'jobRuns',
+      where: { and: [{ job: { equals: DIGEST_JOB } }, { windowStart: { equals: 7 } }] },
+    })
 
     const failure = new Error('database unavailable')
     const other = callsFor({
@@ -82,7 +95,7 @@ describe('createJobRunStore', () => {
         throw failure
       },
     })
-    await expect(other.store.claim('digest.send', 'digest.send:7')).rejects.toBe(failure)
+    await expect(other.store.claim(DIGEST_JOB, `${DIGEST_JOB}:7`)).rejects.toBe(failure)
   })
 
   it('reads and completes the latest run cursor, including clearing it', async () => {

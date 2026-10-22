@@ -161,6 +161,27 @@ export const setProjectRetainerSchema = z.strictObject({
   expectedUpdatedAt: version,
 })
 
+/** Monthly design work orders are opt-in and use calendar days, independent of the tenant timezone. */
+export const configureProjectMonthlyDesignSchema = z.strictObject({
+  projectId: nonEmptyId,
+  expectedUpdatedAt: version,
+  enabled: z.boolean(),
+  title: z.string().trim().min(1, 'Enter a work order title.').max(200, 'Use 200 characters or fewer.'),
+  assigneeIds: z.array(nonEmptyId),
+  issueDay: z.number().int().min(1).max(31).default(23),
+  dueDay: z.number().int().min(1).max(31).default(3),
+})
+
+/** Persisted shape validated whenever monthly design settings are read from project custom data. */
+export const monthlyDesignConfigSchema = z.strictObject({
+  enabled: z.boolean(),
+  title: z.string().trim().min(1).max(200),
+  assigneeIds: z.array(nonEmptyId),
+  issueDay: z.number().int().min(1).max(31),
+  dueDay: z.number().int().min(1).max(31),
+  effectiveFrom: z.number().nonnegative(),
+})
+
 /** Compare-and-set guard for commands that only need the record's current version. */
 export const expectedVersionSchema = z.object({ expectedUpdatedAt: version })
 

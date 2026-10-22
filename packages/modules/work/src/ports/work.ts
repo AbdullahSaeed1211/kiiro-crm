@@ -4,6 +4,14 @@ import type { TaskRepeat } from '../domain/recurrence'
 import type { TaskPriority, TaskRecord as TaskPortRecord } from './tasks'
 
 export type WorkRecordType = 'project' | 'task'
+export interface MonthlyDesignConfig {
+  readonly enabled: boolean
+  readonly title: string
+  readonly assigneeIds: readonly Id[]
+  readonly issueDay: number
+  readonly dueDay: number
+  readonly effectiveFrom: number
+}
 export interface ProjectRecord {
   readonly id: Id
   readonly name: string
@@ -17,6 +25,7 @@ export interface ProjectRecord {
   readonly startAt: number | null
   readonly targetEndAt: number | null
   readonly description: string | null
+  readonly monthlyDesign: MonthlyDesignConfig | null
   readonly createdAt: number
   readonly updatedAt: number
 }
@@ -96,6 +105,8 @@ export interface TaskDraft {
   readonly completedAt?: number | null
   readonly repeat?: TaskRepeat
   readonly ownerOnly?: boolean
+  readonly monthlyOrigin?: { readonly projectId: Id; readonly issueMonth: string }
+  readonly monthlyOccurrenceKey?: string
 }
 
 export interface ProjectPatch {
@@ -179,6 +190,11 @@ export interface WorkRepository extends StageStore {
     retainer: boolean,
     expectedUpdatedAt: number,
   ): Promise<{ readonly retainer: boolean; readonly updatedAt: number } | undefined>
+  updateProjectMonthlyDesign(
+    id: Id,
+    config: MonthlyDesignConfig,
+    expectedUpdatedAt: number,
+  ): Promise<{ readonly config: MonthlyDesignConfig; readonly updatedAt: number } | undefined>
   getTask(id: Id): Promise<WorkTaskRecord | undefined>
   listTasks(): Promise<readonly WorkTaskRecord[]>
   listTasksForProject(projectId: Id): Promise<readonly WorkTaskRecord[]>
@@ -207,6 +223,11 @@ export interface WorkDeps {
   readonly readProjectAttachment?: (projectId: Id, attachmentId: Id) => Promise<boolean>
   /** Confirms an assigned project member is an active staff account. */
   readonly isActiveUser?: (userId: Id) => Promise<boolean>
+  /** Confirms an active project owner/member's work profile can read project tasks. */
+  readonly canReadProjectAsUser?: (
+    userId: Id,
+    project: Pick<ProjectRecord, 'ownerId' | 'memberIds'>,
+  ) => Promise<boolean>
 }
 
 export type WorkResult<T> = Result<T>

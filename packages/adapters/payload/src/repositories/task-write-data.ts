@@ -71,6 +71,8 @@ export function taskData(draft: TaskDraft): Record<string, unknown> {
     dueAt: orNull(draft.dueAt),
     completedAt: orNull(draft.completedAt),
     ownerOnly: draft.ownerOnly ?? false,
+    ...(draft.monthlyOrigin === undefined ? {} : { customData: { monthlyOrigin: draft.monthlyOrigin } }),
+    ...(draft.monthlyOccurrenceKey === undefined ? {} : { monthlyOccurrenceKey: draft.monthlyOccurrenceKey }),
   }
 }
 

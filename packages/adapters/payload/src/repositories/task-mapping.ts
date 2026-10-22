@@ -1,5 +1,6 @@
-import type { Id } from '@ops/kernel'
-import type { ProjectRecord, TaskRecord, WorkTaskRecord } from '@ops/module-work'
+import { asId, type Id } from '@ops/kernel'
+import type { MonthlyDesignConfig, ProjectRecord, TaskRecord, WorkTaskRecord } from '@ops/module-work'
+import { monthlyDesignConfigSchema } from '@ops/module-work'
 import type { StageCategory, StageTrackedRecord } from '@ops/platform'
 import { PRIORITY_VALUES, TASK_REPEAT_VALUES } from '../collections/values'
 import { FIELDS, RECORD_TYPES } from '../contracts/names'
@@ -70,8 +71,18 @@ export function toProjectRecord(doc: Doc, stageCategory: StageCategory): Project
     startAt: numberOf(doc, 'startAt'),
     targetEndAt: numberOf(doc, 'targetEndAt'),
     description: textOf(doc, 'description') ?? null,
+    monthlyDesign: monthlyDesignOf(doc),
     createdAt: msOf(fieldOf(doc, 'createdAt')) ?? state.updatedAt,
   }
+}
+
+function monthlyDesignOf(doc: Doc): MonthlyDesignConfig | null {
+  const customData = fieldOf(doc, 'customData')
+  if (typeof customData !== 'object' || customData === null || Array.isArray(customData)) return null
+  const raw = (customData as Readonly<Record<string, unknown>>)['monthlyDesign']
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+  const parsed = monthlyDesignConfigSchema.safeParse(raw)
+  return parsed.success ? { ...parsed.data, assigneeIds: parsed.data.assigneeIds.map(asId) } : null
 }
 
 const repeatOf = (doc: Doc) => oneOf(TASK_REPEAT_VALUES, fieldOf(doc, 'repeat')) ?? 'none'

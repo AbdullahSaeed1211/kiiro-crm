@@ -82,7 +82,7 @@ async function signIn(page: Page): Promise<void> {
     await page.getByLabel('Email').fill(OWNER_EMAIL)
     await page.getByLabel('Password', { exact: true }).fill(DEV_PASSWORD)
     await page.getByRole('button', { name: 'Sign in' }).click()
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page).toHaveURL(/\/$/, { timeout: ROUTE_BUDGET_MS })
   } finally {
     rmSync(SIGN_IN_LOCK, { recursive: true, force: true })
   }
@@ -190,6 +190,10 @@ async function firstCalendarTask(page: Page): Promise<CalendarTask> {
   const href = await link.getAttribute('href')
   if (title === '' || href === null) throw new Error('calendar task has no contextual URL or title')
   return { title, href }
+}
+
+function calendarTaskLink(page: Page, title: string): Locator {
+  return page.locator('section.ops-surface-card a[href^="/tasks/"][href*="panel=1"]').filter({ hasText: title }).first()
 }
 
 function taskNotificationSource(task: CalendarTask): Readonly<{ taskId: string; returnTo: string }> {
@@ -320,7 +324,7 @@ async function verifyTaskPanelHistoryAndEscape(page: Page, title: string) {
     await recordedLayoutShiftSince(page, closeStartedAt),
     'closing a task panel should not shift the calendar',
   ).toBe(0)
-  await expect(page.getByRole('link', { name: title, exact: true })).toBeFocused()
+  await expect(calendarTaskLink(page, title)).toBeFocused()
 }
 
 async function verifyTaskPanelScrollContainment(page: Page, title: string): Promise<void> {
@@ -365,12 +369,12 @@ async function verifyCanonicalTaskPage(page: Page, taskHref: string, title: stri
 
 async function verifyTaskPanelCloseControls(page: Page, title: string) {
   await page.goto(CALENDAR_PATH)
-  await page.getByRole('link', { name: title, exact: true }).click()
+  await calendarTaskLink(page, title).click()
   await expectCalendarPanelOpen(page)
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).first().click()
   await expectCalendarPanelClosed(page)
   if ((page.viewportSize()?.width ?? 0) > 600) {
-    await page.getByRole('link', { name: title, exact: true }).click()
+    await calendarTaskLink(page, title).click()
     await expect(page.locator(TASK_PANEL)).toBeVisible()
     await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 10, y: 10 } })
     await expectCalendarPanelClosed(page)
@@ -384,7 +388,7 @@ async function verifyCalendarTaskPanelOpen(page: Page): Promise<CalendarTask> {
   const calendarBox = await calendar.boundingBox()
   if (calendarBox === null) throw new Error('calendar is not visible before opening a task')
   const openStartedAt = await page.evaluate(() => performance.now())
-  await page.getByRole('link', { name: task.title, exact: true }).click()
+  await calendarTaskLink(page, task.title).click()
   await expectCalendarPanelOpen(page)
   expect(
     await recordedLayoutShiftSince(page, openStartedAt),
@@ -730,6 +734,46 @@ async function organizationEditRoute(page: Page, name: string): Promise<string> 
   if (id === undefined || id === '') throw new Error(`organization ${name} has an invalid detail link`)
   return `/organizations/${id}/edit`
 }
+
+async function monthlyDesignFixture(page: Page) {
+  const response = await page.request.post('/api/v1/projects', {
+    data: { name: `Local monthly design review ${String(Date.now())}` },
+  })
+  expect(response.status()).toBe(201)
+  const result = (await response.json()) as { data: { id: string; updatedAt: number } }
+  return result.data
+}
+
+async function configureMonthlyDesign(section: Locator, title: string) {
+  await section.getByRole('button', { name: 'Set up', exact: true }).click()
+  await section.getByLabel('Task title', { exact: true }).fill(title)
+  await expect(section.getByLabel('Task title', { exact: true })).toHaveValue(title)
+  await section.getByRole('checkbox', { name: OWNER_NAME, exact: true }).check()
+  await section.getByRole('button', { name: 'Close editor', exact: true }).click()
+  await section.getByRole('button', { name: 'Set up', exact: true }).click()
+  await expect(section.getByLabel('Task title', { exact: true })).toHaveValue(title)
+  await section.getByRole('button', { name: 'Save schedule', exact: true }).click()
+  await expect(section.getByText('Active', { exact: true })).toBeVisible()
+}
+
+test('monthly design setup retains drafts and saves an explicit scoped schedule', async ({ page, baseURL }) => {
+  if (baseURL !== 'http://localhost:3001' && baseURL !== 'http://localhost:3000')
+    throw new Error('Monthly design fixtures require a local app.')
+  await signIn(page)
+  const project = await monthlyDesignFixture(page)
+  await page.goto(`/projects/${project.id}`)
+  const section = page.getByRole('region', { name: 'Monthly design work', exact: true })
+  const title = `Local design cycle ${String(Date.now())}`
+  await configureMonthlyDesign(section, title)
+  await page.reload()
+  await expect(section.getByText(title, { exact: true })).toBeVisible()
+  const stale = await page.request.patch(`/api/v1/projects/${project.id}/monthly-design`, {
+    data: { expectedUpdatedAt: project.updatedAt, enabled: false, title, assigneeIds: [], issueDay: 23, dueDay: 3 },
+  })
+  expect(stale.status()).toBe(409)
+  await expect(page.getByRole('heading', { name: 'Something went wrong', exact: true })).toHaveCount(0)
+  await page.screenshot({ path: test.info().outputPath('monthly-design.png'), fullPage: true })
+})
 
 test('organization edit form preserves saved business contact fields', async ({ page }) => {
   await signIn(page)

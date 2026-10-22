@@ -12,29 +12,10 @@ import {
 import { Bell, CheckCircle2 } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { taskHref } from './task-navigation'
-import { NOTIFICATION_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
+import { NOTIFICATION_COPY, type Locale } from '../../i18n/config'
 import { describeClientError } from './client-errors'
 import { readApi } from './api-client'
-
-interface NotificationItem {
-  readonly id: string
-  readonly type?: string
-  readonly recordType?: string
-  readonly recordId?: string | null
-  readonly readAt?: number | null
-  readonly createdAt?: string
-  readonly data?: Readonly<Record<string, unknown>>
-}
-
-const RECORD_ROUTES: Readonly<Record<string, string>> = {
-  organization: 'organizations',
-  contact: 'contacts',
-  lead: 'leads',
-  deal: 'deals',
-  project: 'projects',
-  task: 'tasks',
-}
+import { notificationHref, presentNotification, type NotificationItem } from './notification-presentation'
 
 /** How often the bell re-reads the unread count while the tab is visible. */
 const UNREAD_POLL_MS = 60_000
@@ -67,21 +48,7 @@ function timeAgo(createdAt: string | undefined, locale: Locale): string {
   return formatter.format(Math.round(elapsed / size), unit)
 }
 
-const humanize = (value = 'Update') => value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
 const isUnread = (item: NotificationItem): boolean => typeof item.readAt !== 'number'
-
-function notificationHref(item: NotificationItem, pathname: string): string | undefined {
-  const route = item.recordType === undefined ? undefined : RECORD_ROUTES[item.recordType]
-  if (route === undefined || typeof item.recordId !== 'string') return undefined
-  return item.recordType === 'task'
-    ? taskHref(item.recordId, `${pathname}${window.location.search}`)
-    : `/${route}/${item.recordId}`
-}
-
-function notificationCopy(item: NotificationItem): string {
-  const message = item.data?.message ?? item.data?.title
-  return typeof message === 'string' && message.trim() !== '' ? message : humanize(item.type)
-}
 
 function NotificationsEmpty({
   loading,
@@ -109,7 +76,6 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
   const [error, setError] = useState<string | null>(null)
   const [markingAll, setMarkingAll] = useState(false)
   const copy = NOTIFICATION_COPY[locale]
-  const shellCopy = SHELL_COPY[locale]
 
   useEffect(() => {
     const controller = new AbortController()
@@ -182,7 +148,7 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
       setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, readAt: Date.now() } : entry)))
     }
     setError(null)
-    const href = notificationHref(item, pathname)
+    const href = notificationHref(item, pathname, window.location.search)
     if (href !== undefined) {
       setOpen(false)
       router.push(href)
@@ -230,32 +196,34 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
             </p>
           ) : null}
           <NotificationsEmpty loading={loading} error={error} empty={items.length === 0} label={copy.caughtUp} />
-          {items.map((item) => (
-            <Button
-              variant="ghost"
-              type="button"
-              className="h-auto w-full justify-start whitespace-normal rounded-lg border bg-card p-3 text-left"
-              key={item.id}
-              onClick={() => void select(item)}
-            >
-              <span className="flex items-start gap-2">
-                <span
-                  className={`mt-1.5 size-1.5 shrink-0 rounded-full ${isUnread(item) ? 'bg-primary' : 'bg-muted-foreground/30'}`}
-                />
-                <span>
-                  <span className="block text-sm font-medium">{notificationCopy(item)}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {[
-                      shellCopy[item.recordType ?? ''] ?? humanize(item.recordType ?? item.type),
-                      timeAgo(item.createdAt, locale),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+          {items.map((item) => {
+            const presentation = presentNotification(item, locale)
+            return (
+              <Button
+                variant="ghost"
+                type="button"
+                className="h-auto w-full justify-start whitespace-normal rounded-lg border bg-card p-3 text-left"
+                key={item.id}
+                onClick={() => void select(item)}
+              >
+                <span className="flex items-start gap-2">
+                  <span
+                    className={`mt-1.5 size-1.5 shrink-0 rounded-full ${isUnread(item) ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium text-muted-foreground">{presentation.kind}</span>
+                    <span className="mt-0.5 block text-sm font-medium">{presentation.title}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {[presentation.scheduledAt, timeAgo(item.createdAt, locale)].filter(Boolean).join(' · ')}
+                    </span>
+                    {presentation.action === undefined ? null : (
+                      <span className="mt-2 block text-xs font-medium text-primary">{presentation.action} →</span>
+                    )}
                   </span>
                 </span>
-              </span>
-            </Button>
-          ))}
+              </Button>
+            )
+          })}
         </div>
       </SheetContent>
     </Sheet>

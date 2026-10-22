@@ -7,6 +7,7 @@ export type {
   DeliverableRecord,
   DeliverableStatus,
   ProjectDraft,
+  MonthlyDesignConfig,
   ProjectRecord,
   ProjectPatch,
   TaskDraft,
@@ -27,6 +28,7 @@ export {
   removeProjectMember,
   setProjectRetainer,
 } from './commands/projects'
+export { configureProjectMonthlyDesign } from './commands/monthly-design'
 export { createDeliverable, respondToDeliverable } from './commands/agency-work'
 export { createContentItem, updateContentItem, listContentItems } from './commands/content-items'
 export {
@@ -42,6 +44,13 @@ export {
 export { taskResource } from './commands/task-access'
 export { TASK_REPEATS, missedPeriods, nextOccurrence, nextRunAfter, type TaskRepeat } from './domain/recurrence'
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
+export {
+  currentMonthlyDesignCycle,
+  monthlyDesignDate,
+  monthlyDesignLocalDate,
+  nextMonthlyDesignCycle,
+  type MonthlyDesignCycle,
+} from './domain/monthly-design'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'
 export { myTasksBuckets, type MyTaskBuckets } from './queries/my-tasks'
 export { DAY_MS, dueDay, todayAsDueAt, todayIn, weekEndAfter } from './domain/due-dates'
@@ -58,6 +67,8 @@ export {
   taskPatchSchema,
   updateProjectSchema,
   setProjectRetainerSchema,
+  configureProjectMonthlyDesignSchema,
+  monthlyDesignConfigSchema,
   updateContentItemSchema,
   respondToDeliverableSchema,
   updateTaskSchema,

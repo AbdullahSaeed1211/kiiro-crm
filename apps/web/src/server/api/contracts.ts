@@ -1,14 +1,10 @@
 import {
-  createProjectSchema,
   createTaskSchema,
   expectedVersionSchema,
   moveTaskSchema,
-  projectMemberSchema,
   taskDatesSchema,
-  updateProjectSchema,
   updateTaskSchema,
   createContentItemSchema,
-  createDeliverableSchema,
   respondToDeliverableSchema,
   updateContentItemSchema,
 } from '@ops/module-work'
@@ -23,12 +19,14 @@ import { CRM_CONTRACTS } from './contracts-crm'
 import { EXPORT_CONTRACTS } from './contracts-export'
 import { EXTRA_CONTRACTS, listQuery } from './contracts-extra'
 import { ATTENDANCE_CONTRACTS } from './contracts-attendance'
+import { PROJECT_CONTRACTS } from './contracts-projects'
 
 /** One endpoint of the product API: the single source for its route, its body validation and `GET /api/v1`. */
 
 /** The product API, keyed by a stable contract id. */
 const API_CONTRACTS = {
   ...ATTENDANCE_CONTRACTS,
+  ...PROJECT_CONTRACTS,
   'tasks.list': {
     method: 'GET',
     path: '/api/v1/tasks',
@@ -78,53 +76,11 @@ const API_CONTRACTS = {
     body: taskDatesSchema,
     success: 200,
   },
-  'projects.list': {
-    method: 'GET',
-    path: '/api/v1/projects',
-    summary: 'Projects you can see, by name; ?page=&limit= (max 100).',
-    success: 200,
-  },
-  'projects.get': { method: 'GET', path: '/api/v1/projects/:id', summary: 'One project.', success: 200 },
-  'projects.create': {
-    method: 'POST',
-    path: '/api/v1/projects',
-    summary: 'Create a project; you own it unless ownerId says otherwise.',
-    body: createProjectSchema,
-    success: 201,
-  },
-  'projects.update': {
-    method: 'PATCH',
-    path: '/api/v1/projects/:id',
-    summary: 'Change editable project fields while the project is still at expectedUpdatedAt.',
-    body: updateProjectSchema.omit({ projectId: true }),
-    success: 200,
-  },
-  'projects.members.add': {
-    method: 'POST',
-    path: '/api/v1/projects/:id/members',
-    summary: 'Add a member to a project.',
-    body: projectMemberSchema,
-    success: 201,
-  },
-  'projects.members.remove': {
-    method: 'DELETE',
-    path: '/api/v1/projects/:id/members/:memberId',
-    summary: 'Remove a member from a project.',
-    body: expectedVersionSchema,
-    success: 200,
-  },
   'calls.create': {
     method: 'POST',
     path: '/api/v1/calls',
     summary: 'Log a call against a visible lead or contact.',
     body: logCallSchema,
-    success: 201,
-  },
-  'projects.deliverables.create': {
-    method: 'POST',
-    path: '/api/v1/projects/:id/deliverables',
-    summary: 'Create a draft deliverable for a project.',
-    body: createDeliverableSchema.omit({ projectId: true }),
     success: 201,
   },
   'deliverables.respond': {

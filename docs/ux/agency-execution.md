@@ -12,21 +12,25 @@ Interactive browser control is disabled in Work settings. Existing Playwright te
 
 ## Package state
 
-| Package | State                     | Owner and owned files                                                           | Evidence or next action                                                                                         |
-| ------- | ------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| P00     | Locally accepted          | Lead: baseline and this ledger                                                  | Installation, tools, authentication and production health checked                                               |
-| P01     | Deployed, partial         | Lead: existing date/scope contracts                                             | Distinct task-date windows; no schema expansion. Cross-workflow contracts remain planned                        |
-| P02     | Deployed                  | Attendance worker: attendance presentation, hook and copy                       | Local desktop/phone journey accepted; authenticated live review remains pending                                 |
-| P03     | Deployed                  | Lead: attendance/content loaders, load-failure presentation and error copy      | Read failures distinguished from empty lists; personal attendance avoids directory fetch                        |
-| P04     | Locally accepted, partial | Lead: read-only D1 aggregates                                                   | Stage/cadence totals explain overdue count; original source reconciliation remains unresolved                   |
-| P05     | Locally accepted, partial | Today worker: page, Today components/copy and dashboard/follow-up queries       | Mine/Team selection and scoped drilldowns passed desktop/phone; owner actions remain available in Mine          |
-| P06     | Locally accepted, partial | Calendar worker: calendar page/workspace, agenda presentation and calendar copy | Month/Agenda switch and task-panel return preserve personal scope; desktop/phone journeys passed                |
-| P07     | Deployed, partial         | Client worker: organization presentation and scoped next-task query             | More menu, optional columns and earliest permitted client/project task checked locally                          |
-| P08     | Locally accepted, partial | Content worker: content-calendar presentation and agency-work copy              | Explicit project capture, status tabs, versioned editing, discard warning and exact timestamp retention checked |
-| P10     | Deployed, partial         | Navigation worker: app-navigation and shell copy                                | Work, Clients and Sales grouped; content discoverable. Team area and role-first-use expansion remain planned    |
-| P18     | Deployed, partial         | Lead: reviewed commits, push and release                                        | Release evidence below; authenticated production acceptance is pending                                          |
+| Package | State                     | Owner and owned files                                                                             | Evidence or next action                                                                                                            |
+| ------- | ------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| P00     | Locally accepted          | Lead: baseline and this ledger                                                                    | Installation, tools, authentication and production health checked                                                                  |
+| P01     | Deployed, partial         | Lead: existing date/scope contracts                                                               | Distinct task-date windows; no schema expansion. Cross-workflow contracts remain planned                                           |
+| P02     | Deployed                  | Attendance worker: attendance presentation, hook and copy                                         | Local desktop/phone journey accepted; authenticated live review remains pending                                                    |
+| P03     | Deployed                  | Lead: attendance/content loaders, load-failure presentation and error copy                        | Read failures distinguished from empty lists; personal attendance avoids directory fetch                                           |
+| P04     | Locally accepted, partial | Lead: read-only D1 aggregates                                                                     | Stage/cadence totals explain overdue count; original source reconciliation remains unresolved                                      |
+| P05     | Locally accepted, partial | Today worker: page, Today components/copy and dashboard/follow-up queries                         | Mine/Team selection and scoped drilldowns passed desktop/phone; owner actions remain available in Mine                             |
+| P06     | Locally accepted, partial | Calendar worker: calendar page/workspace, agenda presentation and calendar copy                   | Month/Agenda switch and task-panel return preserve personal scope; desktop/phone journeys passed                                   |
+| P07     | Deployed, partial         | Client worker: organization presentation and scoped next-task query                               | More menu, optional columns and earliest permitted client/project task checked locally                                             |
+| P08     | Locally accepted, partial | Content worker: content-calendar presentation and agency-work copy                                | Explicit project capture, status tabs, versioned editing, discard warning and exact timestamp retention checked                    |
+| P09     | Running, partial          | Monthly work-order worker: work-domain contracts, project adapter, monthly runner and project API | Opt-in monthly issue/delivery settings, deterministic occurrence identity and interrupted-notification recovery under verification |
+| P10     | Deployed, partial         | Navigation worker: app-navigation and shell copy                                                  | Work, Clients and Sales grouped; content discoverable. Team area and role-first-use expansion remain planned                       |
+| P13     | Running, partial          | Reminder worker: schedule reminder source, due-soon job and notification presentation             | Upcoming callback/appointment reminders and actionable labels; broader snooze/approval policy remains planned                      |
+| P18     | Deployed, partial         | Lead: reviewed commits, push and release                                                          | Release evidence below; authenticated production acceptance is pending                                                             |
 
 Remaining packages and unfinished portions of these packages remain planned. This release does not establish new monthly content automation, template features or complete acceptance of the whole program.
+
+The active monthly-work slice adds opt-in task generation and in-app sales-event reminders. It does not publish to GHL, infer client approval or implement notification snoozing. Existing projects remain disabled until an authorized manager selects designers and saves the schedule.
 
 ## Data provenance findings
 
@@ -95,3 +99,13 @@ These packages are deployed as `v0.10.6`. The earlier production authentication 
 | Active Worker           | `6ebd211a-63ae-4d40-a7af-cd35b5c47c0f`, 100% traffic                                                    |
 | Previous Worker         | `5d14ca02-0e13-4f89-90c8-ce9fe17ac159`; code-only recovery follows the rollback runbook above           |
 | Post-deploy D1 bookmark | `00000f8c-00000000-0000510c-48a3ef4f68c422fc7c5021bce71e896e`; no reset or restore performed            |
+
+## Monthly automation acceptance
+
+The local API accepted an owner-configured schedule, rejected a stale version with 409 and an invalid day with 400, and denied a staff configuration write with 403. Two concurrent scheduler calls plus a later-window replay produced one independent task, due November 3 as UTC-midnight milliseconds, one assignment notification and one scheduled-callback reminder. These checks used local fixtures only.
+
+The initial real-database replay produced duplicate tasks because Payload discarded the supplied UUID. The adapter uses a persisted `monthlyOccurrenceKey` instead. Migration `20261022_150000_monthly_work_orders` adds a nullable column and unique index without changing existing records. Local migration and all 18 database integration cases passed. The repository's agent guide records the requirement to verify occurrence identity against the real driver; the fake now assigns task IDs rather than trusting requested IDs.
+
+The reminder source retains inaccessible rows with empty recipient lists so a bounded batch can advance beyond them. Schedule notices use independent continuation state, an exact event-time deduplication key and each active recipient's parent-record access. Monthly assignment recovery also checks current task visibility, and archived occurrences remain archived.
+
+All 397 unit cases passed. Full formatting, TypeScript, lint, dependency-boundary and unused-code checks passed. Monthly setup passed on desktop Chromium and phone WebKit, including typed title, retained draft, designer selection, save, reload and stale-edit conflict. Notification/task-panel navigation passed on both profiles. The changed project surface has no horizontal overflow at 1440 px or 390 px. A staff project page rendered its read-only monthly summary, and the configuration API denied unauthenticated access. OpenNext production build and size checks passed. Deployment evidence is pending for this slice. The earlier authenticated production review limitation remains open.

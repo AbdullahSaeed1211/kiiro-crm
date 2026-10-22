@@ -4,7 +4,8 @@ import type { CollectionSlug, PayloadRequest, Where } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import { fieldOf, idOf, msOf, numberOf, textOf, type Doc } from './documents'
 import { updateAgencyItemIfUnchanged } from './agency-write'
-import { createAsSystem, findAsUser, updateIfUnchanged } from './local-api'
+import { createAsSystem, findAsUser } from './local-api'
+import { updateProjectMonthlyDesign, updateProjectRetainer } from './project-custom-data'
 
 // The application regenerates this union from Payload after a schema change.
 const collectionNames: ReadonlySet<string> = new Set(Object.values(COLLECTIONS))
@@ -209,25 +210,6 @@ async function updateContentItem(
   return doc === undefined ? undefined : mapContentItem(doc)
 }
 
-async function updateProjectRetainer(
-  req: PayloadRequest,
-  input: { readonly id: Id; readonly retainer: boolean; readonly expectedUpdatedAt: number },
-) {
-  const { id, retainer, expectedUpdatedAt } = input
-  const [project] = await findAsUser(req, { collection: collection(COLLECTIONS.projects), where: byId(id), limit: 1 })
-  if (project === undefined) return undefined
-  const current = fieldOf(project, 'customData')
-  const customData = typeof current === 'object' && current !== null && !Array.isArray(current) ? current : {}
-  const saved = await updateIfUnchanged(req, {
-    collection: collection(COLLECTIONS.projects),
-    id,
-    expectedUpdatedAt,
-    data: { customData: { ...customData, retainer } },
-  })
-  const updatedAt = saved === undefined ? undefined : msOf(fieldOf(saved, 'updatedAt'))
-  return updatedAt === undefined ? undefined : { retainer, updatedAt }
-}
-
 /** Project planning persistence; every query is evaluated with the request user's project scope. */
 export function agencyWorkMethods(
   req: PayloadRequest,
@@ -242,6 +224,7 @@ export function agencyWorkMethods(
   | 'listContentItems'
   | 'updateContentItem'
   | 'updateProjectRetainer'
+  | 'updateProjectMonthlyDesign'
 > {
   return {
     createDeliverable: (input) => createDeliverable(req, input),
@@ -254,5 +237,7 @@ export function agencyWorkMethods(
     updateContentItem: (id, patch, expectedUpdatedAt) => updateContentItem(req, { id, patch, expectedUpdatedAt }),
     updateProjectRetainer: (id, retainer, expectedUpdatedAt) =>
       updateProjectRetainer(req, { id, retainer, expectedUpdatedAt }),
+    updateProjectMonthlyDesign: (id, config, expectedUpdatedAt) =>
+      updateProjectMonthlyDesign(req, { id, config, expectedUpdatedAt }),
   }
 }

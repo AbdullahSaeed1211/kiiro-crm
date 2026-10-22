@@ -3,6 +3,7 @@ import { ok, type Id } from '@ops/kernel'
 import type { NotificationStore, RecordRef } from '@ops/platform'
 import type { CronJob, CronJobOutcome, CronWindow, JobCursor, JobRunStore } from './cron-job'
 import { localDateFormatter } from './local-date'
+import { claim } from './job-support'
 
 // Job name in logs and in the cron route's `ran` list, as named in spec §13.
 const DUE_SOON_JOB_NAME = 'tasks.dueSoon'
@@ -20,6 +21,12 @@ export interface DueItem {
   readonly assigneeIds: readonly Id[]
   readonly dueAt: number
   readonly updatedAt?: number
+  /** Optional identity for dedupe and cursoring when the reminder is a child item, such as a schedule row. */
+  readonly dedupeId?: string
+  /** Optional stable suffix for exact due-time changes that happen within one local calendar day. */
+  readonly dedupeAt?: number
+  /** Additional persisted context for the notification UI. */
+  readonly notificationData?: Readonly<Record<string, unknown>>
 }
 
 /** Read port for items with a due time. */
@@ -36,11 +43,16 @@ export interface DueSoonDeps {
   readonly timeZone: string
   readonly runs?: JobRunStore
   readonly limit?: number
+  /** Job identity for an independent due-soon stream, such as CRM schedule reminders. */
+  readonly name?: string
 }
 
 // The key changes only when the item's local due date changes, so reruns and runs across UTC midnight stay deduplicated.
-function dueSoonDedupeKey(input: { record: RecordRef; dueLocalDate: string; userId: Id }): string {
-  return `${input.record.type}:${input.record.id}:due_soon:${input.dueLocalDate}:${input.userId}`
+function dueSoonDedupeKey(input: { item: DueItem; dueLocalDate: string; userId: Id }): string {
+  const { item, dueLocalDate, userId } = input
+  const identity = item.dedupeId ?? item.record.id
+  const time = item.dedupeAt === undefined ? '' : `:${String(item.dedupeAt)}`
+  return `${item.record.type}:${identity}:due_soon:${dueLocalDate}${time}:${userId}`
 }
 
 async function notifyAssignees(item: DueItem, dueLocalDate: string, store: NotificationStore): Promise<number> {
@@ -49,9 +61,9 @@ async function notifyAssignees(item: DueItem, dueLocalDate: string, store: Notif
     const outcome = await store.insertIfAbsent({
       userId,
       type: 'due_soon',
-      dedupeKey: dueSoonDedupeKey({ record: item.record, dueLocalDate, userId }),
+      dedupeKey: dueSoonDedupeKey({ item, dueLocalDate, userId }),
       record: item.record,
-      data: { title: item.title, dueAt: item.dueAt },
+      data: { title: item.title, dueAt: item.dueAt, ...item.notificationData },
     })
     if (outcome === 'created') created += 1
   }
@@ -73,17 +85,21 @@ async function notifyItems(
   return { created, skipped: attempted - created }
 }
 
-async function runDueSoon(deps: DueSoonDeps, window: CronWindow): Promise<CronJobOutcome> {
+async function runDueSoon(deps: DueSoonDeps, window: CronWindow, jobName: string): Promise<CronJobOutcome> {
+  if (!(await claim(deps, jobName, window))) return { processed: 0, created: 0, skipped: 0 }
   const limit = deps.limit ?? DUE_SOON_LIMIT
-  const cursor = await deps.runs?.getCursor?.(DUE_SOON_JOB_NAME)
+  const cursor = await deps.runs?.getCursor?.(jobName)
   const listed = await deps.source.listDueWithin(window.end, window.end + DUE_SOON_HORIZON_MS, limit, cursor)
   const items = listed.slice(0, limit)
   const counts = await notifyItems(items, deps.timeZone, deps.notifications)
   if (deps.runs?.saveCursor !== undefined) {
     const last = items[items.length - 1]
     if (items.length >= limit && last !== undefined)
-      await deps.runs.saveCursor(DUE_SOON_JOB_NAME, { id: last.record.id, updatedAt: last.updatedAt ?? last.dueAt })
-    else await deps.runs.saveCursor(DUE_SOON_JOB_NAME, undefined)
+      await deps.runs.saveCursor(jobName, {
+        id: last.dedupeId ?? last.record.id,
+        updatedAt: last.updatedAt ?? last.dueAt,
+      })
+    else await deps.runs.saveCursor(jobName, undefined)
   }
   return { processed: items.length, ...counts }
 }
@@ -95,8 +111,9 @@ async function runDueSoon(deps: DueSoonDeps, window: CronWindow): Promise<CronJo
  * @returns the job; source or store exceptions surface as a failed run (`INTERNAL`) through `runCron`.
  */
 export function createDueSoonJob(deps: DueSoonDeps): CronJob {
+  const name = deps.name ?? DUE_SOON_JOB_NAME
   return {
-    name: DUE_SOON_JOB_NAME,
-    run: async (window) => ok(await runDueSoon(deps, window)),
+    name,
+    run: async (window) => ok(await runDueSoon(deps, window, name)),
   }
 }

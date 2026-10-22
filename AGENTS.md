@@ -75,6 +75,7 @@ Each one caused a real defect here.
 - Loading placeholders cover unresolved data, not stable page titles, navigation or available actions. Match the final content geometry; the task loaders obscured static controls and caused avoidable layout changes.
 - Open a persisted event from the sales desk during calendar verification. Rendering an empty calendar missed a server callback passed into a client dialog; cross-boundary props must remain serializable.
 - Multi-record scheduling follows the non-transactional recovery contract in decision D-36. Check interrupted submission retry and duplicate prevention; a returned error does not itself roll back prior writes.
+- Prove scheduled occurrence uniqueness against the real local database. Payload's UUID create path discarded a supplied `data.id` during monthly-work verification while the fake accepted it. Use a persisted unique occurrence key and make the fake assign its own IDs; confirm concurrent and later-window replays create one occurrence.
 
 ## Verifying a change
 

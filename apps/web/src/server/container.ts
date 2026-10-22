@@ -3,11 +3,12 @@ import {
   createIdentityRepository,
   createTaskRepository,
   createUnitOfWork,
+  toActor,
 } from '@ops/adapter-payload'
 import { systemClock } from '@ops/kernel'
 import type { CrmDeps } from '@ops/module-crm'
 import type { IdentityDeps, InvitationToken } from '@ops/module-identity'
-import type { WorkDeps as WorkCommandDeps } from '@ops/module-work'
+import type { ProjectRecord, WorkDeps as WorkCommandDeps } from '@ops/module-work'
 import { can, type Actor } from '@ops/platform'
 import { type Payload, type PayloadRequest } from 'payload'
 import { cache } from 'react'
@@ -115,7 +116,35 @@ export async function workCommandDeps(requestContext?: RequestContext): Promise<
       })
       return result.totalDocs > 0
     },
+    canReadProjectAsUser: (userId, project) => canReadProjectAsUser(context, userId, project),
   }
+}
+
+async function canReadProjectAsUser(
+  context: RequestContext,
+  userId: string,
+  project: Pick<ProjectRecord, 'ownerId' | 'memberIds'>,
+): Promise<boolean> {
+  const result = await context.payload.find({
+    collection: 'users',
+    where: { id: { equals: userId } },
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    overrideAccess: true,
+    req: context.req,
+  })
+  const assignee: unknown = result.docs[0]
+  if (typeof assignee !== 'object' || assignee === null) return false
+  const actor = toActor(assignee)
+  return (
+    actor !== undefined &&
+    can(actor, 'read', {
+      type: 'project',
+      ...(project.ownerId === null ? {} : { ownerId: project.ownerId }),
+      assigneeIds: project.memberIds,
+    })
+  )
 }
 
 const hex = (bytes: Uint8Array): string => Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')

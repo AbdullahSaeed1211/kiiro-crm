@@ -69,6 +69,9 @@ using any of them.
   re-implement from the start.
 - Don't skip the per-file license check because the top-level README lists one
   license for the repo — `twenty` is mixed (MIT `twenty-ui`, AGPL everything else).
+- Type into each new controlled field before accepting a form. Capture event values
+  before passing a functional state updater; the monthly-design title handler read
+  `event.currentTarget` after React cleared it and rendered the error boundary.
 - Don't reuse Twenty files marked `@license Enterprise` under any circumstance.
 
 ## Done when

@@ -22,7 +22,18 @@ async function claimJob(payload: Payload, job: string, window: string): Promise<
     })
     return true
   } catch (error) {
-    if (error instanceof Error && /unique constraint failed/i.test(error.message)) return false
+    try {
+      const raced = await payload.find({
+        collection: COLLECTIONS.jobRuns,
+        where,
+        limit: 1,
+        depth: 0,
+        overrideAccess: true,
+      })
+      if (raced.docs.length > 0) return false
+    } catch {
+      // Keep the create failure as the useful error if the confirmation read also fails.
+    }
     throw error
   }
 }
