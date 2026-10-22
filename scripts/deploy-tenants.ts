@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util'
 import { isMain, runCli } from './lib/report'
 import { requestWithTimeout } from './lib/http'
 import { tenantEnvKey } from './lib/tenant-schema'
-import { dryRunRunner, shellRunner } from './lib/provision/commands'
+import { assertCommand, dryRunRunner, OPENNEXT, shellRunner } from './lib/provision/commands'
 import { deployTenants } from './lib/deploy/loop'
 import { loadTenants } from './gen-wrangler'
 import { smokeTenant, tenantUrl } from './smoke-tenant'
@@ -20,6 +20,8 @@ async function runDeploy(tag: string, execute: boolean, failSmoke: boolean): Pro
   const tenants = loadTenants(process.cwd())
   preflight(tenants, execute)
   const runner = execute ? shellRunner(process.cwd()) : dryRunRunner(console.log)
+  // The deployment step uploads the existing bundle; build it from this checkout first.
+  assertCommand(await runner(`${OPENNEXT} build`), `${OPENNEXT} build`)
   const results = await deployTenants(tenants, tag, {
     run: runner,
     smoke: async (tenant) => smokeTenant(tenant, smokeOptions(tenant, execute, failSmoke)),
