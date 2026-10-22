@@ -5,6 +5,7 @@ import { isSourceFile, listFiles, readText } from './lib/files'
 
 const NON_DISPLAY_FORMATTERS: ReadonlySet<string> = new Set([
   'apps/web/src/app/(app)/calendar/page.tsx', // ISO date keys and month arithmetic require stable calendar output.
+  'apps/web/src/app/(app)/calendar/CalendarSurface.tsx', // ISO date key for calendar matching, not a displayed date.
   'apps/web/src/app/api/v1/internal/provision/helpers.ts', // Provisioning diagnostics are protocol timestamps, not tenant UI.
 ])
 

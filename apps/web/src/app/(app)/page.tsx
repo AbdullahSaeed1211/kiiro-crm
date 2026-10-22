@@ -7,7 +7,7 @@ import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import { hasDashboardRecords } from '../../server/queries/dashboard'
 import { loadDashboardWork, type DashboardWork } from '../../server/queries/work/dashboard-work'
 import { getRequestContext, type RequestContext } from '@/server/container'
-import { TodayTaskQueue } from './today-work'
+import { TodayScopeSwitch, TodayTaskQueue } from './today-work'
 import { TodayActions, TodayStart, type HomeProfile } from './today-start'
 import { DashboardFollowUps } from './DashboardFollowUps'
 
@@ -53,9 +53,12 @@ function TodayContent({
       <p className="text-sm text-muted-foreground">
         {profileFocus(profile, copy)} {copy.description}
       </p>
+      <TodayScopeSwitch work={work} />
       {work.workEnabled ? <TodayTaskQueue work={work} kind="dueToday" /> : null}
       {work.workEnabled && work.overdue.count > 0 ? <TodayTaskQueue work={work} kind="overdue" /> : null}
-      {showFollowUps ? <DashboardFollowUps context={context} locale={work.locale} dayStart={work.dayStart} /> : null}
+      {showFollowUps ? (
+        <DashboardFollowUps context={context} locale={work.locale} dayStart={work.dayStart} team={work.team} />
+      ) : null}
       {work.workEnabled ? <TodayTaskQueue work={work} kind="dueWeek" /> : null}
       <nav aria-label={copy.quickLinks} className="flex flex-wrap gap-5 text-sm text-muted-foreground">
         {links.map((link) => (
@@ -69,12 +72,18 @@ function TodayContent({
 }
 
 /** Three actionable queues and a single starting point when the workspace has no records. */
-export default async function DashboardPage() {
-  const context = await getRequestContext()
-  const [work, hasRecords] = await Promise.all([loadDashboardWork(context), hasDashboardRecords(context)])
+export default async function DashboardPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ readonly scope?: string }> }>) {
+  const [context, params] = await Promise.all([getRequestContext(), searchParams])
+  const requestedScope = params.scope === 'mine' || params.scope === 'team' ? params.scope : undefined
+  const [work, hasRecords] = await Promise.all([
+    loadDashboardWork(context, requestedScope),
+    hasDashboardRecords(context),
+  ])
   const firstRun = !hasRecords
   const copy = DASHBOARD_TODAY_COPY[work.locale]
-  const profile: HomeProfile = work.team ? 'admin' : (context.actor.workProfile ?? 'delivery')
+  const profile: HomeProfile = work.canSeeTeam ? 'admin' : (context.actor.workProfile ?? 'delivery')
   const title = profileTitle(profile, copy)
   const date = new Intl.DateTimeFormat(work.locale, {
     weekday: 'long',

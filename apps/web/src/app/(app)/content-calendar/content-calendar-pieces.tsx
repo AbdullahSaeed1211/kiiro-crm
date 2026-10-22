@@ -1,101 +1,33 @@
 'use client'
 
-import { Button } from '@ops/ui/components/ui/button'
-import { Input } from '@ops/ui/components/ui/input'
-import { DateField } from '@ops/ui/composites/DateField'
 import { useState } from 'react'
+import type { SubmitEvent } from 'react'
 import type { AgencyWorkCopy } from '../../../i18n/agency-work-copy'
-import type { ContentItemRecord } from '@ops/module-work'
-
-export interface ContentItem extends ContentItemRecord {
-  readonly projectName: string
-}
-export interface ProjectOption {
-  readonly id: string
-  readonly name: string
-}
-export interface DraftEdit {
-  readonly channel: string
-  readonly publishAt: number | null
-}
-export interface CreateContentInput {
-  readonly projectId: string
-  readonly title: string
-  readonly channel: string | null
-  readonly publishAt: number | null
-  readonly status: 'draft' | 'scheduled'
-}
+import { ContentCaptureForm } from './content-capture-form'
+import type { CreateContentInput, ProjectOption } from './content-types'
+export type { ContentItem, CreateContentInput, DraftEdit, ProjectOption } from './content-types'
 
 function contentStatus(channel: string, publishAt: number | null): CreateContentInput['status'] {
   if (channel.trim() !== '' && publishAt !== null) return 'scheduled'
   return 'draft'
 }
 
-function ContentScheduleFields({
-  projectId,
-  projects,
-  channel,
-  publishAt,
-  locale,
-  copy,
-  pending,
-  onProjectChange,
-  onChannelChange,
-  onPublishAtChange,
-}: Readonly<{
+function createInput(input: {
   projectId: string
-  projects: readonly ProjectOption[]
+  title: string
   channel: string
   publishAt: number | null
-  locale: string
-  copy: AgencyWorkCopy
-  pending: boolean
-  onProjectChange: (value: string) => void
-  onChannelChange: (value: string) => void
-  onPublishAtChange: (value: number | null) => void
-}>) {
-  return (
-    <>
-      <label className="grid gap-1.5 text-sm">
-        <span>{copy.project}</span>
-        <select
-          className="h-9 rounded-md border bg-background px-3"
-          value={projectId}
-          onChange={(event) => {
-            onProjectChange(event.target.value)
-          }}
-        >
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1.5 text-sm">
-        <span>{copy.channel}</span>
-        <Input
-          value={channel}
-          onChange={(event) => {
-            onChannelChange(event.target.value)
-          }}
-          maxLength={100}
-        />
-      </label>
-      <div className="grid gap-1.5 text-sm sm:col-span-2">
-        <span>{copy.date}</span>
-        <DateField
-          label={copy.date}
-          value={publishAt}
-          locale={locale === 'es' ? 'es-ES' : 'en-US'}
-          placeholder={copy.chooseDate}
-          clearLabel={copy.clear}
-          disabled={pending}
-          onChange={onPublishAtChange}
-        />
-      </div>
-    </>
-  )
+  showSchedule: boolean
+}): CreateContentInput {
+  const channel = input.showSchedule ? input.channel.trim() || null : null
+  const publishAt = input.showSchedule ? input.publishAt : null
+  return {
+    projectId: input.projectId,
+    title: input.title,
+    channel,
+    publishAt,
+    status: contentStatus(channel ?? '', publishAt),
+  }
 }
 
 export function ContentComposer({
@@ -105,65 +37,59 @@ export function ContentComposer({
   copy,
   pending,
   onCreate,
+  error,
 }: Readonly<{
   projects: readonly ProjectOption[]
   selectedProjectId: string
   locale: string
   copy: AgencyWorkCopy
   pending: boolean
-  onCreate: (input: CreateContentInput) => void
+  onCreate: (input: CreateContentInput) => Promise<boolean>
+  error?: string
 }>) {
   const [title, setTitle] = useState('')
-  const [projectId, setProjectId] = useState(selectedProjectId !== '' ? selectedProjectId : (projects.at(0)?.id ?? ''))
+  const [projectId, setProjectId] = useState(selectedProjectId)
   const [channel, setChannel] = useState('')
   const [publishAt, setPublishAt] = useState<number | null>(null)
-  const status = contentStatus(channel, publishAt)
+  const [showSchedule, setShowSchedule] = useState(false)
+  const status = createInput({ projectId, title, channel, publishAt, showSchedule }).status
 
-  function submit() {
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault()
     const value = title.trim()
     if (value === '' || projectId === '') return
-    onCreate({ projectId, title: value, channel: channel.trim() || null, publishAt, status })
-    setTitle('')
-    setChannel('')
-    setPublishAt(null)
+    const saved = await onCreate(createInput({ projectId, title: value, channel, publishAt, showSchedule }))
+    if (saved) {
+      setTitle('')
+      setChannel('')
+      setPublishAt(null)
+      setShowSchedule(false)
+    }
   }
 
   const buttonLabel = submitLabel({ pending, status, copy })
   return (
-    <form className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2" action={submit}>
-      <label className="grid gap-1.5 text-sm sm:col-span-2">
-        <span>{copy.title}</span>
-        <Input
-          autoFocus
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value)
-          }}
-          maxLength={300}
-          required
-        />
-      </label>
-      <ContentScheduleFields
-        projectId={projectId}
-        projects={projects}
-        channel={channel}
-        publishAt={publishAt}
-        locale={locale}
-        copy={copy}
-        pending={pending}
-        onProjectChange={setProjectId}
-        onChannelChange={setChannel}
-        onPublishAtChange={setPublishAt}
-      />
-      <Button
-        type="submit"
-        size="sm"
-        disabled={pending || title.trim() === '' || projectId === ''}
-        className="justify-self-start"
-      >
-        {buttonLabel}
-      </Button>
-    </form>
+    <ContentCaptureForm
+      title={title}
+      setTitle={setTitle}
+      projectId={projectId}
+      setProjectId={setProjectId}
+      projects={projects}
+      pending={pending}
+      showSchedule={showSchedule}
+      setShowSchedule={setShowSchedule}
+      channel={channel}
+      setChannel={setChannel}
+      publishAt={publishAt}
+      setPublishAt={setPublishAt}
+      locale={locale}
+      copy={copy}
+      error={error}
+      buttonLabel={buttonLabel}
+      onSubmit={(event) => {
+        void submit(event)
+      }}
+    />
   )
 }
 

@@ -1,5 +1,7 @@
 import { CalendarDays, Clock3, Sun } from 'lucide-react'
 import { DAY_MS } from '@ops/module-work'
+import Link from 'next/link'
+import { buttonVariants } from '@ops/ui/components/ui/button'
 import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import type { DashboardTask, DashboardWork } from '../../server/queries/work/dashboard-work'
 import { TodayItem, TodayQueue } from './today-queue'
@@ -13,6 +15,29 @@ function dueLabel(task: DashboardTask, work: DashboardWork): string {
     task.dueAt,
   )
   return copy.due.replace('{date}', date)
+}
+
+export function TodayScopeSwitch({ work }: Readonly<{ work: DashboardWork }>) {
+  if (!work.canSeeTeam) return null
+  const copy = DASHBOARD_TODAY_COPY[work.locale]
+  return (
+    <nav aria-label={copy.scopeLabel} className="flex flex-wrap items-center gap-2">
+      <Link
+        href="/?scope=mine"
+        aria-current={work.team ? undefined : 'page'}
+        className={buttonVariants({ variant: work.team ? 'ghost' : 'secondary', size: 'sm' })}
+      >
+        {copy.mine}
+      </Link>
+      <Link
+        href="/?scope=team"
+        aria-current={work.team ? 'page' : undefined}
+        className={buttonVariants({ variant: work.team ? 'secondary' : 'ghost', size: 'sm' })}
+      >
+        {copy.team}
+      </Link>
+    </nav>
+  )
 }
 
 /** The same concise task row for overdue and upcoming queues, including the project and responsible people. */

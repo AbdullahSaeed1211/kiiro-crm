@@ -1,6 +1,7 @@
 import type { Where } from 'payload'
 import { asId, type Id } from '@ops/kernel'
 import { DAY_MS, todayAsDueAt, weekEndAfter } from '@ops/module-work'
+import { isManagerUp } from '@ops/platform'
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale, type Locale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
@@ -29,6 +30,8 @@ export interface DashboardWork {
   readonly locale: Locale
   readonly timeZone: string
   readonly dayStart: number
+  readonly canSeeTeam: boolean
+  /** The active queue scope. Team scope is always clamped by the authenticated actor's role. */
   readonly team: boolean
   readonly crmEnabled: boolean
   readonly workEnabled: boolean
@@ -100,16 +103,19 @@ type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'dueWeek'> & 
 function dashboardScope(
   settings: Awaited<ReturnType<typeof getWorkspaceSettings>>,
   context: RequestContext,
+  requestedScope?: 'mine' | 'team',
 ): DashboardScope {
   const modules = settings.modules as Record<string, boolean> | null
   const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
   const dayStart = todayAsDueAt(Date.now(), timeZone)
   const weekStart = settings.weekStartsOn === 0 ? 0 : 1
+  const canSeeTeam = isManagerUp(context.actor)
   return {
     locale: normalizeLocale(settings.locale),
     timeZone,
     dayStart,
-    team: ['owner', 'manager'].includes(context.actor.role),
+    canSeeTeam,
+    team: canSeeTeam && requestedScope !== 'mine',
     crmEnabled: modules?.crm !== false,
     workEnabled: modules?.work !== false,
     weekEnd: weekEndAfter(dayStart, weekStart),
@@ -143,9 +149,12 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
   return { overdue: enriched[0] ?? empty, dueToday: enriched[1] ?? empty, dueWeek: enriched[2] ?? empty }
 }
 
-/** Owners see team queues; staff see assigned work. Calendar-date comparisons match the task screens. */
-export async function loadDashboardWork(context: RequestContext): Promise<DashboardWork> {
-  const scope = dashboardScope(await getWorkspaceSettings(), context)
+/** Owners default to team queues; any personal selection narrows tasks to the authenticated user. */
+export async function loadDashboardWork(
+  context: RequestContext,
+  requestedScope?: 'mine' | 'team',
+): Promise<DashboardWork> {
+  const scope = dashboardScope(await getWorkspaceSettings(), context, requestedScope)
   if (!scope.workEnabled) return { ...scope, overdue: empty, dueToday: empty, dueWeek: empty }
   return { ...scope, ...(await dashboardQueues(context, scope)) }
 }

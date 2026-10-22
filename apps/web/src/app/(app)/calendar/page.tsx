@@ -4,24 +4,31 @@ import { PageHeader } from '@ops/ui/composites/PageHeader'
 import type { Metadata } from 'next'
 import { TASK_COPY } from '../../../i18n/config'
 import { CALENDAR_COPY } from '../../../i18n/calendar-copy'
-import type { CalendarCopy } from '../../../i18n/calendar-copy'
 import { catalogFor } from '../../../i18n/locale'
 import { loadCalendarReadModel } from '../../../server/queries/work/calendar-read-model'
 import { loadTaskPeople } from '../../../server/queries/work/task-details'
 import { AssigneeFilter } from '../tasks/AssigneeFilter'
 import { assigneeOptions, validAssignee } from '../tasks/assignee-options'
-import { moveTaskOnCalendar } from './move-task'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
-import { CalendarWorkspace } from './calendar-workspace'
-import { ScheduleEditDialog } from './schedule-edit-dialog'
+import { CalendarSurface } from './CalendarSurface'
+import { CalendarLayoutToggle } from './CalendarLayoutToggle'
 import { buildCalendarEvents } from './calendar-event-model'
-import type { CalendarEvent } from '@ops/ui/composites/CalendarMonth'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Calendar' }
-/** The view and assignee choices that the previous, next and Today links keep. */
-function carriedQuery({ mine, assignee }: Readonly<{ mine: boolean; assignee: string }>): string {
-  return [mine ? 'view=mine' : '', assignee === '' ? '' : `assignee=${encodeURIComponent(assignee)}`]
+type CalendarLayout = 'month' | 'agenda'
+
+/** Scope and layout choices carried by calendar navigation and event links. */
+function carriedQuery({
+  mine,
+  assignee,
+  layout = 'month',
+}: Readonly<{ mine: boolean; assignee: string; layout?: CalendarLayout }>): string {
+  return [
+    mine ? 'view=mine' : '',
+    assignee === '' ? '' : `assignee=${encodeURIComponent(assignee)}`,
+    layout === 'agenda' ? 'layout=agenda' : '',
+  ]
     .filter(Boolean)
     .join('&')
 }
@@ -31,16 +38,40 @@ function calendarReturnTo({
   month,
   mine,
   assignee,
+  layout = 'month',
+  event,
 }: Readonly<{
   year: number
   month: number
   mine: boolean
   assignee: string
+  layout?: CalendarLayout
+  event?: string
 }>): string {
-  const params = new URLSearchParams(carriedQuery({ mine, assignee }))
+  const params = new URLSearchParams(carriedQuery({ mine, assignee, layout }))
   params.set('year', String(year))
   params.set('month', String(month + 1))
+  if (event !== undefined) params.set('event', event)
   return `/calendar?${params.toString()}`
+}
+
+function shiftedHref({
+  year,
+  month,
+  delta,
+  mine,
+  assignee,
+  event,
+}: Readonly<{ year: number; month: number; delta: number; mine: boolean; assignee: string; event?: string }>): string {
+  const shifted = new Date(Date.UTC(year, month + delta, 1))
+  return calendarReturnTo({
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth(),
+    mine,
+    assignee,
+    layout: 'agenda',
+    ...(event === undefined ? {} : { event }),
+  })
 }
 
 const dateFormatter = (timeZone: string) =>
@@ -51,83 +82,55 @@ const dateFormatter = (timeZone: string) =>
     day: '2-digit',
   })
 
-type CalendarModel = Awaited<ReturnType<typeof loadCalendarReadModel>>
-type TaskPeople = Awaited<ReturnType<typeof loadTaskPeople>>
+type CalendarQuery = Readonly<{
+  month?: string
+  year?: string
+  view?: string
+  assignee?: string
+  event?: string
+  layout?: string
+}>
 
-function CalendarEventContent({
-  model,
-  people,
-  events,
-  copy,
-  calendarCopy,
-  assignee,
-  mine,
+function calendarLinks({
   year,
   month,
-  selectedSchedule,
+  mine,
+  assignee,
+  timeZone,
+  event,
 }: Readonly<{
-  model: CalendarModel
-  people: TaskPeople
-  events: CalendarEvent[]
-  copy: (typeof TASK_COPY)[keyof typeof TASK_COPY]
-  calendarCopy: CalendarCopy
-  assignee: string
-  mine: boolean
   year: number
   month: number
-  selectedSchedule: CalendarModel['scheduleItems'][number] | undefined
+  mine: boolean
+  assignee: string
+  timeZone: string
+  event: string | undefined
 }>) {
-  const query = carriedQuery({ mine, assignee })
-  const peopleOptions = Array.from(people, ([id, name]) => ({ id, name }))
-  return (
-    <>
-      {model.capped ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          {calendarCopy.capped.replace('{count}', String(model.tasks.length))}
-        </p>
-      ) : null}
-      <CalendarWorkspace
-        people={peopleOptions}
-        initialAssignee={assignee || model.actorId}
-        copy={calendarCopy}
-        calendar={{
-          year,
-          month,
-          weekStartsOn: model.weekStartsOn,
-          locale: model.locale,
-          labels: { previous: copy.previousMonth, next: copy.nextMonth, more: copy.calendarMore, today: copy.today },
-          events,
-          today: dateFormatter(model.timeZone).format(Date.now()),
-          onMove: moveTaskOnCalendar,
-          query,
-        }}
-      />
-      {selectedSchedule === undefined ? null : (
-        <ScheduleEditDialog
-          item={selectedSchedule}
-          people={peopleOptions}
-          canAssign={model.manager}
-          locale={model.locale}
-          timeZone={model.timeZone}
-        />
-      )}
-    </>
-  )
+  const selectedEvent = event === undefined ? {} : { event }
+  const layoutHrefs = {
+    monthHref: calendarReturnTo({ year, month, mine, assignee, ...selectedEvent }),
+    agendaHref: calendarReturnTo({ year, month, mine, assignee, layout: 'agenda', ...selectedEvent }),
+  }
+  const [todayYear, todayMonth] = dateFormatter(timeZone).format(Date.now()).split('-').map(Number)
+  const agendaNavigation = {
+    previousHref: shiftedHref({ year, month, delta: -1, mine, assignee, event }),
+    nextHref: shiftedHref({ year, month, delta: 1, mine, assignee, event }),
+    todayHref: calendarReturnTo({
+      year: todayYear,
+      month: todayMonth - 1,
+      mine,
+      assignee,
+      layout: 'agenda',
+      ...(event === undefined ? {} : { event }),
+    }),
+    monthHref: layoutHrefs.monthHref,
+  }
+  return { layoutHrefs, agendaNavigation }
 }
-/** Month calendar for scoped tasks and scheduled sales activity. */
-export default async function CalendarPage({
-  searchParams,
-}: Readonly<{
-  searchParams: Promise<{
-    readonly month?: string
-    readonly year?: string
-    readonly view?: string
-    readonly assignee?: string
-    readonly event?: string
-  }>
-}>) {
-  const query = await searchParams
+
+async function prepareCalendarPage(query: CalendarQuery) {
   const requestedMine = query.view === 'mine'
+  const layout: CalendarLayout = query.layout === 'agenda' ? 'agenda' : 'month'
   const people = await loadTaskPeople()
   const requestedAssignee = validAssignee(query.assignee, people)
   const model = await loadCalendarReadModel({
@@ -142,7 +145,7 @@ export default async function CalendarPage({
   const month = model.calendarMonth
   const copy = TASK_COPY[model.locale]
   const calendarCopy = catalogFor(CALENDAR_COPY, model.locale)
-  const returnTo = calendarReturnTo({ year, month, mine, assignee })
+  const returnTo = calendarReturnTo({ year, month, mine, assignee, layout })
   const selectedSchedule =
     query.event === undefined ? undefined : model.scheduleItems.find((item) => item.id === query.event)
   const events = buildCalendarEvents({
@@ -154,8 +157,50 @@ export default async function CalendarPage({
     locale: model.locale,
     copy: calendarCopy,
     returnTo,
-    carriedQuery: carriedQuery({ mine, assignee }),
+    carriedQuery: carriedQuery({ mine, assignee, layout }),
   })
+  const { layoutHrefs, agendaNavigation } = calendarLinks({
+    year,
+    month,
+    mine,
+    assignee,
+    timeZone: model.timeZone,
+    event: query.event,
+  })
+  return {
+    model,
+    people,
+    events,
+    copy,
+    calendarCopy,
+    assignee,
+    mine,
+    year,
+    month,
+    layout,
+    layoutHrefs,
+    agendaNavigation,
+    selectedSchedule,
+  }
+}
+
+/** Month calendar for scoped tasks and scheduled sales activity. */
+export default async function CalendarPage({ searchParams }: Readonly<{ searchParams: Promise<CalendarQuery> }>) {
+  const {
+    model,
+    people,
+    events,
+    copy,
+    calendarCopy,
+    assignee,
+    mine,
+    year,
+    month,
+    layout,
+    layoutHrefs,
+    agendaNavigation,
+    selectedSchedule,
+  } = await prepareCalendarPage(await searchParams)
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.calendar }]} />
@@ -174,19 +219,21 @@ export default async function CalendarPage({
                 />
               ) : null}
               <TaskWorkspaceViews active="calendar" locale={model.locale} mine={mine} />
+              <CalendarLayoutToggle active={layout} {...layoutHrefs} copy={calendarCopy} />
             </>
           }
         />
-        <CalendarEventContent
+        <CalendarSurface
           model={model}
           people={people}
           events={events}
-          copy={copy}
           calendarCopy={calendarCopy}
           assignee={assignee}
           mine={mine}
           year={year}
           month={month}
+          layout={layout}
+          agendaNavigation={agendaNavigation}
           selectedSchedule={selectedSchedule}
         />
       </PageContent>

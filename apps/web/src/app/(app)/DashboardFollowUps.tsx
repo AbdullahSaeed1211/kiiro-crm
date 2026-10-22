@@ -9,13 +9,15 @@ export async function DashboardFollowUps({
   context,
   locale,
   dayStart,
+  team,
 }: Readonly<{
   context: RequestContext
   locale: Locale
   dayStart: number
+  team: boolean
 }>) {
   const copy = DASHBOARD_TODAY_COPY[locale]
-  const result = await loadTodayLeads(context, dayStart)
+  const result = await loadTodayLeads(context, dayStart, team)
   return (
     <TodayQueue
       title={copy.waiting}

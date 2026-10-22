@@ -636,6 +636,92 @@ test('task details preserve origin in contextual mode and render canonically whe
   await verifyTaskSourceInteractions(page, task)
 })
 
+test('calendar agenda retains personal scope and task-panel origin', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/calendar?view=mine&layout=agenda')
+  await expect(page.getByRole('link', { name: 'Agenda', exact: true })).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
+  const task = page.locator('main a[href^="/tasks/"][href*="panel=1"]').first()
+  await expect(task).toBeVisible()
+  await task.click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  expect(new URL(page.url()).searchParams.get('returnTo')).toContain('layout=agenda')
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(/layout=agenda/)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.screenshot({ path: test.info().outputPath('calendar-agenda.png'), fullPage: true })
+  await page.getByRole('link', { name: 'Month', exact: true }).click()
+  await expect(page).toHaveURL(/view=mine/)
+  await expect(page.getByRole('link', { name: 'Month', exact: true })).toHaveAttribute(ARIA_CURRENT, CURRENT_PAGE)
+})
+
+test('Today scope changes preserve owner actions and personal drilldown', async ({ page }) => {
+  await signIn(page)
+  const scope = page.getByRole('navigation', { name: 'Today work scope' })
+  await scope.getByRole('link', { name: 'Your work', exact: true }).click()
+  await expect(page).toHaveURL(/scope=mine/)
+  await expect(page.getByRole('link', { name: 'View reports', exact: true })).toBeVisible()
+  const drilldowns = page.locator('main a[href*="/tasks?view=open"]')
+  for (const link of await drilldowns.all()) await expect(link).toHaveAttribute('href', /assignee=me/)
+  await scope.getByRole('link', { name: 'Your team’s work', exact: true }).click()
+  await expect(page).toHaveURL(/scope=team/)
+  await expect(scope.getByRole('link', { name: 'Your team’s work', exact: true })).toHaveAttribute(
+    ARIA_CURRENT,
+    CURRENT_PAGE,
+  )
+})
+
+async function createTimedContentFixture(page: Page) {
+  const projects = await page.request.get('/api/v1/projects?limit=1')
+  const projectResult = (await projects.json()) as { data: { records: { id: string }[] } }
+  const project = projectResult.data.records[0]
+  if (project === undefined) throw new Error('Content fixture needs a project.')
+  const publishAt = Date.UTC(2026, 9, 23, 18, 45)
+  const created = await page.request.post('/api/v1/content', {
+    data: {
+      projectId: project.id,
+      title: `Local content review ${String(Date.now())}`,
+      channel: 'Instagram',
+      status: 'scheduled',
+      publishAt,
+    },
+  })
+  expect(created.status()).toBe(201)
+  const result = (await created.json()) as { data: { id: string; title: string } }
+  const item = result.data
+  return { ...item, publishAt }
+}
+
+async function editContentWithoutLosingDraft(page: Page, item: { title: string }) {
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Title', { exact: true }).fill(`${item.title} edited`)
+  await page.keyboard.press('Escape')
+  await expect(dialog.getByRole('button', { name: 'Keep editing', exact: true })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Keep editing', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Save changes', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+}
+
+test('content editor preserves exact publication time and warns before discarding edits', async ({ page, baseURL }) => {
+  if (baseURL !== 'http://localhost:3001' && baseURL !== 'http://localhost:3000')
+    throw new Error('Content fixtures require a local app.')
+  await signIn(page)
+  const item = await createTimedContentFixture(page)
+  await page.goto(`/content-calendar?year=2026&month=10&contentItemId=${item.id}`)
+  await editContentWithoutLosingDraft(page, item)
+  await page.reload()
+  await page
+    .getByRole('link', { name: new RegExp(`${item.title} edited`) })
+    .first()
+    .click()
+  await expect(page.getByRole('dialog').getByLabel('Title', { exact: true })).toHaveValue(`${item.title} edited`)
+  const items = await page.request.get(
+    `/api/v1/content?from=${String(Date.UTC(2026, 9, 1))}&to=${String(Date.UTC(2026, 10, 1))}`,
+  )
+  const result = (await items.json()) as { data: { id: string; publishAt: number }[] }
+  expect(result.data.find((entry) => entry.id === item.id)?.publishAt).toBe(item.publishAt)
+  await page.screenshot({ path: test.info().outputPath('content-editor.png'), fullPage: true })
+})
+
 async function organizationEditRoute(page: Page, name: string): Promise<string> {
   await page.goto('/organizations')
   const href = await page.getByRole('link', { name, exact: true }).getAttribute('href')

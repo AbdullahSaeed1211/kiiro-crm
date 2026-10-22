@@ -1,4 +1,5 @@
 import type { Where } from 'payload'
+import { isManagerUp } from '@ops/platform'
 import type { RequestContext } from '../container'
 import { loadPeople } from '../people'
 
@@ -7,9 +8,14 @@ const SHOWN = 5
 const DAY_MS = 86_400_000
 
 /** Shared by the Today summary and its paginated drill-down so both describe the same lead queue. */
-export async function attentionLeadWhere(context: RequestContext, dayStart: number): Promise<Where> {
+export async function attentionLeadWhere(
+  context: RequestContext,
+  dayStart: number,
+  requestedScope?: 'mine' | 'team',
+): Promise<Where> {
   const workflow = await loadWorkflowStages(context, 'lead')
-  const team = context.actor.role === 'owner' || context.actor.role === 'manager'
+  const canSeeTeam = isManagerUp(context.actor)
+  const team = canSeeTeam && requestedScope !== 'mine'
   return {
     and: [
       ...(workflow.closed.length ? [{ stageId: { not_in: workflow.closed } }] : []),
@@ -20,9 +26,10 @@ export async function attentionLeadWhere(context: RequestContext, dayStart: numb
 }
 
 /** Open leads waiting in the first stage, or with a next action due by today. Counts are never capped to a list page. */
-export async function loadTodayLeads(context: RequestContext, dayStart: number) {
+export async function loadTodayLeads(context: RequestContext, dayStart: number, requestedTeam: boolean) {
   const request = { depth: 0, overrideAccess: false, req: context.req }
-  const where = await attentionLeadWhere(context, dayStart)
+  const team = requestedTeam && isManagerUp(context.actor)
+  const where = await attentionLeadWhere(context, dayStart, team ? 'team' : 'mine')
   const [page, total] = await Promise.all([
     context.payload.find({
       collection: 'leads',
@@ -46,6 +53,6 @@ export async function loadTodayLeads(context: RequestContext, dayStart: number) 
       company: lead.companyName ?? lead.email ?? null,
       owner: typeof lead.owner === 'string' ? (people.get(lead.owner)?.name ?? null) : null,
     })),
-    href: '/leads/follow-ups?attention=1',
+    href: team ? '/leads/follow-ups?attention=1' : '/leads/follow-ups?attention=1&owner=me',
   }
 }

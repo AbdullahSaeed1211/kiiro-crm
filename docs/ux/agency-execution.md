@@ -12,19 +12,19 @@ Interactive browser control is disabled in Work settings. Existing Playwright te
 
 ## Package state
 
-| Package | State                     | Owner and owned files                                                           | Evidence or next action                                                                                      |
-| ------- | ------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| P00     | Locally accepted          | Lead: baseline and this ledger                                                  | Installation, tools, authentication and production health checked                                            |
-| P01     | Deployed, partial         | Lead: existing date/scope contracts                                             | Distinct task-date windows; no schema expansion. Cross-workflow contracts remain planned                     |
-| P02     | Deployed                  | Attendance worker: attendance presentation, hook and copy                       | Local desktop/phone journey accepted; authenticated live review remains pending                              |
-| P03     | Deployed                  | Lead: attendance/content loaders, load-failure presentation and error copy      | Read failures distinguished from empty lists; personal attendance avoids directory fetch                     |
-| P04     | Locally accepted, partial | Lead: read-only D1 aggregates                                                   | Stage/cadence totals explain overdue count; original source reconciliation remains unresolved                |
-| P05     | Running, partial deployed | Today worker: page, Today components/copy and dashboard/follow-up queries       | Distinct due queues deployed; Mine/Team selection is the next slice                                          |
-| P06     | Running                   | Calendar worker: calendar page/workspace, agenda presentation and calendar copy | Month/Agenda presentation over existing scoped records; preserve calendar actions                            |
-| P07     | Deployed, partial         | Client worker: organization presentation and scoped next-task query             | More menu, optional columns and earliest permitted client/project task checked locally                       |
-| P08     | Running, partial          | Content worker: content-calendar presentation and agency-work copy              | Specific item editing and draft/scheduled workbench over existing fields; no new publisher                   |
-| P10     | Deployed, partial         | Navigation worker: app-navigation and shell copy                                | Work, Clients and Sales grouped; content discoverable. Team area and role-first-use expansion remain planned |
-| P18     | Deployed, partial         | Lead: reviewed commits, push and release                                        | Release evidence below; authenticated production acceptance is pending                                       |
+| Package | State                     | Owner and owned files                                                           | Evidence or next action                                                                                         |
+| ------- | ------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| P00     | Locally accepted          | Lead: baseline and this ledger                                                  | Installation, tools, authentication and production health checked                                               |
+| P01     | Deployed, partial         | Lead: existing date/scope contracts                                             | Distinct task-date windows; no schema expansion. Cross-workflow contracts remain planned                        |
+| P02     | Deployed                  | Attendance worker: attendance presentation, hook and copy                       | Local desktop/phone journey accepted; authenticated live review remains pending                                 |
+| P03     | Deployed                  | Lead: attendance/content loaders, load-failure presentation and error copy      | Read failures distinguished from empty lists; personal attendance avoids directory fetch                        |
+| P04     | Locally accepted, partial | Lead: read-only D1 aggregates                                                   | Stage/cadence totals explain overdue count; original source reconciliation remains unresolved                   |
+| P05     | Locally accepted, partial | Today worker: page, Today components/copy and dashboard/follow-up queries       | Mine/Team selection and scoped drilldowns passed desktop/phone; owner actions remain available in Mine          |
+| P06     | Locally accepted, partial | Calendar worker: calendar page/workspace, agenda presentation and calendar copy | Month/Agenda switch and task-panel return preserve personal scope; desktop/phone journeys passed                |
+| P07     | Deployed, partial         | Client worker: organization presentation and scoped next-task query             | More menu, optional columns and earliest permitted client/project task checked locally                          |
+| P08     | Locally accepted, partial | Content worker: content-calendar presentation and agency-work copy              | Explicit project capture, status tabs, versioned editing, discard warning and exact timestamp retention checked |
+| P10     | Deployed, partial         | Navigation worker: app-navigation and shell copy                                | Work, Clients and Sales grouped; content discoverable. Team area and role-first-use expansion remain planned    |
+| P18     | Deployed, partial         | Lead: reviewed commits, push and release                                        | Release evidence below; authenticated production acceptance is pending                                          |
 
 Remaining packages and unfinished portions of these packages remain planned. This release does not establish new monthly content automation, template features or complete acceptance of the whole program.
 
@@ -74,3 +74,13 @@ The deployment dry run targets only Mirch. GitHub repository and production-envi
 | Authenticated production review | Pending. The previously supplied login returned 401. The account exists and is active; no password, identity or role was changed |
 
 Full write journeys ran only against local fixture accounts. Production data was queried read-only for provenance and account existence. Successful deployment and local acceptance do not establish complete authenticated production UX acceptance.
+
+## Next release acceptance
+
+The Today, Agenda and content packages are frozen for integration. Eight selected Playwright journeys passed across desktop Chromium and phone WebKit: core layouts, scoped Agenda/task-panel return, Today Mine/Team drilldowns and content editing with discard protection. The content journey reloads the record and confirms its exact publication timestamp is unchanged after a title edit. New captures require an explicit project rather than silently selecting the first client project.
+
+Recurring task successors preserve `ownerOnly`. A local API reproduction exposed the missing flag; the regression in `packages/modules/work/test/work.test.ts` and a repeated local API journey confirm the successor retains private visibility. This does not alter existing production records.
+
+All 382 unit cases and 18 database integration cases passed. Formatting, typecheck, lint, dependency boundaries, unused-code, duplication threshold, brand, vocabulary, documentation, tenant isolation, STE and i18n checks passed. The additional formatter audit exposed seven pre-existing hardcoded display locales outside this package; the content editor uses the tenant formatter, and the calendar ISO-key formatter is explicitly classified as non-display. These remaining audit findings are not closed by this release.
+
+Production deployment of these packages remains pending until the pushed source, release tag and smoke result are recorded below. The earlier production authentication limitation still applies.

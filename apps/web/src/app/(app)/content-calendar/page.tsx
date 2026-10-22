@@ -26,7 +26,7 @@ function selectedProject(projects: readonly { readonly id: string }[], requested
 
 export default async function ContentCalendarPage({
   searchParams,
-}: Readonly<{ searchParams: Promise<{ month?: string; year?: string; projectId?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ month?: string; year?: string; projectId?: string; contentItemId?: string }> }>) {
   const params = await searchParams
   const [model, context] = await Promise.all([loadWorkReadModel(), getRequestContext()])
   const now = new Date()
@@ -59,6 +59,7 @@ export default async function ContentCalendarPage({
               initialItems={items}
               projects={model.projects.map(({ id, name }) => ({ id, name }))}
               selectedProjectId={selectedProjectId}
+              selectedContentItemId={params.contentItemId ?? ''}
               year={selectedYear}
               month={selectedMonth}
               weekStartsOn={model.weekStartsOn}
