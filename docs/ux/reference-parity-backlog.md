@@ -1,4 +1,4 @@
-# Mirch CRM reference-parity backlog
+# Kiiro CRM reference-parity backlog
 
 Current acceptance status of every row, with its route, steps, result and test: [parity ledger](./parity-ledger.md). All 50 rows are accepted there; three phone-only exceptions are listed with reasons.
 
@@ -6,10 +6,10 @@ This is the durable entry point for local reference-parity work. The atomic sour
 
 ## Operating rules
 
-- Decisions are per behavior: `Copy` an exact, permissively licensed component when useful; `Replicate` observable product behavior independently; `Add` a missing Mirch capability; or `N/A` only with a product-scope rationale.
+- Decisions are per behavior: `Copy` an exact, permissively licensed component when useful; `Replicate` observable product behavior independently; `Add` a missing Kiiro capability; or `N/A` only with a product-scope rationale.
 - P0 means a broken core interaction/security boundary; P1 means an incomplete existing user workflow; P2 means optional parity or polish.
-- Each inventory row carries its source link, Mirch route/component, current state/gap, desired contract, exact browser path/evidence and local implementation/commit record. `Not checked` is not a pass.
-- The backlog focuses on Mirch's current CRM, work, agency, settings and inbox model. It does not authorize copying an entire competitor product or implementing every feature in referenced products.
+- Each inventory row carries its source link, Kiiro route/component, current state/gap, desired contract, exact browser path/evidence and local implementation/commit record. `Not checked` is not a pass.
+- The backlog focuses on Kiiro's current CRM, work, agency, settings and inbox model. It does not authorize copying an entire competitor product or implementing every feature in referenced products.
 - Before direct code reuse, inspect the exact file/package license and record source commit/path and required notices. shadcn/ui is MIT ([source license](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)); Twenty's `packages/twenty-ui` is MIT ([package license](https://github.com/twentyhq/twenty/blob/main/packages/twenty-ui/LICENSE)), while the rest of the Twenty repo is primarily AGPL with marked Enterprise exceptions ([repo license](https://github.com/twentyhq/twenty/blob/main/LICENSE)); Frappe CRM is AGPL-3.0 ([repository](https://github.com/frappe/crm)). This pass copied no competitor source code. Twenty/Frappe application behavior is treated as reference to replicate unless the owner explicitly chooses a different license path.
 - Browser-first local acceptance is required for implementation. Exercise desktop and 390px, safe create/edit/save/reload paths, keyboard/touch alternatives, console/error states, and restore fixtures. Do not deploy until the applicable P0/P1 rows have been accepted.
 

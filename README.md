@@ -20,9 +20,9 @@ One codebase. One isolated Worker, database and file store per customer.
 
 ops-platform gives an agency or service team one place to win work and deliver it: leads come in, move through a pipeline, become clients, and start projects with their tasks already laid out.
 
-It is **white-label by construction**. No tenant is the product: names, domains, colours and people live in one file per customer (`tenants/<slug>.jsonc`) and in that customer's own settings. Every tenant runs as its own Cloudflare Worker with its own D1 database and R2 bucket, so there are no shared rows and no cross-tenant queries.
+It is **white-label by construction**. No tenant is the product: names, domains, colours and people live in one file per customer (`<slug>.jsonc` in the tenants directory, kept outside this repository; see [`tenants/README.md`](tenants/README.md)) and in that customer's own settings. Every tenant runs as its own Cloudflare Worker with its own D1 database and R2 bucket, so there are no shared rows and no cross-tenant queries.
 
-The first tenant, Mirch Media, runs at [crm.mirchmedia.com](https://crm.mirchmedia.com/). Sign in at [/login](https://crm.mirchmedia.com/login); [/api/v1/health](https://crm.mirchmedia.com/api/v1/health) reports the deployed version and migration. The authoritative product specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
+Each deployment serves its own tenants, defined outside this repository (see [`tenants/README.md`](tenants/README.md)); on a deployed tenant, sign in at `/login`, and `/api/v1/health` reports the deployed version and migration. The authoritative product specification is [`docs/spec.md`](docs/spec.md); [`docs/architecture.md`](docs/architecture.md) is the short map.
 
 ## Screenshots
 
@@ -80,11 +80,11 @@ The [agency UX simplification plan](docs/plans/agency-ux-simplification.md) turn
 The next acceptance pass focuses on daily agency work. These are verification and refinement priorities, not a claim that every workflow is complete:
 
 1. Walk through each staff role. Confirm assigned clients, tasks and personal calendars are visible, and unrelated restricted work stays hidden.
-2. Validate the content workflow from work orders through design delivery, review and approval, then publishing in GoHighLevel. For Mirch Media, work orders are supplied by the 23rd and designs are due by the 3rd of the following month. Keep Drive assets as links; do not infer designer deadlines from historical publishing dates.
+2. Validate the content workflow from work orders through design delivery, review and approval, then publishing in GoHighLevel. For an agency tenant such as the example, work orders are supplied by the 23rd and designs are due by the 3rd of the following month. Keep Drive assets as links; do not infer designer deadlines from historical publishing dates.
 3. Refine the Today screen around overdue work, upcoming deliveries, callbacks and approvals, with a clear next action for each item.
 4. Configure actual working hours and shift timezones before adding automatic late/absent labels or missed-checkout reminders. Unix timestamps define storage, not an employee's shift.
 
-Attendance is available at [/attendance](https://crm.mirchmedia.com/attendance). Automatic shift-based attendance rules remain undefined; [spec §10.2](docs/spec.md#102-work-opsmodule-work) owns the attendance contract. The broader engineering work is tracked in the [roadmap](docs/roadmap.md) and [backlogs](docs/backlog/).
+Attendance is available at `/attendance`. Automatic shift-based attendance rules remain undefined; [spec §10.2](docs/spec.md#102-work-opsmodule-work) owns the attendance contract. The broader engineering work is tracked in the [roadmap](docs/roadmap.md) and [backlogs](docs/backlog/).
 
 ## Architecture
 
@@ -132,7 +132,7 @@ packages/
   ui/             vendored shadcn components and composites
   templates/      vertical templates as typed data
 scripts/          quality checks, config generation, seed, provisioning and deploy
-tenants/          one <slug>.jsonc per customer
+tenants/          example.jsonc only; real tenants live in $KIIRO_TENANTS_DIR
 docs/             spec, architecture, roadmap, plans, ADRs, backlogs, runbooks
 ```
 
@@ -169,7 +169,7 @@ The seed creates a neutral "Demo Agency" workspace with four local users (`owner
 | `pnpm test`             | Vitest unit tests with coverage                                   |
 | `pnpm test:integration` | Payload on a local D1 copy: scope, conflicts, duplicates          |
 | `pnpm test:e2e`         | Playwright tests against a running app                            |
-| `pnpm gen:wrangler`     | regenerates `apps/web/wrangler.jsonc` from `tenants/*.jsonc`      |
+| `pnpm gen:wrangler`     | regenerates `apps/web/wrangler.jsonc` from `$KIIRO_TENANTS_DIR`   |
 | `pnpm tenants:deploy`   | releases to every tenant, with migrations, smoke checks, rollback |
 
 ## Quality gates
@@ -192,7 +192,7 @@ OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag vX.Y.Z --execute
 git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
 ```
 
-Pushing a `v*` tag also starts the GitHub Deploy workflow, which needs each tenant's `INTERNAL_SECRET_<SLUG>` secret to be current. See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md), plus the runbooks for backup and restore, rollback, incidents, tenant provisioning and customer onboarding.
+Pushing a `v*` tag also starts the GitHub Deploy workflow, which checks out the private tenants repository and needs each tenant's `INTERNAL_SECRET_<SLUG>` line in the `TENANT_INTERNAL_SECRETS` secret to be current. See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md), plus the runbooks for backup and restore, rollback, incidents, tenant provisioning and customer onboarding.
 
 ## Documentation
 

@@ -1,6 +1,6 @@
 # UX reference-to-product audit
 
-**Scope:** Mirch CRM local demo (`http://localhost:3001`), with task detail and workspace regional settings as the first fixes. This is an interaction audit, not a claim of full-product acceptance.
+**Scope:** Kiiro CRM local demo (`http://localhost:3001`), with task detail and workspace regional settings as the first fixes. This is an interaction audit, not a claim of full-product acceptance.
 
 The route-oriented, current status inventory is [the next-wave UX reference checklist](ux/next-wave-checklist.md). Use that checklist for browser evidence and delivery order; this file retains the reference and license notes from the first focused audit.
 
@@ -24,6 +24,6 @@ The route-oriented, current status inventory is [the next-wave UX reference chec
 
 ## Deployment and measurement boundary
 
-The Mirch Media tenant is configured with `hostType: "custom"`; its Wrangler environment sets `workers_dev: false` and binds `crm.mirchmedia.com` as a custom domain. The current local audit runs on port 3001. No separate staging Worker or workers.dev hostname is configured, so this work must not claim workers.dev coverage. Production remains on the custom-domain Worker; production data is not a test fixture. The custom-domain deploy/live-smoke loop is pending full verification.
+The Acme Agency tenant is configured with `hostType: "custom"`; its Wrangler environment sets `workers_dev: false` and binds `crm.example.com` as a custom domain. The current local audit runs on port 3001. No separate staging Worker or workers.dev hostname is configured, so this work must not claim workers.dev coverage. Production remains on the custom-domain Worker; production data is not a test fixture. The custom-domain deploy/live-smoke loop is pending full verification.
 
 No Chrome DevTools performance trace is available in this session. The task-flow test uses the browser's `layout-shift` performance entries as a narrowly scoped interaction regression check; it does not replace a full LCP/INP/CLS field or lab audit. Broader CLS attribution remains open.

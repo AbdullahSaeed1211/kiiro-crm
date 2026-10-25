@@ -143,7 +143,7 @@ The agent process harness was removed, and a first code-health pass fixed the de
 - Server actions returned four result shapes and sent raw exception text to the browser from 16 catch blocks. All now return `ActionResult`, and unexpected exceptions are logged and shown as generic copy (`a004a47`).
 - Adding or removing a project member always failed, because guarded updates could not write has-many relationships. The API's first curl checks surfaced it (`1596662`).
 - Task and project use cases are on `/api/v1`, described by a contract registry and served as JSON Schema by `GET /api/v1`. Work and CRM validation failures name each invalid field (`376bf05`).
-- The first operator release of this work rolled back: the operator shell lacked `INTERNAL_SECRET_MIRCHMEDIA`, so the authenticated R2 smoke probe could not run. The smoke check now names the missing variable, and the deploy runbook lists it (`fbc7966`).
+- The first operator release of this work rolled back: the operator shell lacked `INTERNAL_SECRET_EXAMPLE`, so the authenticated R2 smoke probe could not run. The smoke check now names the missing variable, and the deploy runbook lists it (`fbc7966`).
 - Tests were cut to those that guard what a response or type cannot show, from 90 files and 8,615 lines to 57 files and 6,771 lines (`e41d230`).
 - Release `v0.1.0` reached production on 2026-09-26 after the tenant's internal secret was rotated with `wrangler versions secret put`; health, login, R2 and email-configuration smoke checks passed, and the database was already at the newest migration.
 

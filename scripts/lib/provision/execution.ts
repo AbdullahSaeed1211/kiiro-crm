@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { assertCommand, hasExactResourceName, WRANGLER } from './commands'
 import type { ProvisionDependencies, ProvisionState } from './types'
 import { tenantEnvKey, type Tenant } from '../tenant-schema'
+import { tenantAssetPath } from '../tenants-dir'
 
 interface StepResult {
   readonly secrets?: Record<string, string>
@@ -101,7 +102,7 @@ function seedBrandAssets(assets: NonNullable<Tenant['brandAssets']>): Record<str
 }
 
 function readAsset(path: string): string {
-  return readFileSync(resolve(process.cwd(), path)).toString('base64')
+  return readFileSync(tenantAssetPath(process.cwd(), path)).toString('base64')
 }
 
 function contentTypeFor(path: string): string {

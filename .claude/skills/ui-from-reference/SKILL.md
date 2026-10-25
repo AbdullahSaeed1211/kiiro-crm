@@ -6,7 +6,7 @@ description: Use when building a new UI surface and you want to look at a real r
 # Build UI from a reference implementation
 
 Shallow reference clones live at
-`/Users/abdullahsaeed/freelance/mirchmedia-projects/crm/references/` (outside this
+`../references/` (outside this
 repo — never imported, committed, or linted here). Read
 `references/README.md` for exact commits and the license/allowed-use table before
 using any of them.

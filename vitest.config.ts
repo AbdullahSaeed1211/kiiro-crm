@@ -9,6 +9,8 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
+          // Unit tests always read the committed example tenant, never a real tenants directory from the shell or CI.
+          env: { KIIRO_TENANTS_DIR: '' },
           include: ['packages/**/test/**/*.test.ts', 'apps/web/test/**/*.test.ts', 'scripts/test/**/*.test.ts'],
           exclude: [...configDefaults.exclude, SPIKE_TESTS],
         },
