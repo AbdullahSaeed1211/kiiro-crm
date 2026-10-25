@@ -1,0 +1,31 @@
+// Example tenant with placeholder values. Real tenants live outside this repository: point
+// KIIRO_TENANTS_DIR at a private directory of `<slug>.jsonc` files (see tenants/README.md).
+// `owner` is only read when a tenant is first provisioned; the live owner account is in the tenant's own database.
+{
+  "slug": "example",
+  "displayName": "Acme Agency",
+  "hostType": "custom",
+  "host": "crm.example.com",
+  "template": "agency",
+  "timezone": "UTC",
+  "locale": "en",
+  "currency": "USD",
+  "owner": { "email": "owner@example.com", "name": "Tenant owner" },
+  "email": {
+    "enabled": true,
+    "fromName": "Acme Agency",
+    "fromAddress": "no-reply@notify.example.com",
+    "inboundDomain": "in.example.com",
+    "inboundLocalPrefix": "example--",
+  },
+  "d1": { "name": "ops-example", "id": "00000000-0000-0000-0000-000000000000" },
+  "r2": { "bucket": "ops-example" },
+  "rateLimitNamespaces": { "intake": "1001", "auth": "1002" },
+  "intake": {
+    "allowedOrigins": ["https://www.example.com"],
+    // Cloudflare's public Turnstile test site key, which always passes.
+    "turnstileSiteKey": "1x00000000000000000000AA",
+    "turnstileHostnames": ["www.example.com", "crm.example.com"],
+  },
+  "deployOrder": 0,
+}

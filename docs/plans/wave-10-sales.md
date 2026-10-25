@@ -14,6 +14,6 @@ The owner scope added on 2026-09-30: lead management is the most polished part o
 
 ## Order
 
-Tasks 1 to 6 shipped in v0.9.0–v0.9.3 and the core of task 7 in v0.9.4–v0.9.5, with email sent from `notify.mirchtravel.com`.
+Tasks 1 to 6 shipped in v0.9.0–v0.9.3 and the core of task 7 in v0.9.4–v0.9.5, with email sent from `notify.example.com`.
 
 Done when: every task is verified in the running app on a phone width and on desktop, and released to the production tenant.

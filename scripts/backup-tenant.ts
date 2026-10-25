@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { isMain, runCli } from './lib/report'
+import { tenantFile } from './lib/tenants-dir'
 
 const USAGE = 'usage: pnpm tenant:backup <slug> [--verify]  (set -a; . ~/.ops-secrets/<slug>.env; set +a first)'
 /** Cloudflare's own export refuses a database with a search (fts5) table, so tables are exported one by one and the search index is skipped. */
@@ -114,7 +115,7 @@ export function main(argv: string[]): Promise<number> {
     options: { verify: { type: 'boolean' } },
   })
   const slug = positionals[0]
-  if (slug === undefined || !existsSync(join('tenants', `${slug}.jsonc`))) {
+  if (slug === undefined || !existsSync(tenantFile(process.cwd(), slug))) {
     console.error(USAGE)
     return Promise.resolve(2)
   }

@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { parseJsonc } from '../jsonc'
 import { assertCommand, assertSafeToken, parseD1Id, senderStatusReady, OPENNEXT, WRANGLER } from './commands'
 import { parseTenant, type Tenant } from '../tenant-schema'
+import { tenantFile } from '../tenants-dir'
 import { executeRouterSecrets, executeSeed, persistProvisionStatus } from './execution'
 import type { ProvisionDependencies, ProvisionState, ProvisionStep } from './types'
 export type { ProvisionDependencies, ProvisionHttpClient, ProvisionState, ProvisionStep } from './types'
@@ -244,7 +245,7 @@ export function manualChecklist(tenant: Tenant): string {
 
 /** Loads and validates one tenant file for the CLI. */
 export function loadTenant(root: string, slug: string): Tenant {
-  const file = join(root, 'tenants', `${slug}.jsonc`)
+  const file = tenantFile(root, slug)
   if (!existsSync(file)) throw new Error(`tenant file not found: ${file}`)
-  return parseTenant(parseJsonc(readFileSync(file, 'utf8')), `tenants/${slug}.jsonc`)
+  return parseTenant(parseJsonc(readFileSync(file, 'utf8')), file)
 }

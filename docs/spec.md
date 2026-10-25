@@ -8,7 +8,7 @@
 Service businesses (legal, home inspection, health, accounting, real estate, travel, education, hospitality, agencies) typically run leads and client work
 through email inboxes and Google Sheets with no system of record. We are building a **white-label CRM + project/task operations platform**, owned and run by a
 neutral **platform operator**: one shared codebase, deployed as an **isolated instance per customer tenant** on Cloudflare (Worker + D1 + R2 + Email).
-Customers are tenants and never own platform infrastructure. The first customer is Mirch Media (a web agency whose portfolio spans these verticals); LMPM is the second. The code must be domain-agnostic at its core,
+Customers are tenants and never own platform infrastructure. The first customer is Acme Agency (a web agency whose portfolio spans these verticals); LMPM is the second. The code must be domain-agnostic at its core,
 brand-free, strictly clean (complexity-gated), documented, and free of bloat.
 
 ---
@@ -96,17 +96,17 @@ Complete when: its tasks are merged and reviewed; the §21.2 acceptance row pass
 
 ### 0.10 Human involvement
 The build runs autonomously except for: Cloudflare account and product activation (Workers Paid, Email Service onboarding); DNS and Email Routing dashboard steps; production-destructive or data-restore actions;
-customer owner and team information; access to external repositories (e.g. `mirchmedia-laravel`); CSV exports of existing client data; registering `PLATFORM_DOMAIN`. The lead batches these requests at the milestone where they are first needed.
+customer owner and team information; access to external repositories (e.g. `example-laravel`); CSV exports of existing client data; registering `PLATFORM_DOMAIN`. The lead batches these requests at the milestone where they are first needed.
 
 ### 0.11 Reference repositories
 Behavior references are cloned read-only next to the product repository, never inside it, so they are never committed, linted, scanned by `check:brand` or imported.
 ```text
-crm/                         workspace: /Users/abdullahsaeed/freelance/mirchmedia-projects/crm
+crm/                         workspace: ~/projects/crm-workspace
 ├─ ops-platform/             the product repository (this spec)
 └─ references/               study-only clones (§3 constraint 1: read, never copy)
 ```
 ```bash
-mkdir -p /Users/abdullahsaeed/freelance/mirchmedia-projects/crm/references && cd /Users/abdullahsaeed/freelance/mirchmedia-projects/crm/references
+mkdir -p ../references && cd ../references
 git clone --depth 1 https://github.com/frappe/crm.git frappe-crm                 # AGPL-3.0: behavior reference
 git clone --depth 1 https://github.com/twentyhq/twenty.git twenty                 # AGPL + Enterprise files: never open files marked Enterprise for reuse
 git clone --depth 1 https://github.com/hcengineering/platform.git huly            # EPL-2.0: behavior reference
@@ -136,7 +136,7 @@ runtime white-label; lead intake from existing websites; inbound + outbound emai
 | D-04 | Repo codename / package scope | Repo `ops-platform`; workspace scope `@ops/*` (private, never published). No brand in code |
 | D-05 | Default product name when `settings.appName` is empty | `Workspace` |
 | D-06 | Platform domain | Neutral domain owned by the platform operator on Cloudflare DNS, placeholder `PLATFORM_DOMAIN` until registered (PLATFORM_DOMAIN registered by the platform operator is a Phase 1 prerequisite, §20.1); default tenant host `<slug>.<PLATFORM_DOMAIN>`. **Must not contain any customer name** |
-| D-07 | Tenant hosting | Every tenant, including the first customer (`mirchmedia`), is platform-hosted at `<slug>.<PLATFORM_DOMAIN>` in the platform operator's Cloudflare account; customer-owned domains follow D-49 |
+| D-07 | Tenant hosting | Every tenant, including the first customer (`example`), is platform-hosted at `<slug>.<PLATFORM_DOMAIN>` in the platform operator's Cloudflare account; customer-owned domains follow D-49 |
 | D-08 | IDs | Payload-generated UUID strings (`idType: 'uuid'`; documented values are `'number' \| 'uuid'`; the UUID version is adapter-defined, so code never relies on id ordering). Non-persisted ids (events, idempotency) use `crypto.randomUUID()` |
 | D-09 | Time | Domain timestamps stored as UTC epoch ms integers; displayed in the tenant timezone via `@date-fns/tz` |
 | D-10 | Money | Integer minor units + ISO 4217 code |
@@ -186,7 +186,7 @@ runtime white-label; lead intake from existing websites; inbound + outbound emai
 
 ## 3. Hard constraints
 1. **License hygiene:** Twenty, Frappe CRM, Plane, Huly are behavior references only. No copying or translating their source. Dependencies must be MIT/Apache-2.0/BSD/ISC.
-2. **Brand-free code:** the tokens `mirch`, `frappe`, `twenty`, `plane`, `huly`, and any client name must not appear in `packages/**` or `apps/**` (code, UI copy, tests). UI copy must not say "Payload". Allowed only in `tenants/**` and `docs/**`. Enforced by `pnpm check:brand`.
+2. **Brand-free code:** the tokens `frappe`, `twenty`, `plane`, `huly`, and any client name must not appear in `packages/**` or `apps/**` (code, UI copy, tests). UI copy must not say "Payload". Allowed only in `tenants/**` and `docs/**`. Enforced by `pnpm check:brand`.
 3. **Domain-agnostic core:** `@ops/kernel` and `@ops/platform` contain no CRM/project/vertical vocabulary (lead, deal, contact, organization, project, task, matter, inspection, patient, booking…). Enforced by `pnpm check:vocab`.
 4. **Vendor-agnostic domain:** modules depend on ports only; never on Payload, Next, React, Cloudflare or D1 APIs (§5.2).
 5. **Complexity gates** (§6.2) are never relaxed inline; disabling a gated rule fails CI.
@@ -675,9 +675,9 @@ Port `UnitOfWork.run(fn)`; implementation per D-36. In-process `EventBus`, dispa
 
 ## 10. Domain modules
 
-An agency tenant owns one workspace for its staff, sales and work. The tenant is the isolation boundary; the agency is the business operating inside it, not another tenant. For Mirch Media, ETCPA, Austin Optics and the other managed accounts may be CRM organizations with one or more linked projects. Client work does not require a separate tenant.
+An agency tenant owns one workspace for its staff, sales and work. The tenant is the isolation boundary; the agency is the business operating inside it, not another tenant. For Acme Agency, ETCPA, Austin Optics and the other managed accounts may be CRM organizations with one or more linked projects. Client work does not require a separate tenant.
 
-The agency also owns internal work. A project may have no client organization, and a task may have no project. Mirch Media can therefore run internal projects and personal follow-up tasks alongside client projects. Staff belong to the tenant and can be assigned to client or internal projects and tasks under the scope rules in §9.10. Client names, project names and assignments are data, not application constants.
+The agency also owns internal work. A project may have no client organization, and a task may have no project. Acme Agency can therefore run internal projects and personal follow-up tasks alongside client projects. Staff belong to the tenant and can be assigned to client or internal projects and tasks under the scope rules in §9.10. Client names, project names and assignments are data, not application constants.
 
 Sales belongs to the agency, not to a client project. Leads and deals have configurable, separate stage pipelines (§9.4). A lead pipeline needs intermediate stages and terminal success and closed or lost outcomes; the tenant chooses the stage names. Lead conversion marks the lead's success stage and creates a deal (§10.1). A deal's won stage records the completed sale; its lost stage records failure. Follow-up tasks may relate directly to a lead or deal without a project. A won-deal playbook may create a linked client project, but lead capture and sales follow-up do not require one.
 
@@ -1133,7 +1133,7 @@ Owner/manager only; branded via `admin.components.graphics.Logo/Icon` reading se
 ## 18. Vertical templates (`@ops/templates`)
 Each template: `key`, `version: 1`, modules, terminology, workflows (stage · category · color [· probability]), fields, views, sources, lost reasons, `sensitive`.
 
-### 18.1 `agency` (first customer: Mirch Media)
+### 18.1 `agency` (first customer: Acme Agency)
 Modules: crm, work, intake, mail. Terminology: defaults. `sensitive: false`.
 | Workflow | Stages |
 |---|---|
@@ -1164,14 +1164,14 @@ Colors for other templates: open blue, active amber, waiting violet, done_succes
 ### 19.1 `tenants/<slug>.jsonc` (zod-validated)
 ```jsonc
 {
-  "slug": "mirchmedia", "displayName": "Mirch Media", "host": "mirchmedia.<PLATFORM_DOMAIN>", "hostType": "platform",   // "platform" (default) | "custom" (D-49)
+  "slug": "example", "displayName": "Acme Agency", "host": "example.<PLATFORM_DOMAIN>", "hostType": "platform",   // "platform" (default) | "custom" (D-49)
   "template": "agency", "timezone": "America/New_York", "locale": "en", "currency": "USD",
   "owner": { "email": "<owner email>", "name": "<owner name>" },
-  "email": { "fromName": "Mirch Media", "fromAddress": "no-reply@notify.<PLATFORM_DOMAIN>", "inboundDomain": "in.<PLATFORM_DOMAIN>", "inboundLocalPrefix": "mirchmedia--" },
-  "d1": { "name": "ops-mirchmedia", "id": "<written by provision>" },
-  "r2": { "bucket": "ops-mirchmedia" },
+  "email": { "fromName": "Acme Agency", "fromAddress": "no-reply@notify.<PLATFORM_DOMAIN>", "inboundDomain": "in.<PLATFORM_DOMAIN>", "inboundLocalPrefix": "example--" },
+  "d1": { "name": "ops-example", "id": "<written by provision>" },
+  "r2": { "bucket": "ops-example" },
   "rateLimitNamespaces": { "intake": "1001", "auth": "1002" },   // unique positive integers per account: 1000 + deployOrder*10 + n
-  "intake": { "allowedOrigins": ["https://www.mirchmedia.com", "https://web.mirchmedia.com"], "turnstileHostnames": ["www.mirchmedia.com", "web.mirchmedia.com"] },
+  "intake": { "allowedOrigins": ["https://www.example.com", "https://web.example.com"], "turnstileHostnames": ["www.example.com", "web.example.com"] },
   "deployOrder": 0
 }
 ```
@@ -1201,7 +1201,7 @@ Deploy `staging-a` and `staging-b` from one build; create a record in A; assert 
 ---
 
 ## 20. Runbook: onboarding a customer tenant (`docs/runbooks/onboarding-customer.md`)
-The platform operator owns and runs the platform; customers (agencies and service businesses) are tenants. Mirch Media is the first customer (§20.8) and is onboarded exactly like any other.
+The platform operator owns and runs the platform; customers (agencies and service businesses) are tenants. Acme Agency is the first customer (§20.8) and is onboarded exactly like any other.
 
 ### 20.1 Platform prerequisites (platform operator, once; tick in the M8 report)
 1 Cloudflare account owned by the platform operator with Workers Paid.
@@ -1243,16 +1243,16 @@ Create `tenants/<slug>.jsonc` with `hostType: "platform"` → `pnpm tenant:provi
 ### 20.7 Rollback
 The old notification path stays active until 20.5 step 4, so platform issues never block lead capture. Data restore is never automatic (§19.4; restore steps in `docs/runbooks/rollback.md`).
 
-### 20.8 First customer: Mirch Media
+### 20.8 First customer: Acme Agency
 | Item | Value |
 |---|---|
-| Slug / host | `mirchmedia` / `mirchmedia.<PLATFORM_DOMAIN>` |
+| Slug / host | `example` / `example.<PLATFORM_DOMAIN>` |
 | Template | `agency`; timezone `America/New_York`; currency USD; locale en |
 | Groups | Sales, Design, Development, Social, SEO |
-| Intake | form `website`; origins `https://www.mirchmedia.com`, `https://web.mirchmedia.com`; inbound alias `leads` |
-| Sender | `"Mirch Media" <no-reply@notify.<PLATFORM_DOMAIN>>` (D-41) |
-| Lead cutover | `mirchmedia-laravel` `POST /api/leads` (`routes/web.php`, `routes/api.php`) forwards server-to-server to `https://mirchmedia.<PLATFORM_DOMAIN>/api/v1/intake/website` with `x-intake-key` stored as a Laravel env secret; the Vue sites posting to `mirchmedia.com/api/leads` need no redeploy |
-| Exports | recent leads from the `marketing@mirchmedia.com` inbox/Resend logs; active clients, projects, open tasks |
+| Intake | form `website`; origins `https://www.example.com`, `https://web.example.com`; inbound alias `leads` |
+| Sender | `"Acme Agency" <no-reply@notify.<PLATFORM_DOMAIN>>` (D-41) |
+| Lead cutover | `example-laravel` `POST /api/leads` (`routes/web.php`, `routes/api.php`) forwards server-to-server to `https://example.<PLATFORM_DOMAIN>/api/v1/intake/website` with `x-intake-key` stored as a Laravel env secret; the Vue sites posting to `example.com/api/leads` need no redeploy |
+| Exports | recent leads from the `marketing@example.com` inbox/Resend logs; active clients, projects, open tasks |
 
 ---
 
@@ -1277,7 +1277,7 @@ If `create-payload-app` cannot target `apps/web` directly, generate in a tempora
 ### 21.2 Milestone table (execute in order; each ends with `pnpm verify` green and a report)
 | M | Scope | Acceptance (all must pass) |
 |---|---|---|
-| **M0 Bootstrap** | §21.1; tooling §6; docs skeleton §7 incl. `docs/spec.md` = this file, ADR-0001/0002; empty packages with READMEs; `ci.yml` | `pnpm verify` green; `check:brand` fails on a planted "mirch" fixture; depcruise fails on a planted `modules → adapters` import; `check:disables` fails on a planted disable; harness self-test §26.9 passes |
+| **M0 Bootstrap** | §21.1; tooling §6; docs skeleton §7 incl. `docs/spec.md` = this file, ADR-0001/0002; empty packages with READMEs; `ci.yml` | `pnpm verify` green; `check:brand` fails on a planted "frappe" fixture; depcruise fails on a planted `modules → adapters` import; `check:disables` fails on a planted disable; harness self-test §26.9 passes |
 | **M1 Spike** | Payload `with-cloudflare-d1` at pinned versions; collections users, groups, organizations, projects, tasks, workflows, activity, attachments, notifications, emailMessages, jobRuns, settings; access per §11.1 for those; minimal shadcn shell; TanStack v9 task table; board with `changeStage`; SVAR Gantt date drag; `worker.ts` `scheduled()` → one reminder email via `EMAIL`; `email()` → stored inbound message; two tenants `staging-a/b` from one build | `docs/reports/m1-spike.md`: bundle size; **startup time vs the 1 s Worker startup limit**; cold p50/p95; route p50/p95; CPU ms; D1 rows read/written per page; migration behavior; transaction result (D-36); `idType: 'uuid'` result; cookie helper name (§12); isolation proof §19.5; email out/in proof; duplicate cron run proof → **GO / FALLBACK** |
 | **M2 Kernel + Platform** | §8, §9 with ports and unit tests | coverage thresholds; property tests for `rankBetween`/`rebalance` and `diffFields`; permission matrix test enumerates every §9.10 cell |
 | **M3 Payload adapter** | §11 all collections, §11.1 access, §11.2 hooks, repositories, migrations | integration tests on local D1: scope filtering per role for every scoped collection; unique constraints; conflict detection; activity writes; admin-style update violating an invariant is rejected |
@@ -1285,7 +1285,7 @@ If `create-payload-app` cannot target `apps/web` directly, generate in a tempora
 | **M5 UI + pages** | §15, §16, §17 Phase 1 pages (auth, onboarding, dashboard, my tasks, CRM lists/records, projects, tasks, calendar, settings except inbox/email) | T-E2E-1..7; `@axe-core/playwright` reports no serious or critical violations per page; mobile (390 px) screenshots of shell, list, record, sheet attached to report |
 | **M6 Intake + Mail** | §10.3, §10.4, §12 auth/intake routes, §13 jobs, §14, `/settings/intake`, `/settings/email`, `apps/mail-router` | T-INTAKE, T-MAIL, T-JOBS, T-E2E-8; real outbound + inbound round-trip on staging |
 | **M7 Provisioning + Deploy** | §19 scripts, `deploy.yml`, runbooks | provision `staging-a` from scratch with one command; deploy loop stops on an injected smoke failure and rolls back; rollback runbook executed once |
-| **M8 First customer onboarding** | §20 for Mirch Media (§20.8) | platform and customer prerequisites ticked; tenant live; a test lead from each Mirch site visible |
+| **M8 First customer onboarding** | §20 for Acme Agency (§20.8) | platform and customer prerequisites ticked; tenant live; a test lead from each customer site visible |
 | **M9 Pilot hardening** | fixes from the first customer's pilot week only | §20.6 criteria met; report |
 | **Phase 2** | saved-view polish, bulk actions, Sheets → CSV guide, Inbox page, record email compose, dashboard polish; **LMPM** tenant (`legal`) after a privacy ADR | Definition of Done §23 per feature |
 | **Phase 3** | Timeline/Gantt + dependencies, recurring tasks, SLAs, assignment rules, custom-field filtering, FTS5, rich text, transition rules | §23 per feature |
@@ -1405,9 +1405,9 @@ M0 to M3 are complete and summarized in [`docs/history.md`](history.md); their r
 #### M8 work packages
 | WP | Owner | Wave | Depends | Objective | Write scope | Acceptance |
 |---|---|---|---|---|---|---|
-| M8-L1 | Lead | 0 | — | Verify §20.1 platform and §20.2 customer prerequisites, create `tenants/mirchmedia.jsonc` (platform-hosted), provision, redeploy `ops-mail-router`, smoke | `tenants/mirchmedia.jsonc`; `docs/orchestration/m8/` | `pnpm tenant:smoke mirchmedia` passes |
-| M8-W1 | Worker | 1 | M8-L1 | Laravel forwarder for `POST /api/leads` (§20.8) on a branch of the `mirchmedia-laravel` repository, with a feature test against a mocked intake endpoint | `external:mirchmedia-laravel/routes/web.php`; `external:mirchmedia-laravel/routes/api.php`; `external:mirchmedia-laravel/tests/Feature/LeadForwardTest.php` | Laravel feature test passes |
-| M8-W2 | Worker | 1 | M8-L1 | Transform the first customer's CSV exports into the `/settings/import` templates with a validation report, in a private workspace that is never committed | `external:onboarding-workspace/mirchmedia/` | row counts match the source; validation errors listed or zero |
+| M8-L1 | Lead | 0 | — | Verify §20.1 platform and §20.2 customer prerequisites, create `tenants/example.jsonc` (platform-hosted), provision, redeploy `ops-mail-router`, smoke | `tenants/example.jsonc`; `docs/orchestration/m8/` | `pnpm tenant:smoke example` passes |
+| M8-W1 | Worker | 1 | M8-L1 | Laravel forwarder for `POST /api/leads` (§20.8) on a branch of the `example-laravel` repository, with a feature test against a mocked intake endpoint | `external:example-laravel/routes/web.php`; `external:example-laravel/routes/api.php`; `external:example-laravel/tests/Feature/LeadForwardTest.php` | Laravel feature test passes |
+| M8-W2 | Worker | 1 | M8-L1 | Transform the first customer's CSV exports into the `/settings/import` templates with a validation report, in a private workspace that is never committed | `external:onboarding-workspace/example/` | row counts match the source; validation errors listed or zero |
 | M8-L2 | Lead | 2 | M8-W1, M8-W2 | Deploy the forwarder, run imports in `/admin`, test a lead from each site, go-live, history entry | `docs/history.md` | §21.2 M8 row |
 
 #### M9 work packages
@@ -1454,8 +1454,8 @@ Turnstile on web intake; upload mime/size allowlist; per-object authorization on
 least-privilege API tokens; secrets only in Wrangler and GitHub secrets.
 
 ## 25. Existing material (internal code; verify APIs before reuse)
-- `mirchmedia-projects/fasttrack/apps/platform-web` (Vitest/Playwright/ESLint patterns).
-- Lead flows to migrate: `mirchmedia-laravel/routes/web.php` + `routes/api.php` (`/api/leads`), `web-*-vue` forms posting to it, `etcpa-laravel` and `homestar-lara` contact controllers, `lmpm/lib/google-sheets.ts`, `lmpm/app/api/partnership-lead/route.ts`.
+- `example-projects/fasttrack/apps/platform-web` (Vitest/Playwright/ESLint patterns).
+- Lead flows to migrate: `example-laravel/routes/web.php` + `routes/api.php` (`/api/leads`), `web-*-vue` forms posting to it, `etcpa-laravel` and `homestar-lara` contact controllers, `lmpm/lib/google-sheets.ts`, `lmpm/app/api/partnership-lead/route.ts`.
 - Behavior references (study only, no code): Frappe CRM sparse clone in the session scratchpad `frappe-crm/` (commit 2f6435d); Twenty, Plane, Huly, Corteza repositories (links in §27).
 
 

@@ -6,7 +6,7 @@ The active scope is the daily-use release in the [agency UX plan](../plans/agenc
 
 The working branch is `main`, based on `fea0d86`. Existing uncommitted changes were planning documentation from the preceding conversation. No application changes were present at dispatch. Production health reported `v0.10.4` with migration `20261022_090000_attendance` on 2026-10-22.
 
-Node 22.22.3 and pnpm 10.34.5 match the repository requirements. Frozen dependency installation passed. Wrangler authentication includes the Mirch account. Only the Mirch tenant manifest is present. Operator secrets remain outside the repository.
+Node 22.22.3 and pnpm 10.34.5 match the repository requirements. Frozen dependency installation passed. Wrangler authentication includes the Acme Agency account. Only the Acme Agency tenant manifest is present. Operator secrets remain outside the repository.
 
 Interactive browser control is disabled in Work settings. Existing Playwright tests can run against the local app. Automated screenshots and workflow results are evidence of those checks; they do not constitute a manual production visual review.
 
@@ -34,7 +34,7 @@ The active monthly-work slice adds opt-in task generation and in-app sales-event
 
 ## Data provenance findings
 
-Read-only D1 queries against `ops-mirchmedia` grouped non-deleted tasks by workflow category and repeat cadence. At the October 22 date boundary, open backlog contained 70 overdue weekly tasks and 77 overdue non-repeating tasks. Another 132 monthly backlog tasks were not overdue. No task had populated custom metadata in these groups.
+Read-only D1 queries against `ops-example` grouped non-deleted tasks by workflow category and repeat cadence. At the October 22 date boundary, open backlog contained 70 overdue weekly tasks and 77 overdue non-repeating tasks. Another 132 monthly backlog tasks were not overdue. No task had populated custom metadata in these groups.
 
 The grouped query was:
 
@@ -60,7 +60,7 @@ The staff check asserts the member API returns 403 and the member page exposes n
 
 Unit checks and all 18 local database integration cases passed. Typecheck, lint, formatting, dependency boundaries, unused-code checks, duplication threshold, branding, vocabulary, documentation, tenant isolation, STE and i18n checks passed. The OpenNext production build and size check passed. Screenshots are generated under the ignored `test-results/` directory.
 
-The deployment dry run targets only Mirch. GitHub repository and production-environment secret inventories contain no configured secrets, so the tag workflow cannot perform this deployment. The operator path uses existing local Wrangler authentication and the tenant's external secret file.
+The deployment dry run targets only Kiiro. GitHub repository and production-environment secret inventories contain no configured secrets, so the tag workflow cannot perform this deployment. The operator path uses existing local Wrangler authentication and the tenant's external secret file.
 
 ## Release evidence
 
@@ -70,7 +70,7 @@ The deployment dry run targets only Mirch. GitHub repository and production-envi
 | Pushed release tag              | `v0.10.5`, pointing to that application source                                                                                   |
 | Release command                 | `OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag v0.10.5 --execute`, with credentials from operator custody                           |
 | Command result                  | Exit 0; health, login-page, authenticated R2 probe and email acceptance passed                                                   |
-| Live health                     | `https://crm.mirchmedia.com/api/v1/health` returned version `v0.10.5` and migration `20261022_090000_attendance`                 |
+| Live health                     | `https://crm.example.com/api/v1/health` returned version `v0.10.5` and migration `20261022_090000_attendance`                    |
 | Active Worker version           | `5d14ca02-0e13-4f89-90c8-ce9fe17ac159`, 100% traffic, in the deployment listing                                                  |
 | Previous Worker version         | `e005335e-af03-4b5a-83e4-a40b1fa814b2`; use the [rollback runbook](../runbooks/rollback.md) if required                          |
 | D1 recovery reference           | Bookmark `00000f89-00000000-0000510c-3575b86f24cd2f283ec4f5b67f874489`, read after deployment; no data restore performed         |
@@ -118,7 +118,7 @@ The deployment command was interrupted before its final result was captured. On 
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pushed application source and tag | `992602f16bc6ada5dd4771292fe7aae1cd5cef96` on `origin/main`; pushed tag `v0.10.7` points to that source                                                             |
 | Release command                   | `OPS_ALLOW_LIVE=1 pnpm tenants:deploy --tag v0.10.7 --execute`, using existing operator credentials                                                                 |
-| Independent smoke command         | `OPS_ALLOW_LIVE=1 pnpm tenant:smoke mirchmedia --execute`; exit 0                                                                                                   |
+| Independent smoke command         | `OPS_ALLOW_LIVE=1 pnpm tenant:smoke example --execute`; exit 0                                                                                                      |
 | Smoke results                     | Health 200, login 200, authenticated R2 put/get/delete passed, email accepted                                                                                       |
 | Live health                       | Version `v0.10.7`, migration `20261022_150000_monthly_work_orders`                                                                                                  |
 | Active Worker                     | `a8bd1934-aaab-4948-b52d-0a1574d8babc`, 100% traffic                                                                                                                |

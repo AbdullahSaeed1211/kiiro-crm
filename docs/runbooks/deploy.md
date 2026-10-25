@@ -20,7 +20,7 @@ The drill must print the rollback command for the first tenant and must not run 
 
 ## Tagged release
 
-The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs the complete `pnpm verify` gate, builds the OpenNext artifact once with the web workspace executable, verifies `apps/web/.open-next/worker.js` and its assets, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard. It invokes the loop only when the `production` environment has `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and a current `INTERNAL_SECRET_<SLUG>` for every tenant; without them it verifies and builds, prints a notice and skips the deploy, so an operator-run release is not repeated by CI.
+The GitHub workflow runs only for tags matching `v*`. It installs the pinned dependencies, runs the complete `pnpm verify` gate, builds the OpenNext artifact once with the web workspace executable, verifies `apps/web/.open-next/worker.js` and its assets, and invokes the loop. The workflow supplies the Cloudflare credentials and the explicit live-operation guard. Real tenant files are not in this repository: the workflow checks out the private repository named by the `TENANTS_REPO` variable (`owner/name`) into `.tenants/` with the read-only `TENANTS_REPO_TOKEN` secret, sets `KIIRO_TENANTS_DIR=.tenants` and regenerates the Wrangler config before the build. Per-tenant internal secrets come from the `TENANT_INTERNAL_SECRETS` secret, one `INTERNAL_SECRET_<SLUG>=<value>` line per tenant, which the workflow exports as masked environment variables. It invokes the loop only when the `production` environment has `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, the tenants repository and a current `INTERNAL_SECRET_<SLUG>` for every tenant; without them it verifies and builds, prints a notice and skips the deploy, so an operator-run release is not repeated by CI.
 
 For an operator-run release, use the same sequence after reviewing the build. The shell needs Cloudflare credentials for Wrangler and, for every tenant, `INTERNAL_SECRET_<SLUG>` (the slug upper-cased with `-` as `_`, for example `INTERNAL_SECRET_ACME_CO`), taken from operator custody. Without it the authenticated R2 and email smoke probes cannot run, smoke fails with `authenticated probe not run: set INTERNAL_SECRET_<SLUG>`, and the loop rolls the tenant back.
 
@@ -42,7 +42,7 @@ pnpm tenant:smoke <slug> --execute
 
 ### Tenant-configured email capability
 
-Outbound email is controlled by `email.enabled` in `tenants/<slug>.jsonc`. When it is `false`, Wrangler generation sets
+Outbound email is controlled by `email.enabled` in the tenant's `<slug>.jsonc`. When it is `false`, Wrangler generation sets
 `MAIL_TRANSPORT=disabled`; the settings page, record email actions, password-reset action, and send API all present the
 same unavailable state, while inbound inbox history remains readable. The smoke harness records email as
 `disabled by tenant configuration` and does not call the provider. When it is `true`, the email probe remains required and
@@ -69,7 +69,7 @@ Open any record with a phone number: the Text button should appear. To check wit
 
 ## Rotating a tenant's internal secret
 
-Cloudflare stores Worker secrets write-only, so a lost `INTERNAL_SECRET` cannot be read back; rotate it instead. The Worker's cron and inbound-email bridges read the same binding, so a custom-host tenant needs nothing else. A platform-host tenant's copy in `ops-mail-router` (`INTERNAL_SECRET_<SLUG>`) must be updated too, and so must any CI secret of the same name.
+Cloudflare stores Worker secrets write-only, so a lost `INTERNAL_SECRET` cannot be read back; rotate it instead. The Worker's cron and inbound-email bridges read the same binding, so a custom-host tenant needs nothing else. A platform-host tenant's copy in `ops-mail-router` (`INTERNAL_SECRET_<SLUG>`) must be updated too, and so must its line in the `TENANT_INTERNAL_SECRETS` CI secret.
 
 ```sh
 umask 077 && mkdir -p ~/.ops-secrets
@@ -98,7 +98,7 @@ Record the tag, tenant status, restore bookmark, smoke check results, rollback r
 
 What was measured, so a change can be compared against it (2026-10-02).
 
-- **Production, concurrent users.** `crm.mirchmedia.com` with about 2,500 demo records: 10 signed-in users making 140 page and API requests took 14.8 s with no failures (median 0.86 s, 95th percentile 1.9 s); 30 users making 420 requests took 23.5 s with no failures (median 1.4 s, 95th percentile 2.9 s, slowest 3.8 s).
+- **Production, concurrent users.** `crm.example.com` with about 2,500 demo records: 10 signed-in users making 140 page and API requests took 14.8 s with no failures (median 0.86 s, 95th percentile 1.9 s); 30 users making 420 requests took 23.5 s with no failures (median 1.4 s, 95th percentile 2.9 s, slowest 3.8 s).
 - **Local, large data.** About 12,000 tasks, 4,100 leads, 2,900 deals, 2,300 contacts and 960 organizations on the dev server: Dashboard, My tasks, lists, Timeline and the settings screens load in under a second; the lead, deal and task boards and the Calendar take 2.6 to 4.5 s; Figures for 30 days takes about 3.6 s and for 90 days 7 to 10 s. These are dev-server times on a busy laptop, so a deployed Worker should be faster.
 - **Production, 100 users at once.** 100 users hitting the site together with no pause between requests (a harsher test than 100 real people): 800 requests, none failed, median 3.7 s, 95th percentile 7.3 s, slowest 9.4 s. Slower, but nothing broke.
 - **Production, sustained.** 20 users with a short pause between requests for 4 minutes: 1,777 requests, none failed, median about 0.87 s and 95th percentile 1.6 to 1.8 s in every minute, with no slowing over time.

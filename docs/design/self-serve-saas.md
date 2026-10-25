@@ -61,7 +61,7 @@ The registry replaces the tenant files as the source of truth:
 | `plans`             | seat limit, storage limit, feature flags                                                                                                                   |
 | `releases`          | version, per-tenant status, restore bookmark, smoke result                                                                                                 |
 
-`tenants/*.jsonc` stays as the import format: a script loads existing files into the registry once, and the Mirch Media tenant becomes a registry row.
+`tenants/*.jsonc` stays as the import format: a script loads existing files into the registry once, and the Acme Agency tenant becomes a registry row.
 
 ### Signup
 
@@ -129,7 +129,7 @@ A release Workflow uploads the new artifact to every script in the namespace: ca
 
 Each phase ships on its own and is verified with gates against a real Cloudflare account (see the `verify-change` skill).
 
-1. **Registry and API-driven provisioning, operator-started.** `apps/control` with the registry, the provisioning Workflow and the operator console; the Mirch Media tenant imported. Done when an operator creates a test tenant from the console with no CLI, and a rerun of any step creates nothing new.
+1. **Registry and API-driven provisioning, operator-started.** `apps/control` with the registry, the provisioning Workflow and the operator console; the Acme Agency tenant imported. Done when an operator creates a test tenant from the console with no CLI, and a rerun of any step creates nothing new.
 2. **Dispatch namespace and releases.** Tenant Workers move into the namespace, the dispatcher takes the platform wildcard, and the release Workflow replaces `tenants:deploy`. Done when a release reaches every tenant with a canary and a forced smoke failure rolls one tenant back.
 3. **Public signup.** Signup page, email verification, progress page and slug expiry. Done when a new visitor reaches onboarding in their own workspace with no operator action.
 4. **Custom domains.** Custom hostnames through the API, with `waitForEvent` on validation. Done when a customer's CNAME brings their domain live with a certificate.
