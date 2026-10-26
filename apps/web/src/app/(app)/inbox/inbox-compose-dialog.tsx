@@ -8,7 +8,7 @@ import styles from './inbox.module.css'
 import { readApi } from '../api-client'
 import { addressesOf, looksLikeEmail } from '../email-addresses'
 
-/** A first name made from the part of an address before the @, such as "Abdullah Saeed" for abdullah.saeed@example.com. */
+/** A first name made from the part of an address before the @, such as "Jane Doe" for jane.doe@example.com. */
 function nameFromAddress(address: string): string {
   const local = address.split('@')[0] ?? address
   return local

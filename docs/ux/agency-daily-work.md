@@ -44,7 +44,7 @@ Fresh local API checks confirmed manager edits to staff work profiles, denied ma
 
 ### Production release observed, 2026-10-22
 
-Commit `ca12c5b` and tag `v0.10.1` are pushed. The Mirch tenant deployment completed with health, login-page, R2 and email-acceptance smoke checks passing. The live health endpoint reported version `v0.10.1` and migration `20261020_213831_intake_lead_recovery`. No database reset was performed.
+Commit `ca12c5b` and tag `v0.10.1` are pushed. The Acme Agency tenant deployment completed with health, login-page, R2 and email-acceptance smoke checks passing. The live health endpoint reported version `v0.10.1` and migration `20261020_213831_intake_lead_recovery`. No database reset was performed.
 
 In the existing authenticated production browser session, the calendar rendered its full task-title and due-date preview, crowded days opened a More popover, and the sales desk rendered without captured console errors. The outbound form's booking answer now maps to `appointmentAt` and its callback answer to `nextActionAt`; both question-specific timezones remained `America/New_York` after reload. Historical custom-field values were preserved, not backfilled into new events. Production timing measurements and acceptance of all fourteen daily-work rows remain separate work; this release does not establish those outcomes.
 
@@ -87,7 +87,7 @@ The release gate includes the existing static/build checks, scoped persistence c
 
 ## Reference grounding
 
-The following primary product documentation was consulted on 2026-10-20. These are sourced design patterns; Mirch's decisions and acceptance criteria above are recommendations for this agency, not vendor claims.
+The following primary product documentation was consulted on 2026-10-20. These are sourced design patterns; Kiiro's decisions and acceptance criteria above are recommendations for this agency, not vendor claims.
 
 | Source                                                                                                              | Pattern informing this work                                                              |
 | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |

@@ -10,6 +10,7 @@ export default defineConfig(
       '**/node_modules/**',
       '.claude/**',
       '.codex/**',
+      '.tenants/**',
       'scripts/fixtures/**',
       '**/.open-next/**',
       '**/.wrangler/**',

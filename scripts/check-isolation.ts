@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { parseJsonc } from './lib/jsonc'
 import { isMain, report } from './lib/report'
 import { parseTenant, type Tenant } from './lib/tenant-schema'
+import { tenantsDir } from './lib/tenants-dir'
 
 interface IsolationMaps {
   d1Ids: Map<string, string>
@@ -25,11 +26,11 @@ interface IsolationResult {
   tenantLines: string[]
 }
 
-/** Reads and validates every `tenants/*.jsonc` below `root`. */
+/** Reads and validates every `*.jsonc` in the tenants directory of `root` (see `tenantsDir`). */
 function loadTenants(root: string): Tenant[] {
-  const dir = join(root, 'tenants')
+  const dir = tenantsDir(root)
   const files = readdirSync(dir).filter((file) => file.endsWith('.jsonc'))
-  const tenants = files.map((file) => parseTenant(parseJsonc(readFileSync(join(dir, file), 'utf8')), `tenants/${file}`))
+  const tenants = files.map((file) => parseTenant(parseJsonc(readFileSync(join(dir, file), 'utf8')), join(dir, file)))
   return tenants.sort((a, b) => a.deployOrder - b.deployOrder)
 }
 

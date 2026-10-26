@@ -4,12 +4,13 @@ import { parseArgs } from 'node:util'
 import { listFiles } from './lib/files'
 import { isMain, report } from './lib/report'
 import { escapeRegExp, formatMatch, scanFiles } from './lib/scan'
+import { tenantsDir } from './lib/tenants-dir'
 
 /** Brand tokens forbidden in product code (spec §3, constraint 2), matched case-insensitively as substrings. */
-export const BRAND_TOKENS: readonly string[] = ['mirch', 'frappe', 'twenty', 'plane', 'huly']
+export const BRAND_TOKENS: readonly string[] = ['frappe', 'twenty', 'plane', 'huly']
 
 const SCANNED_DIRS = ['apps', 'packages']
-// Generated from tenants/*.jsonc, where tenant names and hostnames are allowed.
+// Generated from the tenant files, where tenant names and hostnames are allowed.
 const EXCLUDED_FILES: ReadonlySet<string> = new Set([
   'apps/mail-router/wrangler.jsonc',
   'apps/web/cloudflare-env.d.ts',
@@ -22,9 +23,9 @@ const EXCLUDED_FILES: ReadonlySet<string> = new Set([
 ])
 const DISPLAY_NAME = /"displayName"\s*:\s*"([^"]+)"/g
 
-/** Reads every `displayName` from `tenants/*.jsonc` below `root`; no tenants directory yields no names. */
+/** Reads every `displayName` from the tenants directory of `root` (see `tenantsDir`); no directory yields no names. */
 export function tenantNames(root: string): string[] {
-  const dir = join(root, 'tenants')
+  const dir = tenantsDir(root)
   if (!existsSync(dir)) return []
   const configs = readdirSync(dir).filter((file) => file.endsWith('.jsonc'))
   const names = configs.flatMap((file) => [...readFileSync(join(dir, file), 'utf8').matchAll(DISPLAY_NAME)])

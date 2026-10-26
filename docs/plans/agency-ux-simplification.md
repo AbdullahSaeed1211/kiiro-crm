@@ -42,7 +42,7 @@ The notification badge displayed 99. Its precise count semantics and underlying 
 
 ## What the references actually contribute
 
-These are selected source-level patterns, not claims that every reference was exhaustively audited. Adapt behavior to Mirch's workflows; do not import six competing design systems.
+These are selected source-level patterns, not claims that every reference was exhaustively audited. Adapt behavior to Kiiro's workflows; do not import six competing design systems.
 
 | Reference and inspected component                                                                                                                                  | Useful pattern                                                           | Application here                                                                     |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
@@ -85,7 +85,7 @@ Content is a prominent Work view. A client's content tab filters those same reco
 
 Keep team project access governed by existing server policies, not by the selected view. Preserve existing URLs and deep links. Reports and Settings keep explicit labels instead of disappearing into a generic More category. Preserve quick access to Inbox where enabled; do not bury unread communication merely to hit a navigation-item quota.
 
-For Mirch, the organization label can become “Clients” through tenant terminology. Internal agency work remains clearly identified. Other tenants retain their vocabulary. Job responsibilities such as designer, developer and PR remain separate from authorization roles.
+For Kiiro, the organization label can become “Clients” through tenant terminology. Internal agency work remains clearly identified. Other tenants retain their vocabulary. Job responsibilities such as designer, developer and PR remain separate from authorization roles.
 
 Treat this structure as the working hypothesis for implementation. Agent walkthroughs can expose inconsistencies, but cannot establish that staff understand every label. Check realistic findability tasks with staff when available, and record that limitation when they are not. [Tree-testing guidance](https://www.nngroup.com/articles/tree-testing/).
 
@@ -178,7 +178,7 @@ Brief / work order → Assigned design → Internal review → Ready for GHL
                                    GHL approval → Scheduled → Published / Failed
 ```
 
-- For Mirch, configure work orders due by the 23rd and design delivery by the 3rd of the following month. These are tenant settings, not global constants.
+- For Kiiro, configure work orders due by the 23rd and design delivery by the 3rd of the following month. These are tenant settings, not global constants.
 - Keep design delivery dates separate from publication instants. Do not backdate historical designer obligations from imported post dates.
 - Show client, cycle, assignee, delivery deadline, review state, Drive link and GHL reference together. Require only a title and necessary ownership context for rough capture; enforce later-stage requirements at transition time.
 - Show an unscheduled draft queue alongside the publication calendar. Open a specific content item from its calendar entry instead of sending the user to a generic project overview.
@@ -230,7 +230,7 @@ Include these bounded improvements after daily actions and client context work. 
 | Improvement                          | Smallest useful scope                                                                                                               | Boundary                                                                                                                  |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Quick capture and triage             | Save a rough task, lead or content idea with the minimum valid context. Show missing assignment or scheduling in a triage queue     | Do not require a complete brief to capture an idea; do not invent an owner or deadline                                    |
-| Reusable work templates              | Preview tasks, relative dates and role assignments before applying a tenant-owned template to a project                             | Extend current playbooks; keep explicit Mirch monthly dates separate from generic relative-date rules                     |
+| Reusable work templates              | Preview tasks, relative dates and role assignments before applying a tenant-owned template to a project                             | Extend current playbooks; keep explicit Kiiro monthly dates separate from generic relative-date rules                     |
 | Waiting-on handoffs                  | Show a reason, responsible reviewer or next actor, and an optional next-check date                                                  | Reuse workflow states and review records; defer a general dependency graph unless ordinary handoffs cannot be represented |
 | Notification control                 | Read, act, dismiss or snooze personal reminders with clear counts and source links                                                  | Snoozing a reminder must not change the task deadline or erase overdue status; no new outbound channels by default        |
 | Role-specific first use              | Show assigned work, check-in and the relevant first action. Explain an empty assignment list and how to contact the workspace admin | Preserve the current account model; do not require email verification or change credentials as part of UX work            |
@@ -365,7 +365,7 @@ Two source details require explicit checks:
 - `.github/workflows/deploy.yml` runs on `v*` tags and can skip deployment when required secrets are absent. A green verification job alone proves neither deployment nor live acceptance.
 - `scripts/deploy-tenants.ts` loads the tenant manifests and deploys the resulting set. Its parsed options do not include a tenant selector. P00 must confirm the exact target set before execution; never invent a `--tenant` flag.
 
-For this program, the intended live product target is `crm.mirchmedia.com`. If the release command would affect other tenants, the lead must establish an approved scoped path before release. Adding a manifest must not silently expand this program's deployment scope.
+For this program, the intended live product target is `crm.example.com`. If the release command would affect other tenants, the lead must establish an approved scoped path before release. Adding a manifest must not silently expand this program's deployment scope.
 
 For each cohort, the lead must:
 

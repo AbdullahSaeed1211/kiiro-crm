@@ -1,5 +1,8 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   assertIsolated,
   baseConfig,
@@ -10,6 +13,7 @@ import {
 } from '../../gen-wrangler'
 import { parseJsonc } from '../../lib/jsonc'
 import { parseTenant, type Tenant } from '../../lib/tenant-schema'
+import { TENANTS_DIR_ENV, tenantAssetPath, tenantsDir } from '../../lib/tenants-dir'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 
@@ -68,7 +72,7 @@ describe('gen-wrangler', () => {
   })
 
   it('loads the repository tenants in deploy order', () => {
-    expect(loadTenants(ROOT).map((entry) => entry.slug)).toEqual(['mirchmedia'])
+    expect(loadTenants(ROOT).map((entry) => entry.slug)).toEqual(['example'])
   })
 
   it('gives each tenant environment only its own resources', () => {
@@ -117,5 +121,36 @@ describe('mail-router config', () => {
     expect(() => {
       assertIsolated([tenant('alpha', 0), other])
     }).toThrow(/share one inbound domain/)
+  })
+})
+
+describe('tenants directory', () => {
+  const original = process.env[TENANTS_DIR_ENV]
+  afterEach(() => {
+    if (original === undefined) Reflect.deleteProperty(process.env, TENANTS_DIR_ENV)
+    else process.env[TENANTS_DIR_ENV] = original
+  })
+
+  it('defaults to the repository tenants directory', () => {
+    Reflect.deleteProperty(process.env, TENANTS_DIR_ENV)
+    expect(tenantsDir(ROOT)).toBe(join(ROOT, 'tenants'))
+    expect(tenantAssetPath(ROOT, 'tenants/assets/example/logo.png')).toBe(join(ROOT, 'tenants/assets/example/logo.png'))
+  })
+
+  it('loads tenants and resolves assets from KIIRO_TENANTS_DIR', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tenants-'))
+    try {
+      for (const [slug, order] of [
+        ['beta', 1],
+        ['alpha', 0],
+      ] as const) {
+        writeFileSync(join(dir, `${slug}.jsonc`), `// fixture\n${JSON.stringify(tenant(slug, order))}`)
+      }
+      process.env[TENANTS_DIR_ENV] = dir
+      expect(loadTenants(ROOT).map((entry) => entry.slug)).toEqual(['alpha', 'beta'])
+      expect(tenantAssetPath(ROOT, 'assets/alpha/logo.png')).toBe(join(dir, 'assets/alpha/logo.png'))
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

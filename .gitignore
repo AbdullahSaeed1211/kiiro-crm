@@ -20,3 +20,9 @@ tests/e2e/screenshots/
 !.claude/hooks/
 !.claude/settings.json
 .codex/
+# Real tenants live in a private directory named by KIIRO_TENANTS_DIR; only the example is committed.
+/tenants/*.jsonc
+!/tenants/example.jsonc
+/tenants/assets/*
+!/tenants/assets/example/
+.tenants/

@@ -5,13 +5,14 @@ import { TEMPLATE_KEYS } from '../packages/templates/src/index'
 import { parseJsonc } from './lib/jsonc'
 import { isMain, runCli } from './lib/report'
 import { parseTenant, type Tenant } from './lib/tenant-schema'
+import { tenantFile, tenantsDir } from './lib/tenants-dir'
 
 const USAGE =
   'usage: pnpm tenant:new <slug> --name "Business name" --owner-email <email> --owner-name "Name" [--template <key>] [--timezone <zone>] [--currency <ISO>] [--locale en|es] [--host <hostname>]'
 
 /** The tenants already on disk, read raw so one invalid file does not stop a new one being added. */
 function existingTenants(root: string): Record<string, unknown>[] {
-  const dir = join(root, 'tenants')
+  const dir = tenantsDir(root)
   return readdirSync(dir)
     .filter((file) => file.endsWith('.jsonc'))
     .map((file) => parseJsonc(readFileSync(join(dir, file), 'utf8')) as Record<string, unknown>)
@@ -104,16 +105,16 @@ function choicesFrom(argv: string[]): Choices {
   }
 }
 
-/** Writes `tenants/<slug>.jsonc` for a new business and prints the commands that provision it. */
+/** Writes `<slug>.jsonc` to the tenants directory (see `tenantsDir`) for a new business and prints the commands that provision it. */
 export function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   const root = process.cwd()
   const choices = choicesFrom(argv)
-  const file = join(root, 'tenants', `${choices.slug}.jsonc`)
-  if (existsSync(file)) throw new Error(`tenants/${choices.slug}.jsonc already exists`)
+  const file = tenantFile(root, choices.slug)
+  if (existsSync(file)) throw new Error(`${file} already exists`)
   const draft = draftTenant(choices, nextFree(existingTenants(root)))
-  const tenant: Tenant = parseTenant(draft, `tenants/${choices.slug}.jsonc`)
+  const tenant: Tenant = parseTenant(draft, file)
   writeFileSync(file, `${JSON.stringify(tenant, null, 2)}\n`)
-  console.log(`tenant:new: wrote tenants/${choices.slug}.jsonc`)
+  console.log(`tenant:new: wrote ${file}`)
   console.log(`next: pnpm tenant:provision ${choices.slug} --dry-run, then follow docs/runbooks/onboarding-customer.md`)
   return Promise.resolve(0)
 }

@@ -1074,7 +1074,7 @@ test('onboarding exposes the tenant-neutral business preset catalog', async ({ p
   const preset = page.locator('#business-type option')
   await expect(preset).toHaveCount(9)
   await expect(preset).toContainText(['General business', 'Healthcare', 'Legal', 'Real estate'])
-  expect(await preset.allTextContents()).not.toContain('Mirch Media')
+  expect(await preset.allTextContents()).not.toContain('Acme Agency')
 })
 
 function staffTaskScopeFixtures() {

@@ -6,9 +6,9 @@ Waves 2 and 3 run in parallel, as they touch different files. Wave 4 needs wave 
 
 ## 1. Release visibility
 
-Done: production (`crm.mirchmedia.com`) runs `v0.2.0`, `/api/v1/health` reports it, every response carries the security headers, Payload's own password routes return 404, and a release without a tenant secret stops before its first remote command.
+Done: production (`crm.example.com`) runs `v0.2.0`, `/api/v1/health` reports it, every response carries the security headers, Payload's own password routes return 404, and a release without a tenant secret stops before its first remote command.
 
-- If the tag-triggered release workflow stores `INTERNAL_SECRET_MIRCHMEDIA`, update it to the value rotated on 2026-09-26 (see the deploy runbook).
+- If the tag-triggered release workflow stores `INTERNAL_SECRET_EXAMPLE`, update it to the value rotated on 2026-09-26 (see the deploy runbook).
 - Findings: none.
 
 ## 2. Task surfaces
@@ -31,9 +31,9 @@ Depends on: nothing. Done when: `members.ts` has no `payload.` call, the identit
 
 ## 4. First-tenant go-live and pilot week
 
-The spec's M8 and M9 milestones (spec §20, §21.2) for the Mirch Media tenant, run once wave 2 gives staff usable task screens. The tenant is live at `crm.mirchmedia.com`; the steps below are not verifiable from this repository and are confirmed with the owner first.
+The spec's M8 and M9 milestones (spec §20, §21.2) for the Acme Agency tenant, run once wave 2 gives staff usable task screens. The tenant is live at `crm.example.com`; the steps below are not verifiable from this repository and are confirmed with the owner first.
 
-- Confirm or finish the M8 go-live items: the website lead forwarder (M8-W1, in the separate Laravel repository), the CSV imports (M8-W2), and outbound email, which `tenants/mirchmedia.jsonc` has disabled (`email.enabled: false`).
+- Confirm or finish the M8 go-live items: the website lead forwarder (M8-W1, in the separate Laravel repository), the CSV imports (M8-W2), and outbound email, which `tenants/example.jsonc` has disabled (`email.enabled: false`).
 - Run the pilot week and measure the §20.6 criteria: every website lead lands in the app, active projects and open tasks live only in the app, every staff member signs in on at least three of five workdays and uses My tasks daily, no cross-scope visibility bug, and due-soon and overdue notifications verified.
 - Turn the pilot's friction list into findings in [the UX backlog](backlog/ux.md) and assign them to waves.
 
@@ -83,7 +83,7 @@ Taken whenever a wave leaves slack.
 Plan: [wave 10 plan](plans/wave-10-sales.md). Owner priority: the lead pipeline from first contact to an onboarded client, and a newsletter.
 
 - Done (v0.9.0–v0.9.3, verified signed in on production): quick create, notes, editable details, filters by owner and source, saved views, bulk owner assign and bulk stage move, phone cards, add-to-column on the board, duplicate warning, next-action date with an overdue marker, convert that works without a company, and links between lead, deal and onboarding project.
-- Done (v0.9.4–v0.9.5): outbound email from `notify.mirchtravel.com`, and the newsletter: opt-in checkbox on contacts, a test send and a send to all subscribers, and a signed unsubscribe link, verified signed in on production.
+- Done (v0.9.4–v0.9.5): outbound email from `notify.example.com`, and the newsletter: opt-in checkbox on contacts, a test send and a send to all subscribers, and a signed unsubscribe link, verified signed in on production.
 - Website sign-ups: a form question mapped to the lead's "Newsletter opt-in" (Settings, Intake) lands as a lead, and converting that lead ticks the contact. A person reviews every subscriber before anything is sent.
 - Campaign history: each newsletter email is recorded on its contact (Email tab) and the newsletter page lists the last ten campaigns.
 - Wave 9 picks built from this: automation rules (new leads are assigned to people in turn, per source), email templates (insertable in the email box) and a first-response target (leads waiting past it are marked). Set them under Settings, Sales. Archive for leads, deals, contacts and organizations is built (owners and managers), with an Archive page that restores them. Also built: CSV import and export (organizations, contacts, leads and deals), a Follow-ups view for leads, and pipeline charts on Figures, and signed outgoing webhooks (Settings, Webhooks; two quick retries and a two-week delivery list), optional two-step sign-in with an authenticator app, a read-only calendar feed per person (Settings, Profile), personal API tokens, repeating tasks, and time logging on tasks with a time report on Figures. Deferred: call logs, Gmail and two-way calendar sync, custom record types. Next for campaigns: a durable outbox with retries, pause and quiet hours, then SMS ([design](design/campaign-outbox.md)).
