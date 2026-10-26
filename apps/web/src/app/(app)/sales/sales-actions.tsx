@@ -17,10 +17,18 @@ export function SalesActions({
       </Link>
       {model.manager ? (
         <>
-          <Link className="rounded-md border px-3 py-2 hover:bg-muted" href="/sales">
+          <Link
+            className={`rounded-md border px-3 py-2 hover:bg-muted ${model.team ? '' : 'bg-muted font-medium'}`}
+            href="/sales"
+            aria-current={model.team ? undefined : 'page'}
+          >
             {copy.mine}
           </Link>
-          <Link className="rounded-md border px-3 py-2 hover:bg-muted" href="/sales?view=team">
+          <Link
+            className={`rounded-md border px-3 py-2 hover:bg-muted ${model.team ? 'bg-muted font-medium' : ''}`}
+            href="/sales?view=team"
+            aria-current={model.team ? 'page' : undefined}
+          >
             {copy.team}
           </Link>
         </>

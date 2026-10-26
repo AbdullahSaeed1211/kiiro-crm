@@ -20,7 +20,7 @@ Global navigation names work areas. Calendar, board, timeline and repeating are 
 
 Sales staff need a personal calling workspace: assigned leads, call history, due callbacks, booked appointments and sales tasks. Their calendar must show their appointments, callbacks and dated tasks. Owners and authorized managers need the agency view with a person filter. Sales staff must not gain access to unrelated client delivery, billing, private tasks or workspace administration through this workspace. Access checks apply to direct URLs and APIs as well as navigation.
 
-The implementation is under release verification. The permission roles are owner, manager and staff (`packages/platform/src/contracts/access.ts`). The public outbound form does not authenticate callers. A caller name entered in that form is attribution only and must not grant CRM access or establish record ownership. Signed-in call logging must record the authenticated actor. Acceptance requires two sales accounts with separate assignments, denied cross-account reads and writes, personal calendar checks, and an authorized agency overview.
+The permission roles are owner, manager and staff (`packages/platform/src/contracts/access.ts`). The public outbound form does not authenticate callers. A caller name entered in that form is attribution only and must not grant CRM access or establish record ownership. Public phone inquiries are saved as lead comments; they do not create structured call-log records. Signed-in call logging must record the authenticated actor. Acceptance requires two sales accounts with separate assignments, denied cross-account reads and writes, personal calendar checks, and an authorized agency overview.
 
 The sales release has five acceptance boundaries. New account provisioning is deferred; existing invitation and login flows remain in use. The release lead must record local workflow results, the pushed commit and the observed production version before closing these boundaries.
 
@@ -47,6 +47,12 @@ Fresh local API checks confirmed manager edits to staff work profiles, denied ma
 Commit `ca12c5b` and tag `v0.10.1` are pushed. The Mirch tenant deployment completed with health, login-page, R2 and email-acceptance smoke checks passing. The live health endpoint reported version `v0.10.1` and migration `20261020_213831_intake_lead_recovery`. No database reset was performed.
 
 In the existing authenticated production browser session, the calendar rendered its full task-title and due-date preview, crowded days opened a More popover, and the sales desk rendered without captured console errors. The outbound form's booking answer now maps to `appointmentAt` and its callback answer to `nextActionAt`; both question-specific timezones remained `America/New_York` after reload. Historical custom-field values were preserved, not backfilled into new events. Production timing measurements and acceptance of all fourteen daily-work rows remain separate work; this release does not establish those outcomes.
+
+### Local audit follow-up, 2026-10-26
+
+Public intake reuses one lead when a unique normalized email or phone match is found. Email comparison trims whitespace and ignores case. Phone comparison removes non-digits from both submitted and stored values, so punctuation differences match. The adapter scans leads in pages to avoid missing formatted phone values; workspaces with many leads incur more lookup reads. Ambiguous contact matches create a new lead. Country-code variations are not canonicalized. Submission retries first resolve the submission's saved lead link, then the lead's intake-submission marker, before contact matching. Reused leads retain their owner and assignees for appointment and callback routing.
+
+Supplied caller name, call outcome and notes are written into a lead comment. That comment is authored as a workspace-owner note and is not an authenticated call log. The sales desk call-history list reads structured call-log records. This local close-out does not establish production deployment or authenticated production acceptance.
 
 ### Daily work acceptance
 

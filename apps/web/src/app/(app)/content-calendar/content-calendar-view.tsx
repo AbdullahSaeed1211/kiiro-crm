@@ -33,6 +33,18 @@ function calendarEvents(
   })
 }
 
+function contentCalendarHref(input: {
+  year: number
+  month: number
+  projectId: string
+  contentItemId?: string
+}): string {
+  const params = new URLSearchParams({ year: String(input.year), month: String(input.month) })
+  if (input.projectId !== '') params.set('projectId', input.projectId)
+  if (input.contentItemId !== undefined) params.set('contentItemId', input.contentItemId)
+  return `/content-calendar?${params.toString()}`
+}
+
 function useContentActions({
   initialItems,
   projects,
@@ -109,6 +121,7 @@ export function ContentCalendarView({
   selectedProjectId,
   selectedContentItemId,
   timeZone,
+  today,
   year,
   month,
   weekStartsOn,
@@ -118,6 +131,7 @@ export function ContentCalendarView({
   selectedProjectId: string
   selectedContentItemId: string
   timeZone: string
+  today: Readonly<{ year: number; month: number }>
   year: number
   month: number
   weekStartsOn: 0 | 1
@@ -136,14 +150,12 @@ export function ContentCalendarView({
     router.replace(`${url.pathname}${url.search}`, { scroll: false })
   }
   function onProjectChange(projectId: string) {
-    const params = new URLSearchParams({ month: String(month), year: String(year) })
-    if (projectId !== '') params.set('projectId', projectId)
-    router.push(`/content-calendar?${params.toString()}`)
+    router.push(contentCalendarHref({ year, month, projectId }))
   }
   function onEdit(item: ContentItem) {
-    const params = new URLSearchParams({ month: String(month), year: String(year), contentItemId: item.id })
-    if (selectedProjectId !== '') params.set('projectId', selectedProjectId)
-    router.push(`/content-calendar?${params.toString()}`, { scroll: false })
+    router.push(contentCalendarHref({ year, month, projectId: selectedProjectId, contentItemId: item.id }), {
+      scroll: false,
+    })
   }
   async function onDraftUpdate(item: ContentItem, edit: DraftEdit) {
     const channel = edit.channel.trim() || null
@@ -168,6 +180,7 @@ export function ContentCalendarView({
       month={month}
       weekStartsOn={weekStartsOn}
       timeZone={timeZone}
+      today={today}
       items={items}
       events={events}
       onProjectChange={onProjectChange}

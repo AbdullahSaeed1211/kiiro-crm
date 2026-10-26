@@ -1,17 +1,11 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useLayoutEffect, useState, type ReactNode } from 'react'
 
 export type ThemeChoice = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'workspace-theme'
 
-/**
- * Runs in the page head, before first paint, so a dark theme never flashes light while the app loads. A saved choice
- * wins; with none saved the initial theme is light. An explicit `system` choice follows the device setting.
- * Keep this in step with `ThemeProvider` below.
- */
-export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem('${STORAGE_KEY}');var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch(e){}`
 const ThemeContext = createContext<Readonly<{ theme: ThemeChoice; setTheme: (theme: ThemeChoice) => void }> | null>(
   null,
 )
@@ -34,7 +28,7 @@ function applyTheme(theme: ThemeChoice) {
 export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [theme, setThemeState] = useState<ThemeChoice>('light')
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     const choice: ThemeChoice = saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'light'
     setThemeState(choice)

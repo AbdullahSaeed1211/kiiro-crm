@@ -79,6 +79,8 @@ function useIntakeFormActions({
 export function IntakeFormEditor({
   action,
   form,
+  locale,
+  timeZone,
   origin,
   turnstileSiteKey,
   groups,
@@ -88,6 +90,8 @@ export function IntakeFormEditor({
 }: Readonly<{
   action: Action
   form: IntakeFormView
+  locale: 'en' | 'es'
+  timeZone: string
   origin: string
   turnstileSiteKey: string
   groups: readonly IntakeOption[]
@@ -136,7 +140,7 @@ export function IntakeFormEditor({
       <details className="rounded-lg border px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium">Recent submissions ({form.submissions.length})</summary>
         <div className="pt-3">
-          <SubmissionsSection form={form} />
+          <SubmissionsSection form={form} locale={locale} timeZone={timeZone} />
         </div>
       </details>
     </div>

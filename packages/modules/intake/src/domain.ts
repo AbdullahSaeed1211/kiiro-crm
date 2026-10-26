@@ -86,7 +86,7 @@ function jsonEntry(key: string, value: unknown): string {
 export const INTAKE_PAYLOAD_MAX_BYTES = MAX_PAYLOAD_BYTES
 
 /** Reads one optional text field from an intake payload. */
-export function text(payload: IntakePayload, key: string): string | undefined {
+function text(payload: IntakePayload, key: string): string | undefined {
   const value = payload[key]
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 }

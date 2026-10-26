@@ -1,9 +1,8 @@
 import { LocaleProvider } from '../../i18n/locale-context'
 import '@ops/ui/globals.css'
-import { THEME_INIT_SCRIPT, ThemeProvider } from '@ops/ui'
+import { ThemeProvider } from '@ops/ui'
 import { Toaster } from '@ops/ui/components/ui/sonner'
 import { cookies } from 'next/headers'
-import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import type { CSSProperties, ReactNode } from 'react'
 import type { Metadata } from 'next'
@@ -72,7 +71,6 @@ export default async function AppLayout({ children, modal }: Readonly<{ children
   return (
     <html lang={locale} suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
       <body style={themeStyle(settings)}>
-        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <LocaleProvider locale={locale}>
             <AppFrame

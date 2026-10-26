@@ -29,7 +29,7 @@ function completedTask(input: {
 }
 
 // Each exhaustive branch maps one saved task change to its display field.
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity -- branches map each task change to its optimistic display field.
 function optimisticTask(input: {
   task: TaskSheetTask
   change: TaskChange

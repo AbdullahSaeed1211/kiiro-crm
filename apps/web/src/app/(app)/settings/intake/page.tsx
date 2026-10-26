@@ -16,6 +16,8 @@ import { formFieldsSchema } from '@ops/module-intake'
 import { saveIntakeFieldMap } from '../../../../server/actions/settings/intake-field-map'
 import { loadIntakeTargets } from '../../../../server/queries/settings/intake-targets'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
+import { getWorkspaceSettings } from '../../../../server/auth/context'
+import { normalizeLocale } from '../../../../i18n/config'
 
 export const metadata: Metadata = { title: 'Intake' }
 export const dynamic = 'force-dynamic'
@@ -23,7 +25,7 @@ export const dynamic = 'force-dynamic'
 // eslint-disable-next-line max-lines-per-function -- the page loads all manager-visible intake context together.
 export default async function IntakeSettingsPage() {
   const context = await requireRole('owner', 'manager')
-  const [forms, users, groups, sources, submissions] = await Promise.all([
+  const [forms, users, groups, sources, submissions, settings] = await Promise.all([
     context.payload.find({
       collection: 'intakeForms',
       sort: 'name',
@@ -41,7 +43,10 @@ export default async function IntakeSettingsPage() {
       depth: 0,
       req: context.req,
     }),
+    getWorkspaceSettings(),
   ])
+  const locale = normalizeLocale(settings.locale)
+  const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
   const relationId = (value: unknown): string | undefined => {
     if (typeof value === 'string' || typeof value === 'number') return String(value)
     if (typeof value === 'object' && value !== null && 'id' in value) return relationId(value.id)
@@ -133,6 +138,8 @@ export default async function IntakeSettingsPage() {
               <IntakeFormEditor
                 action={updateIntakeForm}
                 form={form}
+                locale={locale}
+                timeZone={timeZone}
                 origin={origin}
                 turnstileSiteKey={env.TURNSTILE_SITE_KEY.trim()}
                 groups={optionList(groups.docs)}

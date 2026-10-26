@@ -101,7 +101,11 @@ export function IntegrationSnippetsSection({
   )
 }
 
-export function SubmissionsSection({ form }: Readonly<{ form: IntakeFormView }>) {
+export function SubmissionsSection({
+  form,
+  locale,
+  timeZone,
+}: Readonly<{ form: IntakeFormView; locale: 'en' | 'es'; timeZone: string }>) {
   return (
     <div className="border-t pt-5">
       <div className="flex items-baseline justify-between gap-3">
@@ -116,18 +120,28 @@ export function SubmissionsSection({ form }: Readonly<{ form: IntakeFormView }>)
       {form.submissions.length === 0 ? (
         <p className="mt-3 rounded-lg border p-3 text-sm text-muted-foreground">No submissions recorded yet.</p>
       ) : (
-        <SubmissionsList submissions={form.submissions} />
+        <SubmissionsList submissions={form.submissions} locale={locale} timeZone={timeZone} />
       )}
     </div>
   )
 }
 
-function SubmissionsList({ submissions }: Readonly<{ submissions: readonly IntakeSubmissionView[] }>) {
+function SubmissionsList({
+  submissions,
+  locale,
+  timeZone,
+}: Readonly<{ submissions: readonly IntakeSubmissionView[]; locale: 'en' | 'es'; timeZone: string }>) {
   return (
     <ul className="mt-3 divide-y rounded-lg border text-sm">
       {submissions.map((submission) => (
         <li className="flex flex-wrap items-center justify-between gap-2 px-3 py-2" key={submission.id}>
-          <span>{new Date(submission.receivedAt).toLocaleString()}</span>
+          <time dateTime={new Date(submission.receivedAt).toISOString()}>
+            {new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'en-US', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+              timeZone,
+            }).format(submission.receivedAt)}
+          </time>
           <span className="text-xs text-muted-foreground">
             {submission.channel} · {submission.status.replaceAll('_', ' ')}
           </span>

@@ -1,7 +1,6 @@
 import '@ops/ui/globals.css'
-import { THEME_INIT_SCRIPT, ThemeProvider } from '@ops/ui'
+import { ThemeProvider } from '@ops/ui'
 import { Geist, Geist_Mono } from 'next/font/google'
-import Script from 'next/script'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { loadSignInBrand } from '../../server/branding/sign-in-brand'
@@ -20,7 +19,6 @@ export default async function AuthLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
       <body>
-        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <main className="ops-auth-shell">
             <section className="ops-auth-panel">

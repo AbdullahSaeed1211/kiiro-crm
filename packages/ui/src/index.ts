@@ -1,5 +1,5 @@
 /** Public API of @ops/ui; vendored primitives are imported from `@ops/ui/components/ui/<name>`. */
-export { THEME_INIT_SCRIPT, ThemeProvider, useTheme, type ThemeChoice } from './theme/ThemeProvider'
+export { ThemeProvider, useTheme, type ThemeChoice } from './theme/ThemeProvider'
 export * from './composites/ActivityFeed'
 export * from './composites/CalendarMonth'
 export * from './composites/Collaboration'

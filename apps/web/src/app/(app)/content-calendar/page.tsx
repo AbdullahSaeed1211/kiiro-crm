@@ -7,6 +7,7 @@ import { AGENCY_WORK_COPY } from '../../../i18n/agency-work-copy'
 import { loadWorkReadModel } from '../../../server/queries/work/read-models'
 import { ContentCalendarView } from './content-calendar-view'
 import { LoadFailure } from '../load-failure'
+import { formatYearMonth } from '@ops/ui/lib/dates'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,7 @@ export default async function ContentCalendarPage({
   const period = calendarPeriod({ month: params.month, year: params.year, now })
   const selectedMonth = period.month
   const selectedYear = period.year
+  const today = formatYearMonth(Date.now(), model.timeZone)
   const selectedProjectId = selectedProject(model.projects, params.projectId)
   const from = Date.UTC(selectedYear, selectedMonth - 1, 1)
   const to = Date.UTC(selectedYear, selectedMonth, 0, 23, 59, 59, 999)
@@ -61,6 +63,7 @@ export default async function ContentCalendarPage({
               selectedProjectId={selectedProjectId}
               selectedContentItemId={params.contentItemId ?? ''}
               timeZone={model.timeZone}
+              today={{ year: Number(today.year), month: Number(today.month) }}
               year={selectedYear}
               month={selectedMonth}
               weekStartsOn={model.weekStartsOn}

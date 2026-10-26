@@ -762,16 +762,16 @@ test('Today scope changes preserve owner actions and personal drilldown', async 
   )
 })
 
-async function createTimedContentFixture(page: Page) {
+async function createTimedContentFixture(page: Page, month = 9) {
   const projects = await page.request.get('/api/v1/projects?limit=1')
   const projectResult = (await projects.json()) as { data: { records: { id: string }[] } }
   const project = projectResult.data.records[0]
   if (project === undefined) throw new Error('Content fixture needs a project.')
-  const publishAt = Date.UTC(2026, 9, 23, 18, 45)
+  const publishAt = Date.UTC(2026, month, 23, 18, 45)
   const created = await page.request.post('/api/v1/content', {
     data: {
       projectId: project.id,
-      title: `Local content review ${String(Date.now())}`,
+      title: `Local content review ${String(month)} ${String(Date.now())}`,
       channel: 'Instagram',
       status: 'scheduled',
       publishAt,
@@ -780,7 +780,7 @@ async function createTimedContentFixture(page: Page) {
   expect(created.status()).toBe(201)
   const result = (await created.json()) as { data: { id: string; title: string } }
   const item = result.data
-  return { ...item, publishAt }
+  return { ...item, publishAt, projectId: project.id }
 }
 
 async function editContentWithoutLosingDraft(page: Page, item: { title: string }) {
@@ -793,12 +793,46 @@ async function editContentWithoutLosingDraft(page: Page, item: { title: string }
   await expect(dialog).toHaveCount(0)
 }
 
+async function verifyMobileContentNavigation(page: Page, item: { title: string }, upcoming: { title: string }) {
+  await expect(page.getByRole('link', { name: 'Next month' })).toBeVisible()
+  await page.getByRole('link', { name: 'Next month' }).click()
+  await expect(page).toHaveURL(/year=2026&month=11&projectId=/)
+  await expect(page.getByRole('heading', { name: 'Content agenda' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('region', { name: 'Content agenda' })
+      .getByText(/November|noviembre/i)
+      .first(),
+  ).toBeVisible()
+  await expect(page.getByRole('link', { name: new RegExp(upcoming.title) })).toBeVisible()
+  await page.getByRole('link', { name: 'Previous month' }).click()
+  await expect(page).toHaveURL(/year=2026&month=10&projectId=/)
+  await page
+    .getByRole('link', { name: new RegExp(item.title) })
+    .first()
+    .click()
+}
+
+async function assertContentPublicationTime(page: Page, item: { id: string; publishAt: number }) {
+  const items = await page.request.get(
+    `/api/v1/content?from=${String(Date.UTC(2026, 9, 1))}&to=${String(Date.UTC(2026, 10, 1))}`,
+  )
+  const result = (await items.json()) as { data: { id: string; publishAt: number }[] }
+  expect(result.data.find((entry) => entry.id === item.id)?.publishAt).toBe(item.publishAt)
+}
+
 test('content editor preserves exact publication time and warns before discarding edits', async ({ page, baseURL }) => {
   if (baseURL !== 'http://localhost:3001' && baseURL !== 'http://localhost:3000')
     throw new Error('Content fixtures require a local app.')
   await signIn(page)
   const item = await createTimedContentFixture(page)
-  await page.goto(`/content-calendar?year=2026&month=10&contentItemId=${item.id}`)
+  const upcoming = await createTimedContentFixture(page, 10)
+  await page.goto(`/content-calendar?year=2026&month=10&projectId=${item.projectId}&contentItemId=${item.id}`)
+  if ((page.viewportSize()?.width ?? 1024) < 768) {
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await verifyMobileContentNavigation(page, item, upcoming)
+  }
   await editContentWithoutLosingDraft(page, item)
   await page.reload()
   await page
@@ -806,11 +840,7 @@ test('content editor preserves exact publication time and warns before discardin
     .first()
     .click()
   await expect(page.getByRole('dialog').getByLabel('Title', { exact: true })).toHaveValue(`${item.title} edited`)
-  const items = await page.request.get(
-    `/api/v1/content?from=${String(Date.UTC(2026, 9, 1))}&to=${String(Date.UTC(2026, 10, 1))}`,
-  )
-  const result = (await items.json()) as { data: { id: string; publishAt: number }[] }
-  expect(result.data.find((entry) => entry.id === item.id)?.publishAt).toBe(item.publishAt)
+  await assertContentPublicationTime(page, item)
   await page.screenshot({ path: test.info().outputPath('content-editor.png'), fullPage: true })
 })
 

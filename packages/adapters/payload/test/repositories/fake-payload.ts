@@ -2,7 +2,7 @@ import type { Payload, PayloadRequest } from 'payload'
 
 type Args = Readonly<Record<string, unknown>>
 
-type Method = 'find' | 'count' | 'create' | 'access' | 'write'
+type Method = 'find' | 'count' | 'create' | 'update' | 'access' | 'write'
 
 /** One recorded Local API call, update access check (`access`) or conditional database update (`write`). */
 export interface Call {
@@ -17,6 +17,7 @@ const DEFAULTS: Readonly<Record<Method, unknown>> = {
   find: { docs: [] },
   count: { totalDocs: 1 },
   create: { id: 'created' },
+  update: { id: 'updated' },
   access: true,
   write: [],
 }
@@ -95,6 +96,7 @@ export function fakePayload(handlers: Handlers = {}): { payload: Payload; calls:
     find: method('find'),
     count: method('count'),
     create: method('create'),
+    update: method('update'),
     collections: Object.fromEntries(COLLECTIONS.map((name) => [name, collection])),
     db: fakeDb(method),
   }

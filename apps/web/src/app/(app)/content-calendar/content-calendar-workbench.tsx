@@ -14,37 +14,7 @@ import { ContentItemDialog } from './content-item-dialog'
 import type { AgencyWorkCopy } from '../../../i18n/agency-work-copy'
 import { ContentContextHeader } from './content-context-header'
 import { ContentAgenda } from './content-agenda'
-
-type WorkbenchProps = Readonly<{
-  projects: readonly ProjectOption[]
-  selectedProjectId: string
-  selectedItem: ContentItem | null
-  locale: string
-  copy: AgencyWorkCopy
-  pending: boolean
-  message: string
-  year: number
-  month: number
-  weekStartsOn: 0 | 1
-  timeZone: string
-  items: readonly ContentItem[]
-  events: readonly CalendarEvent[]
-  onProjectChange: (projectId: string) => void
-  onCreate: (input: CreateContentInput) => Promise<boolean>
-  onDraftUpdate: (item: ContentItem, edit: DraftEdit) => void
-  onPublish: (item: ContentItem) => void
-  onEdit: (item: ContentItem) => void
-  onDialogChange: (open: boolean) => void
-  onSave: (
-    item: ContentItem,
-    patch: {
-      readonly title?: string
-      readonly channel?: string | null
-      readonly publishAt?: number | null
-      readonly status?: ContentItem['status']
-    },
-  ) => Promise<string | null>
-}>
+import type { WorkbenchProps } from './content-calendar-workbench-types'
 
 function CalendarPanel({
   projects,
@@ -57,6 +27,7 @@ function CalendarPanel({
   month,
   weekStartsOn,
   timeZone,
+  today,
   events,
   onCreate,
 }: Readonly<{
@@ -70,12 +41,22 @@ function CalendarPanel({
   month: number
   weekStartsOn: 0 | 1
   timeZone: string
+  today: Readonly<{ year: number; month: number }>
   events: readonly CalendarEvent[]
   onCreate: (input: CreateContentInput) => Promise<boolean>
 }>) {
   return (
     <div className="grid content-start gap-4">
-      <ContentAgenda events={events} locale={locale} copy={copy} />
+      <ContentAgenda
+        events={events}
+        locale={locale}
+        copy={copy}
+        year={year}
+        month={month}
+        todayYear={today.year}
+        todayMonth={today.month}
+        projectId={selectedProjectId}
+      />
       <ContentComposer
         projects={projects}
         selectedProjectId={selectedProjectId}
@@ -120,6 +101,7 @@ function WorkbenchColumns({
   month,
   weekStartsOn,
   timeZone,
+  today,
   events,
   items,
   onCreate,
@@ -137,6 +119,7 @@ function WorkbenchColumns({
   month: number
   weekStartsOn: 0 | 1
   timeZone: string
+  today: Readonly<{ year: number; month: number }>
   events: readonly CalendarEvent[]
   items: readonly ContentItem[]
   onCreate: (input: CreateContentInput) => Promise<boolean>
@@ -157,6 +140,7 @@ function WorkbenchColumns({
         month={month}
         weekStartsOn={weekStartsOn}
         timeZone={timeZone}
+        today={today}
         events={events}
         onCreate={onCreate}
       />
@@ -185,6 +169,7 @@ export function ContentCalendarWorkbench({
   month,
   weekStartsOn,
   timeZone,
+  today,
   items,
   events,
   onProjectChange,
@@ -215,6 +200,7 @@ export function ContentCalendarWorkbench({
         month={month}
         weekStartsOn={weekStartsOn}
         timeZone={timeZone}
+        today={today}
         events={events}
         items={items}
         onCreate={onCreate}

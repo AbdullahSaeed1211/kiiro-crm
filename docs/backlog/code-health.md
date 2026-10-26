@@ -1,6 +1,6 @@
 # Code-health backlog
 
-21 findings are open: 0 high, 8 medium and 13 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 21 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
+20 findings are open: 0 high, 7 medium and 13 low severity. They come from a DRY, SOLID, Clean Code and Clean Architecture review of the whole repository at commit `cc6b2d6`; 22 findings from that review are already fixed and are not listed. Line numbers were recorded at that commit, so confirm each location before editing.
 
 ## How to use this backlog
 
@@ -133,14 +133,6 @@ Each step keeps `pnpm verify` green and makes the next one safer.
 - Consequence: The override mechanism is real but undocumented as a _contract_ - nothing enforces that `product.css` defines every token `globals.css` defines, so the described revert path is untested/unverified.
 - Fix: Add a lint/test asserting `product.css`'s `:root` is a superset of `globals.css`'s `:root` keys, or document which tokens are product.css-only and must not be relied on outside `product.css`-aware components.
 - Effort: S
-
-### UI-23: SRP, low severity
-
-- Location: `GanttView.tsx:64-95,141-145`
-- Evidence: `GanttView` contains DOM-patching functions (`repairRowIndexes`, `removeGripLabels`, `makeChartsFocusable`) that reach into the third-party library's rendered DOM via `querySelectorAll` with hand-picked CSS selectors (`ROW_SELECTOR`, `GRIP_SELECTOR`, `CHART_SELECTOR`) alongside the data-shaping (`model.ts` import) and the edit-blocking policy (`guardEdits`, `BLOCKED_ACTIONS`) - three distinct concerns in one component file.
-- Consequence: A SVAR Gantt version bump that renames `.wx-grip`/`.wx-chart` classes breaks accessibility silently (no type safety on these selectors); mixing a11y-patching with edit-policy makes it harder to reason about either in isolation.
-- Fix: Extract the accessibility-repair block into its own module (e.g. `gantt-a11y.ts`), parallel to how `model.ts` already isolates data shaping from `GanttView.tsx`.
-- Effort: M
 
 ## Scripts and provisioning
 
