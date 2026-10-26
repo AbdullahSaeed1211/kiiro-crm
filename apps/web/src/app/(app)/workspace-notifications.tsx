@@ -137,15 +137,18 @@ export function WorkspaceNotifications({ locale }: Readonly<{ locale: Locale }>)
 
   const select = async (item: NotificationItem) => {
     if (isUnread(item)) {
+      let markedRead = false
       try {
         const response = await fetch(`/api/v1/notifications/${item.id}`, { method: 'PATCH' })
         if (!response.ok) throw new Error('notification read update failed')
+        markedRead = true
       } catch (error) {
         setError(describeClientError(error, { context: 'notification read', fallback: copy.readFailed, locale }))
-        return
       }
-      setCount((current) => Math.max(0, current - 1))
-      setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, readAt: Date.now() } : entry)))
+      if (markedRead) {
+        setCount((current) => Math.max(0, current - 1))
+        setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, readAt: Date.now() } : entry)))
+      }
     }
     setError(null)
     const href = notificationHref(item, pathname, window.location.search)

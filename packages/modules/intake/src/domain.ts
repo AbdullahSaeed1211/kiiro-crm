@@ -58,13 +58,28 @@ function isPayloadSmall(payload: Record<string, unknown>): boolean {
   }
 }
 
-/** Builds the stable same-contact, same-day dedupe key. */
+/** Builds a stable same-request key while distinguishing separate same-day contact activity. */
 export async function intakeDedupeKey(formId: string, payload: IntakePayload, localDate: string): Promise<string> {
   const email = typeof payload['email'] === 'string' ? payload['email'].trim().toLowerCase() : ''
   const phone = typeof payload['phone'] === 'string' ? payload['phone'].replace(/\D/g, '') : ''
   const identity = email !== '' ? email : phone
-  const message = typeof payload['message'] === 'string' ? payload['message'] : ''
-  return sha256Hex(`${formId}:${identity}:${message}:${localDate}`)
+  // Preserve meaningful answers (including call outcome, caller, notes and booking time) in the retry key.
+  // Turnstile tokens are single-use transport credentials and must not turn a retry into a new submission.
+  const answers = canonicalJson(
+    Object.fromEntries(Object.entries(payload).filter(([key]) => key !== 'cf-turnstile-response')),
+  )
+  return sha256Hex(`${formId}:${identity}:${localDate}:${answers}`)
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  if (typeof value !== 'object' || value === null) return JSON.stringify(value)
+  const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right))
+  return `{${entries.map(([key, item]) => jsonEntry(key, item)).join(',')}}`
+}
+
+function jsonEntry(key: string, value: unknown): string {
+  return `${JSON.stringify(key)}:${canonicalJson(value)}`
 }
 
 /** Maximum serialized payload size accepted by the command. */

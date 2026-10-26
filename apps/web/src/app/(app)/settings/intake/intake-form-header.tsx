@@ -23,7 +23,7 @@ export function HeaderSection({
       <div>
         <h2 className="font-medium">{name}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Public endpoint: <code>{endpoint}</code>
+          Public endpoint: <code className="break-all">{endpoint}</code>
         </p>
       </div>
       <span

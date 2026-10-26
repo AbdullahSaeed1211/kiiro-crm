@@ -111,9 +111,12 @@ export function SettingsNav({ role, locale }: Readonly<{ role: Role; locale: Loc
           )
         })}
       </div>
-      <details className="group rounded-lg border px-2 py-2" open={!commonKeys.includes(activeKey)}>
-        <summary className="cursor-pointer list-none rounded-md px-1 py-1 text-sm font-medium text-muted-foreground marker:hidden hover:text-foreground">
+      <details className="group rounded-lg border px-2 py-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md px-1 py-1 text-sm font-medium text-muted-foreground marker:hidden hover:text-foreground">
           {copy.advanced}
+          {!commonKeys.includes(activeKey) ? (
+            <span className="truncate font-normal text-foreground">{copy.items[activeKey] ?? activeKey}</span>
+          ) : null}
         </summary>
         <div className="mt-3 space-y-4">
           {visibleGroups.map(([groupKey, links]) => {

@@ -104,8 +104,9 @@ export function RecordCallLogs({
       setMessage(result.error.message || copy.error)
       return
     }
-    setCalls((current) => [{ ...result.value, callerName: '' }, ...current])
+    setCalls((current) => [{ ...result.value, callerName: copy.you }, ...current])
     setNotes('')
+    setOutcome('answered')
     setMessage(copy.saved)
   }
   function submit() {

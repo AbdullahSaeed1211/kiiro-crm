@@ -1,7 +1,10 @@
 import type { Locale } from './locale'
 
 export const INTAKE_BOOKING_COPY: Readonly<
-  Record<Locale, { date: string; time: string; zone: string; choose: string; clear: string; invalid: string }>
+  Record<
+    Locale,
+    { date: string; time: string; zone: string; choose: string; clear: string; invalid: string; another: string }
+  >
 > = {
   en: {
     date: 'Date',
@@ -10,6 +13,7 @@ export const INTAKE_BOOKING_COPY: Readonly<
     choose: 'Choose a date',
     clear: 'Clear date',
     invalid: 'Choose a valid date, time and time zone. Repeated or skipped daylight-saving times cannot be booked.',
+    another: 'Send another response',
   },
   es: {
     date: 'Fecha',
@@ -19,5 +23,6 @@ export const INTAKE_BOOKING_COPY: Readonly<
     clear: 'Borrar fecha',
     invalid:
       'Elige una fecha, hora y zona horaria válidas. No se admiten horas repetidas o inexistentes por el cambio de horario.',
+    another: 'Enviar otra respuesta',
   },
 }

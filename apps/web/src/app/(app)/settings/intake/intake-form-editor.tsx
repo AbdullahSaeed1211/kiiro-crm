@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, type SyntheticEvent } from 'react'
 import type { ActionResult } from '../../../../server/actions/settings'
-import { BasicSettingsSection, OriginsAndTurnstileSection } from './intake-form-basic'
+import { BasicSettingsSection } from './intake-form-basic'
 import { HeaderSection, ResultMessage, SubmitButton } from './intake-form-header'
 import {
   createFieldUpdater,
@@ -11,8 +11,8 @@ import {
   generateServerSnippet,
   initializeValues,
 } from './intake-form-helpers'
-import { RoutingDefaultsSection, SuccessBehaviorSection } from './intake-form-routing'
-import { EmailAliasAndCredentialsSection, IntegrationSnippetsSection, SubmissionsSection } from './intake-form-server'
+import { IntegrationSnippetsSection, SubmissionsSection } from './intake-form-server'
+import { IntakeAdvancedSettings } from './intake-advanced-settings'
 import type { IntakeFormView, IntakeOption } from './intake-types'
 
 type Action = (input: unknown) => Promise<ActionResult>
@@ -79,6 +79,8 @@ function useIntakeFormActions({
 export function IntakeFormEditor({
   action,
   form,
+  origin,
+  turnstileSiteKey,
   groups,
   rotateServerKey,
   sources,
@@ -86,6 +88,8 @@ export function IntakeFormEditor({
 }: Readonly<{
   action: Action
   form: IntakeFormView
+  origin: string
+  turnstileSiteKey: string
   groups: readonly IntakeOption[]
   rotateServerKey: RotateKeyAction
   sources: readonly IntakeOption[]
@@ -99,7 +103,7 @@ export function IntakeFormEditor({
     rotateServerKey,
   })
   const generatedKey = keyResult?.ok === true ? keyResult.data.serverKey : undefined
-  const endpoint = `/api/v1/intake/${values.key}`
+  const endpoint = `${origin}/api/v1/intake/${values.key}`
   const updaters = createFieldUpdater(setValues)
 
   return (
@@ -120,11 +124,21 @@ export function IntakeFormEditor({
         rotating={rotating}
         onGenerateKey={handleGenerateKey}
       />
-      <IntegrationSnippetsSection
-        embedSnippet={generateEmbedSnippet(endpoint)}
-        serverSnippet={generateServerSnippet(endpoint, generatedKey)}
-      />
-      <SubmissionsSection form={form} />
+      <details className="rounded-lg border px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium">Integration snippets</summary>
+        <div className="pt-3">
+          <IntegrationSnippetsSection
+            embedSnippet={generateEmbedSnippet(endpoint, turnstileSiteKey, values.requireTurnstile)}
+            serverSnippet={generateServerSnippet(endpoint, generatedKey)}
+          />
+        </div>
+      </details>
+      <details className="rounded-lg border px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium">Recent submissions ({form.submissions.length})</summary>
+        <div className="pt-3">
+          <SubmissionsSection form={form} />
+        </div>
+      </details>
     </div>
   )
 }
@@ -166,40 +180,16 @@ function FormElement({
         onKeyChange={updaters.updateKey}
         onActiveChange={updaters.updateActive}
       />
-      <OriginsAndTurnstileSection
-        allowedOrigins={values.allowedOrigins}
-        requireTurnstile={values.requireTurnstile}
-        onOriginsChange={updaters.updateAllowedOrigins}
-        onTurnstileChange={updaters.updateRequireTurnstile}
-      />
-      <RoutingDefaultsSection
+      <IntakeAdvancedSettings
+        form={form}
+        values={values}
+        updaters={updaters}
         users={users}
         sources={sources}
         groups={groups}
-        defaultOwnerId={values.defaultOwnerId}
-        defaultAssigneeIds={values.defaultAssigneeIds}
-        defaultSourceId={values.defaultSourceId}
-        notifyUserIds={values.notifyUserIds}
-        notifyGroupIds={values.notifyGroupIds}
-        onDefaultOwnerChange={updaters.updateDefaultOwnerId}
-        onDefaultAssigneeChange={updaters.updateDefaultAssigneeIds}
-        onDefaultSourceChange={updaters.updateDefaultSourceId}
-        onNotifyUsersChange={updaters.updateNotifyUserIds}
-        onNotifyGroupsChange={updaters.updateNotifyGroupIds}
-      />
-      <SuccessBehaviorSection
-        successMessage={values.successMessage}
-        redirectUrl={values.redirectUrl}
-        onMessageChange={updaters.updateSuccessMessage}
-        onRedirectChange={updaters.updateRedirectUrl}
-      />
-      <EmailAliasAndCredentialsSection
-        form={form}
-        emailAlias={values.emailAlias}
-        generatedKey={generatedKey}
         keyResult={keyResult}
+        generatedKey={generatedKey}
         rotating={rotating}
-        onEmailAliasChange={updaters.updateEmailAlias}
         onGenerateKey={onGenerateKey}
       />
       <ResultMessage result={result} />

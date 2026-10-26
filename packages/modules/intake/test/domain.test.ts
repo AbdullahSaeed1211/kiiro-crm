@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import {
   sha256Hex,
+  intakeDedupeKey,
   submitIntake,
   checkedFormAnswers,
   formFieldsSchema,
@@ -59,6 +60,29 @@ const SERVER_KEY = 'server-key'
 const LOCAL_DATE = '2026-09-14'
 const CALLBACK_KEY = 'callback'
 const NEW_YORK = 'America/New_York'
+
+it('keeps retries idempotent but distinguishes a new call outcome or booking for the same contact and day', async () => {
+  const first = {
+    phone: '+1 555 0100',
+    callerName: 'Rae',
+    callOutcome: 'No answer',
+    callNotesAndNextStep: 'Try tomorrow',
+  }
+  const retry = {
+    callNotesAndNextStep: 'Try tomorrow',
+    callOutcome: 'No answer',
+    callerName: 'Rae',
+    phone: '+1 555 0100',
+  }
+  const booking = { ...first, callOutcome: 'Booking arranged', bookingDateAndTime: 1792663200000 }
+  expect(await intakeDedupeKey(form.id, first, LOCAL_DATE)).toBe(await intakeDedupeKey(form.id, retry, LOCAL_DATE))
+  expect(await intakeDedupeKey(form.id, first, LOCAL_DATE)).not.toBe(
+    await intakeDedupeKey(form.id, booking, LOCAL_DATE),
+  )
+  expect(await intakeDedupeKey(form.id, { ...first, 'cf-turnstile-response': 'token-a' }, LOCAL_DATE)).toBe(
+    await intakeDedupeKey(form.id, { ...first, 'cf-turnstile-response': 'token-b' }, LOCAL_DATE),
+  )
+})
 
 const bookingFields: readonly FormField[] = [
   { key: 'outcome', label: 'Outcome', type: 'select', required: true, options: ['Interested', BOOKED] },

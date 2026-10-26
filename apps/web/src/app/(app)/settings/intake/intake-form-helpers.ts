@@ -39,11 +39,16 @@ export function createFieldUpdater(setValues: SetValuesAction) {
   }
 }
 
-export function generateEmbedSnippet(endpoint: string): string {
+export function generateEmbedSnippet(endpoint: string, siteKey: string, requireTurnstile: boolean): string {
+  const turnstile =
+    requireTurnstile && siteKey !== ''
+      ? `  <div class="cf-turnstile" data-sitekey="${siteKey}" data-action="intake"></div>\n  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>\n`
+      : ''
   return `<form action="${endpoint}" method="post">
   <label>Email <input name="email" type="email" required></label>
   <label>Name <input name="name"></label>
   <label>Message <textarea name="message"></textarea></label>
+${turnstile}  <!-- Add the website origin to Allowed browser origins. -->
   <button type="submit">Send</button>
 </form>`
 }

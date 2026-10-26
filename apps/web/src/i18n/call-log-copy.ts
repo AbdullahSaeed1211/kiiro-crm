@@ -14,6 +14,7 @@ export interface CallLogCopy {
   readonly saving: string
   readonly empty: string
   readonly by: string
+  readonly you: string
   readonly saved: string
   readonly error: string
 }
@@ -33,6 +34,7 @@ export const CALL_LOG_COPY: Readonly<Record<Locale, CallLogCopy>> = {
     saving: 'Saving…',
     empty: 'No calls logged yet.',
     by: 'by',
+    you: 'You',
     saved: 'Call logged.',
     error: 'Could not save the call.',
   },
@@ -50,6 +52,7 @@ export const CALL_LOG_COPY: Readonly<Record<Locale, CallLogCopy>> = {
     saving: 'Guardando…',
     empty: 'Aún no hay llamadas registradas.',
     by: 'por',
+    you: 'Tú',
     saved: 'Llamada registrada.',
     error: 'No se pudo guardar la llamada.',
   },

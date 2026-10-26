@@ -15,6 +15,7 @@ import { IntakeFormQuestions, type Question } from './intake-form-questions'
 import { formFieldsSchema } from '@ops/module-intake'
 import { saveIntakeFieldMap } from '../../../../server/actions/settings/intake-field-map'
 import { loadIntakeTargets } from '../../../../server/queries/settings/intake-targets'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 export const metadata: Metadata = { title: 'Intake' }
 export const dynamic = 'force-dynamic'
@@ -51,6 +52,7 @@ export default async function IntakeSettingsPage() {
   const optionList = (docs: readonly { id: string; name: string }[]): IntakeOption[] =>
     docs.map(({ id, name }) => ({ id, name }))
   const targets = await loadIntakeTargets()
+  const { env } = await getCloudflareContext({ async: true })
   const requestHeaders = await headers()
   const origin = `${requestHeaders.get('x-forwarded-proto') ?? 'https'}://${requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? ''}`
   const fieldMaps = new Map(
@@ -110,40 +112,61 @@ export default async function IntakeSettingsPage() {
       description="Configure secure public lead forms, routing, email intake, and delivery review."
       roles={['owner', 'manager']}
     >
-      <SettingsForm>
-        <div>
-          <h2 className="font-medium">Create a form</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+      <details className="rounded-xl border bg-background px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium">Create a form</summary>
+        <div className="pt-4">
+          <p className="mb-4 text-sm text-muted-foreground">
             New forms start fail-closed: add an exact website origin before accepting browser submissions.
           </p>
+          <IntakeCreateForm action={createIntakeForm} />
         </div>
-        <IntakeCreateForm action={createIntakeForm} />
-      </SettingsForm>
-      {formViews.map((form) => (
-        <SettingsForm key={form.id}>
-          <IntakeFormEditor
-            action={updateIntakeForm}
-            form={form}
-            groups={optionList(groups.docs)}
-            rotateServerKey={rotateIntakeServerKey}
-            sources={optionList(sources.docs)}
-            users={optionList(users.docs)}
-          />
-          <IntakeFormQuestions
-            formId={form.id}
-            formKey={form.key}
-            origin={origin}
-            initial={questionsFor(forms.docs.find((doc) => doc.id === form.id) ?? forms.docs[0])}
-            targets={targets}
-          />
-          <IntakeFieldMap
-            formId={form.id}
-            fieldMap={fieldMaps.get(form.id) ?? {}}
-            targets={targets}
-            action={saveIntakeFieldMap}
-          />
-        </SettingsForm>
-      ))}
+      </details>
+      <div className="grid gap-3">
+        {formViews.length === 0 ? <p className="text-sm text-muted-foreground">No intake forms yet.</p> : null}
+        {formViews.map((form, index) => (
+          <details className="rounded-xl border bg-background" key={form.id} name="intake-form" open={index === 0}>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm marker:hidden">
+              <span className="min-w-0 truncate font-medium">{form.name}</span>
+              <span className="shrink-0 text-muted-foreground">{form.active ? 'Active' : 'Paused'}</span>
+            </summary>
+            <SettingsForm>
+              <IntakeFormEditor
+                action={updateIntakeForm}
+                form={form}
+                origin={origin}
+                turnstileSiteKey={env.TURNSTILE_SITE_KEY.trim()}
+                groups={optionList(groups.docs)}
+                rotateServerKey={rotateIntakeServerKey}
+                sources={optionList(sources.docs)}
+                users={optionList(users.docs)}
+              />
+              <details className="border-t pt-4">
+                <summary className="cursor-pointer text-sm font-medium">Form questions</summary>
+                <div className="pt-4">
+                  <IntakeFormQuestions
+                    formId={form.id}
+                    formKey={form.key}
+                    origin={origin}
+                    initial={questionsFor(forms.docs.find((doc) => doc.id === form.id) ?? forms.docs[0])}
+                    targets={targets}
+                  />
+                </div>
+              </details>
+              <details className="border-t pt-4">
+                <summary className="cursor-pointer text-sm font-medium">Lead field mapping</summary>
+                <div className="pt-4">
+                  <IntakeFieldMap
+                    formId={form.id}
+                    fieldMap={fieldMaps.get(form.id) ?? {}}
+                    targets={targets}
+                    action={saveIntakeFieldMap}
+                  />
+                </div>
+              </details>
+            </SettingsForm>
+          </details>
+        ))}
+      </div>
     </SettingsPage>
   )
 }

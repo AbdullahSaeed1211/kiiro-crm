@@ -173,7 +173,8 @@ async function addOwnerNote(payload: Payload, input: Parameters<IntakeStore['add
 
 async function notifyUsers(payload: Payload, input: Parameters<IntakeStore['notify']>[0]): Promise<void> {
   const { userIds, record, title } = input
-  for (const user of userIds) {
+  const recipients = new Set([...userIds, ...(await activeGroupMembers(payload, input.groupIds))])
+  for (const user of recipients) {
     const dedupeKey = `${record.type}:${record.id}:intake_received:${user}`
     await insertUnique(payload, {
       collection: COLLECTIONS.notifications,
@@ -189,6 +190,25 @@ async function notifyUsers(payload: Payload, input: Parameters<IntakeStore['noti
       },
     })
   }
+}
+
+async function activeGroupMembers(payload: Payload, selectedGroupIds: readonly string[]): Promise<string[]> {
+  const groupIds = [...new Set(selectedGroupIds)]
+  if (groupIds.length === 0) return []
+  const page = await payload.find({
+    collection: COLLECTIONS.users,
+    where: {
+      and: [{ or: groupIds.map((group) => ({ groups: { contains: group } })) }, { active: { equals: true } }],
+    },
+    limit: 0,
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return page.docs.flatMap((member) => {
+    const id = idOf(fieldOf(member, 'id'))
+    return id === undefined ? [] : [id]
+  })
 }
 
 /** Payload-backed intake command store with unique-key dedupe and system-only writes. */

@@ -6,7 +6,7 @@ import { Label } from '@ops/ui/components/ui/label'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import Script from 'next/script'
-import { useState, type SyntheticEvent } from 'react'
+import { useState, type Dispatch, type SetStateAction, type SyntheticEvent } from 'react'
 import { visibleFormFields, checkedFormAnswers, type FormField } from '@ops/module-intake'
 import { BookingInstant } from './booking-instant'
 import type { Locale } from '../../../../i18n/locale'
@@ -14,6 +14,40 @@ import { INTAKE_BOOKING_COPY } from '../../../../i18n/intake-booking-copy'
 
 type Field = FormField
 type Presentation = Readonly<{ timeZone: string; locale: Locale }>
+type FormState = 'idle' | 'sending' | 'done'
+
+async function sendHostedFormAnswers(
+  event: SyntheticEvent<HTMLFormElement>,
+  input: Readonly<{
+    formKey: string
+    fields: readonly Field[]
+    visible: readonly Field[]
+    locale: Locale
+    setState: Dispatch<SetStateAction<FormState>>
+    setError: Dispatch<SetStateAction<string | null>>
+  }>,
+) {
+  event.preventDefault()
+  const answers = checkedFormAnswers(input.fields, answersOf(event.currentTarget, input.visible))
+  if (answers === undefined) {
+    input.setError(INTAKE_BOOKING_COPY[input.locale].invalid)
+    return
+  }
+  input.setState('sending')
+  input.setError(null)
+  try {
+    const response = await fetch(`/api/v1/intake/${input.formKey}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(answers),
+    })
+    if (!response.ok) throw new Error('Could not send. Please check your answers and try again.')
+    input.setState('done')
+  } catch (failure) {
+    input.setError(failure instanceof Error ? failure.message : 'Could not send. Please try again.')
+    input.setState('idle')
+  }
+}
 
 function TurnstileWidget({ siteKey }: Readonly<{ siteKey: string }>) {
   if (siteKey === '') return null
@@ -22,6 +56,21 @@ function TurnstileWidget({ siteKey }: Readonly<{ siteKey: string }>) {
       <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
       <div className="cf-turnstile" data-sitekey={siteKey} data-action="intake" />
     </>
+  )
+}
+
+function SubmittedMessage({
+  successMessage,
+  locale,
+  onAnother,
+}: Readonly<{ successMessage: string; locale: Locale; onAnother: () => void }>) {
+  return (
+    <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 text-sm">
+      <p role="status">{successMessage}</p>
+      <Button type="button" variant="outline" onClick={onAnother}>
+        {INTAKE_BOOKING_COPY[locale].another}
+      </Button>
+    </div>
   )
 }
 
@@ -115,38 +164,20 @@ export function HostedForm({
   timeZone?: string
   locale?: Locale
 }>) {
-  const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle')
+  const [state, setState] = useState<FormState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [values, setValues] = useState<Record<string, string>>({})
   const visible = visibleFormFields(fields, values)
-  const submit = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const form = event.currentTarget
-    const answers = checkedFormAnswers(fields, answersOf(form, visible))
-    if (answers === undefined) {
-      setError(INTAKE_BOOKING_COPY[locale].invalid)
-      return
-    }
-    setState('sending')
-    setError(null)
-    try {
-      const response = await fetch(`/api/v1/intake/${formKey}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(answers),
-      })
-      if (!response.ok) throw new Error('Could not send. Please check your answers and try again.')
-      setState('done')
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Could not send. Please try again.')
-      setState('idle')
-    }
-  }
   if (state === 'done')
     return (
-      <p role="status" className="rounded-lg border bg-muted/30 p-4 text-sm">
-        {successMessage}
-      </p>
+      <SubmittedMessage
+        successMessage={successMessage}
+        locale={locale}
+        onAnother={() => {
+          setValues({})
+          setState('idle')
+        }}
+      />
     )
   return (
     <form
@@ -156,7 +187,7 @@ export function HostedForm({
         if (target instanceof HTMLSelectElement) setValues((current) => ({ ...current, [target.name]: target.value }))
       }}
       onSubmit={(event) => {
-        void submit(event)
+        void sendHostedFormAnswers(event, { formKey, fields, visible, locale, setState, setError })
       }}
     >
       <h1 className="text-xl font-semibold">{title}</h1>
