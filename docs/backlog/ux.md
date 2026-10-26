@@ -1,6 +1,6 @@
 # UX backlog
 
-7 findings are open: 1 critical, 2 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+11 findings are open: 1 critical, 6 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -16,6 +16,32 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Status: partly fixed. A geometry check now asserts the standalone task page does not overlap the app header and has no Close button; it fails until the page gets its own layout. Screenshot diffs are not added yet.
 
 ## Major
+
+### 39. Terminology saves use different keys from navigation
+
+- Area: Settings. Effort: Moderate. Evidence: source review at `da148fd`.
+- `settings/terminology/page.tsx` submits singular keys such as `organization` and `task`. `app-navigation.ts` reads plural keys such as `organizations` and `tasks`. The settings page does not explain the affected labels or show a preview.
+- `saveTerminology` replaces the JSON field with the six submitted values. Onboarding stores `__onboarding` in that same field, and navigation supports additional keys. Saving the form can discard those values. This failure path is source-confirmed; no production setting was changed during review.
+- Fix: use a shared terminology contract, merge only allowed label keys and preserve internal metadata. Verify a local save changes navigation while retaining onboarding state.
+
+### 40. Currency settings relabel saved deal amounts
+
+- Area: Settings and reporting. Effort: Moderate. Evidence: `server/actions/settings/index.ts` and `server/crm/restamp-deal-currency.ts` at `da148fd`.
+- Changing workspace currency updates every existing deal currency code without converting its numeric amount. The form presents this as an ordinary regional preference. The bulk write bypasses per-deal hooks and activity.
+- Fix: separate the default currency for new deals from an explicit correction of existing amounts. Preserve historical monetary units unless the operator explicitly requests a documented migration. Verify partial failures cannot leave an unreported mixed result.
+
+### 41. Brand replacement can destroy the previous asset on failure
+
+- Area: Branding. Effort: Moderate. Evidence: `server/branding/brand-asset.ts` at `da148fd`.
+- Upload writes to a stable key such as `brand/logo.png` before updating metadata. If metadata fails, the catch deletes that key, including the previous image when the replacement uses the same extension. Removal also deletes the object before clearing its database reference.
+- `branding-settings-form.tsx` has no network-error catch/finally around upload or removal. A rejected fetch leaves the controls busy. These failure paths were reviewed in source without modifying production branding.
+- Fix: stage each replacement under a unique key, commit metadata, then clean up the old object. Preserve the old asset on failure and restore usable controls with an actionable error.
+
+### 42. Custom report ranges silently fall back
+
+- Area: Reports. Effort: Quick. Evidence: `server/queries/report-range.ts` and `reports/report-range-controls.tsx` at `da148fd`.
+- Invalid or reversed custom dates silently display a preset range while retaining the custom selection. The controls provide no validation explaining the fallback. Date parsing also accepts calendar overflow when JavaScript normalizes it.
+- Fix: reject invalid ranges beside the fields, preserve the entered values and distinguish selected dates from the currently applied result. Verify a reversed range and an impossible date locally.
 
 - Status (2026-09-27, local dev server): four `route-health.spec.ts` runs fail at `v0.2.0` before any change: "workspace settings reopen" (desktop; two `Time zone` comboboxes match), "settings IA and command palette" (mobile; no `Workspace` heading in the settings navigation), and UX 34 and 35. The suite stops at the first failure per project, so later tests only run with `--grep-invert`.
 
