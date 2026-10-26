@@ -13,6 +13,7 @@ import { ContentDrafts } from './content-draft-list'
 import { ContentItemDialog } from './content-item-dialog'
 import type { AgencyWorkCopy } from '../../../i18n/agency-work-copy'
 import { ContentContextHeader } from './content-context-header'
+import { ContentAgenda } from './content-agenda'
 
 type WorkbenchProps = Readonly<{
   projects: readonly ProjectOption[]
@@ -25,6 +26,7 @@ type WorkbenchProps = Readonly<{
   year: number
   month: number
   weekStartsOn: 0 | 1
+  timeZone: string
   items: readonly ContentItem[]
   events: readonly CalendarEvent[]
   onProjectChange: (projectId: string) => void
@@ -54,6 +56,7 @@ function CalendarPanel({
   year,
   month,
   weekStartsOn,
+  timeZone,
   events,
   onCreate,
 }: Readonly<{
@@ -66,11 +69,13 @@ function CalendarPanel({
   year: number
   month: number
   weekStartsOn: 0 | 1
+  timeZone: string
   events: readonly CalendarEvent[]
   onCreate: (input: CreateContentInput) => Promise<boolean>
 }>) {
   return (
     <div className="grid content-start gap-4">
+      <ContentAgenda events={events} locale={locale} copy={copy} />
       <ContentComposer
         projects={projects}
         selectedProjectId={selectedProjectId}
@@ -80,19 +85,21 @@ function CalendarPanel({
         onCreate={onCreate}
         error={message}
       />
-      {events.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{copy.noContent}</p>
-      ) : null}
-      <CalendarMonth
-        year={year}
-        month={month - 1}
-        events={events}
-        locale={locale === 'es' ? 'es-ES' : 'en-US'}
-        weekStartsOn={weekStartsOn}
-        labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.moreEvents, today: copy.today }}
-        today={new Date().toISOString().slice(0, 10)}
-        query={selectedProjectId ? `projectId=${encodeURIComponent(selectedProjectId)}` : ''}
-      />
+      <div className="hidden md:block">
+        {events.length === 0 ? (
+          <p className="mb-3 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{copy.noContent}</p>
+        ) : null}
+        <CalendarMonth
+          year={year}
+          month={month - 1}
+          events={events}
+          locale={locale === 'es' ? 'es-ES' : 'en-US'}
+          weekStartsOn={weekStartsOn}
+          labels={{ previous: copy.previousMonth, next: copy.nextMonth, more: copy.moreEvents, today: copy.today }}
+          today={new Intl.DateTimeFormat('en-CA', { timeZone }).format(Date.now())}
+          query={selectedProjectId ? `projectId=${encodeURIComponent(selectedProjectId)}` : ''}
+        />
+      </div>
       {message ? (
         <p role="status" className="text-sm text-muted-foreground">
           {message}
@@ -112,6 +119,7 @@ function WorkbenchColumns({
   year,
   month,
   weekStartsOn,
+  timeZone,
   events,
   items,
   onCreate,
@@ -128,6 +136,7 @@ function WorkbenchColumns({
   year: number
   month: number
   weekStartsOn: 0 | 1
+  timeZone: string
   events: readonly CalendarEvent[]
   items: readonly ContentItem[]
   onCreate: (input: CreateContentInput) => Promise<boolean>
@@ -147,6 +156,7 @@ function WorkbenchColumns({
         year={year}
         month={month}
         weekStartsOn={weekStartsOn}
+        timeZone={timeZone}
         events={events}
         onCreate={onCreate}
       />
@@ -174,6 +184,7 @@ export function ContentCalendarWorkbench({
   year,
   month,
   weekStartsOn,
+  timeZone,
   items,
   events,
   onProjectChange,
@@ -203,6 +214,7 @@ export function ContentCalendarWorkbench({
         year={year}
         month={month}
         weekStartsOn={weekStartsOn}
+        timeZone={timeZone}
         events={events}
         items={items}
         onCreate={onCreate}

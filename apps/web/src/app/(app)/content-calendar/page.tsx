@@ -60,6 +60,7 @@ export default async function ContentCalendarPage({
               projects={model.projects.map(({ id, name }) => ({ id, name }))}
               selectedProjectId={selectedProjectId}
               selectedContentItemId={params.contentItemId ?? ''}
+              timeZone={model.timeZone}
               year={selectedYear}
               month={selectedMonth}
               weekStartsOn={model.weekStartsOn}

@@ -1,5 +1,5 @@
 import type { IntakeStore } from '@ops/module-intake'
-import type { Payload } from 'payload'
+import type { Payload, Where } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import { fieldOf, idOf, idsOf, type Doc } from './documents'
 import { insertUnique } from './unique-insert'
@@ -14,6 +14,16 @@ interface LoosePayload {
 }
 
 const loose = (payload: object): LoosePayload => payload as LoosePayload
+
+function leadEmail(doc: Doc): string {
+  const value: unknown = fieldOf(doc, 'email')
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+function leadPhone(doc: Doc): string {
+  const value: unknown = fieldOf(doc, 'phone')
+  return typeof value === 'string' ? value.replace(/\D/g, '') : ''
+}
 
 /**
  * Where a new lead starts: the first lead workflow's default stage. A lead saved without a stage is never shown on
@@ -92,6 +102,8 @@ async function ensureLead(
   data: Readonly<Record<string, unknown>>,
   submissionId?: string,
 ): Promise<Doc> {
+  const matchingLead = await findLeadByContact(payload, data)
+  if (matchingLead !== undefined) return matchingLead
   if (submissionId === undefined) {
     return loose(payload).create({
       collection: COLLECTIONS.leads,
@@ -111,6 +123,37 @@ async function ensureLead(
   const saved = await findLeadBySubmission(payload, submissionId)
   if (saved === undefined) throw new Error('lead create returned no document')
   return saved
+}
+
+async function findLeadByContact(payload: Payload, data: Readonly<Record<string, unknown>>): Promise<Doc | undefined> {
+  const email = typeof data['email'] === 'string' ? data['email'].trim().toLowerCase() : ''
+  const phone = typeof data['phone'] === 'string' ? data['phone'].replace(/\D/g, '') : ''
+  const clauses: Where[] = []
+  if (email !== '') clauses.push({ email: { equals: email } })
+  if (phone !== '') clauses.push({ phone: { equals: phone } })
+  if (clauses.length === 0) return undefined
+  const result = await payload.find({
+    collection: COLLECTIONS.leads,
+    where: { or: clauses },
+    limit: 101,
+    page: 1,
+    depth: 0,
+    sort: 'createdAt',
+    overrideAccess: true,
+    select: { id: true, email: true, phone: true },
+  })
+  if (result.docs.length > 100) return undefined
+  const matches = result.docs.filter((doc) => {
+    return (email !== '' && leadEmail(doc) === email) || (phone !== '' && leadPhone(doc) === phone)
+  })
+  const ids = new Set(
+    matches.flatMap((doc) => {
+      const id = idOf(fieldOf(doc, 'id'))
+      return id === undefined ? [] : [id]
+    }),
+  )
+  if (ids.size !== 1) return undefined
+  return matches.find((doc) => idOf(fieldOf(doc, 'id')) === [...ids][0])
 }
 
 async function findLeadBySubmission(payload: Payload, submissionId: string): Promise<Doc | undefined> {

@@ -11,11 +11,11 @@ import {
 } from './contracts'
 import {
   intakeDedupeKey,
+  intakeActivityNote,
   isAllowedOrigin,
   mappedLead,
   mappedScheduleItems,
   sha256Hex,
-  text,
   titleOf,
   validMappedLeadDates,
   validateIntakePayload,
@@ -146,7 +146,7 @@ async function persistAcceptedSubmission(
     items: mappedScheduleItems(deps.form, payload),
   })
   const record = { type: 'lead' as const, id: lead.id }
-  const message = text(payload, 'message')
+  const message = intakeActivityNote(payload)
   if (message !== undefined) await deps.store.addComment({ record, body: message })
   await deps.store.notify({
     userIds: deps.form.notifyUserIds,

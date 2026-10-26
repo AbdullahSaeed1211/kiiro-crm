@@ -226,7 +226,12 @@ function filterAssignee(deps: CrmDeps, scope: 'mine' | 'team', requested?: strin
   return requested === undefined ? undefined : asId(requested)
 }
 
-/** Lists the current actor's recent calls after the repository filters to calls they recorded. */
-export async function listRecentCallLogs(deps: CrmDeps): Promise<CrmResult<readonly CallLogRecord[]>> {
-  return ok(await deps.repo.listRecentCallLogs(deps.actor.id, 20))
+/** Lists the current actor's recent calls, or all readable calls in the authorized manager team view. */
+export async function listRecentCallLogs(
+  deps: CrmDeps,
+  input: Readonly<{ scope?: 'mine' | 'team' }> = {},
+): Promise<CrmResult<readonly CallLogRecord[]>> {
+  const scope = input.scope ?? 'mine'
+  if (scope === 'team' && !isManagerUp(deps.actor)) return failure('FORBIDDEN', 'Team call history is for managers.')
+  return ok(await deps.repo.listRecentCallLogs(scope === 'team' ? undefined : deps.actor.id, 20))
 }

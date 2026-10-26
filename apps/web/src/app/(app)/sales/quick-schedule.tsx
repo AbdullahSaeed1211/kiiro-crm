@@ -71,7 +71,11 @@ export function QuickSchedule({
 }>) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string>()
+  const [leadSearch, setLeadSearch] = useState('')
   const router = useRouter()
+  const filteredLeads = leads.filter((lead) =>
+    lead.title.toLocaleLowerCase().includes(leadSearch.trim().toLocaleLowerCase()),
+  )
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -112,7 +116,17 @@ export function QuickSchedule({
   }
   return (
     <form className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3" onSubmit={submit}>
-      <QuickScheduleFields leads={leads} timeZone={timeZone} copy={copy} pending={pending} error={error} />
+      <label className="grid min-w-44 flex-1 gap-1 text-xs font-medium text-muted-foreground">
+        {copy.searchLeads}
+        <Input
+          value={leadSearch}
+          onChange={(event) => {
+            setLeadSearch(event.target.value)
+          }}
+          disabled={pending}
+        />
+      </label>
+      <QuickScheduleFields leads={filteredLeads} timeZone={timeZone} copy={copy} pending={pending} error={error} />
     </form>
   )
 }

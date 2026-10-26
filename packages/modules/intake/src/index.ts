@@ -1,6 +1,7 @@
 /** Public API of @ops/module-intake. */
 export {
   INTAKE_PAYLOAD_MAX_BYTES,
+  intakeActivityNote,
   intakeDedupeKey,
   isAllowedOrigin,
   normalizeOrigin,

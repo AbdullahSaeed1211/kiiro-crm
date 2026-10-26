@@ -10,11 +10,12 @@ import { AGENCY_WORK_COPY, type AgencyWorkCopy } from '../../../i18n/agency-work
 import { useLocale } from '../../../i18n/locale-context'
 import { createContentItem, updateContentItem } from '../../../server/actions/work/agency-work'
 import type { ContentItem, CreateContentInput, DraftEdit, ProjectOption } from './content-calendar-pieces'
+import { preserveUtcTimeOnDate } from './content-types'
 import { ContentCalendarWorkbench } from './content-calendar-workbench'
 
 function calendarEvents(
   items: readonly ContentItem[],
-  input: { copy: AgencyWorkCopy; year: number; month: number; projectId: string },
+  input: { copy: AgencyWorkCopy; year: number; month: number; projectId: string; timeZone: string },
 ): CalendarEvent[] {
   return items.flatMap((item) => {
     if (item.publishAt === null || item.status === 'draft') return []
@@ -24,7 +25,7 @@ function calendarEvents(
       {
         id: item.id,
         title: `${item.title} · ${item.channel ?? input.copy.draft}`,
-        date: new Date(item.publishAt).toISOString().slice(0, 10),
+        date: new Intl.DateTimeFormat('en-CA', { timeZone: input.timeZone }).format(item.publishAt),
         href: `/content-calendar?${params.toString()}`,
         color: item.status === 'published' ? 'green' : 'blue',
       },
@@ -107,6 +108,7 @@ export function ContentCalendarView({
   projects,
   selectedProjectId,
   selectedContentItemId,
+  timeZone,
   year,
   month,
   weekStartsOn,
@@ -115,6 +117,7 @@ export function ContentCalendarView({
   projects: readonly ProjectOption[]
   selectedProjectId: string
   selectedContentItemId: string
+  timeZone: string
   year: number
   month: number
   weekStartsOn: 0 | 1
@@ -124,7 +127,7 @@ export function ContentCalendarView({
   const router = useRouter()
   const { items, pending, message, saveNew, update } = useContentActions({ initialItems, projects, copy })
   const selectedItem = items.find((item) => item.id === selectedContentItemId) ?? null
-  const events = calendarEvents(items, { copy, year, month, projectId: selectedProjectId })
+  const events = calendarEvents(items, { copy, year, month, projectId: selectedProjectId, timeZone })
 
   function onDialogChange(open: boolean) {
     if (open) return
@@ -145,7 +148,7 @@ export function ContentCalendarView({
   async function onDraftUpdate(item: ContentItem, edit: DraftEdit) {
     const channel = edit.channel.trim() || null
     const status = channel !== null && edit.publishAt !== null ? 'scheduled' : 'draft'
-    await update(item, { channel, publishAt: edit.publishAt, status })
+    await update(item, { channel, publishAt: preserveUtcTimeOnDate(edit.publishAt, item.publishAt), status })
   }
   async function onPublish(item: ContentItem) {
     await update(item, { status: 'published' })
@@ -164,6 +167,7 @@ export function ContentCalendarView({
       year={year}
       month={month}
       weekStartsOn={weekStartsOn}
+      timeZone={timeZone}
       items={items}
       events={events}
       onProjectChange={onProjectChange}

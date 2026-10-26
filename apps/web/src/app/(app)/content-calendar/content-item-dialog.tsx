@@ -5,6 +5,7 @@ import { Button } from '@ops/ui/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@ops/ui/components/ui/dialog'
 import type { AgencyWorkCopy } from '../../../i18n/agency-work-copy'
 import type { ContentItem } from './content-calendar-pieces'
+import { preserveUtcTimeOnDate } from './content-types'
 import { ContentItemEditForm } from './content-item-edit-form'
 
 type ContentEditorProps = Readonly<{
@@ -68,7 +69,7 @@ function ContentItemEditor({ item, locale, copy, pending, onOpenChange, onSave }
   const [status, setStatus] = useState(item.status)
   const [error, setError] = useState('')
   const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const effectivePublishAt = sameUtcDay(publishAt, item.publishAt) ? item.publishAt : publishAt
+  const effectivePublishAt = preserveUtcTimeOnDate(publishAt, item.publishAt)
   const dirty =
     title !== item.title ||
     (channel.trim() || null) !== item.channel ||
@@ -165,10 +166,4 @@ function DiscardPrompt({
       </DialogFooter>
     </>
   )
-}
-
-function sameUtcDay(left: number | null, right: number | null): boolean {
-  if (left === null || right === null) return left === right
-  const day = 86_400_000
-  return Math.floor(left / day) === Math.floor(right / day)
 }

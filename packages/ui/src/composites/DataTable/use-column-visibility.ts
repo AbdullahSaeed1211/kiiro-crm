@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import type { DataTableColumn } from './types'
 
 type Visibility = Record<string, boolean>
@@ -38,7 +38,7 @@ export function useColumnVisibility(path: string, columns: readonly DataTableCol
   const [visibility, setVisibility] = useState<Visibility>(defaults)
   const [loadedKey, setLoadedKey] = useState<string | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setVisibility({ ...(JSON.parse(defaultsKey) as Visibility), ...read(key) })
     setLoadedKey(key)
   }, [key, defaultsKey])

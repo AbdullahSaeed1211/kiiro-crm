@@ -3,12 +3,16 @@ import type { Metadata } from 'next'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
-import { formatDate } from '../../../i18n/format'
 import { SALES_COPY } from '../../../i18n/sales-copy'
+import { formatDate } from '../../../i18n/format'
 import { loadSalesWorkspace } from '../../../server/queries/crm/sales-workspace'
 import { QuickSchedule } from './quick-schedule'
 import { taskHref } from '../task-navigation'
 import { formatYearMonth } from '@ops/ui/lib/dates'
+import { LoadFailure } from '../load-failure'
+import { SalesSection } from './sales-section'
+import { SalesActions } from './sales-actions'
+import { DueDate, ScheduleTime } from './sales-time'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Sales desk' }
@@ -16,95 +20,39 @@ export const metadata: Metadata = { title: 'Sales desk' }
 type Workspace = Awaited<ReturnType<typeof loadSalesWorkspace>>
 type SalesCopy = (typeof SALES_COPY)[keyof typeof SALES_COPY]
 
-function scheduleEditHref(item: Workspace['schedule'][number], timeZone: string): string | undefined {
+function scheduleEditHref(input: {
+  item: Workspace['schedule'][number]
+  timeZone: string
+  team: boolean
+}): string | undefined {
+  const { item, timeZone, team } = input
   if (item.id.startsWith('legacy-')) return undefined
   const { year, month } = formatYearMonth(item.startsAt, timeZone)
-  return `/calendar?${new URLSearchParams({ year, month, event: item.id }).toString()}`
-}
-
-function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
-  return (
-    <section className="grid gap-3 rounded-xl border bg-card p-4">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-function ScheduleTime({
-  at,
-  timeZone,
-  locale,
-  overdue,
-  overdueLabel,
-}: Readonly<{ at: number; timeZone: string; locale: string; overdue: boolean; overdueLabel: string }>) {
-  return (
-    <time
-      dateTime={new Date(at).toISOString()}
-      className={overdue ? 'text-sm font-medium text-destructive' : 'text-sm text-muted-foreground'}
-    >
-      {formatDate(at, locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZoneName: 'short',
-        timeZone,
-      })}
-      {overdue ? ` · ${overdueLabel}` : ''}
-    </time>
-  )
-}
-
-function DueDate({ at, locale, now }: Readonly<{ at: number; locale: string; now: number }>) {
-  const today = new Date(now)
-  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-  return (
-    <time
-      dateTime={new Date(at).toISOString()}
-      className={at < todayUtc ? 'text-sm font-medium text-destructive' : 'text-sm text-muted-foreground'}
-    >
-      {formatDate(at, locale, { dateStyle: 'medium', timeZone: 'UTC' })}
-    </time>
-  )
-}
-
-function SalesActions({ model, copy }: Readonly<{ model: Workspace; copy: SalesCopy }>) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <Link className="rounded-md border px-3 py-2 hover:bg-muted" href="/calendar">
-        {copy.calendar}
-      </Link>
-      {model.manager ? (
-        <>
-          <Link className="rounded-md border px-3 py-2 hover:bg-muted" href="/sales">
-            {copy.mine}
-          </Link>
-          <Link className="rounded-md border px-3 py-2 hover:bg-muted" href="/sales?view=team">
-            {copy.team}
-          </Link>
-        </>
-      ) : null}
-    </div>
-  )
+  return `/calendar?${new URLSearchParams({ year, month, event: item.id, ...(team ? { view: 'team' } : {}) }).toString()}`
 }
 
 function ScheduleSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesCopy }>) {
-  const schedule = model.schedule.slice(0, 16)
+  const schedule = [...model.schedule]
+    .sort((left, right) => {
+      const leftPast = left.startsAt < model.now
+      const rightPast = right.startsAt < model.now
+      if (leftPast !== rightPast) return leftPast ? 1 : -1
+      return leftPast ? right.startsAt - left.startsAt : left.startsAt - right.startsAt
+    })
+    .slice(0, 16)
   return (
-    <Section title={copy.schedule}>
+    <SalesSection title={model.team ? copy.teamSchedule : copy.schedule}>
       <QuickSchedule
         leads={model.leads.map((lead) => ({ id: lead.id, title: lead.title }))}
         timeZone={model.timeZone}
         copy={copy}
       />
       {schedule.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{copy.emptySchedule}</p>
+        <p className="text-sm text-muted-foreground">{model.team ? copy.emptyTeamSchedule : copy.emptySchedule}</p>
       ) : (
         <ul className="grid divide-y">
           {schedule.map((item) => {
-            const editHref = scheduleEditHref(item, model.timeZone)
+            const editHref = scheduleEditHref({ item, timeZone: model.timeZone, team: model.team })
             return (
               <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <Link className="min-w-0 font-medium hover:underline" href={`/${item.recordType}s/${item.recordId}`}>
@@ -113,6 +61,17 @@ function ScheduleSection({ model, copy }: Readonly<{ model: Workspace; copy: Sal
                   </span>
                   {item.title}
                 </Link>
+                {model.team && item.assigneeIds.length > 0 ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {copy.assignees}:{' '}
+                    {item.assigneeIds.map((id) => model.people[String(id)] ?? copy.unassigned).join(', ')}
+                  </p>
+                ) : null}
+                {model.team && item.assigneeIds.length === 0 ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {copy.assignees}: {copy.unassigned}
+                  </p>
+                ) : null}
                 <ScheduleTime
                   at={item.startsAt}
                   timeZone={model.timeZone}
@@ -130,22 +89,35 @@ function ScheduleSection({ model, copy }: Readonly<{ model: Workspace; copy: Sal
           })}
         </ul>
       )}
-    </Section>
+    </SalesSection>
   )
 }
 
 function LeadsSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesCopy }>) {
   return (
-    <Section title={copy.assignedLeads}>
+    <SalesSection title={model.team ? copy.teamLeads : copy.assignedLeads}>
       {model.leads.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{copy.emptyLeads}</p>
+        <p className="text-sm text-muted-foreground">{model.team ? copy.emptyTeamLeads : copy.emptyLeads}</p>
       ) : (
         <ul className="grid divide-y">
           {model.leads.map((lead) => (
             <li key={lead.id} className="flex items-center justify-between gap-3 py-2">
-              <Link className="font-medium hover:underline" href={`/leads/${lead.id}`}>
-                {lead.title}
-              </Link>
+              <div className="min-w-0">
+                <Link className="font-medium hover:underline" href={`/leads/${lead.id}`}>
+                  {lead.title}
+                </Link>
+                {model.team ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {copy.owner}:{' '}
+                    {lead.ownerId === null ? copy.unassigned : (model.people[lead.ownerId] ?? copy.unassigned)}
+                    {' · '}
+                    {copy.assignees}:{' '}
+                    {lead.assigneeIds.length === 0
+                      ? copy.unassigned
+                      : lead.assigneeIds.map((id) => model.people[id] ?? copy.unassigned).join(', ')}
+                  </p>
+                ) : null}
+              </div>
               {lead.nextActionAt === null ? null : (
                 <ScheduleTime
                   at={lead.nextActionAt}
@@ -164,15 +136,15 @@ function LeadsSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesC
           {copy.viewAll}
         </Link>
       ) : null}
-    </Section>
+    </SalesSection>
   )
 }
 
 function CallsSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesCopy }>) {
   return (
-    <Section title={copy.calls}>
+    <SalesSection title={model.team ? copy.teamCalls : copy.calls}>
       {model.calls.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{copy.emptyCalls}</p>
+        <p className="text-sm text-muted-foreground">{model.team ? copy.emptyTeamCalls : copy.emptyCalls}</p>
       ) : (
         <ul className="grid divide-y">
           {model.calls.map((call) => (
@@ -181,6 +153,7 @@ function CallsSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesC
                 {call.title}
               </Link>
               <span className="text-right text-muted-foreground">
+                {model.team ? `${copy.recordedBy}: ${model.people[String(call.callerId)] ?? copy.unassigned} · ` : ''}
                 {copy[call.outcome]} ·{' '}
                 {formatDate(call.occurredAt, model.locale, {
                   dateStyle: 'medium',
@@ -192,28 +165,38 @@ function CallsSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesC
           ))}
         </ul>
       )}
-    </Section>
+    </SalesSection>
   )
 }
 
 function TasksSection({ model, copy }: Readonly<{ model: Workspace; copy: SalesCopy }>) {
   return (
-    <Section title={copy.tasks}>
+    <SalesSection title={model.team ? copy.teamTasks : copy.tasks}>
       {model.tasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{copy.emptyTasks}</p>
+        <p className="text-sm text-muted-foreground">{model.team ? copy.emptyTeamTasks : copy.emptyTasks}</p>
       ) : (
         <ul className="grid divide-y">
           {model.tasks.map((task) => (
             <li key={task.id} className="flex items-center justify-between gap-3 py-2">
-              <Link className="font-medium hover:underline" href={taskHref(task.id, '/sales')}>
-                {task.title}
-              </Link>
+              <div className="min-w-0">
+                <Link className="font-medium hover:underline" href={taskHref(task.id, '/sales')}>
+                  {task.title}
+                </Link>
+                {model.team ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {copy.assignees}:{' '}
+                    {task.assigneeIds.length === 0
+                      ? copy.unassigned
+                      : task.assigneeIds.map((id) => model.people[id] ?? copy.unassigned).join(', ')}
+                  </p>
+                ) : null}
+              </div>
               {task.dueAt === null ? null : <DueDate at={task.dueAt} locale={model.locale} now={model.now} />}
             </li>
           ))}
         </ul>
       )}
-    </Section>
+    </SalesSection>
   )
 }
 
@@ -245,10 +228,10 @@ export default async function SalesPage({
       <PageContent>
         <PageHeader
           title={copy.title}
-          description={copy.description}
-          actions={<SalesActions model={model} copy={copy} />}
+          description={model.team ? copy.teamDescription : copy.description}
+          actions={<SalesActions model={model} copy={{ calendar: copy.calendar, mine: copy.mine, team: copy.team }} />}
         />
-        <SalesQueues model={model} copy={copy} />
+        {model.loadError ? <LoadFailure title={copy.title} /> : <SalesQueues model={model} copy={copy} />}
       </PageContent>
     </>
   )

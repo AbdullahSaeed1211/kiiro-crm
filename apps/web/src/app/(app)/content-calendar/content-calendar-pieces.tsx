@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
+import { Button } from '@ops/ui/components/ui/button'
 import type { AgencyWorkCopy } from '../../../i18n/agency-work-copy'
 import { ContentCaptureForm } from './content-capture-form'
 import type { CreateContentInput, ProjectOption } from './content-types'
@@ -52,6 +53,7 @@ export function ContentComposer({
   const [channel, setChannel] = useState('')
   const [publishAt, setPublishAt] = useState<number | null>(null)
   const [showSchedule, setShowSchedule] = useState(false)
+  const [mobileExpanded, setMobileExpanded] = useState(false)
   const status = createInput({ projectId, title, channel, publishAt, showSchedule }).status
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -64,32 +66,50 @@ export function ContentComposer({
       setChannel('')
       setPublishAt(null)
       setShowSchedule(false)
+      setMobileExpanded(false)
     }
   }
 
   const buttonLabel = submitLabel({ pending, status, copy })
   return (
-    <ContentCaptureForm
-      title={title}
-      setTitle={setTitle}
-      projectId={projectId}
-      setProjectId={setProjectId}
-      projects={projects}
-      pending={pending}
-      showSchedule={showSchedule}
-      setShowSchedule={setShowSchedule}
-      channel={channel}
-      setChannel={setChannel}
-      publishAt={publishAt}
-      setPublishAt={setPublishAt}
-      locale={locale}
-      copy={copy}
-      error={error}
-      buttonLabel={buttonLabel}
-      onSubmit={(event) => {
-        void submit(event)
-      }}
-    />
+    <div className="grid gap-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="justify-self-start md:hidden"
+        aria-expanded={mobileExpanded}
+        aria-controls="content-capture-form"
+        onClick={() => {
+          setMobileExpanded((current) => !current)
+        }}
+      >
+        {mobileExpanded ? copy.cancel : copy.addContent}
+      </Button>
+      <div id="content-capture-form" className={mobileExpanded ? 'block' : 'hidden md:block'}>
+        <ContentCaptureForm
+          title={title}
+          setTitle={setTitle}
+          projectId={projectId}
+          setProjectId={setProjectId}
+          projects={projects}
+          pending={pending}
+          showSchedule={showSchedule}
+          setShowSchedule={setShowSchedule}
+          channel={channel}
+          setChannel={setChannel}
+          publishAt={publishAt}
+          setPublishAt={setPublishAt}
+          locale={locale}
+          copy={copy}
+          error={error}
+          buttonLabel={buttonLabel}
+          onSubmit={(event) => {
+            void submit(event)
+          }}
+        />
+      </div>
+    </div>
   )
 }
 

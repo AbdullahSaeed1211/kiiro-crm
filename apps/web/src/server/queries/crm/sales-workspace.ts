@@ -49,24 +49,27 @@ function mapSalesTask(task: unknown) {
     id: typeof id === 'string' ? id : String(id),
     title: typeof title === 'string' ? title : '',
     dueAt: typeof dueAt === 'number' ? dueAt : null,
+    assigneeIds: refs(Reflect.get(task as object, 'assignees')),
   }
 }
 
-async function loadSalesTasks(context: Awaited<ReturnType<typeof getRequestContext>>) {
+async function loadSalesTasks(context: Awaited<ReturnType<typeof getRequestContext>>, team: boolean) {
   const [finished, settings] = await Promise.all([finishedTaskStages(context), getWorkspaceSettings()])
+  const filters: Where[] = [
+    ...(team ? [] : [{ assignees: { contains: String(context.actor.id) } }]),
+    ...(finished.length === 0 ? [] : [{ stageId: { not_in: finished } }]),
+  ]
+  let where: Where = {}
+  if (filters.length === 1) where = filters[0] ?? {}
+  if (filters.length > 1) where = { and: filters }
   const result = await context.payload.find({
     collection: 'tasks',
-    where: {
-      and: [
-        { assignees: { contains: String(context.actor.id) } },
-        ...(finished.length === 0 ? [] : [{ stageId: { not_in: finished } }]),
-      ],
-    },
+    where,
     sort: ['dueAt', 'id'],
     limit: TASK_LIMIT,
     page: 1,
     depth: 0,
-    select: { id: true, title: true, dueAt: true },
+    select: { id: true, title: true, dueAt: true, assignees: true },
     overrideAccess: false,
     req: context.req,
   })
@@ -76,6 +79,21 @@ async function loadSalesTasks(context: Awaited<ReturnType<typeof getRequestConte
     locale: normalizeLocale(Reflect.get(settings, 'locale')),
     timeZone: typeof timeZone === 'string' ? timeZone : 'UTC',
   }
+}
+
+async function loadSalesPeople(
+  context: Awaited<ReturnType<typeof getRequestContext>>,
+): Promise<Record<string, string>> {
+  const result = await context.payload.find({
+    collection: 'users',
+    limit: 0,
+    pagination: false,
+    depth: 0,
+    select: { id: true, name: true },
+    overrideAccess: false,
+    req: context.req,
+  })
+  return Object.fromEntries(result.docs.map((person) => [person.id, person.name || '']))
 }
 
 function mapLead(doc: unknown) {
@@ -127,6 +145,7 @@ function scheduleRows(items: readonly ScheduleItemRecord[], leads: ReturnType<ty
         recordType: 'lead' as const,
         recordId: lead.id,
         title: lead.title,
+        assigneeIds: lead.assigneeIds,
         startsAt: lead.nextActionAt,
         status: 'scheduled' as const,
         updatedAt: lead.updatedAt,
@@ -202,7 +221,8 @@ async function callTitles(context: Awaited<ReturnType<typeof getRequestContext>>
   })
 }
 
-/** One scoped snapshot for the personal sales desk: owned leads, own calls, schedule and tasks. */
+/** One scoped snapshot for the personal or manager team sales desk. */
+// eslint-disable-next-line complexity -- parallel loading and result shaping are kept in one request-scoped read model.
 export async function loadSalesWorkspace(input: { readonly team?: boolean } = {}) {
   const context = await getRequestContext()
   const deps = await crmDeps(context)
@@ -210,11 +230,12 @@ export async function loadSalesWorkspace(input: { readonly team?: boolean } = {}
   const team = manager && input.team === true
   const actorId = String(context.actor.id)
   const now = Date.now()
-  const [leadResult, callsResult, scheduleResult, taskResult] = await Promise.all([
+  const [leadResult, callsResult, scheduleResult, taskResult, people] = await Promise.all([
     loadSalesLeads(context, team, actorId),
-    listRecentCallLogs(deps),
+    listRecentCallLogs(deps, { scope: team ? 'team' : 'mine' }),
     listScheduleItems(deps, { from: now - 60 * DAY, to: now + 30 * DAY, scope: team ? 'team' : 'mine' }),
-    loadSalesTasks(context),
+    loadSalesTasks(context, team),
+    team ? loadSalesPeople(context) : Promise.resolve({} as Record<string, string>),
   ])
   const callRows = callsResult.ok ? callsResult.value : []
   const schedule = scheduleRows(scheduleResult.ok ? scheduleResult.value : [], leadResult.leads)
@@ -231,5 +252,7 @@ export async function loadSalesWorkspace(input: { readonly team?: boolean } = {}
     schedule,
     calls,
     tasks: taskResult.tasks.slice(0, 12),
+    people,
+    loadError: !callsResult.ok || !scheduleResult.ok,
   }
 }

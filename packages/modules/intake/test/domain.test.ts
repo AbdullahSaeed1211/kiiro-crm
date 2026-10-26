@@ -8,7 +8,7 @@ import {
   zonedMinuteToUnix,
   type FormField,
 } from '../src'
-import { mappedLead } from '../src/domain'
+import { intakeActivityNote, mappedLead } from '../src/domain'
 import type { IntakeForm, IntakeStore } from '../src'
 
 const form: IntakeForm = {
@@ -82,6 +82,12 @@ it('keeps retries idempotent but distinguishes a new call outcome or booking for
   expect(await intakeDedupeKey(form.id, { ...first, 'cf-turnstile-response': 'token-a' }, LOCAL_DATE)).toBe(
     await intakeDedupeKey(form.id, { ...first, 'cf-turnstile-response': 'token-b' }, LOCAL_DATE),
   )
+})
+
+it('writes public caller and outcome answers into the linked lead activity note', () => {
+  expect(
+    intakeActivityNote({ callerName: 'Rae', callOutcome: 'No answer', callNotesAndNextStep: 'Try tomorrow' }),
+  ).toBe('Phone inquiry\nCaller: Rae\nOutcome: No answer\nNotes: Try tomorrow')
 })
 
 const bookingFields: readonly FormField[] = [

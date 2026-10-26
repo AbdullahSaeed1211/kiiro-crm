@@ -44,6 +44,7 @@ export const AGENCY_WORK_COPY: Readonly<Record<Locale, AgencyWorkCopy>> = {
     nextMonth: 'Next month',
     moreEvents: '+{count} more',
     today: 'Today',
+    contentAgenda: 'Content agenda',
     status: 'Status',
     scheduleNeedsChannelDate: 'Add a channel and publish date before scheduling.',
     utcDate: 'UTC date',
@@ -70,7 +71,7 @@ export const AGENCY_WORK_COPY: Readonly<Record<Locale, AgencyWorkCopy>> = {
     optional: 'Optional',
     approved: 'Approved',
     changesRequested: 'Changes requested',
-    sentToClient: 'Sent to client',
+    sentToClient: 'Sent status recorded',
     responseBy: 'Recorded by',
     deliverableConflict:
       'This deliverable changed elsewhere. Your note is still here. Refresh the status before retrying.',
@@ -122,6 +123,7 @@ export const AGENCY_WORK_COPY: Readonly<Record<Locale, AgencyWorkCopy>> = {
     nextMonth: 'Mes siguiente',
     moreEvents: '+{count} más',
     today: 'Hoy',
+    contentAgenda: 'Agenda de contenido',
     status: 'Estado',
     scheduleNeedsChannelDate: 'Añade un canal y una fecha antes de programar.',
     utcDate: 'Fecha UTC',
@@ -148,7 +150,7 @@ export const AGENCY_WORK_COPY: Readonly<Record<Locale, AgencyWorkCopy>> = {
     optional: 'Opcional',
     approved: 'Aprobado',
     changesRequested: 'Cambios solicitados',
-    sentToClient: 'Enviado al cliente',
+    sentToClient: 'Envío registrado al cliente',
     responseBy: 'Registrado por',
     deliverableConflict:
       'Este entregable cambió en otro lugar. Tu nota sigue aquí. Actualiza el estado antes de volver a intentarlo.',

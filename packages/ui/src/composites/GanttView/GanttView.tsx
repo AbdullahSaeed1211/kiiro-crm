@@ -22,6 +22,7 @@ import {
   type GanttZoom,
 } from './model'
 import { openOnWork } from './open-on-work'
+import { useGanttAccessibility } from './gantt-a11y'
 
 /** Visible strings of {@link GanttView}. */
 export interface GanttViewLabels extends GanttColumnLabels {
@@ -55,73 +56,30 @@ const BLOCKED_ACTIONS = ['add-task', 'copy-task', 'delete-task', 'indent-task', 
 
 const subscribeNever = () => () => undefined
 const highlightTime = (date: Date, unit: string) => todayClass(date, unit, new Date())
-const ROW_SELECTOR = '[role="row"][data-id]'
-const GRIP_SELECTOR = '.wx-grip[role="presentation"][aria-label]'
-const CHART_SELECTOR = '.wx-chart'
-const TAB_INDEX = '0'
-const REGION_ROLE = 'region'
-const ARIA_LABEL = 'aria-label'
-const ARIA_ROW_INDEX = 'aria-rowindex'
 
-function repairRowIndexes(container: HTMLElement, taskIds: readonly string[]): void {
-  for (const row of container.querySelectorAll<HTMLElement>(ROW_SELECTOR)) {
-    const id = (row.getAttribute('data-context-id') ?? row.getAttribute('data-id') ?? '').replace(/^:/, '')
-    const index = taskIds.indexOf(id)
-    const rowIndex = index < 0 ? undefined : String(index + 1)
-    if (rowIndex === undefined) row.removeAttribute(ARIA_ROW_INDEX)
-    else if (row.getAttribute(ARIA_ROW_INDEX) !== rowIndex) row.setAttribute(ARIA_ROW_INDEX, rowIndex)
-  }
-}
-
-function removeGripLabels(container: HTMLElement): void {
-  for (const grip of container.querySelectorAll<HTMLElement>(GRIP_SELECTOR)) {
-    grip.removeAttribute('aria-label')
-  }
-}
-
-function makeChartsFocusable(container: HTMLElement, chartLabel: string): void {
-  for (const chart of container.querySelectorAll<HTMLElement>(CHART_SELECTOR)) {
-    if (chart.getAttribute('tabindex') !== TAB_INDEX) chart.setAttribute('tabindex', TAB_INDEX)
-    if (chart.getAttribute('role') !== REGION_ROLE) chart.setAttribute('role', REGION_ROLE)
-    if (chart.getAttribute(ARIA_LABEL) !== chartLabel) chart.setAttribute(ARIA_LABEL, chartLabel)
-  }
-}
-
-function repairGanttAccessibility(
-  container: HTMLElement,
-  options: { taskIds: readonly string[]; chartLabel: string },
-): void {
-  repairRowIndexes(container, options.taskIds)
-  removeGripLabels(container)
-  makeChartsFocusable(container, options.chartLabel)
-}
-
-function useGanttAccessibility(
-  rootRef: RefObject<HTMLDivElement | null>,
-  options: { tasks: readonly { id?: TID }[]; chartLabel: string; clientReady: boolean },
-): void {
-  const { tasks, chartLabel, clientReady } = options
+function useOpenOnWorkCleanup(stop: RefObject<() => void>): void {
   useEffect(() => {
-    const root = rootRef.current
-    if (root === null) return
-    const repair = () => {
-      repairGanttAccessibility(root, {
-        taskIds: tasks.map((task) => String(task.id)),
-        chartLabel,
-      })
-    }
-    repair()
-    const observer = new MutationObserver(repair)
-    observer.observe(root, {
-      attributes: true,
-      attributeFilter: [ARIA_LABEL, ARIA_ROW_INDEX, 'data-context-id', 'data-id', 'role', 'tabindex'],
-      childList: true,
-      subtree: true,
-    })
     return () => {
-      observer.disconnect()
+      stop.current()
     }
-  }, [chartLabel, clientReady, rootRef, tasks])
+  }, [stop])
+}
+
+function useGanttRefs(input: { bars: readonly GanttBar[]; onDatesChange: GanttDatesChange; labels: GanttViewLabels }) {
+  const { bars, onDatesChange, labels } = input
+  const rootRef = useRef<HTMLDivElement>(null)
+  const apiRef = useRef<IApi | null>(null)
+  const stopOpenOnWork = useRef<() => void>(() => undefined)
+  const onDatesChangeRef = useRef(onDatesChange)
+  const labelsRef = useRef(labels)
+  const confirmed = useRef(spanMap(bars))
+  onDatesChangeRef.current = onDatesChange
+  labelsRef.current = labels
+  useEffect(() => {
+    confirmed.current = spanMap(bars)
+  }, [bars])
+  useOpenOnWorkCleanup(stopOpenOnWork)
+  return { rootRef, apiRef, stopOpenOnWork, onDatesChangeRef, labelsRef, confirmed }
 }
 
 async function commitDates(context: CommitContext, id: TID): Promise<void> {
@@ -156,20 +114,13 @@ export function GanttView({ bars, zoom, compact, displayMode, onDatesChange, lab
   )
   const [error, setError] = useState<string>()
   const signature = barsSignature(bars)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const apiRef = useRef<IApi | null>(null)
-  const onDatesChangeRef = useRef(onDatesChange)
-  const labelsRef = useRef(labels)
-  const confirmed = useRef(spanMap(bars))
-  useEffect(() => {
-    onDatesChangeRef.current = onDatesChange
-    labelsRef.current = labels
+  const { rootRef, apiRef, stopOpenOnWork, onDatesChangeRef, labelsRef, confirmed } = useGanttRefs({
+    bars,
+    onDatesChange,
+    labels,
   })
   // Keyed by content: a new tasks array makes the library re-initialize its store.
   const tasks = useMemo(() => toLibraryTasks(bars), [signature])
-  useEffect(() => {
-    confirmed.current = spanMap(bars)
-  }, [signature])
   useEffect(() => {
     const api = apiRef.current
     if (api === null) return
@@ -177,12 +128,18 @@ export function GanttView({ bars, zoom, compact, displayMode, onDatesChange, lab
   }, [clientReady, compact, displayMode])
   const setup = useMemo(() => scaleSetup(zoom, locale), [locale, zoom])
   const columns = useMemo(() => ganttColumns(labels, locale), [labels, locale])
-  useGanttAccessibility(rootRef, { tasks, chartLabel: labels.timelineChart, clientReady })
+  useGanttAccessibility(rootRef, {
+    tasks,
+    chartLabel: labels.timelineChart,
+    clientReady,
+    chartOnly: compact && displayMode === 'chart',
+  })
   const tasksRef = useRef(tasks)
   tasksRef.current = tasks
   const init = useCallback((api: IApi) => {
     apiRef.current = api
-    openOnWork(api, () => tasksRef.current)
+    stopOpenOnWork.current()
+    stopOpenOnWork.current = openOnWork(api, () => tasksRef.current, rootRef.current)
     const context = { api, onDatesChange: onDatesChangeRef, confirmed, labels: labelsRef, setError }
     guardEdits(api)
     api.on('update-task', (event) => {

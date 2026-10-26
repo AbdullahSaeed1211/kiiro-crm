@@ -123,7 +123,7 @@ function calls(req: PayloadRequest): Calls {
     listRecentCallLogs: async (callerId, limit) => {
       const docs = await findAsUser(req, {
         collection: COLLECTIONS.callLogs,
-        where: { caller: { equals: callerId } },
+        where: callerId === undefined ? {} : { caller: { equals: callerId } },
         sort: '-occurredAt',
         limit: Math.min(50, Math.max(1, limit)),
       })

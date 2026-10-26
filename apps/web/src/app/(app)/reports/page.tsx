@@ -1,4 +1,3 @@
-import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -16,7 +15,7 @@ import { firstParam } from '../search-params'
 import { TimeReport } from './time-report'
 import { PipelineCharts } from './pipeline-charts'
 import { ReportCharts } from './report-charts'
-import { Button } from '@ops/ui/components/ui/button'
+import { ReportRangeControls } from './report-range-controls'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Figures' }
@@ -74,13 +73,6 @@ export default async function ReportsPage({
   ])
   const locale = figures.locale === 'es' ? 'es-ES' : 'en-US'
   const range = figures.range
-  const options = [
-    ['7d', copy.last7],
-    ['30d', copy.last30],
-    ['90d', copy.last90],
-    ['ytd', copy.ytd],
-    ['custom', copy.custom],
-  ] as const
   return (
     <>
       <AppHeader breadcrumbs={[{ label: copy.title }]} />
@@ -97,42 +89,11 @@ export default async function ReportsPage({
             </a>
           }
         />
-        <form method="get" className="ops-surface-card flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
-          <label className="grid gap-1 text-xs font-medium">
-            <span>{copy.range}</span>
-            <NativeSelect name="range" defaultValue={range.key} className="h-9 min-w-40">
-              {options.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </NativeSelect>
-          </label>
-          <label className="grid gap-1 text-xs font-medium">
-            <span>{copy.from}</span>
-            <input
-              name="from"
-              type="date"
-              defaultValue={range.fromDate}
-              className="h-9 rounded-md border bg-background px-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-1 text-xs font-medium">
-            <span>{copy.to}</span>
-            <input
-              name="to"
-              type="date"
-              defaultValue={range.toDate}
-              className="h-9 rounded-md border bg-background px-2 text-sm"
-            />
-          </label>
-          <Button size="lg" type="submit">
-            {copy.apply}
-          </Button>
-          <output className="text-xs text-muted-foreground" aria-live="polite">
-            {day(range.fromDate, locale)} – {day(range.toDate, locale)}
-          </output>
-        </form>
+        <ReportRangeControls
+          range={range}
+          copy={copy}
+          formattedRange={`${day(range.fromDate, locale)} – ${day(range.toDate, locale)}`}
+        />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Metric label={copy.openTasks} value={number(figures.totals.openTasks, locale)} />
           <Metric label={copy.completedTasks} value={number(figures.totals.completedTasks, locale)} />

@@ -31,7 +31,7 @@ export type LookupKind = 'source' | 'lostReason'
 export interface CrmRepository extends StageStore {
   createCallLog(input: Omit<CallLogRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<CallLogRecord>
   listCallLogs(recordType: 'lead' | 'contact', recordId: Id): Promise<readonly CallLogRecord[]>
-  listRecentCallLogs(callerId: Id, limit: number): Promise<readonly CallLogRecord[]>
+  listRecentCallLogs(callerId: Id | undefined, limit: number): Promise<readonly CallLogRecord[]>
   isActiveUser(id: Id, recordType?: 'lead' | 'contact'): Promise<boolean>
   createScheduleItem(input: Omit<ScheduleItemRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<ScheduleItemRecord>
   getScheduleItem(id: Id): Promise<ScheduleItemRecord | undefined>

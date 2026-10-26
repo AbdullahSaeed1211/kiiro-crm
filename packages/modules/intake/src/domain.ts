@@ -91,6 +91,20 @@ export function text(payload: IntakePayload, key: string): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 }
 
+/** Public phone submissions are linked into the lead's activity history with the caller's reported outcome. */
+export function intakeActivityNote(payload: IntakePayload): string | undefined {
+  const caller = text(payload, 'callerName') ?? text(payload, 'caller')
+  const outcome = text(payload, 'callOutcome') ?? text(payload, 'outcome')
+  const notes = text(payload, 'callNotesAndNextStep') ?? text(payload, 'notes') ?? text(payload, 'message')
+  const details = [
+    { label: 'Caller', value: caller },
+    { label: 'Outcome', value: outcome },
+    { label: 'Notes', value: notes },
+  ].filter((item) => item.value !== undefined)
+  if (caller === undefined && outcome === undefined) return notes
+  return ['Phone inquiry', ...details.map(({ label, value }) => `${label}: ${value ?? ''}`)].join('\n')
+}
+
 /** Derives a stable lead title from accepted base fields. */
 export function titleOf(payload: IntakePayload): string {
   const fullName = [text(payload, 'firstName'), text(payload, 'lastName')].filter(Boolean).join(' ')
