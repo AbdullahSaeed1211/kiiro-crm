@@ -16,6 +16,7 @@ import type { Where } from 'payload'
 import { todayAsDueAt } from '@ops/module-work'
 import { getWorkspaceSettings } from '../../auth/context'
 import { attentionLeadWhere } from '../../queries/today-leads'
+import { authorizedTodayLeadPerson } from '../../queries/today-lead-scope'
 
 const PAGE_SIZE = 50
 type SearchParam = string | string[] | undefined
@@ -37,14 +38,16 @@ export type LeadListResult = Readonly<{
   readonly owners: readonly LeadPerson[]
 }>
 
-type LeadFacets = Readonly<{ source?: string; owner?: string }>
+type LeadFacets = Readonly<{ source?: string; owner?: string; person?: string }>
 
 /** Source and owner narrow the list; `owner` is a user id, or `none` for leads nobody owns. */
-function facetFilters({ source, owner }: LeadFacets): Where[] {
+function facetFilters({ source, owner, person }: LeadFacets): Where[] {
   const filters: Where[] = []
   if (source) filters.push({ source: { equals: source } })
   if (owner === 'none') filters.push({ owner: { exists: false } })
   else if (owner) filters.push({ owner: { equals: owner } })
+  if (person === 'unassigned') filters.push({ and: [{ owner: { exists: false } }, { assignees: { exists: false } }] })
+  else if (person) filters.push({ or: [{ owner: { equals: person } }, { assignees: { contains: person } }] })
   return filters
 }
 
@@ -166,6 +169,7 @@ export async function listLeads(
 ): Promise<LeadListResult> {
   const context = await getRequestContext()
   const owner = params.owner === 'me' ? String(context.actor.id) : params.owner
+  const person = params.attention ? authorizedTodayLeadPerson(context.actor, params.person) : params.person
   const repo = createCrmRepository(context.req)
   const workflowPromise = repo.loadDefaultWorkflow('lead').then(workflowOrThrow)
   const sourcesPromise = repo.listLookups('source')
@@ -173,7 +177,13 @@ export async function listLeads(
   const workflow = await workflowPromise
   const attentionWhere = await attentionFilter(context, params.attention === true)
   const [pageResult, sources, lostReasons] = await Promise.all([
-    pageQuery({ context, params, owner, workflow, attentionWhere }),
+    pageQuery({
+      context,
+      params: { ...params, ...(person === undefined ? {} : { person }) },
+      owner,
+      workflow,
+      attentionWhere,
+    }),
     sourcesPromise,
     lostReasonsPromise,
   ])

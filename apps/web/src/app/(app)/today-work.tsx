@@ -6,6 +6,7 @@ import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import type { DashboardTask, DashboardWork } from '../../server/queries/work/dashboard-work'
 import { TodayItem, TodayQueue } from './today-queue'
 import { taskHref } from './task-navigation'
+import { TaskCompleteButton } from './my-tasks/TaskCompleteButton'
 
 function dueLabel(task: DashboardTask, work: DashboardWork): string {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
@@ -40,6 +41,13 @@ export function TodayScopeSwitch({ work }: Readonly<{ work: DashboardWork }>) {
   )
 }
 
+function taskAssigneeFilter(work: DashboardWork): string {
+  if (!work.team) return '&assignee=me'
+  if (work.personFilter === 'everyone') return ''
+  const person = work.personFilter === 'unassigned' ? 'none' : work.personFilter
+  return `&assignee=${encodeURIComponent(person)}`
+}
+
 /** The same concise task row for overdue and upcoming queues, including the project and responsible people. */
 export function TodayTaskQueue({
   work,
@@ -52,14 +60,16 @@ export function TodayTaskQueue({
   const filter = { overdue: 'overdue', dueToday: 'today', dueWeek: 'later-week' }[kind]
   const empty = { overdue: copy.noOverdue, dueToday: copy.noToday, dueWeek: copy.noWeek }[kind]
   const icon = { overdue: Clock3, dueToday: Sun, dueWeek: CalendarDays }[kind]
+  const assigneeFilter = taskAssigneeFilter(work)
   return (
     <TodayQueue
       title={title}
       count={section.count}
       icon={icon}
-      href={`/tasks?view=open&due=${filter}${work.team ? '' : '&assignee=me'}`}
+      href={`/tasks?view=open&due=${filter}${assigneeFilter}`}
       viewAll={copy.viewAll}
       empty={empty}
+      compact
     >
       {section.items.map((task) => (
         <TodayItem
@@ -71,6 +81,12 @@ export function TodayTaskQueue({
           href={taskHref(task.id, '/')}
           action={copy.openTask}
           taskId={task.id}
+          compact
+          accessory={
+            task.assigneeIds.includes(work.actorId) ? (
+              <TaskCompleteButton taskId={task.id} title={task.title} updatedAt={task.updatedAt} />
+            ) : null
+          }
         />
       ))}
     </TodayQueue>

@@ -23,7 +23,11 @@ export const metadata: Metadata = { title: 'Lead follow-ups' }
 export const dynamic = 'force-dynamic'
 
 function leadScope(params: Record<string, string | string[] | undefined>) {
-  return { mine: firstParam(params.owner) === 'me', attention: firstParam(params.attention) === '1' }
+  return {
+    mine: firstParam(params.owner) === 'me',
+    attention: firstParam(params.attention) === '1',
+    person: firstParam(params.person),
+  }
 }
 
 function ownerHref(mine: boolean, attention: boolean): string {
@@ -34,10 +38,16 @@ function ownerHref(mine: boolean, attention: boolean): string {
   return query === '' ? '/leads/follow-ups' : `/leads/follow-ups?${query}`
 }
 
-function pageHref({ page, mine, attention }: Readonly<{ page: number; mine: boolean; attention: boolean }>): string {
+function pageHref({
+  page,
+  mine,
+  attention,
+  person,
+}: Readonly<{ page: number; mine: boolean; attention: boolean; person?: string }>): string {
   const params = new URLSearchParams()
   if (attention) params.set('attention', '1')
   if (mine) params.set('owner', 'me')
+  if (person !== undefined) params.set('person', person)
   if (page > 1) params.set('page', String(page))
   const query = params.toString()
   return query === '' ? '/leads/follow-ups' : `/leads/follow-ups?${query}`
@@ -51,6 +61,7 @@ function FollowUpResults({
   mine,
   attention,
   page,
+  person,
 }: Readonly<{
   result: Awaited<ReturnType<typeof listLeads>>
   groups: Readonly<Record<FollowUpBucket, readonly LeadListItem[]>>
@@ -59,6 +70,7 @@ function FollowUpResults({
   mine: boolean
   attention: boolean
   page: number
+  person?: string
 }>) {
   const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize))
   const bucketTitles = {
@@ -97,7 +109,7 @@ function FollowUpResults({
         <nav aria-label={copy.title} className="flex items-center justify-between gap-3 border-t pt-4 text-sm">
           {page > 1 ? (
             <Link
-              href={pageHref({ page: page - 1, mine, attention })}
+              href={pageHref({ page: page - 1, mine, attention, person })}
               className="rounded-md border px-3 py-2 hover:bg-muted"
             >
               {copy.previousPage}
@@ -108,7 +120,7 @@ function FollowUpResults({
           <span className="text-muted-foreground">{copy.pageSummary(page, pageCount)}</span>
           {page < pageCount ? (
             <Link
-              href={pageHref({ page: page + 1, mine, attention })}
+              href={pageHref({ page: page + 1, mine, attention, person })}
               className="rounded-md border px-3 py-2 hover:bg-muted"
             >
               {copy.nextPage}
@@ -164,12 +176,13 @@ export default async function LeadFollowUpsPage({
   const copy = catalogFor(LEAD_FOLLOW_UPS_COPY, locale)
   const viewsCopy = catalogFor(LEAD_VIEWS_COPY, locale)
   const params = await searchParams
-  const { mine, attention } = leadScope(params)
+  const { mine, attention, person } = leadScope(params)
   const page = Math.max(1, Number(firstParam(params.page)) || 1)
   const result = await listLeads({
     page,
     pageSize: 50,
     ...(mine ? { owner: 'me' } : {}),
+    ...(person === undefined ? {} : { person }),
     ...(attention ? { attention: true } : {}),
   })
   const groups = groupFollowUps(result.items, {
@@ -208,6 +221,7 @@ export default async function LeadFollowUpsPage({
           mine={mine}
           attention={attention}
           page={page}
+          person={person}
         />
       </PageContent>
     </>

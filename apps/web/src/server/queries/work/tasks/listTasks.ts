@@ -51,12 +51,19 @@ function viewWhere(query: TaskListQuery, workflow: Workflow, actorId: string): W
   }
 }
 
+function assigneeWhere(assignee: string | undefined, actorId: string): Where | undefined {
+  if (assignee === undefined || assignee === '') return undefined
+  if (assignee === 'none') return { assignees: { exists: false } }
+  return { assignees: { contains: assignee === 'me' ? actorId : assignee } }
+}
+
 function taskWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {
   const view = viewWhere(query, workflow, actorId)
   const search = query.search?.trim() ?? ''
   const narrowed: Where[] = [view]
   if (search !== '') narrowed.push({ title: { contains: search } })
-  if (query.assignee !== undefined && query.assignee !== '') narrowed.push({ assignees: { contains: query.assignee } })
+  const assignee = assigneeWhere(query.assignee, actorId)
+  if (assignee !== undefined) narrowed.push(assignee)
   return narrowed.length === 1 ? view : { and: narrowed }
 }
 

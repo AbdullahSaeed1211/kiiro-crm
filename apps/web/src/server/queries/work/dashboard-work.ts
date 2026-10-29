@@ -14,6 +14,7 @@ const SHOWN = 5
 export interface DashboardTask {
   readonly id: Id
   readonly title: string
+  readonly updatedAt: number
   readonly dueAt: number | null
   readonly projectId: Id | null
   readonly relatedType: string | null
@@ -27,12 +28,15 @@ interface TaskSection {
   readonly items: readonly DashboardTask[]
 }
 export interface DashboardWork {
+  readonly actorId: string
   readonly locale: Locale
   readonly timeZone: string
   readonly dayStart: number
   readonly canSeeTeam: boolean
   /** The active queue scope. Team scope is always clamped by the authenticated actor's role. */
   readonly team: boolean
+  readonly personFilter: string
+  readonly people: readonly { readonly id: string; readonly name: string }[]
   readonly crmEnabled: boolean
   readonly workEnabled: boolean
   readonly overdue: TaskSection
@@ -54,6 +58,7 @@ async function taskSection(context: RequestContext, where: Where): Promise<TaskS
       select: {
         id: true,
         title: true,
+        updatedAt: true,
         dueAt: true,
         project: true,
         relatedType: true,
@@ -68,6 +73,7 @@ async function taskSection(context: RequestContext, where: Where): Promise<TaskS
     items: page.docs.map((doc) => ({
       id: asId(doc.id),
       title: doc.title,
+      updatedAt: Date.parse(doc.updatedAt),
       dueAt: doc.dueAt ?? null,
       projectId: relation(doc.project),
       relatedType: doc.relatedType ?? null,
@@ -100,10 +106,31 @@ async function enrich(context: RequestContext, sections: readonly TaskSection[])
 
 type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'dueWeek'> & { readonly weekEnd: number }
 
+async function teamPeople(context: RequestContext) {
+  if (!isManagerUp(context.actor)) return []
+  const where: Where = {
+    and: [
+      { active: { equals: true } },
+      ...(context.actor.role === 'owner' ? [] : [{ id: { in: context.actor.reportIds.map(String) } }]),
+    ],
+  }
+  const result = await context.payload.find({
+    collection: 'users',
+    where,
+    sort: ['name', 'id'],
+    limit: 0,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return result.docs.map((person) => ({ id: person.id, name: person.name }))
+}
+
 function dashboardScope(
   settings: Awaited<ReturnType<typeof getWorkspaceSettings>>,
   context: RequestContext,
-  requestedScope?: 'mine' | 'team',
+  selection: Readonly<{ requestedScope?: 'mine' | 'team'; personFilter: string }>,
 ): DashboardScope {
   const modules = settings.modules as Record<string, boolean> | null
   const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
@@ -112,21 +139,38 @@ function dashboardScope(
   const canSeeTeam = isManagerUp(context.actor)
   return {
     locale: normalizeLocale(settings.locale),
+    actorId: String(context.actor.id),
     timeZone,
     dayStart,
     canSeeTeam,
-    team: canSeeTeam && requestedScope !== 'mine',
+    team: canSeeTeam && selection.requestedScope === 'team',
+    personFilter: selection.personFilter,
+    people: [],
     crmEnabled: modules?.crm !== false,
     workEnabled: modules?.work !== false,
     weekEnd: weekEndAfter(dayStart, weekStart),
   }
 }
 
+function authorizedPersonFilter(requested: string | undefined, people: DashboardWork['people']): string {
+  if (requested === 'unassigned') return requested
+  if (requested !== undefined && requested !== 'everyone' && people.some((person) => person.id === requested))
+    return requested
+  return 'everyone'
+}
+
+function taskOwnershipWhere(context: RequestContext, scope: DashboardScope): Where[] {
+  if (!scope.team) return [{ assignees: { contains: String(context.actor.id) } }]
+  if (scope.personFilter === 'everyone') return []
+  if (scope.personFilter === 'unassigned') return [{ assignees: { exists: false } }]
+  return [{ assignees: { contains: scope.personFilter } }]
+}
+
 async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
   const workflow = await loadWorkflowStages(context, 'task')
   const clauses: Where[] = [
     ...(workflow.closed.length ? [{ stageId: { not_in: workflow.closed } }] : []),
-    ...(scope.team ? [] : [{ assignees: { contains: String(context.actor.id) } }]),
+    ...taskOwnershipWhere(context, scope),
   ]
   const [overdue, dueToday, dueWeek] = await Promise.all([
     taskSection(context, { and: [...clauses, { dueAt: { less_than: scope.dayStart } }] }),
@@ -149,12 +193,16 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
   return { overdue: enriched[0] ?? empty, dueToday: enriched[1] ?? empty, dueWeek: enriched[2] ?? empty }
 }
 
-/** Owners default to team queues; any personal selection narrows tasks to the authenticated user. */
+/** Every dashboard starts with personal queues; authorized managers may select a team scope. */
 export async function loadDashboardWork(
   context: RequestContext,
   requestedScope?: 'mine' | 'team',
+  requestedPerson?: string,
 ): Promise<DashboardWork> {
-  const scope = dashboardScope(await getWorkspaceSettings(), context, requestedScope)
+  const [settings, people] = await Promise.all([getWorkspaceSettings(), teamPeople(context)])
+  const canSelectPerson = isManagerUp(context.actor) && requestedScope === 'team'
+  const personFilter = canSelectPerson ? authorizedPersonFilter(requestedPerson, people) : 'everyone'
+  const scope = { ...dashboardScope(settings, context, { requestedScope, personFilter }), people }
   if (!scope.workEnabled) return { ...scope, overdue: empty, dueToday: empty, dueWeek: empty }
   return { ...scope, ...(await dashboardQueues(context, scope)) }
 }

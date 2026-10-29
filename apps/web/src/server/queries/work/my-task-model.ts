@@ -15,8 +15,16 @@ import {
 const TEAM_TASK_LIMIT = 100
 const FINISHED: ReadonlySet<string> = new Set(['done_success', 'done_failure', 'cancelled'])
 
+function workEnabled(settings: Record<string, unknown>): boolean {
+  const modules = value(settings, 'modules')
+  return typeof modules === 'object' && modules !== null && 'work' in modules
+    ? Reflect.get(modules, 'work') !== false
+    : true
+}
+
 /** The signed-in user's tasks with what My tasks needs to render them. */
 export type MyTaskModel = Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone' | 'stages' | 'locale'> & {
+  readonly workEnabled: boolean
   /** Name of each project the tasks belong to, by project id. */
   readonly projectNames: Readonly<Record<string, string>>
   /** Open tasks of the person's groups that nobody has taken yet. */
@@ -102,6 +110,7 @@ export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskM
     timeZone: text(settings, 'timezone') || 'UTC',
     stages: workflowStages(workflows),
     locale: normalizeLocale(value(settings, 'locale')),
+    workEnabled: workEnabled(settings),
   }
 }
 

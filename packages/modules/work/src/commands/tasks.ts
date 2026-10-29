@@ -5,6 +5,8 @@ import { fail, isManagerUp } from './input'
 import { parseCreate, parseUpdate, type ParsedTaskDraft } from './task-input'
 import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
 import { taskResource } from './task-access'
+import { createTodayTaskSchema } from '../schema'
+import { todayAsDueAt } from '../domain/due-dates'
 export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
 const OWNER_ONLY_FORBIDDEN = 'Only owners and managers can mark a task owner only.'
 
@@ -141,6 +143,21 @@ export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkRe
     stageId: workflow.defaultStageId,
   })
   return createdResult.ok ? ok(createdResult.value) : createdResult
+}
+
+/** Creates one open task for the authenticated person, due on today's workspace calendar date. */
+export async function createTodayTask(
+  deps: WorkDeps,
+  input: unknown,
+  timeZone: string,
+): Promise<WorkResult<WorkTaskRecord>> {
+  const parsed = createTodayTaskSchema.safeParse(input)
+  if (!parsed.success) return fail('VALIDATION', parsed.error.issues[0]?.message ?? 'Enter a title.')
+  return createTask(deps, {
+    title: parsed.data.title,
+    assigneeIds: [deps.actor.id],
+    dueAt: todayAsDueAt(deps.clock.now(), timeZone),
+  })
 }
 async function checkRelated(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<boolean> {
   const type = patch.relatedType === undefined ? task.relatedType : patch.relatedType

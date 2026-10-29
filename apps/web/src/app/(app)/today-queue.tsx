@@ -2,6 +2,7 @@ import { Button } from '@ops/ui/components/ui/button'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { cn } from '@ops/ui/lib/utils'
 
 /** A short work queue with one action on each row and an exact total across all visible records. */
 export function TodayQueue({
@@ -12,6 +13,7 @@ export function TodayQueue({
   viewAll,
   empty,
   children,
+  compact = false,
 }: Readonly<{
   title: string
   count: number
@@ -20,10 +22,16 @@ export function TodayQueue({
   viewAll: string
   empty: string
   children: ReactNode
+  compact?: boolean
 }>) {
   return (
     <section className="min-w-0 rounded-xl border bg-card" aria-label={title}>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
+      <div
+        className={cn(
+          'flex flex-wrap items-center justify-between gap-3 border-b',
+          compact ? 'px-3 py-2' : 'px-4 py-3 sm:px-5',
+        )}
+      >
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <Icon aria-hidden className="size-4 text-muted-foreground" />
           {title}
@@ -41,7 +49,7 @@ export function TodayQueue({
         ) : null}
       </div>
       {count === 0 ? (
-        <p className="px-4 py-5 text-sm text-muted-foreground sm:px-5">{empty}</p>
+        <p className={cn('text-sm text-muted-foreground', compact ? 'px-3 py-3' : 'px-4 py-5 sm:px-5')}>{empty}</p>
       ) : (
         <ul className="divide-y">{children}</ul>
       )}
@@ -57,6 +65,8 @@ export function TodayItem({
   action,
   overdue = false,
   taskId,
+  accessory,
+  compact = false,
 }: Readonly<{
   title: string
   detail: string
@@ -65,9 +75,11 @@ export function TodayItem({
   action: string
   overdue?: boolean
   taskId?: string
+  accessory?: ReactNode
+  compact?: boolean
 }>) {
   return (
-    <li className="flex items-center gap-3 px-4 py-4 sm:gap-5 sm:px-5">
+    <li className={cn('flex items-center gap-2', compact ? 'px-3 py-2.5' : 'gap-3 px-4 py-4 sm:gap-5 sm:px-5')}>
       <div className="min-w-0 flex-1">
         <p className="break-words text-sm font-medium">{title}</p>
         <p className="mt-1 break-words text-xs text-muted-foreground">{detail}</p>
@@ -75,15 +87,18 @@ export function TodayItem({
           <p className={`mt-1 text-xs ${overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{when}</p>
         )}
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        className="shrink-0"
-        nativeButton={false}
-        render={<Link href={href} data-task-link-id={taskId} aria-label={`${action}: ${title}`} />}
-      >
-        {action}
-      </Button>
+      <div className="flex shrink-0 items-center gap-2">
+        {accessory}
+        <Button
+          size="sm"
+          variant="outline"
+          className="shrink-0"
+          nativeButton={false}
+          render={<Link href={href} data-task-link-id={taskId} aria-label={`${action}: ${title}`} />}
+        >
+          {action}
+        </Button>
+      </div>
     </li>
   )
 }

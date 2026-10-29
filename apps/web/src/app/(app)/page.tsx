@@ -8,8 +8,10 @@ import { hasDashboardRecords } from '../../server/queries/dashboard'
 import { loadDashboardWork, type DashboardWork } from '../../server/queries/work/dashboard-work'
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { TodayScopeSwitch, TodayTaskQueue } from './today-work'
+import { TodayPersonFilter } from './today-person-filter'
 import { TodayActions, TodayStart, type HomeProfile } from './today-start'
 import { DashboardFollowUps } from './DashboardFollowUps'
+import { TodayTaskQuickAdd } from './today-task-quick-add'
 
 export const metadata: Metadata = { title: 'Today' }
 export const dynamic = 'force-dynamic'
@@ -28,6 +30,14 @@ function profileFocus(profile: HomeProfile, copy: (typeof DASHBOARD_TODAY_COPY)[
   return copy.adminFocus
 }
 
+function todayFocus({
+  profile,
+  work,
+  copy,
+}: Readonly<{ profile: HomeProfile; work: DashboardWork; copy: (typeof DASHBOARD_TODAY_COPY)['en'] }>): string {
+  return profile === 'admin' && !work.team ? copy.personalFocus : profileFocus(profile, copy)
+}
+
 function todayLinks(profile: HomeProfile, work: DashboardWork): readonly { href: string; label: string }[] {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   const links: { href: string; label: string }[] = []
@@ -40,26 +50,49 @@ function todayLinks(profile: HomeProfile, work: DashboardWork): readonly { href:
   return links
 }
 
+function TodayPrimaryColumn({
+  work,
+  profile,
+  firstRun,
+}: Readonly<{ work: DashboardWork; profile: HomeProfile; firstRun: boolean }>) {
+  return (
+    <div className="grid min-w-0 content-start gap-4">
+      {work.workEnabled ? <TodayTaskQuickAdd locale={work.locale} focusPersonalAfterCreate={work.team} /> : null}
+      {work.workEnabled ? <TodayTaskQueue work={work} kind="dueToday" /> : null}
+      {firstRun && work.crmEnabled && (profile === 'admin' || profile === 'sales') ? (
+        <TodayStart work={work} profile={profile} />
+      ) : null}
+    </div>
+  )
+}
+
+function TodaySecondaryColumn({ work, context }: Readonly<{ work: DashboardWork; context: RequestContext }>) {
+  return (
+    <div className="grid min-w-0 content-start gap-3">
+      {work.crmEnabled ? <DashboardFollowUps context={context} work={work} /> : null}
+      {work.workEnabled && work.overdue.count > 0 ? <TodayTaskQueue work={work} kind="overdue" /> : null}
+      {work.workEnabled && work.dueWeek.count > 0 ? <TodayTaskQueue work={work} kind="dueWeek" /> : null}
+    </div>
+  )
+}
+
 function TodayContent({
   work,
   context,
   profile,
-}: Readonly<{ work: DashboardWork; context: RequestContext; profile: HomeProfile }>) {
+  firstRun,
+}: Readonly<{ work: DashboardWork; context: RequestContext; profile: HomeProfile; firstRun: boolean }>) {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
-  const showFollowUps = work.crmEnabled && (profile === 'admin' || profile === 'sales')
   const links = todayLinks(profile, work)
   return (
     <>
       <p className="text-sm text-muted-foreground">
-        {profileFocus(profile, copy)} {copy.description}
+        {todayFocus({ profile, work, copy })} {copy.description}
       </p>
-      <TodayScopeSwitch work={work} />
-      {work.workEnabled ? <TodayTaskQueue work={work} kind="dueToday" /> : null}
-      {work.workEnabled && work.overdue.count > 0 ? <TodayTaskQueue work={work} kind="overdue" /> : null}
-      {showFollowUps ? (
-        <DashboardFollowUps context={context} locale={work.locale} dayStart={work.dayStart} team={work.team} />
-      ) : null}
-      {work.workEnabled ? <TodayTaskQueue work={work} kind="dueWeek" /> : null}
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
+        <TodayPrimaryColumn work={work} profile={profile} firstRun={firstRun} />
+        <TodaySecondaryColumn work={work} context={context} />
+      </div>
       <nav aria-label={copy.quickLinks} className="flex flex-wrap gap-5 text-sm text-muted-foreground">
         {links.map((link) => (
           <Link key={link.href} href={link.href} className="underline-offset-4 hover:text-foreground hover:underline">
@@ -74,11 +107,11 @@ function TodayContent({
 /** Three actionable queues and a single starting point when the workspace has no records. */
 export default async function DashboardPage({
   searchParams,
-}: Readonly<{ searchParams: Promise<{ readonly scope?: string }> }>) {
+}: Readonly<{ searchParams: Promise<{ readonly scope?: string; readonly person?: string }> }>) {
   const [context, params] = await Promise.all([getRequestContext(), searchParams])
   const requestedScope = params.scope === 'mine' || params.scope === 'team' ? params.scope : undefined
   const [work, hasRecords] = await Promise.all([
-    loadDashboardWork(context, requestedScope),
+    loadDashboardWork(context, requestedScope, params.person),
     hasDashboardRecords(context),
   ])
   const firstRun = !hasRecords
@@ -101,11 +134,11 @@ export default async function DashboardPage({
             description={date}
             actions={firstRun ? undefined : <TodayActions work={work} profile={profile} />}
           />
-          {firstRun ? (
-            <TodayStart work={work} profile={profile} />
-          ) : (
-            <TodayContent work={work} context={context} profile={profile} />
-          )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <TodayScopeSwitch work={work} />
+            <TodayPersonFilter work={work} />
+          </div>
+          <TodayContent work={work} context={context} profile={profile} firstRun={firstRun} />
         </div>
       </PageContent>
     </>

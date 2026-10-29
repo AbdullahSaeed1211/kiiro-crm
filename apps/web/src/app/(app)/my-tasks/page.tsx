@@ -11,9 +11,18 @@ import { catalogFor } from '../../../i18n/locale'
 import { MY_TASKS_COPY } from '../../../i18n/my-tasks-copy'
 import { MyTasksContent } from './MyTasksContent'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
+import { TodayTaskQuickAdd } from '../today-task-quick-add'
 
 export const metadata: Metadata = { title: 'My tasks' }
 export const dynamic = 'force-dynamic'
+
+function todayQuickAdd(model: Awaited<ReturnType<typeof loadMyTaskModel>>) {
+  return model.workEnabled ? (
+    <div className="mb-4">
+      <TodayTaskQuickAdd locale={model.locale} />
+    </div>
+  ) : null
+}
 
 /** Scoped task buckets for the signed-in staff member. */
 export default async function MyTasksPage({
@@ -64,6 +73,7 @@ export default async function MyTasksPage({
           description={copy.description}
           actions={<TaskWorkspaceViews active="mine" locale={model.locale} mine />}
         />
+        {todayQuickAdd(model)}
         {isEmpty ? (
           <EmptyState icon={CircleCheckBig} title={copy.emptyTitle} description={copy.emptyDescription} />
         ) : (

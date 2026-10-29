@@ -22,11 +22,6 @@ export function TodayActions({ work, profile }: Readonly<{ work: DashboardWork; 
           {copy.salesWorkspace}
         </Button>
       ) : null}
-      {work.workEnabled ? (
-        <Button variant="outline" nativeButton={false} render={<Link href="/tasks/new" />}>
-          {copy.newTask}
-        </Button>
-      ) : null}
       {canCreateLead(work, profile) ? (
         <Button nativeButton={false} render={<Link href="/leads/new" />}>
           {copy.newLead}
