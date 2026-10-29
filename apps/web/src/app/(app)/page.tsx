@@ -16,12 +16,8 @@ import { TodayPlan } from './today-plan'
 import { TodayAttendance } from './today-attendance'
 import { attendanceDeps } from '@/server/attendance'
 import { getWorkspaceSettings } from '@/server/auth/context'
-import { todayAsDueAt, DAY_MS } from '@ops/module-work'
+import { sameCalendarDayIn } from '@ops/module-work'
 import type { AttendanceRecord } from '@ops/module-work'
-
-function isToday(value: number | null | undefined, start: number): boolean {
-  return value !== null && value !== undefined && value >= start && value < start + DAY_MS
-}
 
 async function loadTodayAttendance(
   context: RequestContext,
@@ -34,9 +30,15 @@ async function loadTodayAttendance(
   const repo = attendanceDeps(context).repo
   const [open, latest, settings] = await Promise.all([repo.open(actorId), repo.latest(actorId), getWorkspaceSettings()])
   const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
-  const todayStart = todayAsDueAt(Date.now(), timeZone)
+  const now = Date.now()
   let checkedOut: AttendanceRecord | null = null
-  if (latest !== undefined && isToday(latest.reportedCheckOutAt, todayStart)) checkedOut = latest
+  if (
+    latest?.reportedCheckOutAt !== null &&
+    latest?.reportedCheckOutAt !== undefined &&
+    sameCalendarDayIn({ first: latest.reportedCheckOutAt, second: now, timeZone })
+  ) {
+    checkedOut = latest
+  }
   return { open: open ?? null, checkedOut, timeZone }
 }
 

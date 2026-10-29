@@ -15,6 +15,15 @@ export function todayIn(now: number, timeZone: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 
+/** Whether two actual timestamps share the same workspace-local calendar day. */
+export function sameCalendarDayIn({
+  first,
+  second,
+  timeZone,
+}: Readonly<{ first: number; second: number; timeZone: string }>): boolean {
+  return todayIn(first, timeZone) === todayIn(second, timeZone)
+}
+
 /**
  * Today as a stored due date (00:00 UTC of today's date in the workspace zone). A task is overdue when its `dueAt` is
  * below this, due today when it is in `[value, value + 1 day)`.

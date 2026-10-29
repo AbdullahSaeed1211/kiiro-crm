@@ -56,7 +56,7 @@ export {
 } from './domain/monthly-design'
 export { orderByRank, rankBetween, rebalanceRanks } from './domain/rank'
 export { myTasksBuckets, type MyTaskBuckets } from './queries/my-tasks'
-export { DAY_MS, dueDay, todayAsDueAt, todayIn, weekEndAfter } from './domain/due-dates'
+export { DAY_MS, dueDay, sameCalendarDayIn, todayAsDueAt, todayIn, weekEndAfter } from './domain/due-dates'
 export {
   createProjectSchema,
   createContentItemSchema,

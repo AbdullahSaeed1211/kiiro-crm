@@ -2,7 +2,7 @@
 
 import { Clock3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AttendanceRecord } from '@ops/module-work'
 import { Button } from '@ops/ui/components/ui/button'
 import { ATTENDANCE_COPY, type AttendanceCopy } from '@/i18n/attendance-copy'
@@ -155,7 +155,17 @@ export function TodayAttendance({
   const [latest, setLatest] = useState(initialLatest)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const syncedProps = useRef({ open: initialOpen, latest: initialLatest })
   const submit = useAttendanceSubmit({ open, copy, setOpen, setLatest, setPending, setError })
+
+  useEffect(() => {
+    if (pending || (syncedProps.current.open === initialOpen && syncedProps.current.latest === initialLatest)) {
+      return
+    }
+    syncedProps.current = { open: initialOpen, latest: initialLatest }
+    setOpen(initialOpen)
+    setLatest(initialLatest)
+  }, [initialLatest, initialOpen, pending])
 
   return (
     <section
