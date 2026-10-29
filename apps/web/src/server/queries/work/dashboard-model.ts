@@ -23,7 +23,7 @@ export interface DashboardPlanItem {
   readonly personName: string
   readonly task: DashboardTask
 }
-export interface PlanSection {
+interface PlanSection {
   readonly count: number
   readonly items: readonly DashboardPlanItem[]
 }

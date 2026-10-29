@@ -13,6 +13,32 @@ import { TodayActions, TodayStart, type HomeProfile } from './today-start'
 import { DashboardFollowUps } from './DashboardFollowUps'
 import { TodayTaskQuickAdd } from './today-task-quick-add'
 import { TodayPlan } from './today-plan'
+import { TodayAttendance } from './today-attendance'
+import { attendanceDeps } from '@/server/attendance'
+import { getWorkspaceSettings } from '@/server/auth/context'
+import { todayAsDueAt, DAY_MS } from '@ops/module-work'
+import type { AttendanceRecord } from '@ops/module-work'
+
+function isToday(value: number | null | undefined, start: number): boolean {
+  return value !== null && value !== undefined && value >= start && value < start + DAY_MS
+}
+
+async function loadTodayAttendance(
+  context: RequestContext,
+  actorId: string,
+): Promise<{
+  open: AttendanceRecord | null
+  checkedOut: AttendanceRecord | null
+  timeZone: string
+}> {
+  const repo = attendanceDeps(context).repo
+  const [open, latest, settings] = await Promise.all([repo.open(actorId), repo.latest(actorId), getWorkspaceSettings()])
+  const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
+  const todayStart = todayAsDueAt(Date.now(), timeZone)
+  let checkedOut: AttendanceRecord | null = null
+  if (latest !== undefined && isToday(latest.reportedCheckOutAt, todayStart)) checkedOut = latest
+  return { open: open ?? null, checkedOut, timeZone }
+}
 
 export const metadata: Metadata = { title: 'Today' }
 export const dynamic = 'force-dynamic'
@@ -115,6 +141,7 @@ export default async function DashboardPage({
     loadDashboardWork(context, requestedScope, params.person),
     hasDashboardRecords(context),
   ])
+  const attendance = await loadTodayAttendance(context, String(context.actor.id))
   const firstRun = !hasRecords
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   const profile: HomeProfile = work.canSeeTeam ? 'admin' : (context.actor.workProfile ?? 'delivery')
@@ -134,6 +161,12 @@ export default async function DashboardPage({
             title={title}
             description={date}
             actions={firstRun ? undefined : <TodayActions work={work} profile={profile} />}
+          />
+          <TodayAttendance
+            open={attendance.open}
+            latest={attendance.checkedOut}
+            locale={work.locale}
+            timeZone={attendance.timeZone}
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TodayScopeSwitch work={work} />
