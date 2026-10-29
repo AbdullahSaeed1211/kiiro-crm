@@ -69,6 +69,8 @@ export const createMemoryRepo = (): WorkRepository =>
     loadDefaultWorkflow: () => Promise.resolve(ok(workflow)),
     loadWorkflow: () => Promise.resolve(workflow),
     getTask: () => Promise.resolve(undefined),
+    addTaskToDayPlan: () => Promise.resolve(),
+    removeTaskFromDayPlan: () => Promise.resolve(),
     listTasks: () => Promise.resolve([]),
     listChildren: () => Promise.resolve([]),
     createTask: () => Promise.resolve(ok(task('created'))),

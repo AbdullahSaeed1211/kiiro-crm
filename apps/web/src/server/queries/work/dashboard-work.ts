@@ -1,63 +1,40 @@
 import type { Where } from 'payload'
-import { asId, type Id } from '@ops/kernel'
-import { DAY_MS, todayAsDueAt, weekEndAfter } from '@ops/module-work'
+import { DAY_MS, todayAsDueAt } from '@ops/module-work'
 import { isManagerUp } from '@ops/platform'
 import { getWorkspaceSettings } from '../../auth/context'
-import { normalizeLocale, type Locale } from '../../../i18n/config'
+import { normalizeLocale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
 import { loadPeople } from '../../people'
 import { loadTaskContexts } from './tasks/task-contexts'
+import { loadDashboardDayPlan } from './dashboard-day-plan'
+import { dashboardTask } from './dashboard-task'
+import type { DashboardWork, TaskSection } from './dashboard-model'
+export type { DashboardPlanItem, DashboardTask, DashboardWork } from './dashboard-model'
 
 import { loadWorkflowStages } from '../workflow-stages'
 const SHOWN = 5
 
-export interface DashboardTask {
-  readonly id: Id
-  readonly title: string
-  readonly updatedAt: number
-  readonly dueAt: number | null
-  readonly projectId: Id | null
-  readonly relatedType: string | null
-  readonly relatedId: Id | null
-  readonly assigneeIds: readonly string[]
-  readonly context: string | null
-  readonly people: readonly string[]
-}
-interface TaskSection {
-  readonly count: number
-  readonly items: readonly DashboardTask[]
-}
-export interface DashboardWork {
-  readonly actorId: string
-  readonly locale: Locale
-  readonly timeZone: string
-  readonly dayStart: number
-  readonly canSeeTeam: boolean
-  /** The active queue scope. Team scope is always clamped by the authenticated actor's role. */
-  readonly team: boolean
-  readonly personFilter: string
-  readonly people: readonly { readonly id: string; readonly name: string }[]
-  readonly crmEnabled: boolean
-  readonly workEnabled: boolean
-  readonly overdue: TaskSection
-  readonly dueToday: TaskSection
-  readonly dueWeek: TaskSection
-}
-const relation = (value: unknown): Id | null => (typeof value === 'string' ? asId(value) : null)
 const empty: TaskSection = { count: 0, items: [] }
 
 /** Reads only five rows and the exact count; the database applies the user's normal record scope. */
-async function taskSection(context: RequestContext, where: Where): Promise<TaskSection> {
+async function taskSection(
+  context: RequestContext,
+  where: Where,
+  options: Readonly<{ finishedStages?: readonly string[]; limit?: number }> = {},
+): Promise<TaskSection> {
+  const finishedStages = options.finishedStages ?? []
+  const limit = options.limit ?? SHOWN
   const request = { collection: 'tasks' as const, where, overrideAccess: false, req: context.req }
   const [page, total] = await Promise.all([
     context.payload.find({
       ...request,
       sort: ['dueAt', 'id'],
-      limit: SHOWN,
+      limit,
       depth: 0,
       select: {
         id: true,
         title: true,
+        stageId: true,
         updatedAt: true,
         dueAt: true,
         project: true,
@@ -70,18 +47,7 @@ async function taskSection(context: RequestContext, where: Where): Promise<TaskS
   ])
   return {
     count: total.totalDocs,
-    items: page.docs.map((doc) => ({
-      id: asId(doc.id),
-      title: doc.title,
-      updatedAt: Date.parse(doc.updatedAt),
-      dueAt: doc.dueAt ?? null,
-      projectId: relation(doc.project),
-      relatedType: doc.relatedType ?? null,
-      relatedId: relation(doc.relatedId),
-      assigneeIds: (doc.assignees ?? []).flatMap((id) => (typeof id === 'string' ? [id] : [])),
-      context: null,
-      people: [],
-    })),
+    items: page.docs.map((doc) => dashboardTask(doc, finishedStages)),
   }
 }
 
@@ -104,7 +70,7 @@ async function enrich(context: RequestContext, sections: readonly TaskSection[])
   }))
 }
 
-type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'dueWeek'> & { readonly weekEnd: number }
+type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'plan' | 'planCandidates'>
 
 async function teamPeople(context: RequestContext) {
   if (!isManagerUp(context.actor)) return []
@@ -135,7 +101,6 @@ function dashboardScope(
   const modules = settings.modules as Record<string, boolean> | null
   const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
   const dayStart = todayAsDueAt(Date.now(), timeZone)
-  const weekStart = settings.weekStartsOn === 0 ? 0 : 1
   const canSeeTeam = isManagerUp(context.actor)
   return {
     locale: normalizeLocale(settings.locale),
@@ -148,7 +113,6 @@ function dashboardScope(
     people: [],
     crmEnabled: modules?.crm !== false,
     workEnabled: modules?.work !== false,
-    weekEnd: weekEndAfter(dayStart, weekStart),
   }
 }
 
@@ -168,11 +132,12 @@ function taskOwnershipWhere(context: RequestContext, scope: DashboardScope): Whe
 
 async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
   const workflow = await loadWorkflowStages(context, 'task')
+  const finishedStages = workflow.closed
   const clauses: Where[] = [
     ...(workflow.closed.length ? [{ stageId: { not_in: workflow.closed } }] : []),
     ...taskOwnershipWhere(context, scope),
   ]
-  const [overdue, dueToday, dueWeek] = await Promise.all([
+  const [overdue, dueToday] = await Promise.all([
     taskSection(context, { and: [...clauses, { dueAt: { less_than: scope.dayStart } }] }),
     taskSection(context, {
       and: [
@@ -181,19 +146,39 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
         { dueAt: { less_than: scope.dayStart + DAY_MS } },
       ],
     }),
-    taskSection(context, {
-      and: [
-        ...clauses,
-        { dueAt: { greater_than_equal: scope.dayStart + DAY_MS } },
-        { dueAt: { less_than: scope.weekEnd } },
-      ],
-    }),
   ])
-  const enriched = await enrich(context, [overdue, dueToday, dueWeek])
-  return { overdue: enriched[0] ?? empty, dueToday: enriched[1] ?? empty, dueWeek: enriched[2] ?? empty }
+  const candidates = await candidateTasks(context, scope, finishedStages)
+  const [plan, enriched] = await Promise.all([
+    loadDashboardDayPlan({
+      context,
+      scope,
+      finishedStages,
+      loadTasks: ({ context: taskContext, where, finishedStages: closed, limit }) =>
+        taskSection(taskContext, where, { finishedStages: closed, limit }),
+    }),
+    enrich(context, [overdue, dueToday]),
+  ])
+  return {
+    overdue: enriched[0] ?? empty,
+    dueToday: enriched[1] ?? empty,
+    plan,
+    planCandidates: candidates,
+  }
 }
 
-/** Every dashboard starts with personal queues; authorized managers may select a team scope. */
+async function candidateTasks(context: RequestContext, scope: DashboardScope, finishedStages: readonly string[]) {
+  if (scope.team) return empty
+  const where: Where = {
+    and: [
+      { assignees: { contains: String(context.actor.id) } },
+      ...(finishedStages.length ? [{ stageId: { not_in: finishedStages } }] : []),
+    ],
+  }
+  return taskSection(context, where, { finishedStages, limit: CANDIDATE_LIMIT })
+}
+
+const CANDIDATE_LIMIT = 100
+
 export async function loadDashboardWork(
   context: RequestContext,
   requestedScope?: 'mine' | 'team',
@@ -203,6 +188,7 @@ export async function loadDashboardWork(
   const canSelectPerson = isManagerUp(context.actor) && requestedScope === 'team'
   const personFilter = canSelectPerson ? authorizedPersonFilter(requestedPerson, people) : 'everyone'
   const scope = { ...dashboardScope(settings, context, { requestedScope, personFilter }), people }
-  if (!scope.workEnabled) return { ...scope, overdue: empty, dueToday: empty, dueWeek: empty }
+  if (!scope.workEnabled)
+    return { ...scope, overdue: empty, dueToday: empty, plan: { count: 0, items: [] }, planCandidates: empty }
   return { ...scope, ...(await dashboardQueues(context, scope)) }
 }

@@ -76,6 +76,7 @@ export interface Config {
     deals: Deal;
     projects: Project;
     tasks: Task;
+    taskDayPlans: TaskDayPlan;
     workflows: Workflow;
     fieldDefinitions: FieldDefinition;
     savedViews: SavedView;
@@ -119,6 +120,7 @@ export interface Config {
     deals: DealsSelect<false> | DealsSelect<true>;
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
+    taskDayPlans: TaskDayPlansSelect<false> | TaskDayPlansSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
     fieldDefinitions: FieldDefinitionsSelect<false> | FieldDefinitionsSelect<true>;
     savedViews: SavedViewsSelect<false> | SavedViewsSelect<true>;
@@ -554,6 +556,21 @@ export interface Task {
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "taskDayPlans".
+ */
+export interface TaskDayPlan {
+  id: string;
+  user: string | User;
+  task: string | Task;
+  /**
+   * UTC midnight in milliseconds for the workspace calendar date.
+   */
+  day: number;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1327,6 +1344,10 @@ export interface PayloadLockedDocument {
         value: string | Task;
       } | null)
     | ({
+        relationTo: 'taskDayPlans';
+        value: string | TaskDayPlan;
+      } | null)
+    | ({
         relationTo: 'workflows';
         value: string | Workflow;
       } | null)
@@ -1676,6 +1697,17 @@ export interface TasksSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "taskDayPlans_select".
+ */
+export interface TaskDayPlansSelect<T extends boolean = true> {
+  user?: T;
+  task?: T;
+  day?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

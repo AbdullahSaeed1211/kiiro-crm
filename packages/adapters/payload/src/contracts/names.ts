@@ -5,6 +5,7 @@ export const COLLECTIONS = {
   organizations: 'organizations',
   projects: 'projects',
   tasks: 'tasks',
+  taskDayPlans: 'taskDayPlans',
   workflows: 'workflows',
   activity: 'activity',
   attachments: 'attachments',

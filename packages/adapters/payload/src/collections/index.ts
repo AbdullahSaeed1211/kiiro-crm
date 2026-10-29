@@ -29,6 +29,7 @@ import { organizationsCollection } from './organizations'
 import { projectsCollection } from './projects'
 import { stageTransitionsCollection } from './stage-transitions'
 import { tasksCollection } from './tasks'
+import { taskDayPlansCollection } from './task-day-plans'
 import { invitationsCollection, peopleGroupsCollection, peopleUsersCollection } from './people'
 import { workflowsCollection } from './workflows'
 
@@ -49,6 +50,7 @@ export const spikeCollections: readonly CollectionConfig[] = [
   dealsCollection,
   projectsCollection,
   tasksCollection,
+  taskDayPlansCollection,
   workflowsCollection,
   fieldDefinitionsCollection,
   savedViewsCollection,

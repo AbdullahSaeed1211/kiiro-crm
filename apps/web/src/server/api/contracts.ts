@@ -1,5 +1,6 @@
 import {
   createTaskSchema,
+  taskDayPlanSchema,
   expectedVersionSchema,
   moveTaskSchema,
   taskDatesSchema,
@@ -74,6 +75,19 @@ const API_CONTRACTS = {
     path: '/api/v1/tasks/:id/dates',
     summary: 'Replace a task’s start and due dates; null clears one.',
     body: taskDatesSchema,
+    success: 200,
+  },
+  'tasks.plan.add': {
+    method: 'POST',
+    path: '/api/v1/tasks/:id/plan',
+    summary: 'Add a task assigned to you to your plan for the workspace calendar day without changing its deadline.',
+    body: taskDayPlanSchema.omit({ taskId: true }),
+    success: 200,
+  },
+  'tasks.plan.remove': {
+    method: 'DELETE',
+    path: '/api/v1/tasks/:id/plan',
+    summary: 'Remove your plan entry for a task today without changing the task.',
     success: 200,
   },
   'calls.create': {

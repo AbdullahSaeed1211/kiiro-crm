@@ -7,11 +7,12 @@ import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import { hasDashboardRecords } from '../../server/queries/dashboard'
 import { loadDashboardWork, type DashboardWork } from '../../server/queries/work/dashboard-work'
 import { getRequestContext, type RequestContext } from '@/server/container'
-import { TodayScopeSwitch, TodayTaskQueue } from './today-work'
+import { TodayScopeSwitch, TodayOverdueDisclosure } from './today-work'
 import { TodayPersonFilter } from './today-person-filter'
 import { TodayActions, TodayStart, type HomeProfile } from './today-start'
 import { DashboardFollowUps } from './DashboardFollowUps'
 import { TodayTaskQuickAdd } from './today-task-quick-add'
+import { TodayPlan } from './today-plan'
 
 export const metadata: Metadata = { title: 'Today' }
 export const dynamic = 'force-dynamic'
@@ -58,7 +59,7 @@ function TodayPrimaryColumn({
   return (
     <div className="grid min-w-0 content-start gap-4">
       {work.workEnabled ? <TodayTaskQuickAdd locale={work.locale} focusPersonalAfterCreate={work.team} /> : null}
-      {work.workEnabled ? <TodayTaskQueue work={work} kind="dueToday" /> : null}
+      {work.workEnabled ? <TodayPlan work={work} /> : null}
       {firstRun && work.crmEnabled && (profile === 'admin' || profile === 'sales') ? (
         <TodayStart work={work} profile={profile} />
       ) : null}
@@ -69,9 +70,9 @@ function TodayPrimaryColumn({
 function TodaySecondaryColumn({ work, context }: Readonly<{ work: DashboardWork; context: RequestContext }>) {
   return (
     <div className="grid min-w-0 content-start gap-3">
+      <h2 className="text-sm font-semibold">{DASHBOARD_TODAY_COPY[work.locale].needsAttention}</h2>
       {work.crmEnabled ? <DashboardFollowUps context={context} work={work} /> : null}
-      {work.workEnabled && work.overdue.count > 0 ? <TodayTaskQueue work={work} kind="overdue" /> : null}
-      {work.workEnabled && work.dueWeek.count > 0 ? <TodayTaskQueue work={work} kind="dueWeek" /> : null}
+      {work.workEnabled ? <TodayOverdueDisclosure work={work} /> : null}
     </div>
   )
 }

@@ -145,7 +145,7 @@ export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkRe
   return createdResult.ok ? ok(createdResult.value) : createdResult
 }
 
-/** Creates one open task for the authenticated person, due on today's workspace calendar date. */
+/** Creates one open, no-deadline task for the authenticated person's plan today. */
 export async function createTodayTask(
   deps: WorkDeps,
   input: unknown,
@@ -153,10 +153,19 @@ export async function createTodayTask(
 ): Promise<WorkResult<WorkTaskRecord>> {
   const parsed = createTodayTaskSchema.safeParse(input)
   if (!parsed.success) return fail('VALIDATION', parsed.error.issues[0]?.message ?? 'Enter a title.')
-  return createTask(deps, {
-    title: parsed.data.title,
-    assigneeIds: [deps.actor.id],
-    dueAt: todayAsDueAt(deps.clock.now(), timeZone),
+  return deps.uow.run(async () => {
+    const created = await createTask(deps, {
+      title: parsed.data.title,
+      assigneeIds: [deps.actor.id],
+      dueAt: null,
+    })
+    if (!created.ok) return created
+    await deps.repo.addTaskToDayPlan({
+      taskId: created.value.id,
+      userId: deps.actor.id,
+      day: todayAsDueAt(deps.clock.now(), timeZone),
+    })
+    return ok(created.value)
   })
 }
 async function checkRelated(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<boolean> {

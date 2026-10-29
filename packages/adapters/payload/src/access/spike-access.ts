@@ -51,6 +51,11 @@ function scheduleReadRule(actor: Actor): Where {
 
 export const personalScheduleRead = allow(scheduleReadRule)
 
+/** A task day plan is private to its person; owners and managers may read plans for authorized team views. */
+export const personalTaskDayPlanRead = allow((actor): Where =>
+  isManagerUp(actor) ? {} : { user: { equals: actor.id } },
+)
+
 // Owners update every user, managers staff users and themselves, staff only themselves (spec §11.1). Field-level
 // limits (a manager promoting staff, staff editing only name and avatar) arrive with the M3 collection hooks.
 function nonOwnerUserScope(actor: Actor): Where {
@@ -75,6 +80,7 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.organizations]: scopedRecord(RECORD_TYPES.organizations),
   [COLLECTIONS.projects]: scopedRecord(RECORD_TYPES.projects),
   [COLLECTIONS.tasks]: scopedRecord(RECORD_TYPES.tasks),
+  [COLLECTIONS.taskDayPlans]: { read: personalTaskDayPlanRead, ...systemWrites },
   [COLLECTIONS.workflows]: { read: anyActive, ...managedByLeads },
   [COLLECTIONS.billingDocuments]: { read: managerUp, create: managerUp, update: managerUp, delete: managerUp },
   [COLLECTIONS.activity]: { read: managerUp, ...systemWrites },

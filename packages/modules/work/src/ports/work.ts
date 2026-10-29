@@ -146,6 +146,14 @@ export interface TaskMoveWrite {
   readonly transition: StageTransition
 }
 
+/** A person's intent to work on a task on one workspace calendar day, independent of the deadline. */
+export interface TaskDayIntentEntry {
+  readonly taskId: Id
+  readonly userId: Id
+  /** UTC midnight in milliseconds for the workspace calendar date. */
+  readonly day: number
+}
+
 /** A task or project that was archived, as the archive screen lists it. */
 export interface ArchivedWork {
   readonly type: WorkRecordType
@@ -200,6 +208,8 @@ export interface WorkRepository extends StageStore {
   listTasksForProject(projectId: Id): Promise<readonly WorkTaskRecord[]>
   listChildren(parentTaskId: Id): Promise<readonly WorkTaskRecord[]>
   createTask(draft: TaskDraft): Promise<Result<WorkTaskRecord>>
+  addTaskToDayPlan(entry: TaskDayIntentEntry): Promise<void>
+  removeTaskFromDayPlan(entry: TaskDayIntentEntry): Promise<void>
   updateTask(id: Id, patch: TaskPatch | TaskDatePatch, expectedUpdatedAt: number): Promise<WorkTaskRecord | undefined>
   saveTaskMove(input: TaskMoveWrite): Promise<WorkTaskRecord | undefined>
   deleteTask(id: Id): Promise<boolean>

@@ -30,6 +30,7 @@ import * as migration_20261020_213831_intake_lead_recovery from './20261020_2138
 
 import * as migration_20261022_090000_attendance from './20261022_090000_attendance';
 import * as migration_20261022_150000_monthly_work_orders from './20261022_150000_monthly_work_orders';
+import * as migration_20261029_195615 from './20261029_195615';
 
 export const migrations = [
   {
@@ -179,4 +180,5 @@ export const migrations = [
   },
   { up: migration_20261022_090000_attendance.up, down: migration_20261022_090000_attendance.down, name: '20261022_090000_attendance' },
   { up: migration_20261022_150000_monthly_work_orders.up, down: migration_20261022_150000_monthly_work_orders.down, name: '20261022_150000_monthly_work_orders' },
+  { up: migration_20261029_195615.up, down: migration_20261029_195615.down, name: '20261029_195615' },
 ];
