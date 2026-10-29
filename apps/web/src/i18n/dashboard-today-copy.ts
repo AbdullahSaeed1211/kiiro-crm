@@ -23,7 +23,7 @@ export const DASHBOARD_TODAY_COPY = {
     addTask: 'Add task',
     addingTask: 'Adding…',
     taskAdded: 'Task added for today.',
-    taskFailed: 'The task was not added. Check your connection and try again.',
+    taskFailed: 'Unable to add the task. Check your connection and try again.',
     newLead: 'New lead',
     overdue: 'Overdue',
     waiting: 'Leads to follow up',
