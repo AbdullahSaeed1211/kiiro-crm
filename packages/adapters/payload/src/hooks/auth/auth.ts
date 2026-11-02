@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-statements, sonarjs/cognitive-complexity -- this hook is the single Payload login policy boundary. */
+/* eslint-disable complexity, max-lines-per-function, max-statements, sonarjs/cognitive-complexity -- this hook is the single Payload login policy boundary. */
 import {
   APIError,
   type CollectionBeforeChangeHook,
@@ -36,6 +36,7 @@ const PRIVATE_USER_FIELDS = new Set([
   'calendarToken',
   'apiTokens',
 ])
+const PASSWORD_RESET_FIELDS = new Set(['resetPasswordToken', 'resetPasswordExpiration'])
 
 /**
  * The sign-in code and the Profile page write these fields through the Local API with this context, which a
@@ -59,6 +60,32 @@ function trustedCreate(req: PayloadRequest): boolean {
   return operation === 'invitation' || operation === 'provisioning'
 }
 
+/** Only the server initiated forgot-password operation may write the two reset-token fields without an actor. */
+function passwordResetScopeFailure(
+  context: unknown,
+  data: Partial<UserRecord>,
+  originalDoc: UserRecord | undefined,
+): string | undefined {
+  if (typeof context !== 'object' || context === null || !('authOperation' in context)) return 'RESET_CONTEXT_MISSING'
+  if ((context as Record<string, unknown>)['authOperation'] !== 'passwordReset') return 'RESET_CONTEXT_MISSING'
+  const values = data as Record<string, unknown>
+  const original = originalDoc as (UserRecord & Record<string, unknown>) | undefined
+  const changed = Object.entries(values)
+    .filter(([key, value]) => !PAYLOAD_MANAGED_FIELDS.has(key) && !sameValue(value, original?.[key]))
+    .map(([key]) => key)
+  const token = values['resetPasswordToken']
+  const expiration = values['resetPasswordExpiration']
+  if (changed.length === 0 || changed.some((field) => !PASSWORD_RESET_FIELDS.has(field))) return 'RESET_SCOPE_FIELDS'
+  if (typeof token !== 'string' || !/^[0-9a-f]{40}$/.test(token)) return 'RESET_TOKEN_FORMAT'
+  if (
+    typeof expiration !== 'string' ||
+    !Number.isFinite(Date.parse(expiration)) ||
+    Date.parse(expiration) <= Date.now()
+  )
+    return 'RESET_EXPIRATION_INVALID'
+  return undefined
+}
+
 export function passwordPolicy(password: unknown, email: unknown): true | string {
   if (typeof password !== 'string') return 'Password must be 12 to 128 characters.'
   return passwordProblem(password, typeof email === 'string' ? email : undefined) ?? true
@@ -79,6 +106,19 @@ function changedFields(data: Partial<UserRecord>, originalDoc: UserRecord | unde
         !Object.is(value, original?.[key]),
     )
     .map(([key]) => key)
+}
+
+function sameValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true
+  if (Array.isArray(left) && Array.isArray(right))
+    return left.length === right.length && left.every((value, index) => sameValue(value, right[index]))
+  if (typeof left !== 'object' || left === null || typeof right !== 'object' || right === null) return false
+  const leftEntries = Object.entries(left)
+  const rightEntries = Object.entries(right)
+  return (
+    leftEntries.length === rightEntries.length &&
+    leftEntries.every(([key, value]) => key in right && sameValue(value, (right as Record<string, unknown>)[key]))
+  )
 }
 
 /**
@@ -179,10 +219,16 @@ export const enforceUserMutation: CollectionBeforeChangeHook<UserRecord> = async
     return data
   }
   if (trustedCreate(req)) return data
+  if (passwordResetScopeFailure(context, data, originalDoc) === undefined) return data
   if ((context as Record<string, unknown> | undefined)?.['authOperation'] === 'privateFields')
     return onlyPrivateFieldChanges(data, originalDoc)
   const actor = await resolveActor(req)
-  if (actor?.active !== true) throw new APIError('You do not have permission to update this user.', 403, null, true)
+  if (actor?.active !== true) {
+    const resetFailure = passwordResetScopeFailure(context, data, originalDoc)
+    const error = new APIError('You do not have permission to update this user.', 403, null, true)
+    if (resetFailure !== undefined) Object.assign(error, { code: resetFailure })
+    throw error
+  }
   const isSelf = String(originalDoc?.id) === String(actor.id)
   const changed = changedFields(data, originalDoc)
   if (isSelf && changed.some((key) => SELF_PRIVILEGED_FIELDS.has(key)))

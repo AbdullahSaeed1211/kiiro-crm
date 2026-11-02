@@ -39,15 +39,22 @@ export const userFieldRead =
     )
   }
 
+const userUpdateAccess: Access = async ({ req }): Promise<boolean | Where> => {
+  // Payload's forgotPassword operation updates reset token fields before it sends the email.
+  // This context is supplied only by our server-side auth route; the beforeChange hook narrows the fields.
+  if ((req.context as Record<string, unknown> | undefined)?.['authOperation'] === 'passwordReset') return true
+  const actor = await activeUser(req)
+  if (actor?.active !== true) return false
+  if (actor.role === 'owner') return { id: { exists: true } }
+  if (actor.role === 'manager') return { or: [{ id: { equals: actor.id } }, { role: { equals: 'staff' } }] }
+  return { id: { equals: actor.id } }
+}
+
 export const peopleAccess = {
   users: {
     read: allowPeople((actor) => isManagerUp(actor) || { active: { equals: true } }),
     create: () => false,
-    update: allowPeople((actor): boolean | Where => {
-      if (actor.role === 'owner') return { id: { exists: true } }
-      if (actor.role === 'manager') return { or: [{ id: { equals: actor.id } }, { role: { equals: 'staff' } }] }
-      return { id: { equals: actor.id } }
-    }),
+    update: userUpdateAccess,
     delete: () => false,
   },
   groups: { read: anyActive, create: managerUp, update: managerUp, delete: managerUp },

@@ -12,9 +12,14 @@ export async function POST(request: Request): Promise<Response> {
   if (email === undefined) return failure('VALIDATION', 'Email is required.')
   const { env } = await getCloudflareContext({ async: true })
   if (!isOutboundEmailEnabled(env.MAIL_TRANSPORT)) return failure('UNAVAILABLE', OUTBOUND_EMAIL_DISABLED_MESSAGE)
-  const result = await requestPasswordResetSafely(async () => {
+  const result = await requestPasswordResetSafely(async (setStage) => {
     const payload = await payloadForAuth()
-    return payload.forgotPassword({ collection: 'users', data: { email } })
+    setStage('forgot_password')
+    return payload.forgotPassword({
+      collection: 'users',
+      data: { email },
+      context: { authOperation: 'passwordReset' },
+    })
   })
   return success(result)
 }

@@ -8,11 +8,13 @@ import {
   enforceUserMutation,
   authHooks,
 } from '../../src/hooks/auth/auth'
-import { userFieldRead } from '../../src/collections/people/access'
+import { peopleAccess, userFieldRead } from '../../src/collections/people/access'
 import { invitationExpiresAt, invitationUsable } from '../../src/collections/people/invitations'
 
 const EMAIL = 'person@example.test'
 const ROLE_PERMISSION_ERROR = 'outside your role permissions'
+const RESET_OPERATION = 'passwordReset'
+const UNAUTH_UPDATE_DENIED = 'permission to update'
 
 // The auth suite intentionally keeps boundary cases together.
 // eslint-disable-next-line max-lines-per-function -- the fixture covers the complete auth hook matrix in one scenario.
@@ -81,6 +83,77 @@ describe('people auth invariants', () => {
         req: managerReq,
       } as never),
     ).rejects.toThrow(ROLE_PERMISSION_ERROR)
+  })
+
+  // eslint-disable-next-line max-lines-per-function -- each denial checks a separate privilege escalation boundary.
+  it('allows only server-context password reset token updates without an actor', async () => {
+    const original = {
+      id: 'u1',
+      email: EMAIL,
+      name: 'Member',
+      role: 'owner',
+      active: true,
+      totpSecret: 'stored',
+      apiTokens: [{ name: 'device', hash: 'stored-hash' }],
+      resetPasswordToken: null,
+      resetPasswordExpiration: null,
+    }
+    const resetFields = {
+      resetPasswordToken: 'a'.repeat(40),
+      resetPasswordExpiration: new Date(Date.now() + 60_000).toISOString(),
+    }
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { ...original, ...resetFields },
+        originalDoc: original,
+        req: { user: null },
+        context: { authOperation: RESET_OPERATION },
+      } as never),
+    ).resolves.toMatchObject({ role: 'owner', ...resetFields })
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { ...original, ...resetFields, role: 'staff' },
+        originalDoc: original,
+        req: { user: null },
+        context: { authOperation: RESET_OPERATION },
+      } as never),
+    ).rejects.toThrow(UNAUTH_UPDATE_DENIED)
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { ...original, ...resetFields },
+        originalDoc: original,
+        req: { user: null },
+        context: {},
+      } as never),
+    ).rejects.toThrow(UNAUTH_UPDATE_DENIED)
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { ...original, ...resetFields, resetPasswordToken: 'invalid' },
+        originalDoc: original,
+        req: { user: null },
+        context: { authOperation: RESET_OPERATION },
+      } as never),
+    ).rejects.toThrow(UNAUTH_UPDATE_DENIED)
+    await expect(
+      enforceUserMutation({
+        operation: 'update',
+        data: { ...original, ...resetFields, totpSecret: 'modified' },
+        originalDoc: original,
+        req: { user: null },
+        context: { authOperation: RESET_OPERATION },
+      } as never),
+    ).rejects.toThrow(UNAUTH_UPDATE_DENIED)
+  })
+
+  it('grants update access only to the trusted password reset context', async () => {
+    await expect(peopleAccess.users.update({ req: { user: null, context: {} } } as never)).resolves.toBe(false)
+    await expect(
+      peopleAccess.users.update({ req: { user: null, context: { authOperation: RESET_OPERATION } } } as never),
+    ).resolves.toBe(true)
   })
 
   it('lets a manager change a staff work profile without permitting role promotion', async () => {
