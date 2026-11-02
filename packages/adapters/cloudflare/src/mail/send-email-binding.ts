@@ -1,11 +1,16 @@
-/** The fields of an Email Service `send()` call the platform uses; recipients are plain address strings. */
+export interface EmailServiceAddress {
+  readonly email: string
+  readonly name: string
+}
+
+/** The fields of an Email Service `send()` call used by this platform. */
 export interface EmailServiceMessage {
   to: string[]
-  from: string
+  from: string | EmailServiceAddress
   subject: string
   html: string
   text: string
-  replyTo?: string
+  replyTo?: string | EmailServiceAddress
   headers?: Record<string, string>
   attachments?: { content: string; filename: string; type: string; disposition: 'attachment' }[]
 }

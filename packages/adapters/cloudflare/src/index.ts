@@ -11,7 +11,11 @@ export { ConsoleMailSender } from './mail/console-mail-sender'
 export { DisabledMailSender } from './mail/disabled-mail-sender'
 export type { InboundEmail, InboundEmailSink } from './mail/inbound-sink'
 export { createLoggingInboundSink } from './mail/logging-inbound-sink'
-export { payloadEmailAdapter, type PayloadEmailAdapterOptions } from './mail/payload-email-adapter'
+export {
+  payloadEmailAdapter,
+  PayloadEmailSendError,
+  type PayloadEmailAdapterOptions,
+} from './mail/payload-email-adapter'
 export type { EmailServiceMessage, EmailServiceResult, SendEmailBinding } from './mail/send-email-binding'
 export { isSenderNotVerified, mapSendError } from './mail/send-errors'
 export { withPlatformSenderFallback, type SenderFallbackOptions } from './mail/sender-fallback'

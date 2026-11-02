@@ -13,6 +13,7 @@ const MESSAGE: MailMessage = {
   html: '<p>Due soon</p>',
   text: 'Due soon',
 }
+const MAILBOX = 'no-reply@notify.example.test'
 
 function codedError(code: string): Error {
   return Object.assign(new Error('Sender domain example.test is not verified for person@example.test'), { code })
@@ -30,18 +31,55 @@ function senderWith(send: (message: EmailServiceMessage) => Promise<EmailService
 }
 
 describe('CloudflareMailSender', () => {
+  it('sends display-name senders using the structured EmailAddress binding form', async () => {
+    const { sender, calls } = senderWith((message) => {
+      if (typeof message.from === 'string' && message.from.includes('<')) {
+        return Promise.reject(
+          Object.assign(new Error('Named sender must use EmailAddress'), { code: 'E_VALIDATION_ERROR' }),
+        )
+      }
+      return Promise.resolve({ messageId: 'msg-named-sender' })
+    })
+    const result = await sender.send(MESSAGE)
+    expect(result).toEqual({ ok: true, value: { messageId: 'msg-named-sender' } })
+    expect(calls[0]?.from).toEqual({ email: MAILBOX, name: 'Workspace' })
+  })
+
   it('sends the message through the binding and returns the message id', async () => {
     const { sender, calls } = senderWith(() => Promise.resolve({ messageId: 'msg-1' }))
     const headers = { 'X-Entity-Ref': 'r-1' }
     const result = await sender.send({ ...MESSAGE, replyTo: 'r-abc@in.example.test', headers })
     expect(result).toEqual({ ok: true, value: { messageId: 'msg-1' } })
-    expect(calls).toEqual([{ ...MESSAGE, replyTo: 'r-abc@in.example.test', headers }])
+    expect(calls).toEqual([
+      {
+        ...MESSAGE,
+        from: { email: MAILBOX, name: 'Workspace' },
+        replyTo: 'r-abc@in.example.test',
+        headers,
+      },
+    ])
   })
 
   it('omits reply-to and headers when the message has none', async () => {
     const { sender, calls } = senderWith(() => Promise.resolve({ messageId: 'msg-2' }))
     await sender.send(MESSAGE)
-    expect(calls[0]).toStrictEqual(MESSAGE)
+    expect(calls[0]).toStrictEqual({
+      ...MESSAGE,
+      from: { email: MAILBOX, name: 'Workspace' },
+    })
+  })
+
+  it('keeps plain sender addresses as strings', async () => {
+    const { sender, calls } = senderWith(() => Promise.resolve({ messageId: 'msg-plain-sender' }))
+    await sender.send({ ...MESSAGE, from: MAILBOX })
+    expect(calls[0]?.from).toBe(MAILBOX)
+  })
+
+  it('rejects malformed sender addresses before calling the binding', async () => {
+    const { sender, calls } = senderWith(() => Promise.resolve({ messageId: 'unexpected' }))
+    const result = await sender.send({ ...MESSAGE, from: 'Mirch Media <not-an-email>' })
+    expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
+    expect(calls).toHaveLength(0)
   })
 
   it('passes base64 attachments through to Email Service', async () => {

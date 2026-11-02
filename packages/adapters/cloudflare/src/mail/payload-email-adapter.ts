@@ -1,4 +1,16 @@
 import type { MailSender } from '@ops/platform'
+import type { ErrorCode } from '@ops/kernel'
+
+/** Safe error surfaced when Payload's mail callback cannot send through the configured transport. */
+export class PayloadEmailSendError extends Error {
+  constructor(
+    readonly code: ErrorCode,
+    readonly providerCode?: string,
+  ) {
+    super('Transactional email delivery failed')
+    this.name = 'PayloadEmailSendError'
+  }
+}
 
 /** Options of `payloadEmailAdapter`. */
 export interface PayloadEmailAdapterOptions {
@@ -21,6 +33,27 @@ function field(message: object, key: string): unknown {
 }
 
 const textOf = (value: unknown): string => (typeof value === 'string' ? value : '')
+
+function plainText(message: object): string {
+  const text = textOf(field(message, 'text')).trim()
+  if (text !== '') return text
+  let output = ''
+  let inTag = false
+  for (const character of textOf(field(message, 'html'))) {
+    if (character === '<') inTag = true
+    else if (character === '>') {
+      inTag = false
+      output += '\n'
+    } else if (!inTag) output += character
+  }
+  return output
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .trim()
+}
 
 /** Extra message headers such as List-Unsubscribe; only string values are forwarded. */
 function headersOf(message: object): { headers: Record<string, string> } | undefined {
@@ -56,11 +89,17 @@ export function payloadEmailAdapter(options: PayloadEmailAdapterOptions) {
         to: (Array.isArray(to) ? to : [to]).map(addressOf).filter((address) => address !== undefined),
         subject: textOf(field(message, 'subject')),
         html: textOf(field(message, 'html')),
-        text: textOf(field(message, 'text')),
+        text: plainText(message),
         ...(attachments.length === 0 ? {} : { attachments }),
         ...headersOf(message),
       })
-      if (!result.ok) throw new Error(`Email send failed (${result.error.code})`)
+      if (!result.ok) {
+        const providerCode = result.error.details?.['providerCode']
+        throw new PayloadEmailSendError(
+          result.error.code,
+          typeof providerCode === 'string' && /^[A-Z0-9_]{1,48}$/.test(providerCode) ? providerCode : undefined,
+        )
+      }
       return result.value
     },
   })

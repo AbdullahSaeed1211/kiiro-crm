@@ -4,6 +4,7 @@ import { canUseAdmin } from '../../access/spike-access'
 import { ADMIN_GROUPS } from '../fields'
 import { peopleAccess, userFieldRead } from './access'
 import { INVITATION_STATUS_VALUES, PEOPLE_COLLECTIONS, PEOPLE_ROLE_VALUES, WORK_PROFILE_VALUES } from './values'
+import { resetPasswordEmailHtml } from './reset-password-email'
 
 /** Nobody reads or writes these through the API; the sign-in and Profile code use the Local API with `overrideAccess`. */
 const noAccess = { read: () => false, create: () => false, update: () => false } as const
@@ -98,8 +99,7 @@ export const peopleUsersCollection: CollectionConfig = {
     forgotPassword: {
       expiration: 3600000,
       generateEmailSubject: (args) => `Reset your ${resetUserName(args?.user)} password`,
-      generateEmailHTML: (args) =>
-        `<p>Use this link to reset your password:</p><p>${process.env['APP_ORIGIN'] ?? ''}/reset-password?token=${encodeURIComponent(args?.token ?? '')}</p>`,
+      generateEmailHTML: (args) => resetPasswordEmailHtml(args?.req?.payload.config.serverURL ?? '', args?.token ?? ''),
     },
     cookies: { secure: process.env.NODE_ENV === 'production', sameSite: 'Lax' },
   },

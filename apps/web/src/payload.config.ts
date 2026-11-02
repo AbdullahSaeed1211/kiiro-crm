@@ -101,6 +101,7 @@ export default buildConfig({
   collections: [...spikeCollections],
   globals: [settingsGlobal],
   secret: process.env.PAYLOAD_SECRET,
+  serverURL: env.APP_ORIGIN,
   // Reads that return many rows run in chunks, because D1 allows 100 bound variables per statement.
   // Webhook deliveries outlive the request that caused them through the Worker's `waitUntil`.
   onInit: (payload) => {
