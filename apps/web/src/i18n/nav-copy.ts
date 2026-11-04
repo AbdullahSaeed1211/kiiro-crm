@@ -10,6 +10,8 @@ export interface NavCopy {
   readonly system: string
   readonly overdue: string
   readonly toFollowUp: string
+  readonly board: string
+  readonly onboarding: string
 }
 
 export const NAV_COPY: Readonly<Record<Locale, NavCopy>> = {
@@ -23,6 +25,8 @@ export const NAV_COPY: Readonly<Record<Locale, NavCopy>> = {
     system: 'System',
     overdue: '{count} overdue',
     toFollowUp: '{count} to follow up',
+    board: 'Board',
+    onboarding: 'Onboarding',
   },
   es: {
     create: 'Nuevo',
@@ -34,5 +38,7 @@ export const NAV_COPY: Readonly<Record<Locale, NavCopy>> = {
     system: 'Sistema',
     overdue: '{count} vencidas',
     toFollowUp: '{count} por seguir',
+    board: 'Tablero',
+    onboarding: 'Incorporación',
   },
 }

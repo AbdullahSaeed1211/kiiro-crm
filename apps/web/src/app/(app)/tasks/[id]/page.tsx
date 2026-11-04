@@ -1,4 +1,5 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { shellLabels } from '../../../../server/shell-labels'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -20,6 +21,7 @@ export default async function TaskPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }>) {
   const { id } = await params
+  const label = await shellLabels()
   const query = searchParams === undefined ? {} : await searchParams
   const panel = firstParam(query.panel) === '1'
   const returnTo = safeReturnTo(firstParam(query.returnTo), '/tasks')
@@ -27,7 +29,7 @@ export default async function TaskPage({
   if (view === undefined) notFound()
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Tasks', href: returnTo }, { label: view.task.title }]} />
+      <AppHeader breadcrumbs={[{ label: label('tasks'), href: returnTo }, { label: view.task.title }]} />
       <PageContent>
         <TaskDetailDrawer
           task={view.task}

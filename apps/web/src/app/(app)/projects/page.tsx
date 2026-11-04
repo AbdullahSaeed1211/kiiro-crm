@@ -1,4 +1,5 @@
 import { Badge } from '@ops/ui/components/ui/badge'
+import { shellLabels } from '../../../server/shell-labels'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { AvatarStack } from '@ops/ui/composites/Collaboration/Primitives'
@@ -153,13 +154,14 @@ async function loadView(params: SearchParams) {
 /** Projects list with progress from the same scoped read model, searchable by name and filterable by stage. */
 export default async function ProjectsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
   const locale = await loadWorkspaceLocale()
+  const label = await shellLabels()
   const help = catalogFor(SECTION_HELP_COPY, locale)
   const copy = catalogFor(CRM_LIST_CONTROLS_COPY, locale)
   const { query, stage, sort, model, matched, page, shown, progress } = await loadView(await searchParams)
   const stages = [...new Set(model.projects.map((project) => project.stage))]
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Projects' }]} />
+      <AppHeader breadcrumbs={[{ label: label('projects') }]} />
       <PageContent>
         <PageHeader
           title="Projects"

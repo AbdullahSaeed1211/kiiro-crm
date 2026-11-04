@@ -1,4 +1,5 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { shellLabels } from '../../../../server/shell-labels'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -36,6 +37,7 @@ function stageAmount(input: Readonly<{ amountMinor: number; currency: string | n
 export default async function DealBoardPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
+  const label = await shellLabels()
   const query = firstParam((await searchParams).q)?.trim() ?? ''
   const mixed = catalogFor(DEAL_BOARD_COPY, await loadWorkspaceLocale()).mixedCurrencies
   const [data, settings] = await Promise.all([
@@ -69,7 +71,7 @@ export default async function DealBoardPage({
   }))
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Deals', href: '/deals' }, { label: 'Board' }]} />
+      <AppHeader breadcrumbs={[{ label: label('deals'), href: '/deals' }, { label: label('board') }]} />
       <PageContent>
         <PageHeader
           title="Deal board"

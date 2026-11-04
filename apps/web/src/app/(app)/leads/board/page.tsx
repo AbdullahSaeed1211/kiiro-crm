@@ -1,4 +1,5 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { shellLabels } from '../../../../server/shell-labels'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
@@ -19,6 +20,7 @@ export default async function LeadBoardPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const locale = await loadWorkspaceLocale()
+  const label = await shellLabels()
   const viewsCopy = catalogFor(LEAD_VIEWS_COPY, locale)
   const params = await searchParams
   const result = await listLeads({
@@ -50,7 +52,7 @@ export default async function LeadBoardPage({
   const tableHref = queryString === '' ? '/leads' : `/leads?${queryString}`
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Leads', href: tableHref }, { label: 'Board' }]} />
+      <AppHeader breadcrumbs={[{ label: label('leads'), href: tableHref }, { label: label('board') }]} />
       <PageContent>
         <PageHeader
           title="Lead board"

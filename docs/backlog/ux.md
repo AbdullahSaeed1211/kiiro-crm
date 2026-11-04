@@ -1,6 +1,6 @@
 # UX backlog
 
-14 findings are open: 1 critical, 6 major and 7 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+12 findings are open: 1 critical, 6 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -84,17 +84,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
   - `deals/page.tsx` and `projects/page.tsx` (column headers, filters, sort options);
   - most pages under `settings/`.
 - Fix: Give the record primitives one `record-copy.ts` and pass the chosen catalog in. `recordTabs` is called from server pages and from the client `LeadRecordClient`, so the catalog arrives as an argument, not through a hook. Then move each page's strings into its own copy file, following `project-page-copy.ts`.
-
-### 43. Page headers build their own breadcrumbs
-
-- Area: Shell. Effort: Moderate. Evidence: `grep AppHeader` finds 37 pages that each pass their own `breadcrumbs`.
-- Some labels are literal English (`leads/page.tsx` passes `'Leads'`; `SettingsPage` picks "Settings" with a `locale === 'es'` check), so a Spanish workspace shows English crumbs there.
-- Fix: derive the first crumb from the navigation model by route, keep only the record title per page, and read labels from copy files.
-
-### 44. The theme provider assumes storage works
-
-- Area: Shell. Effort: Quick. Evidence: `packages/ui/src/theme/ThemeProvider.tsx` reads and writes `localStorage` without a `try`.
-- Fix: wrap both calls, as `AppSidebar` and the architecture conventions require for per-viewer preferences.
 
 ### 45. Layout shift reported by the owner is not reproduced locally
 

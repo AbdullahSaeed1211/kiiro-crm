@@ -122,6 +122,6 @@ Depends on: nothing. Done when: UX 37 is fixed and verified signed in on product
 
 ## 13. Navigation and shell
 
-Done (2026-11-04): [navigation design](design/navigation.md). Open: UX 43 (breadcrumbs per page), UX 44 (theme storage) and UX 45 (measure layout shift on production data).
+Done (2026-11-04): [navigation design](design/navigation.md), breadcrumb labels from terminology and copy on every page, and a theme choice that survives blocked storage. Open: UX 45 (measure layout shift on production data).
 
-Depends on: nothing. Done when: UX 43 to 45 are fixed.
+Depends on: nothing. Done when: UX 45 is fixed.

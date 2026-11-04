@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import type { Role } from '@ops/platform'
 import { getWorkspaceSettings, requireRole } from '../../../server/auth/context'
 import { SettingsNav } from './settings-nav'
-import { normalizeLocale } from '../../../i18n/config'
+import { normalizeLocale, SHELL_COPY } from '../../../i18n/config'
 import { SETTINGS_PAGE_COPY } from '../../../i18n/settings-page-copy'
 
 export async function SettingsPage({
@@ -21,7 +21,7 @@ export async function SettingsPage({
   const pageDescription = copy.descriptions[description] ?? description
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: locale === 'es' ? 'Configuración' : 'Settings' }, { label: pageTitle }]} />
+      <AppHeader breadcrumbs={[{ label: SHELL_COPY[locale].settings }, { label: pageTitle }]} />
       <PageContent>
         <div className="grid w-full gap-8 md:grid-cols-[14rem_minmax(0,1fr)]">
           <SettingsNav role={context.actor.role} locale={locale} />

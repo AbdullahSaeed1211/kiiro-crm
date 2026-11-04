@@ -1,5 +1,6 @@
 /* eslint-disable complexity -- the owner-only page normalizes persisted wizard JSON before rendering. */
 import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { shellLabels } from '../../../server/shell-labels'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { requireRole } from '../../../server/auth/context'
 import { OnboardingWizard } from './onboarding-wizard'
@@ -16,6 +17,7 @@ function settingText({
 }
 
 export default async function OnboardingPage() {
+  const label = await shellLabels()
   const context = await requireRole('owner')
   const settings = (await context.payload.findGlobal({ slug: 'settings', depth: 0 })) as unknown as Record<
     string,
@@ -40,7 +42,7 @@ export default async function OnboardingPage() {
 
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Onboarding' }]} />
+      <AppHeader breadcrumbs={[{ label: label('onboarding') }]} />
       <PageContent>
         <OnboardingWizard
           initialStep={typeof progress.currentStep === 'number' ? progress.currentStep : 0}

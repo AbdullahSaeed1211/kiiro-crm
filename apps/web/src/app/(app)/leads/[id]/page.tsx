@@ -1,4 +1,5 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { shellLabels } from '../../../../server/shell-labels'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -20,6 +21,7 @@ export async function generateMetadata({ params }: Readonly<{ params: Promise<{ 
 }
 
 export default async function LeadPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
+  const label = await shellLabels()
   const [data, outboundEmailEnabled, settings] = await Promise.all([
     getLeadPage((await params).id),
     getOutboundEmailEnabled(),
@@ -28,7 +30,7 @@ export default async function LeadPage({ params }: Readonly<{ params: Promise<{ 
   if (data === null) notFound()
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Leads', href: '/leads' }, { label: data.item.lead.title }]} />
+      <AppHeader breadcrumbs={[{ label: label('leads'), href: '/leads' }, { label: data.item.lead.title }]} />
       <PageContent>
         <LeadDuplicateNotice leadId={data.item.lead.id} email={data.item.lead.email} phone={data.item.lead.phone} />
         <LeadRecordClient

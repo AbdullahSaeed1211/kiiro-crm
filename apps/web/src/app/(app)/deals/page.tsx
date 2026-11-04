@@ -1,4 +1,5 @@
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { shellLabels } from '../../../server/shell-labels'
 import { ExportLink } from '../ExportLink'
 import { TABLE_LABELS } from '../../../i18n/table-labels'
 import { LIST_COPY, type ListCopy } from '../../../i18n/list-copy'
@@ -131,6 +132,7 @@ export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const locale = await loadWorkspaceLocale()
+  const label = await shellLabels()
   const help = catalogFor(SECTION_HELP_COPY, locale)
   const controls = catalogFor(CRM_LIST_CONTROLS_COPY, locale)
   const params = await searchParams
@@ -145,7 +147,7 @@ export default async function DealsPage({
   const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Deals' }]} />
+      <AppHeader breadcrumbs={[{ label: label('deals') }]} />
       <PageContent>
         <PageHeader
           title="Deals"
