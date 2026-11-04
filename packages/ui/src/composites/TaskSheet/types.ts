@@ -50,6 +50,7 @@ export type TaskChange =
   | Readonly<{ kind: 'assignees'; assigneeIds: readonly string[] }>
   | Readonly<{ kind: 'group'; groupId: string | null }>
   | Readonly<{ kind: 'ownerOnly'; ownerOnly: boolean }>
+  | Readonly<{ kind: 'client'; clientId: string | null }>
   | Readonly<{ kind: 'dates'; startAt: number | null; dueAt: number | null }>
   | Readonly<{ kind: 'description'; description: string }>
   | Readonly<{ kind: 'complete'; reopen: boolean }>

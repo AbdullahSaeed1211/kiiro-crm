@@ -2,6 +2,7 @@ import { asId } from '@ops/kernel'
 import { canMarkTaskOwnerOnly, canUpdateTask } from '@ops/module-work'
 import type { TaskSheetOptions, TaskSheetTask } from '@ops/ui/composites/TaskSheet'
 import { getRequestContext, workCommandDeps, type RequestContext } from '@/server/container'
+import { loadTaskContexts } from './tasks/task-contexts'
 import { loadWorkspaceLocale, mapTask, workflowStages, type StageLabel } from './read-models'
 
 const TERMINAL_CATEGORIES: ReadonlySet<string> = new Set(['done_success', 'done_failure', 'cancelled'])
@@ -29,9 +30,18 @@ const repeatOf = (doc: { repeat?: unknown }): TaskSheetTask['repeat'] =>
   REPEATS.find((item) => item === doc.repeat) ?? 'none'
 
 /** Everything the task panel and page render: the task, its stages, assignable people and edit access. */
+/** The record a task is linked to (a client, contact, lead or deal), as the viewer may see it. */
+export interface TaskRelated {
+  readonly type: string
+  readonly id: string
+  readonly label: string
+  readonly href: string
+}
+
 export interface TaskView {
   readonly task: TaskSheetTask
   readonly options: TaskSheetOptions
+  readonly related: TaskRelated | null
 }
 
 const TASK_FIELDS = { id: true, title: true, stageId: true, updatedAt: true } as const
@@ -46,6 +56,8 @@ const DETAIL_FIELDS = {
   parentTask: true,
   group: true,
   ownerOnly: true,
+  relatedType: true,
+  relatedId: true,
 } as const
 
 function readTaskDocuments(context: RequestContext, idValue: string) {
@@ -105,6 +117,49 @@ function subtasksOf(
   }))
 }
 
+/** The linked record's name and address when the viewer may read it. */
+async function loadRelated(
+  context: RequestContext,
+  doc: { id: string; relatedType?: string | null; relatedId?: string | null },
+): Promise<TaskRelated | null> {
+  if (typeof doc.relatedType !== 'string' || typeof doc.relatedId !== 'string') return null
+  const labels = await loadTaskContexts(context, [
+    { id: asId(doc.id), projectId: null, relatedType: doc.relatedType, relatedId: asId(doc.relatedId) },
+  ])
+  const found = labels.get(doc.id)
+  return found === undefined ? null : { type: found.type, id: doc.relatedId, label: found.label, href: found.href }
+}
+
+/** The task as the panel shows it. */
+function sheetTask({
+  doc,
+  task,
+  parent,
+  subtasks,
+}: Readonly<{
+  doc: Record<string, unknown>
+  task: ReturnType<typeof mapTask>
+  parent: TaskSheetTask['parent']
+  subtasks: TaskSheetTask['subtasks']
+}>): TaskSheetTask {
+  return {
+    id: task.id,
+    title: task.title,
+    stageId: task.stageId,
+    updatedAt: task.updatedAt,
+    priority: task.priority,
+    repeat: repeatOf(doc),
+    assigneeIds: task.assigneeIds,
+    groupId: typeof doc.group === 'string' ? doc.group : null,
+    startAt: task.startAt,
+    dueAt: task.dueAt,
+    description: task.description,
+    parent,
+    ownerOnly: doc.ownerOnly === true,
+    subtasks,
+  }
+}
+
 /** Loads one scoped task for the detail views; `undefined` when it does not exist or is outside the actor's scope. */
 export async function loadTaskView(idValue: string): Promise<TaskView | undefined> {
   const context = await getRequestContext()
@@ -117,25 +172,15 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
   const stages = workflowStages(workflowPage.docs)
   const terminal = new Set(stages.filter((stage) => isTerminalCategory(stage.category)).map((stage) => stage.id))
   const task = mapTask(doc, new Map<string, StageLabel>(stages.map((stage) => [stage.id, stage])))
-  const [parent, canUpdate] = await Promise.all([loadParent(context, doc.parentTask), canEdit(context, task.id)])
+  const [parent, canUpdate, related] = await Promise.all([
+    loadParent(context, doc.parentTask),
+    canEdit(context, task.id),
+    loadRelated(context, doc),
+  ])
   const subtasks = subtasksOf(subtaskPage.docs, terminal)
   return {
-    task: {
-      id: task.id,
-      title: task.title,
-      stageId: task.stageId,
-      updatedAt: task.updatedAt,
-      priority: task.priority,
-      repeat: repeatOf(doc),
-      assigneeIds: task.assigneeIds,
-      groupId: typeof doc.group === 'string' ? doc.group : null,
-      startAt: task.startAt,
-      dueAt: task.dueAt,
-      description: task.description,
-      parent,
-      ownerOnly: doc.ownerOnly === true,
-      subtasks,
-    },
+    related,
+    task: sheetTask({ doc, task, parent, subtasks }),
     options: {
       stages,
       members: memberPage.docs.map(({ id, name }) => ({ id, name })),

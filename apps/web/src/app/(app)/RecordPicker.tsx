@@ -51,6 +51,7 @@ export function RecordPicker({
   type,
   emptyLabel,
   label,
+  initial,
   onChoose,
 }: Readonly<{
   id: string
@@ -59,12 +60,14 @@ export function RecordPicker({
   emptyLabel: string
   /** Names the list for screen readers when no visible label points at it. */
   label?: string
+  /** The record shown as chosen before anything is picked, such as a task's current client. */
+  initial?: Option
   /** Called with the chosen record, or undefined when the empty choice is picked. */
   onChoose?: (option: Option | undefined) => void
 }>) {
   const copy = catalogFor(RECORD_PICKER_COPY, useLocale())
   const { found, query, setQuery } = useRecordSearch(type)
-  const [chosen, setChosen] = useState<Option>()
+  const [chosen, setChosen] = useState<Option | undefined>(initial)
   const listed = withChosen(found.options, chosen)
   return (
     <div className="grid gap-1.5">

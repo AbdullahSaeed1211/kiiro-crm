@@ -3,6 +3,7 @@ import { loadTaskView } from '../../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from '../../../tasks/[id]/TaskDetailDrawer'
 import { firstParam, safeReturnTo } from '../../../search-params'
 import { ArchiveWorkControl } from '../../../archive-work-control'
+import { TaskClientField } from '../../../tasks/[id]/TaskClientField'
 import { TimeLog } from '../../../tasks/[id]/time-log'
 
 export default async function InterceptedTaskPage({
@@ -23,6 +24,12 @@ export default async function InterceptedTaskPage({
       restoreFocus
       extra={
         <>
+          <TaskClientField
+            taskId={view.task.id}
+            updatedAt={view.task.updatedAt}
+            related={view.related}
+            editable={view.options.canUpdate}
+          />
           <TimeLog taskId={view.task.id} />
           <ArchiveWorkControl type="task" id={view.task.id} label={view.task.title} />
         </>
