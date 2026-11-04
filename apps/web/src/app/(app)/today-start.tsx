@@ -23,7 +23,7 @@ export function TodayActions({ work, profile }: Readonly<{ work: DashboardWork; 
         </Button>
       ) : null}
       {canCreateLead(work, profile) ? (
-        <Button nativeButton={false} render={<Link href="/leads/new" />}>
+        <Button variant="outline" nativeButton={false} render={<Link href="/leads/new" />}>
           {copy.newLead}
         </Button>
       ) : null}
