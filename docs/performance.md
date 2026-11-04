@@ -27,32 +27,36 @@ Repeated lines with different ids are an N+1. Request time in the dev sandbox is
 
 ## Changes
 
-| Commit    | Change                                                                                                               | Before → after (dev sandbox)                                                     | Risk                                                                                       |
-| --------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `5e659f5` | Contacts list loads its organizations with one `id in` query instead of two per row                                  | 70 → 8 queries; 2.3 s → 0.94 s; rendered page identical                          | none seen                                                                                  |
-| `df5ecd0` | Reports counts tasks from one read tallied in memory, not about three counts per person                              | about 25 → 1 query; 2.4 s → 1.85 s; output identical for default and year ranges | one read grows with tasks in the range (thousands is fine; revisit past tens of thousands) |
-| `1d34eeb` | Today's first-run check counts collections until one is non-empty                                                    | 41 → 36 queries                                                                  | none                                                                                       |
-| `646eb91` | Sidebar counts: settings and workflows start together, workflows reused for 60 s, browser asks at most every 30 s    | `/api/v1/nav/counts` 195 → 150 ms                                                | counts may lag a minute behind a workflow edit                                             |
-| `f099285` | Phone timeline no longer inserts its toggle at hydration                                                             | layout shift 0.200 → 0.000                                                       | none                                                                                       |
-| `9a480a9` | Currency change no longer rewrites every deal; logo upload keeps the old file until the new one is saved (UX 40, 41) | n/a (data safety)                                                                | existing deals keep their own currency; reports show a mixed-currency note                 |
-| `f676e70` | `OPS_LOG_SQL=1` query trace                                                                                          | n/a                                                                              | none; off by default                                                                       |
+| Commit    | Change                                                                                                                                          | Before → after (dev sandbox)                                                                                       | Risk                                                                                       |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `5e659f5` | Contacts list loads its organizations with one `id in` query instead of two per row                                                             | 70 → 8 queries; 2.3 s → 0.94 s; rendered page identical                                                            | none seen                                                                                  |
+| `df5ecd0` | Reports counts tasks from one read tallied in memory, not about three counts per person                                                         | about 25 → 1 query; 2.4 s → 1.85 s; output identical for default and year ranges                                   | one read grows with tasks in the range (thousands is fine; revisit past tens of thousands) |
+| `1d34eeb` | Today's first-run check counts collections until one is non-empty                                                                               | 41 → 36 queries                                                                                                    | none                                                                                       |
+| `646eb91` | Sidebar counts: settings and workflows start together, workflows reused for 60 s, browser asks at most every 30 s                               | `/api/v1/nav/counts` 195 → 150 ms                                                                                  | counts may lag a minute behind a workflow edit                                             |
+| `af0a847` | Every read of a whole table runs one statement, not a count plus a select (the D1 chunking wrapper `installPagedFind` paginated its first read) | statements per page: Today 36 → 27, Reports 26 → 17, Tasks 16 → 11, Deals 18 → 13, Leads 16 → 10, Projects 16 → 12 | none seen; a table of 90 rows or more still counts and pages as before                     |
+| `f099285` | Phone timeline no longer inserts its toggle at hydration                                                                                        | layout shift 0.200 → 0.000                                                                                         | none                                                                                       |
+| `9a480a9` | Currency change no longer rewrites every deal; logo upload keeps the old file until the new one is saved (UX 40, 41)                            | n/a (data safety)                                                                                                  | existing deals keep their own currency; reports show a mixed-currency note                 |
+| `f676e70` | `OPS_LOG_SQL=1` query trace                                                                                                                     | n/a                                                                                                                | none; off by default                                                                       |
 
 ## Where it stands
 
-Statements per page, seeded demo data, signed in as the owner, 2026-11-04. A page over its budget is open work.
+Statements per page, seeded demo data, signed in as the owner, 2026-11-04, after `af0a847`. A page over its budget is open work.
 
-| Page                                        | Queries  | Budget | Note                                                                                                        |
-| ------------------------------------------- | -------- | ------ | ----------------------------------------------------------------------------------------------------------- |
-| Billing, Attendance                         | 4, 6     | 8      |                                                                                                             |
-| Organizations, Inbox, My tasks              | 8, 8, 9  | 10     |                                                                                                             |
-| Calendar, Timeline                          | 10       | 10     |                                                                                                             |
-| Sales, Task board                           | 13, 12   | 14     |                                                                                                             |
-| Tasks, Projects, Leads, Deals, Team, boards | 16 to 18 | 12     | each repeats the actor, settings and saved-view reads; Payload counts before every paginated read           |
-| Contacts                                    | 8        | 10     |                                                                                                             |
-| Today                                       | 36       | 20     | the task queues run overdue, due today, plan and candidates as separate reads, with a count and a read each |
-| Reports                                     | 26       | 20     |                                                                                                             |
+| Page                                | Queries  | Budget |
+| ----------------------------------- | -------- | ------ |
+| Billing, Attendance                 | 4, 4     | 8      |
+| My tasks, Organizations, Contacts   | 6, 6, 6  | 10     |
+| Calendar, Inbox, Timeline           | 7, 7, 9  | 10     |
+| Leads, Task board, Boards           | 10 to 13 | 12     |
+| Tasks, Projects, Team, Sales, Deals | 11 to 13 | 12     |
+| Reports                             | 17       | 20     |
+| Today                               | 27       | 20     |
 
-The next steps, in order of return: a Today read model that fetches the person's open tasks once and splits them in memory; skip Payload's total count on lists that show no page count (`pagination: false` with a limit); one shared read of settings plus saved views for list pages.
+The next steps, in order of return: a Today read model that fetches the person's open tasks once and splits them in memory (the overdue, due today, plan and candidate reads each run a count and a select); one shared read of settings plus saved views for list pages.
+
+## Statements are not the whole time
+
+In the dev server a request spends most of its time outside the database. For `/leads` (1.55 s, 10 statements) the first statement started 79 ms in, 226 ms of JavaScript ran between the first and second statement, and about 700 ms of rendering followed the last one. The dev server compiles and renders unminified code on one thread, so it cannot show whether the 200 ms target is met. Measure on a production build or a deployed tenant before spending effort on the render path.
 
 ## Measuring layout shift under load
 
