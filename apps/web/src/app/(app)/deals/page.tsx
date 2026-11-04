@@ -153,22 +153,20 @@ export default async function DealsPage({
           title="Deals"
           description={help.deals}
           count={data.total}
+          tabs={
+            <ViewSwitcher
+              label="Deal views"
+              active="table"
+              views={[
+                { id: 'table', label: 'Table', href: '/deals' },
+                { id: 'board', label: 'Board', href: boardHref(rawQuery) },
+              ]}
+            />
+          }
           actions={
             <div className="flex items-center gap-2">
               <DealCreateDialog currency={currency} />
               <ExportLink kind="deals" />
-              <ViewSwitcher
-                label="Deal views"
-                active="table"
-                views={[
-                  { id: 'table', label: 'Table', href: '/deals' },
-                  {
-                    id: 'board',
-                    label: 'Board',
-                    href: boardHref(rawQuery),
-                  },
-                ]}
-              />
             </div>
           }
         />

@@ -75,12 +75,8 @@ export default async function RepeatingPage({ searchParams }: Readonly<{ searchP
           title={copy.title}
           count={result.total}
           description={copy.description}
-          actions={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {create}
-              <TaskWorkspaceViews active="repeating" locale={locale} mine={mine} />
-            </div>
-          }
+          tabs={<TaskWorkspaceViews active="repeating" locale={locale} mine={mine} />}
+          actions={create}
         />
         <TaskListFilters search={search} assignee={assignee} people={people} locale={locale} />
         <p className="text-xs text-muted-foreground">{copy.helper}</p>

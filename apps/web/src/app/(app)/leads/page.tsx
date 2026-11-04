@@ -246,10 +246,10 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
           title="Leads"
           description={help.leads}
           count={result.total}
+          tabs={viewSwitcher(params, leadViewsCopy)}
           actions={
             <>
               <LeadCreateDialogClient />
-              {viewSwitcher(params, leadViewsCopy)}
               <LeadViewControls
                 views={[{ id: 'all', label: moreCopy.allOpenLeads, query: '' }, ...views]}
                 canImportExport={canBulk}

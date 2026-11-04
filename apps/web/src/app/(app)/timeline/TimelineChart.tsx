@@ -167,9 +167,9 @@ export function TimelineChart({
               }}
             />
             {filter}
-            <TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />
           </div>
         }
+        tabs={<TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />}
       />
       <GanttView
         bars={bars}

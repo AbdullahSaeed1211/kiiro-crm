@@ -57,12 +57,8 @@ export default async function TimelinePage({
           <>
             <PageHeader
               title={copy.gantt}
-              actions={
-                <>
-                  {filter}
-                  <TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />
-                </>
-              }
+              tabs={<TaskWorkspaceViews active="gantt" locale={locale} mine={mine} />}
+              actions={filter}
             />
             <EmptyState
               icon={ChartGantt}

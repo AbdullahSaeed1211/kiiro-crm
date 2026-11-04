@@ -76,19 +76,17 @@ export default async function DealBoardPage({
         <PageHeader
           title="Deal board"
           count={data.total}
-          actions={
-            <div className="flex items-center gap-2">
-              <DealCreateDialog currency={currency} />
-              <ViewSwitcher
-                label="Deal views"
-                active="board"
-                views={[
-                  { id: 'table', label: 'Table', href: `/deals${carry}` },
-                  { id: 'board', label: 'Board', href: `/deals/board${carry}` },
-                ]}
-              />
-            </div>
+          tabs={
+            <ViewSwitcher
+              label="Deal views"
+              active="board"
+              views={[
+                { id: 'table', label: 'Table', href: `/deals${carry}` },
+                { id: 'board', label: 'Board', href: `/deals/board${carry}` },
+              ]}
+            />
           }
+          actions={<DealCreateDialog currency={currency} />}
         />
         <ListViewBar searchLabel="Search deals" query={query} />
         <DealBoard

@@ -8,10 +8,12 @@ export type PageHeaderProps = Readonly<{
   description?: string
   /** Right-aligned controls such as view switchers and the New button. */
   actions?: ReactNode
+  /** View tabs (table, board, calendar) on their own row under the title, so they never crowd the actions. */
+  tabs?: ReactNode
 }>
 
 /** Page title row (spec §15.3, §17.5): title with optional count and description, plus an actions slot. */
-export function PageHeader({ title, count, description, actions }: PageHeaderProps) {
+export function PageHeader({ title, count, description, actions, tabs }: PageHeaderProps) {
   return (
     <div className="ops-page-header flex flex-wrap items-start justify-between gap-2">
       <div className="flex min-w-0 flex-col gap-1">
@@ -26,6 +28,7 @@ export function PageHeader({ title, count, description, actions }: PageHeaderPro
       {actions === undefined ? null : (
         <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">{actions}</div>
       )}
+      {tabs === undefined ? null : <div className="min-w-0 basis-full border-b border-border">{tabs}</div>}
     </div>
   )
 }

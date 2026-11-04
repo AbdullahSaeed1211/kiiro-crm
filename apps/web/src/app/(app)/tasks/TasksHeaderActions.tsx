@@ -4,7 +4,6 @@ import { TASK_COPY } from '../../../i18n/config'
 import type { Locale } from '../../../i18n/locale'
 import type { SavedViewSummary } from '../../../server/queries/settings/listSavedViews'
 import { TaskViewMenu } from './TaskViewMenu'
-import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 
 interface TasksHeaderActionsProps {
   readonly view: string
@@ -23,7 +22,7 @@ function newTaskHref(initial: TasksHeaderActionsProps['initial']): string {
   return query === '' ? '/tasks/new' : `/tasks/new?${query}`
 }
 
-/** The buttons beside the tasks title: New task, saved views and the view switcher (last, so it stays put between views). */
+/** The buttons beside the tasks title: New task and saved views. The view tabs sit under the title. */
 export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksHeaderActionsProps) {
   const copy = TASK_COPY[locale]
   return (
@@ -40,7 +39,6 @@ export function TasksHeaderActions({ view, locale, savedViews, initial }: TasksH
           pinned: savedView.pinned,
         }))}
       />
-      <TaskWorkspaceViews active="table" locale={locale} mine={view === 'mine'} />
     </div>
   )
 }

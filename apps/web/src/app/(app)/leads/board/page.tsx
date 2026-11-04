@@ -57,7 +57,7 @@ export default async function LeadBoardPage({
         <PageHeader
           title="Lead board"
           count={result.total}
-          actions={
+          tabs={
             <ViewSwitcher
               label={viewsCopy.label}
               active="board"
