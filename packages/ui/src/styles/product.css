@@ -164,6 +164,12 @@ select {
   padding-inline: 1rem 7.5rem;
 }
 
+@media (min-width: 1024px) {
+  .ops-app-header {
+    padding-inline-end: 15rem;
+  }
+}
+
 .ops-shell-utilities {
   position: fixed;
   z-index: 30;

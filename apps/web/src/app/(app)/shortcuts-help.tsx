@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { SHORTCUTS_COPY } from '../../i18n/shortcuts-copy'
 import { catalogFor } from '../../i18n/locale'
 import { useLocale } from '../../i18n/locale-context'
+import type { NavEntry } from './app-navigation'
 
 function Key({ children }: Readonly<{ children: ReactNode }>) {
   return <kbd className="rounded border bg-muted px-1.5 py-0.5 font-sans text-xs text-muted-foreground">{children}</kbd>
@@ -36,9 +37,9 @@ function Group({ title, children }: Readonly<{ title: string; children: ReactNod
 export function ShortcutsHelp({
   open,
   onOpenChange,
-}: Readonly<{ open: boolean; onOpenChange: (open: boolean) => void }>) {
+  entries,
+}: Readonly<{ open: boolean; onOpenChange: (open: boolean) => void; entries: readonly NavEntry[] }>) {
   const copy = catalogFor(SHORTCUTS_COPY, useLocale())
-  const go = (key: string, label: string) => <Row key={key} keys={['G', key]} label={label} />
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -59,12 +60,9 @@ export function ShortcutsHelp({
             <Row keys={['C']} label={copy.newTask} />
           </Group>
           <Group title={copy.goTo}>
-            {go('D', copy.dashboard)}
-            {go('M', copy.myTasks)}
-            {go('T', copy.tasks)}
-            {go('L', copy.leads)}
-            {go('P', copy.projects)}
-            {go('C', copy.calendar)}
+            {entries.flatMap(({ href, label, shortcut }) =>
+              shortcut === undefined ? [] : [<Row key={href} keys={['G', shortcut.toUpperCase()]} label={label} />],
+            )}
           </Group>
         </div>
         <p className="text-xs text-muted-foreground">{copy.typingNote}</p>

@@ -14,11 +14,11 @@ import {
 import { Building2, Contact, FolderKanban, Handshake, ListTodo, Search, UserPlus } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { taskHref } from './task-navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { SEARCH_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { SEARCH_COPY, type Locale } from '../../i18n/config'
 import { readApi } from './api-client'
 import { WorkspaceCommands } from './workspace-commands'
-import { ShortcutsHelp } from './shortcuts-help'
+import type { NavEntry, createLinks } from './app-navigation'
 import { useWorkspaceShortcuts } from './workspace-shortcuts'
 
 interface SearchResult {
@@ -61,7 +61,17 @@ function emptyCopy({
 }
 
 // eslint-disable-next-line max-lines-per-function -- search owns keyboard, query, result, and navigation states.
-export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
+export function WorkspaceSearch({
+  locale,
+  entries,
+  creates,
+  openHelp,
+}: Readonly<{
+  locale: Locale
+  entries: readonly NavEntry[]
+  creates: ReturnType<typeof createLinks>
+  openHelp: () => void
+}>) {
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -69,7 +79,6 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
   const [results, setResults] = useState<readonly SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const copy = SEARCH_COPY[locale]
-  const shellCopy = SHELL_COPY[locale]
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -93,11 +102,12 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
     },
     [router],
   )
-  const [helpOpen, setHelpOpen] = useState(false)
-  const openHelp = useCallback(() => {
-    setHelpOpen(true)
-  }, [])
-  useWorkspaceShortcuts({ openSearch, openHelp, go })
+  const goKeys = useMemo(
+    () =>
+      Object.fromEntries(entries.flatMap(({ href, shortcut }) => (shortcut === undefined ? [] : [[shortcut, href]]))),
+    [entries],
+  )
+  useWorkspaceShortcuts({ openSearch, openHelp, go, goKeys })
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -173,11 +183,12 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
             <WorkspaceCommands
               query={query}
               copy={copy}
-              shellCopy={shellCopy}
+              entries={entries}
+              creates={creates}
               onGo={visitPath}
               onShowShortcuts={() => {
                 setOpen(false)
-                setHelpOpen(true)
+                openHelp()
               }}
               onCopyLink={() => {
                 void navigator.clipboard.writeText(window.location.href)
@@ -210,7 +221,6 @@ export function WorkspaceSearch({ locale }: Readonly<{ locale: Locale }>) {
           </CommandList>
         </Command>
       </CommandDialog>
-      <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
     </>
   )
 }

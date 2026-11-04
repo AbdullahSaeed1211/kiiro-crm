@@ -995,33 +995,35 @@ Priority icons: none `lucide:Minus`, low `lucide:SignalLow`, medium `lucide:Sign
 
 ### 16.2 Sidebar content (top to bottom)
 **SidebarHeader:** `BrandLogo` (settings logo at 24 px, else a letter tile using `--sidebar-primary`) + `appName` (truncate); collapsed shows logo only with tooltip.
+
+Groups and links come from one model (`navSections`, [navigation design](design/navigation.md)); the command menu and the `g` shortcuts read the same model, so no surface offers a link the sidebar hides. Labels come from tenant terminology, then locale copy.
 | Group | Item | Icon | Route | Visible when | Badge |
 |---|---|---|---|---|---|
-| (none) | Dashboard | `lucide:LayoutDashboard` | `/` | always | — |
-| (none) | My tasks | `lucide:CircleCheckBig` | `/my-tasks` | module work | overdue count (destructive variant) if > 0 |
-| (none) | Inbox | `lucide:Inbox` | `/inbox` | module mail, Phase 2 | unread inbound count |
-| CRM (label from terminology, key `nav.crm`) | Leads | `lucide:UserPlus` | `/leads` | module crm | unassigned lead count |
-| CRM | Deals | `lucide:Handshake` | `/deals` | module crm | — |
-| CRM | Organizations | `lucide:Building2` | `/organizations` | module crm | — |
-| CRM | Contacts | `lucide:Contact` | `/contacts` | module crm | — |
-| Work | Projects | `lucide:FolderKanban` | `/projects` | module work | — |
-| Work | Tasks | `lucide:ListTodo` | `/tasks` | module work | — |
-| Pinned | pinned SavedViews (≤ 8) | table `lucide:Table2`, board `lucide:Columns3`, calendar `lucide:CalendarDays`, timeline `lucide:ChartGantt` | view route | has pinned views | — |
-**SidebarFooter:** Settings (`lucide:Settings`, `/settings/general`, manager_up) · user menu trigger (`UserAvatar`, name, email, `lucide:ChevronsUpDown`) opening a DropdownMenu:
-Profile (`lucide:User`, `/settings/profile`), Notifications (`lucide:Bell`, `/settings/notifications`), Theme submenu (`lucide:Sun` Light, `lucide:Moon` Dark, `lucide:Monitor` System), Language (`lucide:Languages`: en, es), Keyboard shortcuts (`lucide:Keyboard`, dialog), Log out (`lucide:LogOut`).
+| (none) | Today | `lucide:LayoutDashboard` | `/` | always | — |
+| (none) | Attendance | `lucide:Clock` | `/attendance` | always | — |
+| Work | My tasks | `lucide:CircleCheckBig` | `/my-tasks` | module work | your overdue tasks (alert tone) if > 0 |
+| Work | Tasks, Projects, Calendar, Content, Repeating | `lucide:ListTodo`, `FolderKanban`, `CalendarDays`, `FileText`, `Repeat2` | `/tasks`, `/projects`, `/calendar`, `/content-calendar`, `/tasks/repeating` | module work; not for sales-profile staff | — |
+| Work | Team assignments | `lucide:Users` | `/team` | module work, owner or manager | — |
+| Clients (label from terminology) | Organizations, Contacts | `lucide:Building2`, `Contact` | `/organizations`, `/contacts` | module crm | — |
+| Sales | Sales workspace, Leads, Deals | `lucide:PhoneCall`, `UserPlus`, `Handshake` | `/sales`, `/leads`, `/deals` | module crm; owner, manager or sales profile | Leads: leads waiting on you (alert tone) if > 0 |
+| Utilities | Reports, Inbox, Billing | `lucide:ChartNoAxesCombined`, `Mail`, `ReceiptText` | `/reports`, `/inbox`, `/billing` | owner or manager, and the link's module | — |
+
+Badge counts come from `GET /api/v1/nav/counts`, load after the page, refresh when the tab is shown again and take no layout space; a collapsed sidebar shows a dot. Pinned saved views are not built.
+
+**SidebarFooter:** one account row (avatar, name, email, `lucide:ChevronsUpDown`) opening a DropdownMenu: Profile (`/settings/profile`), Settings (`/settings/general`, `/settings/profile` for staff), Keyboard shortcuts (dialog), Theme (Light, Dark, System) and Log out. Language is set per workspace in Settings, General.
+
 `SidebarRail` enabled. Active item: exact match, or prefix match for detail routes. All labels via terminology/i18n. Calendar (`/calendar`) and Timeline (`/timeline`) are views of Tasks, reached from the Tasks view tabs, the command menu and `g` then `c`; Tasks stays active while either is open.
 
 ### 16.3 Header (`AppHeader`: h-12, sticky top-0, border-b, bg-background)
-Left: `SidebarTrigger` · vertical `Separator` · `Breadcrumb` (section › record title; ≤ 3 levels; titles truncated at 32 chars).
-Right: Search button (`lucide:Search`, "Search", `Kbd` ⌘K; ≥ md) → `CommandMenu` · Create DropdownMenu (`lucide:Plus`): new lead, deal, organization, contact, project, task (filtered by modules and permission) → quick-create `Dialog` from `Layout.quickCreateFields` ·
-`NotificationBell` (`lucide:Bell`; popover `w-96`; tabs Unread/All; 20 items; "Mark all read"; click → record; badge polls 60 s).
-Mobile (< md): trigger, page title, Create (icon only), bell.
+Left: `SidebarTrigger` · vertical `Separator` · `Breadcrumb` (group › page, or section › record title; ≤ 3 levels; titles truncated at 32 chars; below md only the last level). A top-level page shows its sidebar group first ("Sales › Leads").
+Right: Search button (`lucide:Search`, "Search workspace", `Kbd` ⌘K; label from lg) → `CommandMenu` · New DropdownMenu (`lucide:Plus`; label from lg): task, project, lead, contact, organization, filtered by modules and by the same rules as the sidebar · `NotificationBell` (`lucide:Bell`; sheet; "Mark all read"; click → record; count badge).
+The page reports its title to the shell, which sets the browser tab to the record's title.
 
 ### 16.4 Command menu (⌘K / Ctrl+K)
-Groups: Navigation (visible sidebar items) · Create (same as Create menu) · Records (`/api/v1/search`, debounce 200 ms) · Preferences (theme, language).
+Groups: Navigation (the sidebar's links, with their `G x` keys) · Create (same as the New menu) · Records (`/api/v1/search`, debounce 180 ms) · Actions (copy link, keyboard shortcuts).
 
 ### 16.5 Keyboard shortcuts
-`⌘/Ctrl+K` command menu · `⌘/Ctrl+B` toggle sidebar · `/` focus page search (opens the command menu when the page has none) · `n` new record on the tasks, leads, contacts, organizations and projects lists · `c` new task · `g` then `d`, `m`, `t`, `l`, `p` or `c` go to Dashboard, My tasks, Tasks, Leads, Projects or Calendar (second key within 1.2 s) · `Esc` close sheet/dialog · `?` shortcuts dialog. Ignored while focus is in an editable field, while a dialog is open and with a modifier held.
+`⌘/Ctrl+K` command menu · `⌘/Ctrl+B` toggle sidebar · `/` focus page search (opens the command menu when the page has none) · `n` new record on the tasks, leads, contacts, organizations and projects lists · `c` new task · `g` then a link's letter goes there (second key within 1.2 s): `d` Today, `a` Attendance, `m` My tasks, `t` Tasks, `p` Projects, `c` Calendar, `o` Organizations, `k` Contacts, `w` Sales workspace, `l` Leads, `e` Deals, `u` Team assignments, `r` Reports, `i` Inbox, `b` Billing; a letter does nothing when the viewer has no such link · `Esc` close sheet/dialog · `?` shortcuts dialog. Ignored while focus is in an editable field, while a dialog is open and with a modifier held.
 
 ---
 

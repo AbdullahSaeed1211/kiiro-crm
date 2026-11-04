@@ -1,26 +1,28 @@
 'use client'
 
-import { useTheme } from '@ops/ui'
-import { Button } from '@ops/ui/components/ui/button'
-import { Moon, Sun } from 'lucide-react'
+import { CreateMenu } from './create-menu'
 import { WorkspaceNotifications } from './workspace-notifications'
 import { WorkspaceSearch } from './workspace-search'
+import type { NavEntry, createLinks } from './app-navigation'
 import type { Locale } from '../../i18n/config'
 
-/** Search, notifications and the theme switch. The workspace name stays in the sidebar so it never crowds the page title on a phone. */
-export function WorkspaceTools({ locale }: Readonly<{ locale: Locale }>) {
-  const { theme, setTheme } = useTheme()
-  const toggleTheme = () => {
-    const currentlyDark = document.documentElement.classList.contains('dark')
-    setTheme(currentlyDark ? 'light' : 'dark')
-  }
+/** Search, New and notifications. The workspace name stays in the sidebar and the theme switch in the account menu, so the header stays short on a phone. */
+export function WorkspaceTools({
+  locale,
+  entries,
+  creates,
+  openHelp,
+}: Readonly<{
+  locale: Locale
+  entries: readonly NavEntry[]
+  creates: ReturnType<typeof createLinks>
+  openHelp: () => void
+}>) {
   return (
     <>
-      <WorkspaceSearch locale={locale} />
+      <WorkspaceSearch locale={locale} entries={entries} creates={creates} openHelp={openHelp} />
+      <CreateMenu links={creates} locale={locale} />
       <WorkspaceNotifications locale={locale} />
-      <Button variant="ghost" size="icon-sm" aria-label="Toggle color theme" onClick={toggleTheme}>
-        {theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />}
-      </Button>
     </>
   )
 }

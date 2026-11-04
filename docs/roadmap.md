@@ -119,3 +119,9 @@ Source: the owner's walkthrough on 2026-10-13. Staff should open the app and kno
 - Findings: UX 37.
 
 Depends on: nothing. Done when: UX 37 is fixed and verified signed in on production.
+
+## 13. Navigation and shell
+
+Done (2026-11-04): [navigation design](design/navigation.md). Open: UX 43 (breadcrumbs per page), UX 44 (theme storage) and UX 45 (measure layout shift on production data).
+
+Depends on: nothing. Done when: UX 43 to 45 are fixed.

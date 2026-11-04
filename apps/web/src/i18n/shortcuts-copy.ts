@@ -14,12 +14,6 @@ export interface ShortcutsCopy {
   readonly close: string
   readonly newRecord: string
   readonly newTask: string
-  readonly dashboard: string
-  readonly myTasks: string
-  readonly tasks: string
-  readonly leads: string
-  readonly projects: string
-  readonly calendar: string
   readonly typingNote: string
 }
 
@@ -38,12 +32,6 @@ export const SHORTCUTS_COPY: Readonly<Record<Locale, ShortcutsCopy>> = {
     close: 'Close a panel or dialog',
     newRecord: 'New record on a list page',
     newTask: 'New task',
-    dashboard: 'Dashboard',
-    myTasks: 'My tasks',
-    tasks: 'Tasks',
-    leads: 'Leads',
-    projects: 'Projects',
-    calendar: 'Calendar',
     typingNote: 'Shortcuts are off while you type in a field.',
   },
   es: {
@@ -60,12 +48,6 @@ export const SHORTCUTS_COPY: Readonly<Record<Locale, ShortcutsCopy>> = {
     close: 'Cerrar un panel o diálogo',
     newRecord: 'Nuevo registro en una lista',
     newTask: 'Nueva tarea',
-    dashboard: 'Inicio',
-    myTasks: 'Mis tareas',
-    tasks: 'Tareas',
-    leads: 'Prospectos',
-    projects: 'Proyectos',
-    calendar: 'Calendario',
     typingNote: 'Los atajos se desactivan mientras escribes en un campo.',
   },
 }
