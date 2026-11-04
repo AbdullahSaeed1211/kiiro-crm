@@ -906,7 +906,9 @@ test('organization edit form preserves saved business contact fields', async ({ 
 })
 
 async function expectSettingsGroups(settingsNav: Locator): Promise<void> {
-  await settingsNav.getByText('All settings', { exact: true }).click()
+  // The groups are always shown beside the page on a wide screen; a phone folds them under "All settings".
+  const fold = settingsNav.getByText('All settings', { exact: true })
+  if (await fold.isVisible()) await fold.click()
   await expect(settingsNav.getByRole('heading', { name: 'Workspace' })).toBeVisible()
   await expect(settingsNav.getByRole('heading', { name: 'People & access' })).toBeVisible()
   await expect(settingsNav.getByRole('heading', { name: 'Work configuration' })).toBeVisible()
