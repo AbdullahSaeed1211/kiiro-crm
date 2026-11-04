@@ -26,7 +26,7 @@ test('a quote becomes an invoice and the totals follow the items', async ({ page
   await startDocument(page, 'quote', '100')
   await page.getByLabel('Quantity').fill('1.5')
   await page.getByLabel('Tax %').fill('18')
-  await expect(page.getByText('Total:')).toContainText('177.00')
+  await expect(page.getByText('Total', { exact: true }).locator('xpath=following-sibling::dd')).toContainText('177.00')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page).toHaveURL(SAVED_URL, { timeout: 30_000 })
   await expect(page.getByRole('heading', { level: 1 })).toContainText('QUO-')
