@@ -32,6 +32,7 @@ function isDisplayMode(value: unknown): value is 'grid' | 'chart' {
   return value === 'grid' || value === 'chart'
 }
 
+// The Grid/Chart toggle is always in the markup and shown by CSS at this width, so hydration never inserts it and moves the chart.
 const COMPACT_QUERY = '(max-width: 650px)'
 
 function subscribeCompact(onChange: () => void) {
@@ -148,7 +149,7 @@ export function TimelineChart({
         count={tasks.length}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {compact ? (
+            <div className="hidden max-[650px]:block">
               <CompactViewToggle
                 value={displayMode}
                 gridLabel={copy.timelineGridView}
@@ -157,7 +158,7 @@ export function TimelineChart({
                   if (isDisplayMode(value)) setDisplayMode(value)
                 }}
               />
-            ) : null}
+            </div>
             <ZoomToggle
               value={zoom}
               options={zooms}
