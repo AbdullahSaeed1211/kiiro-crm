@@ -7,6 +7,18 @@ import { Button } from '@ops/ui/components/ui/button'
 
 type AssetName = 'logo' | 'favicon'
 
+/** Uploads one brand file; the message to show when it fails, or `null` when it was saved. */
+async function sendAsset(asset: AssetName, body: FormData): Promise<string | null> {
+  try {
+    const response = await fetch(`/api/v1/brand/${asset}`, { method: 'POST', body })
+    if (response.ok) return null
+    const payload = (await response.json().catch(() => ({ error: 'Upload failed.' }))) as { error?: string }
+    return payload.error ?? 'Upload failed.'
+  } catch {
+    return 'Upload failed. Check your connection and try again.'
+  }
+}
+
 export function BrandingSettingsForm({
   logoKey,
   faviconKey,
@@ -25,11 +37,10 @@ export function BrandingSettingsForm({
     setStatus('Uploading…')
     const body = new FormData()
     body.set('file', file)
-    const response = await fetch(`/api/v1/brand/${asset}`, { method: 'POST', body })
+    const failure = await sendAsset(asset, body)
     setBusy(null)
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => ({ error: 'Upload failed.' }))) as { error?: string }
-      setStatus(payload.error ?? 'Upload failed.')
+    if (failure !== null) {
+      setStatus(failure)
       return
     }
     setVersion(String(Date.now()))
@@ -39,11 +50,11 @@ export function BrandingSettingsForm({
   }
   const remove = async (asset: AssetName) => {
     setBusy(asset)
-    const response = await fetch(`/api/v1/brand/${asset}`, { method: 'DELETE' })
+    const response = await fetch(`/api/v1/brand/${asset}`, { method: 'DELETE' }).catch(() => null)
     setBusy(null)
     setVersion(String(Date.now()))
-    setStatus(response.ok ? `${asset === 'logo' ? 'Logo' : 'Favicon'} removed.` : 'Unable to remove asset.')
-    if (response.ok) router.refresh()
+    setStatus(response?.ok === true ? `${asset === 'logo' ? 'Logo' : 'Favicon'} removed.` : 'Unable to remove asset.')
+    if (response?.ok === true) router.refresh()
   }
   const asset = (name: AssetName, key?: string | null) => (
     <div className="grid gap-3 border-t pt-4 sm:grid-cols-[8rem_1fr_auto] sm:items-center">
