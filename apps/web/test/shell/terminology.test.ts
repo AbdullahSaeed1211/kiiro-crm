@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeTerminology } from '../../src/server/actions/settings/terminology'
+import { mergeTerminology, termsFromTemplate } from '../../src/server/actions/settings/terminology'
 
 // Saving used to replace the whole field, so onboarding progress stored beside the names was lost on every save.
 describe('mergeTerminology', () => {
@@ -29,5 +29,20 @@ describe('mergeTerminology', () => {
 
   it('refuses a name that is too long and changes nothing', () => {
     expect(mergeTerminology(stored, { tasks: 'x'.repeat(41) })).toHaveProperty('error')
+  })
+})
+
+// The vertical templates named terms in the singular under keys the navigation never read, so "Engagement" never showed.
+describe('termsFromTemplate', () => {
+  it('turns template words into the plural keys the navigation reads', () => {
+    expect(termsFromTemplate({ deal: 'Engagement', contact: 'Client', organization: 'Firm client' })).toEqual({
+      deals: 'Engagements',
+      contacts: 'Clients',
+      organizations: 'Firm clients',
+    })
+  })
+
+  it('leaves a key it does not know as it is', () => {
+    expect(termsFromTemplate({ clientsGroup: 'Matters' })).toEqual({ clientsGroup: 'Matters' })
   })
 })

@@ -20,3 +20,20 @@ export function mergeTerminology(
   const set = names.flatMap(([key, name]) => (name === undefined ? [] : [[key, name] as const]))
   return { value: Object.fromEntries([...kept, ...set]) }
 }
+
+const PLURAL_OF: Readonly<Partial<Record<string, string>>> = Object.fromEntries(
+  TERMINOLOGY_KEYS.map((key) => [LEGACY_TERMINOLOGY_KEYS[key], key]),
+)
+
+/**
+ * A vertical template's words ("deal": "Engagement") as the navigation reads them ("deals": "Engagements"). Templates
+ * name each term in the singular, and the list names are plural; every word the templates use takes a plain "s".
+ */
+export function termsFromTemplate(terms: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(terms).map(([key, word]) => {
+      const plural = PLURAL_OF[key]
+      return plural === undefined ? [key, word] : [plural, `${word}s`]
+    }),
+  )
+}
