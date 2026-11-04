@@ -1,71 +1,22 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BILLING_COPY, type BillingCopy } from '../../../i18n/billing-copy'
 import { catalogFor } from '../../../i18n/locale'
-import { BILLING_PAGE_SIZE, loadBillingPage, type BillingPage } from '../../../server/billing/queries'
+import { BILLING_PAGE_SIZE, loadBillingPage } from '../../../server/billing/queries'
 import { getRequestContext } from '@/server/container'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 import { firstParam } from '../search-params'
-import { StatusChip } from './status-chip'
-import { formatMoney } from './money'
+import { BillingRows } from './billing-rows'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Quotes and invoices' }
 
 type Kind = 'quote' | 'invoice' | undefined
-
-const dateOf = (time: number | null, locale: string): string =>
-  time === null ? '' : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(time)
-
-function Tabs({ copy, kind }: Readonly<{ copy: BillingCopy; kind: Kind }>) {
-  const tab = ({ value, label, href }: Readonly<{ value: Kind; label: string; href: string }>) => (
-    <Link
-      key={label}
-      href={href}
-      aria-current={kind === value ? 'page' : undefined}
-      className={kind === value ? 'border-b-2 border-primary pb-1 font-medium' : 'pb-1 text-muted-foreground'}
-    >
-      {label}
-    </Link>
-  )
-  return (
-    <nav className="flex gap-4 border-b text-sm" aria-label={copy.title}>
-      {tab({ value: undefined, label: copy.all, href: '/billing' })}
-      {tab({ value: 'quote', label: copy.quotes, href: '/billing?kind=quote' })}
-      {tab({ value: 'invoice', label: copy.invoices, href: '/billing?kind=invoice' })}
-    </nav>
-  )
-}
-
-function Rows({ copy, page, locale }: Readonly<{ copy: BillingCopy; page: BillingPage; locale: string }>) {
-  return (
-    <ul className="divide-y text-sm">
-      {page.rows.map((row) => (
-        <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-          <Link href={`/billing/${row.id}`} className="min-w-0 font-medium hover:underline">
-            {row.number}
-            <span className="block text-xs font-normal text-muted-foreground">{row.company}</span>
-          </Link>
-          <span className="flex items-center gap-3">
-            {row.dueAt === null ? null : (
-              <span className="text-xs text-muted-foreground">
-                {row.kind === 'quote' ? copy.dueQuote : copy.dueInvoice}: {dateOf(row.dueAt, locale)}
-              </span>
-            )}
-            <StatusChip status={row.shown} label={copy.states[row.shown] ?? row.shown} />
-            <span className="tabular-nums">
-              {formatMoney({ minor: row.totalMinor, currency: row.currency, locale })}
-            </span>
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 function Pager({ copy, page, total, kind }: Readonly<{ copy: BillingCopy; page: number; total: number; kind: Kind }>) {
   const last = Math.max(1, Math.ceil(total / BILLING_PAGE_SIZE))
@@ -108,6 +59,17 @@ export default async function BillingPage({
         <PageHeader
           title={copy.title}
           description={copy.description}
+          tabs={
+            <ViewSwitcher
+              label={copy.title}
+              active={kind ?? 'all'}
+              views={[
+                { id: 'all', label: copy.all, href: '/billing' },
+                { id: 'quote', label: copy.quotes, href: '/billing?kind=quote' },
+                { id: 'invoice', label: copy.invoices, href: '/billing?kind=invoice' },
+              ]}
+            />
+          }
           actions={
             <>
               <Link className={buttonClass} href="/billing/new?kind=quote">
@@ -119,12 +81,11 @@ export default async function BillingPage({
             </>
           }
         />
-        <Tabs copy={copy} kind={kind} />
         {found.rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{copy.nothing}</p>
         ) : (
           <>
-            <Rows copy={copy} page={found} locale={locale} />
+            <BillingRows copy={copy} page={found} locale={locale} />
             <Pager copy={copy} page={found.page} total={found.total} kind={kind} />
           </>
         )}

@@ -1,8 +1,9 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { RecordNotesTab } from './record-notes-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
+import { RecordPageLayout, type RecordPageTab } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { OrganizationRecord } from '@ops/module-crm'
 import type {
   ActivityItem,
@@ -104,9 +105,20 @@ function organizationOverviewTab(
   }
 }
 
+/** The tabs with Billing after Tasks, so work and money sit together. */
+function withBilling(
+  tabs: readonly RecordPageTab[],
+  billing: { label: string; content: ReactNode } | undefined,
+): readonly RecordPageTab[] {
+  if (billing === undefined) return tabs
+  const at = tabs.findIndex((tab) => tab.id === 'tasks') + 1
+  return [...tabs.slice(0, at), { id: 'billing', ...billing }, ...tabs.slice(at)]
+}
+
 export async function OrganizationRecordView({
   data,
   outboundEmailEnabled,
+  billing,
 }: Readonly<{
   data: {
     record: OrganizationRecord
@@ -120,6 +132,8 @@ export async function OrganizationRecordView({
     attachments: readonly RecordAttachment[]
   }
   outboundEmailEnabled: boolean
+  /** The Billing tab, for the people who may see it. */
+  billing?: { label: string; content: ReactNode }
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments } = data
   const locale = await loadWorkspaceLocale()
@@ -168,7 +182,7 @@ export async function OrganizationRecordView({
               overviewCopy,
               locale,
             }),
-            ...tabs,
+            ...withBilling(tabs, billing),
           ]}
           aside={
             <div className="grid gap-4">

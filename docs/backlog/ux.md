@@ -1,6 +1,6 @@
 # UX backlog
 
-9 findings are open: 1 critical, 4 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+10 findings are open: 1 critical, 4 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -71,3 +71,9 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
   - `deals/page.tsx` and `projects/page.tsx` (column headers, filters, sort options);
   - most pages under `settings/`.
 - Fix: Give the record primitives one `record-copy.ts` and pass the chosen catalog in. `recordTabs` is called from server pages and from the client `LeadRecordClient`, so the catalog arrives as an argument, not through a hook. Then move each page's strings into its own copy file, following `project-page-copy.ts`.
+
+### 46. Two end-to-end specs no longer match the screens
+
+- Area: Tests. Effort: Quick. Evidence: 2026-11-04, a freshly reset database, desktop project.
+- `billing.spec.ts` "a quote becomes an invoice" waits for text "Total:", which the quote form (commit `5d4eb0b`) no longer shows. `client-dashboard.spec.ts` "the project dashboard shows task counts" looks for a "Dashboard" tab; the project page has Summary, Board, List and Deliverables.
+- Fix: point each spec at the current label, then keep them in `verify`.
