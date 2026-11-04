@@ -52,7 +52,7 @@ Statements per page, seeded demo data, signed in as the owner, 2026-11-04, after
 | Reports                             | 17       | 20     |
 | Today                               | 27       | 20     |
 
-The next steps, in order of return: a Today read model that fetches the person's open tasks once and splits them in memory (the overdue, due today, plan and candidate reads each run a count and a select); one shared read of settings plus saved views for list pages.
+The next steps, in order of return: one shared read of settings plus saved views for list pages; a single read of the attendance rows Today asks for twice.
 
 ## Statements are not the whole time
 
@@ -61,3 +61,14 @@ In the dev server a request spends most of its time outside the database. For `/
 ## Measuring layout shift under load
 
 `layout-shift.spec.ts` runs against the local app. For a throttled run, set CPU 4× and a 200 KB/s, 150 ms network in a Chromium session and watch `layout-shift` entries; the first throttled run found the phone timeline (0.200), and every other measured route is 0.000.
+
+## Measuring on a real deployment
+
+The local sandbox could not build or run the production bundle (one CPU, and the proxy refuses Cloudflare hosts), so the 200 ms target has not been measured. On a deployed tenant:
+
+```bash
+# 20 sign-ins' worth of timing for one page: time to first byte, signed in with a session cookie
+for i in $(seq 20); do curl -s -o /dev/null -b cookies.txt -w "%{time_starttransfer}\n" https://<tenant>/tasks; done | sort -n | sed -n '10p;19p'
+```
+
+Report the median (10th) and the 95th percentile (19th) per page, and compare them with the statement counts above. Statements per page do not depend on the environment, so a page over its budget here is over it there too.

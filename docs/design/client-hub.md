@@ -34,6 +34,14 @@ Every way of making a task can carry a client: the client page's New task, the N
 - `loadBillingPage({ organizationId })`: the same query with a client filter.
 - `/billing/new?organizationId=<id>`: opens the form with the client fixed.
 
+## Client-level controls
+
+Today a client has an owner, a source, details (website, email, phone), tenant-defined custom fields, files and an archive. A tenant that needs a per-client default (currency, payment terms, billing contact) adds it as a custom field in Settings, Fields. Not built: those defaults as first-class settings that the billing form reads, per-client visibility beyond the owner and group scope, and a client portal.
+
+## Naming
+
+The sidebar group is "Clients" and its first link is "Organizations", because a company can be a prospect before it is a client. A tenant that wants "Clients" there sets it in Settings, Terminology; the vertical templates carry their own words. A default rename would touch about 150 strings and is not done.
+
 ## Not built
 
 Pinned or recent clients in the sidebar (they would change the sidebar after it paints), a per-client file section for brand guidelines and work orders ([roadmap](../roadmap.md) wave 12), and a client portal.

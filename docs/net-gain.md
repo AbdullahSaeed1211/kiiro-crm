@@ -66,3 +66,14 @@ Also: `/api/v1/nav/counts` 195 → 150 ms; every full read of a small table is o
 ## Not measured
 
 The 200 ms target on Cloudflare, production-build timings (the local build did not finish within the time allowed) and any user-facing time saved by the interface itself. They need a deployed tenant.
+
+## Since the first version of this table
+
+| Area                                         | Before                                     | After                                                                     |
+| -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- |
+| Making a task for a client or for someone    | no client or assignee on the New task page | both, on the page; a Client field on the task panel; staff keep their own |
+| A client's money                             | not on the client page                     | Billing tab and an Outstanding figure (owners and managers)               |
+| Settings pages reachable without a click     | 3 of 18                                    | 18 of 18 on desktop                                                       |
+| Vertical-template vocabulary shown in the UI | never (wrong keys)                         | yes                                                                       |
+| Report ranges that silently fell back        | all invalid ones                           | none; the reason is shown                                                 |
+| Stale end-to-end specs                       | 3                                          | 0 (the emailed-quote spec needs a mail service)                           |
