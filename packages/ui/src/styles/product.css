@@ -1,6 +1,6 @@
 /* Product design system. Loaded last so the entire customer UI can be reverted as one layer. */
 :root {
-  --background: oklch(0.98 0.003 90);
+  --background: oklch(0.995 0.002 90);
   --foreground: oklch(0.22 0.008 90);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
@@ -18,15 +18,19 @@
   --border: oklch(0.88 0.004 90);
   --input: oklch(0.84 0.004 90);
   --ring: oklch(0.61 0.2 36);
-  --sidebar: oklch(0.965 0.003 90);
+  --sidebar: oklch(0.948 0.004 90);
   --sidebar-foreground: oklch(0.28 0.008 90);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: oklch(0.92 0.004 90);
+  --sidebar-accent: oklch(0.912 0.005 90);
   --sidebar-accent-foreground: oklch(0.2 0.008 90);
-  --sidebar-border: oklch(0.87 0.004 90);
+  --sidebar-border: oklch(0.9 0.004 90);
   --sidebar-ring: var(--ring);
-  --radius: 0.4rem;
+  --radius: 0.5rem;
+  /* The working surface floats on the canvas: one radius, one lift, so every screen shares the same edge. */
+  --radius-inset: 0.875rem;
+  --shadow-inset:
+    0 0 0 1px var(--hairline), 0 1px 2px oklch(0.2 0.008 90 / 6%), 0 8px 24px -16px oklch(0.2 0.008 90 / 14%);
 
   --surface-sunken: oklch(0.955 0.003 90);
   --surface-hover: oklch(0.95 0.004 90);
@@ -154,12 +158,15 @@ select {
   min-width: 0;
   overflow: clip;
   background: var(--background);
-  border-left: 1px solid var(--sidebar-border);
+  border: 0;
+  border-radius: var(--radius-inset);
+  box-shadow: var(--shadow-inset);
 }
 
 .ops-app-header {
   height: 3rem;
   border-color: var(--hairline);
+  border-radius: var(--radius-inset) var(--radius-inset) 0 0;
   background: var(--background);
   padding-inline: 1rem 7.5rem;
 }
@@ -191,12 +198,14 @@ select {
 }
 
 .ops-page-header h1 {
-  font-size: 1.25rem;
-  line-height: 1.15;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 650;
 }
 
 .ops-page-header p {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
 
 /* Sidebar */
@@ -634,7 +643,11 @@ input[data-slot='command-input']:not([type='checkbox']):not([type='radio']):focu
 
   [data-slot='sidebar-inset'] {
     border-radius: 0;
-    border-left: 0;
+    box-shadow: none;
+  }
+
+  .ops-app-header {
+    border-radius: 0;
   }
 
   .ops-app-header {
