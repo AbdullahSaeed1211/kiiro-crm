@@ -120,8 +120,8 @@ Source: the owner's walkthrough on 2026-10-13. Staff should open the app and kno
 
 Depends on: nothing. Done when: UX 37 is fixed and verified signed in on production.
 
-## 13. Navigation and shell
+## 13. Navigation, shell and speed
 
-Done (2026-11-04): [navigation design](design/navigation.md), breadcrumb labels from terminology and copy on every page, and a theme choice that survives blocked storage. Open: UX 45 (measure layout shift on production data).
+Done (2026-11-04): [navigation design](design/navigation.md); breadcrumb labels from terminology and copy; a theme choice that survives blocked storage; the phone timeline's layout shift; currency changes that keep saved deal amounts; logo replacement that keeps the old file until the new one is saved; and the first speed pass in [performance](performance.md). Open: the remaining hotspots listed there.
 
-Depends on: nothing. Done when: UX 45 is fixed.
+Depends on: nothing. Done when: every page in [performance](performance.md#where-it-stands) is at or under its query budget.

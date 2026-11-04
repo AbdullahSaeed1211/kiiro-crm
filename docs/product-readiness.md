@@ -26,15 +26,15 @@ Ordered by how directly each one stops a buyer. Each has an owner document; none
 3. **Only one live tenant.** The pilot-week criteria (spec §20.6) are not measured, so there is no evidence of daily use by a second business ([roadmap](roadmap.md) wave 4).
 4. **No client portal.** Clients cannot see their work or invoices; designed in [quotes, invoices, portal](design/quotes-invoices-portal-rules-audit.md), not built. Payments through a processor wait for a tenant account.
 5. **No automation rules or custom record types.** Lead assignment rules exist; general "when X, do Y" does not. Gmail and two-way calendar sync, call logs and SMS campaigns are deferred or partial.
-6. **Layout stability is unmeasured in production.** The owner reports shifting screens that a local scan did not reproduce ([UX 45](backlog/ux.md)).
-7. **Open defects.** The [UX backlog](backlog/ux.md) lists a critical gap (the end-to-end suite cannot see broken layouts) and major settings defects, including currency changes that relabel saved deal amounts (UX 40) and brand replacement that can destroy the previous logo (UX 41). A buyer who changes currency or logo hits these.
+6. **Speed is unproven on real infrastructure.** Query counts are fixed on the worst pages ([performance](performance.md)); the 200 ms target has not been measured on Cloudflare.
+7. **Open defects.** The [UX backlog](backlog/ux.md) lists a critical gap (the end-to-end suite still has no screenshot diffs), a settings navigation mismatch (UX 39) and silent report-range fallbacks (UX 42).
 8. **Copy outside the catalogs.** Spanish workspaces still show English in record pages and most settings pages (UX 38).
 
 ## Suggested order
 
 1. Decide the licence and write the buyer terms (item 1).
-2. Fix UX 40 and 41, which lose or mislabel customer data, then UX 3 so layout regressions are caught.
-3. Measure UX 45 on production data and fix the screens that shift, using Today as the model.
+2. Fix UX 39 and 42, then add screenshot diffs (UX 3).
+3. Measure [performance](performance.md) on a deployed tenant and close the listed hotspots.
 4. Run the pilot week for a second business and record the §20.6 results (item 3).
 5. Build the client portal, then self-serve provisioning (items 4 and 2).
 

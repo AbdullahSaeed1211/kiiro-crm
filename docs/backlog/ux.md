@@ -1,6 +1,6 @@
 # UX backlog
 
-12 findings are open: 1 critical, 6 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+9 findings are open: 1 critical, 4 major and 4 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -13,7 +13,7 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - Area: Tests. Effort: Quick.
 - Now: `route-health.spec.ts:351-356` checks that an "Assignees" heading is visible and that `[data-slot="sheet-content"]` has no matches. The broken page passes both. It saves a screenshot, but nothing ever compares it. Most routes get only a "heading is visible" check.
 - Fix: Add `toHaveScreenshot` diffs for the core surfaces, and geometry checks: the content box must not intersect the header, and a standalone route must have no Close button. The file already uses bounding boxes and layout-shift checks for the panel, so this reuses a known technique.
-- Status: partly fixed. A geometry check now asserts the standalone task page does not overlap the app header and has no Close button; it fails until the page gets its own layout. Screenshot diffs are not added yet.
+- Status: partly fixed. A geometry check now asserts the standalone task page does not overlap the app header and has no Close button; it fails until the page gets its own layout. `layout-shift.spec.ts` now watches nine routes at two widths for layout shift. Screenshot diffs are not added yet.
 
 ## Major
 
@@ -23,19 +23,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 - `settings/terminology/page.tsx` submits singular keys such as `organization` and `task`. `app-navigation.ts` reads plural keys such as `organizations` and `tasks`. The settings page does not explain the affected labels or show a preview.
 - `saveTerminology` replaces the JSON field with the six submitted values. Onboarding stores `__onboarding` in that same field, and navigation supports additional keys. Saving the form can discard those values. This failure path is source-confirmed; no production setting was changed during review.
 - Fix: use a shared terminology contract, merge only allowed label keys and preserve internal metadata. Verify a local save changes navigation while retaining onboarding state.
-
-### 40. Currency settings relabel saved deal amounts
-
-- Area: Settings and reporting. Effort: Moderate. Evidence: `server/actions/settings/index.ts` and `server/crm/restamp-deal-currency.ts` at `da148fd`.
-- Changing workspace currency updates every existing deal currency code without converting its numeric amount. The form presents this as an ordinary regional preference. The bulk write bypasses per-deal hooks and activity.
-- Fix: separate the default currency for new deals from an explicit correction of existing amounts. Preserve historical monetary units unless the operator explicitly requests a documented migration. Verify partial failures cannot leave an unreported mixed result.
-
-### 41. Brand replacement can destroy the previous asset on failure
-
-- Area: Branding. Effort: Moderate. Evidence: `server/branding/brand-asset.ts` at `da148fd`.
-- Upload writes to a stable key such as `brand/logo.png` before updating metadata. If metadata fails, the catch deletes that key, including the previous image when the replacement uses the same extension. Removal also deletes the object before clearing its database reference.
-- `branding-settings-form.tsx` has no network-error catch/finally around upload or removal. A rejected fetch leaves the controls busy. These failure paths were reviewed in source without modifying production branding.
-- Fix: stage each replacement under a unique key, commit metadata, then clean up the old object. Preserve the old asset on failure and restore usable controls with an actionable error.
 
 ### 42. Custom report ranges silently fall back
 
@@ -84,9 +71,3 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
   - `deals/page.tsx` and `projects/page.tsx` (column headers, filters, sort options);
   - most pages under `settings/`.
 - Fix: Give the record primitives one `record-copy.ts` and pass the chosen catalog in. `recordTabs` is called from server pages and from the client `LeadRecordClient`, so the catalog arrives as an argument, not through a hook. Then move each page's strings into its own copy file, following `project-page-copy.ts`.
-
-### 45. Layout shift reported by the owner is not reproduced locally
-
-- Area: Performance. Effort: Quick. Evidence: 2026-11-04, a `layout-shift` observer on 14 routes at 1440 and 390 px scored 0.000 on first load and on in-app navigation against a local dev server with seeded data.
-- The owner reports shifting on several screens. Local data is small and the server is fast, so loading placeholders may swap too quickly to shift.
-- Fix: measure against production data with network and CPU throttling, name the routes that shift, then fix each against the Today screen's loading behavior.
