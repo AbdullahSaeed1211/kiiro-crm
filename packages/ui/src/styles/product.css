@@ -29,6 +29,7 @@
   --radius: 0.5rem;
   /* The working surface floats on the canvas: one radius, one lift, so every screen shares the same edge. */
   --radius-inset: 0.875rem;
+  --radius-card: 0.75rem;
   --shadow-inset:
     0 0 0 1px var(--hairline), 0 1px 2px oklch(0.2 0.008 90 / 6%), 0 8px 24px -16px oklch(0.2 0.008 90 / 14%);
 
@@ -65,9 +66,9 @@
 }
 
 .dark {
-  --background: oklch(0.17 0 0);
+  --background: oklch(0.195 0 0);
   --foreground: oklch(0.94 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.225 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(0.215 0.014 58);
   --popover-foreground: var(--foreground);
@@ -83,18 +84,19 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 16%);
   --ring: oklch(0.69 0.19 39);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.145 0 0);
   --sidebar-foreground: oklch(0.9 0 0);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: oklch(0.27 0 0);
+  --sidebar-accent: oklch(0.235 0 0);
   --sidebar-accent-foreground: oklch(0.96 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: var(--ring);
   --surface-sunken: oklch(0.14 0 0);
   --surface-hover: oklch(0.24 0 0);
   --surface-selected: oklch(0.28 0.01 40);
   --hairline: oklch(1 0 0 / 10%);
+  --shadow-inset: 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 40%), 0 12px 32px -16px oklch(0 0 0 / 60%);
   --shadow-border: 0 0 0 1px var(--border);
   --shadow-border-hover: 0 0 0 1px oklch(1 0 0 / 20%);
   --shadow-popover: 0 0 0 1px var(--border), 0 8px 24px -12px oklch(0 0 0 / 65%);
@@ -352,7 +354,7 @@ input[data-slot='command-input']:not([type='checkbox']):not([type='radio']):focu
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 0.4rem;
+  border-radius: var(--radius-card);
   background: var(--card);
   box-shadow: none;
 }
@@ -409,15 +411,16 @@ input[data-slot='command-input']:not([type='checkbox']):not([type='radio']):focu
 }
 
 [data-slot='table-head'] {
-  height: 2.2rem;
+  height: 2.3rem;
+  background: var(--surface-sunken);
   color: var(--muted-foreground);
   font-size: 0.72rem;
   font-weight: 560;
 }
 
 [data-slot='table-cell'] {
-  height: 2.45rem;
-  font-size: 0.8rem;
+  height: 2.55rem;
+  font-size: 0.8125rem;
 }
 
 [data-slot='table-row'] {
@@ -440,7 +443,7 @@ input[data-slot='command-input']:not([type='checkbox']):not([type='radio']):focu
 .ops-settings-form,
 .ops-detail-card {
   border: 1px solid var(--border);
-  border-radius: 0.4rem;
+  border-radius: var(--radius-card);
   background: var(--card);
   box-shadow: none;
 }
