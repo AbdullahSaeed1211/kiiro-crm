@@ -34,8 +34,10 @@ function stableSort(sort: FindArgs['sort']): readonly string[] {
 const PARALLEL_CHUNKS = 6
 
 /**
- * Reads `wanted` rows in chunks. The first chunk says how many rows exist, and the rest are then read several at a
- * time and put back in order, so a long list costs a few round trips rather than one per chunk.
+ * Reads `wanted` rows in chunks. A first read without pagination asks for one chunk and skips the count query: most
+ * tables hold fewer rows than that, and then it is the whole answer in one statement. Only a full chunk means there may
+ * be more, and the next page says how many rows exist; the rest are then read several at a time and put back in order,
+ * so a long list costs a few round trips rather than one per chunk.
  */
 async function readChunks(
   find: Find,
@@ -43,15 +45,18 @@ async function readChunks(
 ): Promise<FindResult> {
   const { args, wanted } = input
   const sort = stableSort(args.sort)
-  const read = (page: number): Promise<FindResult> => find({ ...args, pagination: true, limit: PAGE_CHUNK, page, sort })
-  const first = await read(1)
+  const first = await find({ ...args, pagination: false, limit: PAGE_CHUNK, sort })
   const docs: unknown[] = [...first.docs]
-  const pages = Math.ceil(Math.min(wanted, first.totalDocs) / PAGE_CHUNK)
-  for (let at = 2; at <= pages; at += PARALLEL_CHUNKS) {
+  if (docs.length < PAGE_CHUNK) return { docs: docs.slice(0, wanted), totalDocs: docs.length, hasNextPage: false }
+  const read = (page: number): Promise<FindResult> => find({ ...args, pagination: true, limit: PAGE_CHUNK, page, sort })
+  const second = await read(2)
+  docs.push(...second.docs)
+  const pages = Math.ceil(Math.min(wanted, second.totalDocs) / PAGE_CHUNK)
+  for (let at = 3; at <= pages; at += PARALLEL_CHUNKS) {
     const batch = Array.from({ length: Math.min(PARALLEL_CHUNKS, pages - at + 1) }, (_, offset) => read(at + offset))
     for (const result of await Promise.all(batch)) docs.push(...result.docs)
   }
-  return { docs: docs.slice(0, wanted), totalDocs: first.totalDocs, hasNextPage: false }
+  return { docs: docs.slice(0, wanted), totalDocs: second.totalDocs, hasNextPage: false }
 }
 
 /** The largest page size that is at most one chunk and divides `limit`, so a big page is a whole number of small ones. */
