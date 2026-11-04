@@ -11,7 +11,7 @@ export function traceSql<T extends object>(binding: T): T {
       if (typeof value !== 'function') return value
       if (prop !== 'prepare') return value.bind(target) as unknown
       return (sql: string): unknown => {
-        console.log(`SQL ${sql.slice(0, 160).replace(/\s+/g, ' ')}`)
+        console.log(`SQL ${String(Date.now() % 100000)} ${sql.slice(0, 160).replace(/\s+/g, ' ')}`)
         return value.call(target, sql)
       }
     },
