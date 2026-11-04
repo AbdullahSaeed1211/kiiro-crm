@@ -1,6 +1,6 @@
 # UX backlog
 
-10 findings are open: 1 critical, 4 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+9 findings are open: 1 critical, 3 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -17,12 +17,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ## Major
 
-### 39. Terminology saves use different keys from navigation
-
-- Area: Settings. Effort: Moderate. Evidence: source review at `da148fd`.
-- `settings/terminology/page.tsx` submits singular keys such as `organization` and `task`. `app-navigation.ts` reads plural keys such as `organizations` and `tasks`. The settings page does not explain the affected labels or show a preview.
-- `saveTerminology` replaces the JSON field with the six submitted values. Onboarding stores `__onboarding` in that same field, and navigation supports additional keys. Saving the form can discard those values. This failure path is source-confirmed; no production setting was changed during review.
-- Fix: use a shared terminology contract, merge only allowed label keys and preserve internal metadata. Verify a local save changes navigation while retaining onboarding state.
 
 ### 42. Custom report ranges silently fall back
 

@@ -1,9 +1,10 @@
 'use server'
 
+import { mergeTerminology } from './terminology'
 import { revalidatePath } from 'next/cache'
 import { can } from '@ops/platform'
 import { actionError, actionFailure, actionOk } from '../../action-result'
-import { getProductContext, requireRole } from '../../auth/context'
+import { getProductContext, getWorkspaceSettings, requireRole } from '../../auth/context'
 import { recordOf, stringValue } from './input'
 import { recordAuditEvent } from '../../audit/record'
 import { isSupportedCurrency } from '../../../i18n/currencies'
@@ -59,8 +60,11 @@ export async function saveEmailSettings(input: unknown): Promise<ActionResult> {
   })
 }
 
+/** Saves the renamable terms and keeps everything else stored with them (see `mergeTerminology`). */
 export async function saveTerminology(input: unknown): Promise<ActionResult> {
-  return updateSettings({ terminology: recordOf(input) })
+  const settings = await getWorkspaceSettings()
+  const merged = mergeTerminology(recordOf(settings.terminology), recordOf(input))
+  return 'error' in merged ? actionError('VALIDATION', merged.error) : updateSettings({ terminology: merged.value })
 }
 
 export async function saveProfile(input: unknown): Promise<ActionResult> {
