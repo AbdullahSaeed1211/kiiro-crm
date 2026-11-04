@@ -1,6 +1,6 @@
 # UX backlog
 
-9 findings are open: 1 critical, 3 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
+8 findings are open: 1 critical, 2 major and 5 minor. They come from a review of the product UI at commit `cc6b2d6`, run through the Acme Agency tenant in Chromium at 1440px and 390px and compared against the reference products in `../references/`. The atomic reference-parity inventory stays in [the reference-parity backlog](../ux/reference-parity-backlog.md); this file lists what the review found, with a fix for each.
 
 Critical means a core workflow is broken or a staff user hits it on day one. "Quick" is about a day or less; "Structural" needs a new shared component or data model. Codes such as T-01 or R-03 group related symptoms: T tasks, B boards and calendar, R records, S shell. Numbers are stable identifiers, so gaps mean a finding was fixed. Delete a finding in the commit that fixes it.
 
@@ -18,25 +18,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ## Major
 
 
-### 42. Custom report ranges silently fall back
-
-- Area: Reports. Effort: Quick. Evidence: `server/queries/report-range.ts` and `reports/report-range-controls.tsx` at `da148fd`.
-- Invalid or reversed custom dates silently display a preset range while retaining the custom selection. The controls provide no validation explaining the fallback. Date parsing also accepts calendar overflow when JavaScript normalizes it.
-- Fix: reject invalid ranges beside the fields, preserve the entered values and distinguish selected dates from the currently applied result. Verify a reversed range and an impossible date locally.
-
-- Status (2026-09-27, local dev server): four `route-health.spec.ts` runs fail at `v0.2.0` before any change: "workspace settings reopen" (desktop; two `Time zone` comboboxes match), "settings IA and command palette" (mobile; no `Workspace` heading in the settings navigation), and UX 34 and 35. The suite stops at the first failure per project, so later tests only run with `--grep-invert`.
-
-### 8. Leads still have their own search row
-
-- Area: Design system. Effort: Moderate. Codes: T-04 R-06.
-- Now: Contacts, organizations, deals, projects and tasks share `ListViewBar` (search, filters, sort; the state lives in the URL). Leads keep `LeadListControls` because they filter by several stages at once, owner and source and save views. Deals have no sort because the deals query does not sort yet.
-- Reference: Twenty `RecordIndexViewBar.tsx:22-34` puts search, filter, sort and group in one bar on every object.
-- Fix: Teach `ListViewBar` a multi-select stage filter and a saved-views slot, move leads onto it, and add a sort to the deals query.
-
-### 12. The inbox keeps its own buttons
-
-- Area: Design system. Effort: Moderate. Codes: S-01 S-02.
-- Status: mostly fixed. No native `<select>` is left, and settings, onboarding, reports, sign-in, the workflow builder, the copy button and the calendar use `Button`. Date fields stay native on purpose: the phone date picker is better than any custom one. Left: the inbox (CSS modules: folder rail, thread rows, reader tools, compose close) and the notification card, which are bespoke layouts rather than buttons. Fix: move the inbox to `Button` and the shared tokens when the inbox is next redesigned, then add a lint rule against raw `<button>` in app code.
 
 ## Minor
 
