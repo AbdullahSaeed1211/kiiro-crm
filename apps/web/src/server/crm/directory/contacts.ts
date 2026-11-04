@@ -85,7 +85,6 @@ export async function listContacts(
 
 /** The rows for one page of contacts, with their owners and the names of their organizations. */
 async function contactItems(context: RequestContext, records: readonly ContactRecord[]): Promise<ContactListItem[]> {
-  const repo = createCrmRepository(context.req)
   const organizationIds = [
     ...new Set(records.flatMap((record) => (record.organizationId === null ? [] : [record.organizationId]))),
   ]
@@ -94,13 +93,21 @@ async function contactItems(context: RequestContext, records: readonly ContactRe
       context,
       records.flatMap((record) => (record.ownerId === null ? [] : [record.ownerId])),
     ),
-    Promise.all(organizationIds.map((id) => repo.get('organization', id))),
+    // One query for every organization on the page; reading them one by one cost two queries per row.
+    organizationIds.length === 0
+      ? { docs: [] }
+      : context.payload.find({
+          collection: 'organizations',
+          where: { id: { in: organizationIds } },
+          select: { name: true },
+          pagination: false,
+          limit: 0,
+          depth: 0,
+          overrideAccess: false,
+          req: context.req,
+        }),
   ])
-  const byId = new Map(
-    organizations.flatMap((organization) =>
-      organization === undefined ? [] : [[organization.id, organization] as const],
-    ),
-  )
+  const byId = new Map(organizations.docs.map((organization) => [organization.id, organization] as const))
   return records.map((record) => {
     const organization = record.organizationId === null ? undefined : byId.get(record.organizationId)
     return {
