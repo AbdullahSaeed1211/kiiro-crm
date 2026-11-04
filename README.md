@@ -28,13 +28,17 @@ Each deployment serves its own tenants, defined outside this repository (see [`t
 
 Taken from the demo workspace, where every name, company and number is fictional. `pnpm docs:screenshots` retakes them from a running app that holds the demo data.
 
-| Dashboard                                                            | Leads board                                                                     |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| ![Dashboard with the sales pipeline](docs/screenshots/dashboard.png) | ![Lead board by stage](docs/screenshots/leads-board.png)                        |
-| **Deals board**                                                      | **Task board**                                                                  |
-| ![Deal board by stage](docs/screenshots/deals-board.png)             | ![Task board by stage](docs/screenshots/tasks-board.png)                        |
-| **Figures**                                                          | **Task with logged time**                                                       |
-| ![Figures with pipeline charts](docs/screenshots/figures.png)        | ![A task with its properties and logged time](docs/screenshots/task-detail.png) |
+| Today                                                                               | Tasks                                                                           |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ![Today with attendance and the person's queues](docs/screenshots/dashboard.png)    | ![Tasks table with view tabs](docs/screenshots/tasks.png)                       |
+| **Client**                                                                          | **Leads board**                                                                 |
+| ![A client with billing, projects, contacts and deals](docs/screenshots/client.png) | ![Lead board by stage](docs/screenshots/leads-board.png)                        |
+| **Deals board**                                                                     | **Task board**                                                                  |
+| ![Deal board by stage](docs/screenshots/deals-board.png)                            | ![Task board by stage](docs/screenshots/tasks-board.png)                        |
+| **Figures**                                                                         | **Task with logged time**                                                       |
+| ![Figures with pipeline charts](docs/screenshots/figures.png)                       | ![A task with its properties and logged time](docs/screenshots/task-detail.png) |
+| **Settings**                                                                        |                                                                                 |
+| ![Settings with every group in view](docs/screenshots/settings.png)                 |                                                                                 |
 
 <p align="center">
   <img src="docs/screenshots/mobile-dashboard.png" alt="Dashboard on a phone" width="260">
@@ -44,20 +48,22 @@ Taken from the demo workspace, where every name, company and number is fictional
 
 ## What it does
 
-| Area                | Capabilities                                                                                                                                                                                                                                                                                  |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a hosted form builder with a public page and embed code; a lead-assignment rule that hands new leads to people in turn.                       |
-| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                                                                     |
-| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal.                                                |
-| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                                                               |
-| **Work**            | Tasks with a table, board, calendar and a timeline coloured by stage; projects with members and progress; subtasks; a mobile layout throughout.                                                                                                                                               |
-| **Attendance**      | Self check-in/out at `/attendance`, personal history and an owner/manager team view. Employee-reported and server-received times are stored separately as Unix milliseconds and displayed in the employee's local timezone. Rules live in [spec §10.2](docs/spec.md#102-work-opsmodule-work). |
-| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                                                                     |
-| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                                                                        |
-| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                                                                |
-| **Reporting**       | Figures with owner breakdowns, and pipeline charts: open pipeline, revenue won per month, win rate, deals and leads by stage, lead sources.                                                                                                                                                   |
-| **Data**            | CSV import of organizations, contacts, leads and deals with a dry-run check and per-row report, CSV export of organizations, contacts, leads and deals, and an archive with restore.                                                                                                          |
-| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                                                  |
+| Area                | Capabilities                                                                                                                                                                                                                                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lead intake**     | Public intake endpoints with exact-origin CORS, Turnstile, rate limiting and server keys; form answers mapped to lead fields and custom fields; a hosted form builder with a public page and embed code; a lead-assignment rule that hands new leads to people in turn.                                    |
+| **Pipeline**        | Configurable workflows per record type; lead and deal boards with drag-and-drop and rollback; stage requirements that name the missing fields; a first-response target that flags leads waiting too long.                                                                                                  |
+| **Lead management** | Search, owner and source filters, saved views, bulk assign and bulk stage move, phone cards, duplicate warnings, next-action dates with an overdue marker, notes, editable details, and one-step conversion to contact, organization and deal.                                                             |
+| **Deals to work**   | A won deal starts an onboarding project from a playbook, with its tasks and due dates, and links back to the lead it came from.                                                                                                                                                                            |
+| **Clients**         | One page per client: contacts, leads, deals, projects, tasks, files, email, notes and, for owners and managers, quotes, invoices and what the client owes. A task can be made for a client and for someone, from the menu, the client page or the task panel. See [client hub](docs/design/client-hub.md). |
+| **Billing**         | Quotes that become invoices, line items with tax, status from draft to paid, emailed to the client. Owners and managers only.                                                                                                                                                                              |
+| **Work**            | Tasks with a table, board, calendar and a timeline coloured by stage; projects with members and progress; subtasks; a mobile layout throughout, and a Today screen per person that leads with attendance.                                                                                                  |
+| **Attendance**      | Self check-in/out at `/attendance`, personal history and an owner/manager team view. Employee-reported and server-received times are stored separately as Unix milliseconds and displayed in the employee's local timezone. Rules live in [spec §10.2](docs/spec.md#102-work-opsmodule-work).              |
+| **Custom fields**   | Tenant-defined fields on organizations, contacts, leads and deals, with visibility rules.                                                                                                                                                                                                                  |
+| **Email**           | Per-record email threads, reusable templates, and inbound routing to the right record.                                                                                                                                                                                                                     |
+| **Newsletter**      | Opt-in through contacts or a lead form question, named audiences, a signed one-click unsubscribe link, and a campaign history.                                                                                                                                                                             |
+| **Reporting**       | Figures with owner breakdowns, and pipeline charts: open pipeline, revenue won per month, win rate, deals and leads by stage, lead sources.                                                                                                                                                                |
+| **Data**            | CSV import of organizations, contacts, leads and deals with a dry-run check and per-row report, CSV export of organizations, contacts, leads and deals, and an archive with restore.                                                                                                                       |
+| **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                                                               |
 
 ## UX standard
 
@@ -196,18 +202,21 @@ Pushing a `v*` tag also starts the GitHub Deploy workflow, which checks out the 
 
 ## Documentation
 
-| Read                                                                 | For                                                          |
-| -------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [`docs/guides/owner-guide.md`](docs/guides/owner-guide.md)           | setting up and running a workspace as its owner              |
-| [`docs/guides/staff-quickstart.md`](docs/guides/staff-quickstart.md) | working leads, clients and tasks day to day                  |
-| [`docs/spec.md`](docs/spec.md)                                       | authoritative product behavior                               |
-| [`docs/architecture.md`](docs/architecture.md)                       | the short map and the conventions every change keeps         |
-| [`docs/roadmap.md`](docs/roadmap.md)                                 | the order in which open work ships                           |
-| [`docs/backlog/`](docs/backlog/)                                     | open code-health and UX findings                             |
-| [`docs/adr/`](docs/adr/)                                             | architecture decisions                                       |
-| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md)   | the proposal for self-serve signup and provisioning          |
-| [`docs/runbooks/`](docs/runbooks/)                                   | deploy, backup, rollback, incident and onboarding procedures |
-| [`AGENTS.md`](AGENTS.md)                                             | where code lives, golden examples and working rules          |
+| Read                                                                                                                                                   | For                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| [`docs/guides/owner-guide.md`](docs/guides/owner-guide.md)                                                                                             | setting up and running a workspace as its owner                         |
+| [`docs/guides/staff-quickstart.md`](docs/guides/staff-quickstart.md)                                                                                   | working leads, clients and tasks day to day                             |
+| [`docs/spec.md`](docs/spec.md)                                                                                                                         | authoritative product behavior                                          |
+| [`docs/architecture.md`](docs/architecture.md)                                                                                                         | the short map and the conventions every change keeps                    |
+| [`docs/roadmap.md`](docs/roadmap.md)                                                                                                                   | the order in which open work ships                                      |
+| [`docs/backlog/`](docs/backlog/)                                                                                                                       | open code-health and UX findings                                        |
+| [`docs/adr/`](docs/adr/)                                                                                                                               | architecture decisions                                                  |
+| [`docs/design/navigation.md`](docs/design/navigation.md), [`ui-language.md`](docs/design/ui-language.md), [`client-hub.md`](docs/design/client-hub.md) | how people move around, the visual rules, and how a client is organized |
+| [`docs/performance.md`](docs/performance.md), [`net-gain.md`](docs/net-gain.md)                                                                        | how requests are kept lean, measured, and what changed                  |
+| [`docs/product-readiness.md`](docs/product-readiness.md)                                                                                               | what a white-label buyer gets, and what still blocks a sale             |
+| [`docs/design/self-serve-saas.md`](docs/design/self-serve-saas.md)                                                                                     | the proposal for self-serve signup and provisioning                     |
+| [`docs/runbooks/`](docs/runbooks/)                                                                                                                     | deploy, backup, rollback, incident and onboarding procedures            |
+| [`AGENTS.md`](AGENTS.md)                                                                                                                               | where code lives, golden examples and working rules                     |
 
 ## Contributing
 
