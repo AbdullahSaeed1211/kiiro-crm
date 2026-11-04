@@ -3,7 +3,8 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { OrganizationRelations, RelatedTask } from '../../server/crm/directory/data'
 import type { OrganizationReadiness } from '../../server/crm/directory/organization-readiness'
-import type { PersonSummary } from '../../server/crm/directory/data'
+import type { Outstanding } from '../../server/billing/queries'
+import { formatMoney } from './billing/money'
 import { formatDate } from '../../i18n/format'
 import type { RecordCopy } from '../../i18n/record-copy'
 import type { OrganizationOverviewCopy } from '../../i18n/organization-overview-copy'
@@ -85,17 +86,45 @@ function NextDueTaskCard({
   )
 }
 
+/** The line beside the amount: how many invoices are overdue, or that nothing is owed. */
+function outstandingNote(outstanding: Outstanding, copy: OrganizationOverviewCopy): string {
+  if (outstanding.overdue > 0) return copy.overdueInvoices.replace('{count}', String(outstanding.overdue))
+  return outstanding.amounts.length === 0 ? copy.nothingOwed : ''
+}
+
+/** What the client owes, for the people who handle billing; a client who owes nothing says so. */
+function OutstandingCard({
+  outstanding,
+  copy,
+  locale,
+}: Readonly<{ outstanding: Outstanding; copy: OrganizationOverviewCopy; locale: string }>) {
+  const owed = outstanding.amounts.map((amount) =>
+    formatMoney({ ...amount, locale: locale === 'es' ? 'es-ES' : 'en-US' }),
+  )
+  return (
+    <Card size="sm" className="min-w-0">
+      <CardHeader>
+        <CardTitle>{copy.outstanding}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-baseline gap-x-2">
+        <span className="text-2xl font-semibold tabular-nums">{owed.length === 0 ? '—' : owed.join(' · ')}</span>
+        <span className="text-sm text-muted-foreground">{outstandingNote(outstanding, copy)}</span>
+      </CardContent>
+    </Card>
+  )
+}
+
 function OrganizationSummary({
   organizationId,
   nextDueTask,
-  owner,
+  outstanding,
   readiness,
   overviewCopy,
   locale,
 }: Readonly<{
   organizationId: string
   nextDueTask: RelatedTask | null
-  owner: PersonSummary | null
+  outstanding?: Outstanding
   readiness: OrganizationReadiness
   overviewCopy: OrganizationOverviewCopy
   locale: string
@@ -112,12 +141,9 @@ function OrganizationSummary({
       ) : (
         <NextDueTaskCard task={nextDueTask} copy={overviewCopy} locale={locale} organizationId={organizationId} />
       )}
-      <Card size="sm" className="min-w-0">
-        <CardHeader>
-          <CardTitle>{overviewCopy.responsiblePerson}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm">{owner?.name ?? overviewCopy.noResponsiblePerson}</CardContent>
-      </Card>
+      {outstanding === undefined ? null : (
+        <OutstandingCard outstanding={outstanding} copy={overviewCopy} locale={locale} />
+      )}
       <Card size="sm" className="min-w-0">
         <CardHeader>
           <CardTitle>{overviewCopy.overdueWork}</CardTitle>
@@ -148,7 +174,7 @@ export function OrganizationOverview({
   organizationId,
   relations,
   nextDueTask,
-  owner,
+  outstanding,
   readiness,
   copy,
   overviewCopy,
@@ -157,7 +183,7 @@ export function OrganizationOverview({
   organizationId: string
   relations: OrganizationRelations
   nextDueTask: RelatedTask | null
-  owner: PersonSummary | null
+  outstanding?: Outstanding
   readiness: OrganizationReadiness
   copy: RecordCopy
   overviewCopy: OrganizationOverviewCopy
@@ -210,7 +236,7 @@ export function OrganizationOverview({
       <OrganizationSummary
         organizationId={organizationId}
         nextDueTask={nextDueTask}
-        owner={owner}
+        {...(outstanding === undefined ? {} : { outstanding })}
         readiness={readiness}
         overviewCopy={overviewCopy}
         locale={locale}

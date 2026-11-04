@@ -17,8 +17,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ## Major
 
-
-
 ## Minor
 
 ### 33. Duplicate React key on mobile timeline

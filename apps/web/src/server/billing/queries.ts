@@ -73,6 +73,38 @@ export async function loadBillingPage(
   return { rows, total: found.total, page: input.page }
 }
 
+/** What a client owes: sent invoices not yet paid, per currency, and how many of them are past due. */
+export interface Outstanding {
+  readonly count: number
+  readonly overdue: number
+  readonly amounts: readonly Readonly<{ currency: string; minor: number }>[]
+}
+
+/** The most unpaid invoices counted for one client; a client with more than this owes more than it shows. */
+const OUTSTANDING_LIMIT = 100
+
+/** One client's unpaid invoices, totalled per currency. */
+export async function loadClientOutstanding(context: RequestContext, organizationId: string): Promise<Outstanding> {
+  const where: Where = {
+    and: [
+      { organization: { equals: organizationId } },
+      { kind: { equals: 'invoice' } },
+      { status: { equals: 'sent' } },
+    ],
+  }
+  const found = await listBillingPage(context.req, { where, page: 1, limit: OUTSTANDING_LIMIT })
+  const now = Date.now()
+  const totals = new Map<string, number>()
+  for (const record of found.records) {
+    totals.set(record.currency, (totals.get(record.currency) ?? 0) + record.totalMinor)
+  }
+  return {
+    count: found.records.length,
+    overdue: found.records.filter((record) => isOverdue(record, now)).length,
+    amounts: [...totals].map(([currency, minor]) => ({ currency, minor })),
+  }
+}
+
 /** The name of one company the viewer may read, or an empty string. */
 export async function loadCompanyName(context: RequestContext, id: string): Promise<string> {
   return (await companyNames(context, [id])).get(id) ?? ''

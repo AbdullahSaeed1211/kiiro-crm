@@ -17,6 +17,16 @@ The client page (`/organizations/<id>`) gathers everything about one client behi
 
 Billing's list is read only while its tab is open (`?tab=billing`), so the other tabs and staff pay nothing for it.
 
+## Overview
+
+The Overview opens with four figures: the next due item, **Outstanding** (unpaid sent invoices per currency, with how many are overdue; owners and managers only), overdue work and items awaiting the client's response. Below them sit the client's projects, contacts and deals, each with an add link.
+
+The owner shows once, in the header. The page has one primary button, **New task**, which opens the task form already linked to the client; Edit and Archive are secondary.
+
+## Tasks for a client
+
+Every way of making a task can carry a client: the client page's New task, the New task page's Client picker (and Assigned to, for owners and managers), and the Client field on a task's panel and page, which changes or clears it. Staff can assign only themselves, matching the command's rule. Today's quick add stays title-only; its task can get a client from the panel in one step.
+
 ## Parts
 
 - `billing/client-billing-tab.tsx`: the tab.

@@ -4,6 +4,7 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { RecordPageLayout, type RecordPageTab } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
 import type { ReactNode } from 'react'
+import type { Outstanding } from '../../server/billing/queries'
 import type { OrganizationRecord } from '@ops/module-crm'
 import type {
   ActivityItem,
@@ -57,22 +58,22 @@ function organizationTabs(
   )
 }
 
-function OrganizationAside({
-  record,
-  owner,
-  copy,
-}: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null; copy: RecordCopy }>) {
+/** The record's details, its created and updated times, and its custom fields. */
+function OrganizationAsideColumn({ record, copy }: Readonly<{ record: OrganizationRecord; copy: RecordCopy }>) {
+  return (
+    <div className="grid gap-4">
+      <RecordDetails type="organization" id={record.id} />
+      <OrganizationAside record={record} copy={copy} />
+      <RecordCustomFields type="organization" id={record.id} />
+    </div>
+  )
+}
+
+/** Created and updated times. The owner shows once, in the header, rather than again here. */
+function OrganizationAside({ record, copy }: Readonly<{ record: OrganizationRecord; copy: RecordCopy }>) {
   return (
     <DetailCard title={copy.record}>
-      <dl className="grid gap-3 text-sm">
-        <div>
-          <dt className="text-xs text-muted-foreground">{copy.owner}</dt>
-          <dd className="mt-0.5">{personLabel(owner)}</dd>
-        </div>
-      </dl>
-      <div className="mt-3">
-        <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} copy={copy} />
-      </div>
+      <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} copy={copy} />
     </DetailCard>
   )
 }
@@ -91,7 +92,7 @@ function organizationOverviewTab(
     organizationId: string
     relations: OrganizationRelations
     nextDueTask: RelatedTask | null
-    owner: PersonSummary | null
+    outstanding?: Outstanding
     readiness: OrganizationReadiness
     copy: RecordCopy
     overviewCopy: OrganizationOverviewCopy
@@ -119,6 +120,7 @@ export async function OrganizationRecordView({
   data,
   outboundEmailEnabled,
   billing,
+  outstanding,
 }: Readonly<{
   data: {
     record: OrganizationRecord
@@ -134,6 +136,8 @@ export async function OrganizationRecordView({
   outboundEmailEnabled: boolean
   /** The Billing tab, for the people who may see it. */
   billing?: { label: string; content: ReactNode }
+  /** What the client owes, for the people who handle billing. */
+  outstanding?: Outstanding
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments } = data
   const locale = await loadWorkspaceLocale()
@@ -166,6 +170,7 @@ export async function OrganizationRecordView({
               recordLabel={record.name}
               archive={<ArchiveRecordControl type="organization" id={record.id} label={record.name} />}
               editHref={`/organizations/${record.id}/edit`}
+              primary
               email={record.email}
               phone={record.phone}
               outboundEmailEnabled={outboundEmailEnabled}
@@ -176,7 +181,7 @@ export async function OrganizationRecordView({
               organizationId: record.id,
               relations,
               nextDueTask,
-              owner,
+              ...(outstanding === undefined ? {} : { outstanding }),
               readiness,
               copy,
               overviewCopy,
@@ -184,13 +189,7 @@ export async function OrganizationRecordView({
             }),
             ...withBilling(tabs, billing),
           ]}
-          aside={
-            <div className="grid gap-4">
-              <RecordDetails type="organization" id={record.id} />
-              <OrganizationAside record={record} owner={owner} copy={copy} />
-              <RecordCustomFields type="organization" id={record.id} />
-            </div>
-          }
+          aside={<OrganizationAsideColumn record={record} copy={copy} />}
         />
       </PageContent>
     </>

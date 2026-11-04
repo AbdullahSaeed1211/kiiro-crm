@@ -5,11 +5,16 @@ import Link from 'next/link'
 import { SendTextDialog } from './send-text-dialog'
 import type { RecordCopy } from '../../i18n/record-copy'
 
-function actionLink({ href, label, icon }: Readonly<{ href: string; label: string; icon: ReactNode }>) {
+function actionLink({
+  href,
+  label,
+  icon,
+  primary = false,
+}: Readonly<{ href: string; label: string; icon: ReactNode; primary?: boolean }>) {
   return (
     <Button
       key={label}
-      variant="outline"
+      variant={primary ? 'default' : 'outline'}
       size="sm"
       nativeButton={false}
       render={
@@ -64,6 +69,7 @@ export function RecordActionLinks({
   phone,
   outboundEmailEnabled = true,
   archive,
+  primary = false,
   copy,
 }: Readonly<{
   copy: RecordCopy
@@ -76,6 +82,8 @@ export function RecordActionLinks({
   outboundEmailEnabled?: boolean
   /** The Archive control, already gated on the viewer's role by the page. */
   archive?: ReactNode
+  /** Makes New task the page's one primary button, for records where following up is the daily action. */
+  primary?: boolean
 }>) {
   const taskHref = `/tasks/new?${new URLSearchParams({
     relatedType: recordType,
@@ -93,7 +101,7 @@ export function RecordActionLinks({
       {phoneNumber === null || recordType === 'deal' ? null : (
         <SendTextDialog recordType={recordType} recordId={recordId} recipient={phoneNumber} />
       )}
-      {actionLink({ href: taskHref, label: copy.newTask, icon: <ClipboardPlus aria-hidden /> })}
+      {actionLink({ href: taskHref, label: copy.newTask, icon: <ClipboardPlus aria-hidden />, primary })}
       {editHref === undefined ? null : actionLink({ href: editHref, label: copy.edit, icon: <Pencil aria-hidden /> })}
       {archive}
     </div>
