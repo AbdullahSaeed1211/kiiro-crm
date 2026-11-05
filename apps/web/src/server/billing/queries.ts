@@ -110,6 +110,16 @@ export async function loadCompanyName(context: RequestContext, id: string): Prom
   return (await companyNames(context, [id])).get(id) ?? ''
 }
 
+/** The currency of a client's latest quote or invoice, so the next one starts in it; `undefined` for a new client. */
+export async function loadClientCurrency(context: RequestContext, organizationId: string): Promise<string | undefined> {
+  const found = await listBillingPage(context.req, {
+    where: { organization: { equals: organizationId } },
+    page: 1,
+    limit: 1,
+  })
+  return found.records[0]?.currency
+}
+
 export interface BillingView {
   readonly document: BillingDocument
   readonly shown: string

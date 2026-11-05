@@ -32,11 +32,11 @@ Every way of making a task can carry a client: the client page's New task, the N
 - `billing/client-billing-tab.tsx`: the tab.
 - `billing/billing-rows.tsx`: the one list of quotes and invoices, shared with the Billing page.
 - `loadBillingPage({ organizationId })`: the same query with a client filter.
-- `/billing/new?organizationId=<id>`: opens the form with the client fixed.
+- `/billing/new?organizationId=<id>`: opens the form with the client fixed and the currency of that client's latest quote or invoice (the workspace currency for a client with none).
 
 ## Client-level controls
 
-Today a client has an owner, a source, details (website, email, phone), tenant-defined custom fields, files and an archive. A tenant that needs a per-client default (currency, payment terms, billing contact) adds it as a custom field in Settings, Fields. Not built: those defaults as first-class settings that the billing form reads, per-client visibility beyond the owner and group scope, and a client portal.
+Today a client has an owner, a source, details (website, email, phone), tenant-defined custom fields, files and an archive. A new quote or invoice starts in the client's usual currency, taken from their latest document. A tenant that needs another per-client default (payment terms, billing contact) adds it as a custom field in Settings, Fields. Not built: those defaults as first-class settings that the billing form reads, per-client visibility beyond the owner and group scope, and a client portal.
 
 ## Naming
 

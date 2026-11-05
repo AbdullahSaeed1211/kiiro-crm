@@ -7,7 +7,7 @@ import { BILLING_COPY } from '../../../../i18n/billing-copy'
 import { catalogFor } from '../../../../i18n/locale'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { getRequestContext } from '@/server/container'
-import { loadCompanyName } from '../../../../server/billing/queries'
+import { loadClientCurrency, loadCompanyName } from '../../../../server/billing/queries'
 import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models'
 import { firstParam } from '../../search-params'
 import { BillingForm } from '../billing-form'
@@ -15,19 +15,20 @@ import { BillingForm } from '../billing-form'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'New quote or invoice' }
 
-/** The form's starting point: the kind, the workspace currency, and the client when the page was opened from one. */
+/** The form's starting point: the kind, the client's usual currency (else the workspace's), and the client when the page was opened from one. */
 async function startOf(
   context: Awaited<ReturnType<typeof getRequestContext>>,
   params: Record<string, string | string[] | undefined>,
 ) {
   const clientId = firstParam(params.organizationId) ?? ''
-  const [settings, clientName] = await Promise.all([
+  const [settings, clientName, clientCurrency] = await Promise.all([
     getWorkspaceSettings(),
     clientId === '' ? '' : loadCompanyName(context, clientId),
+    clientId === '' ? undefined : loadClientCurrency(context, clientId),
   ])
   return {
     kind: firstParam(params.kind) === 'invoice' ? ('invoice' as const) : ('quote' as const),
-    currency: typeof settings.currency === 'string' ? settings.currency : 'USD',
+    currency: clientCurrency ?? (typeof settings.currency === 'string' ? settings.currency : 'USD'),
     ...(clientName === '' ? {} : { client: { id: clientId, name: clientName } }),
   }
 }
