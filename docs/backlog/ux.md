@@ -15,6 +15,4 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ### 40. Open product work from the 2026-11-05 session
 
 - Automation rules (roadmap wave 11, design in `docs/design/quotes-invoices-portal-rules-audit.md#automation-rules`): not started.
-- README screenshots: retake with `scripts/screenshots.ts` to show the client portal, the portal card on a client's Billing tab and the new type settings; the feature table already lists the portal.
-- UX 34 needs one run of the mobile (WebKit) Playwright project to close.
 - Server error messages are English in Spanish workspaces; a shared approach is needed before changing 50 action files.

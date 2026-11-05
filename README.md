@@ -28,17 +28,19 @@ Each deployment serves its own tenants, defined outside this repository (see [`t
 
 Taken from the demo workspace, where every name, company and number is fictional. `pnpm docs:screenshots` retakes them from a running app that holds the demo data.
 
-| Today                                                                               | Tasks                                                                           |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| ![Today with attendance and the person's queues](docs/screenshots/dashboard.png)    | ![Tasks table with view tabs](docs/screenshots/tasks.png)                       |
-| **Client**                                                                          | **Leads board**                                                                 |
-| ![A client with billing, projects, contacts and deals](docs/screenshots/client.png) | ![Lead board by stage](docs/screenshots/leads-board.png)                        |
-| **Deals board**                                                                     | **Task board**                                                                  |
-| ![Deal board by stage](docs/screenshots/deals-board.png)                            | ![Task board by stage](docs/screenshots/tasks-board.png)                        |
-| **Figures**                                                                         | **Task with logged time**                                                       |
-| ![Figures with pipeline charts](docs/screenshots/figures.png)                       | ![A task with its properties and logged time](docs/screenshots/task-detail.png) |
-| **Settings**                                                                        |                                                                                 |
-| ![Settings with every group in view](docs/screenshots/settings.png)                 |                                                                                 |
+| Today                                                                               | Tasks                                                                                             |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| ![Today with attendance and the person's queues](docs/screenshots/dashboard.png)    | ![Tasks table with view tabs](docs/screenshots/tasks.png)                                         |
+| **Client**                                                                          | **Leads board**                                                                                   |
+| ![A client with billing, projects, contacts and deals](docs/screenshots/client.png) | ![Lead board by stage](docs/screenshots/leads-board.png)                                          |
+| **Deals board**                                                                     | **Task board**                                                                                    |
+| ![Deal board by stage](docs/screenshots/deals-board.png)                            | ![Task board by stage](docs/screenshots/tasks-board.png)                                          |
+| **Figures**                                                                         | **Task with logged time**                                                                         |
+| ![Figures with pipeline charts](docs/screenshots/figures.png)                       | ![A task with its properties and logged time](docs/screenshots/task-detail.png)                   |
+| **Client portal**                                                                   | **Portal links**                                                                                  |
+| ![Client portal with a client's project progress](docs/screenshots/portal.png)      | ![Portal links on a client's Billing tab](docs/screenshots/portal-card.png)                       |
+| **Settings**                                                                        | **Sales settings**                                                                                |
+| ![Settings with every group in view](docs/screenshots/settings.png)                 | ![Lead rules and email templates on the Sales settings page](docs/screenshots/sales-settings.png) |
 
 <p align="center">
   <img src="docs/screenshots/mobile-dashboard.png" alt="Dashboard on a phone" width="260">
