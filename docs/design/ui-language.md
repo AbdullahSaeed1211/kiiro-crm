@@ -33,3 +33,10 @@ What a person sees follows the same rules everywhere ([navigation](navigation.md
 - Loading placeholders match final geometry ([layout-shift spec](../../tests/e2e/customer/layout-shift.spec.ts) covers nine routes).
 - Works at 390 px and in the dark theme.
 - Checked as owner, manager and staff.
+
+## Type
+
+- One pairing, Geist and Geist Mono, loaded once in `apps/web/src/app/fonts.ts` and used by every root layout (staff app, sign-in, client portal, public forms). Do not load a font in a layout.
+- Smoothing is set once on `body` in `packages/ui/src/styles/product.css` (antialiased, grayscale on macOS). Layouts do not add `antialiased`.
+- No `font-feature-settings` on body: the Inter-only `cv02`–`cv04` and `ss01` had no effect on this Geist build (measured). Use `tabular-nums` for numbers in tables and totals.
+- The global error page keeps the system font on purpose: it shows when the app's own CSS may not load.

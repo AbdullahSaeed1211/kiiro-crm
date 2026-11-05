@@ -110,7 +110,9 @@ body {
   min-width: 320px;
   background: var(--background);
   color: var(--foreground);
-  font-feature-settings: 'ss01', 'cv02', 'cv03', 'cv04';
+  /* One rendering everywhere: grayscale smoothing on macOS, kerning and ligatures on. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 

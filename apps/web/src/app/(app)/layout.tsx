@@ -3,7 +3,6 @@ import '@ops/ui/globals.css'
 import { ThemeProvider } from '@ops/ui'
 import { Toaster } from '@ops/ui/components/ui/sonner'
 import { cookies } from 'next/headers'
-import { Geist, Geist_Mono } from 'next/font/google'
 import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
 import { getProductContext, getWorkspaceSettings } from '../../server/auth/context'
@@ -12,11 +11,10 @@ import { normalizeLocale } from '../../i18n/config'
 import { brandPresentation } from '../../server/branding/presentation'
 import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
 import { themeStyle } from '../../server/branding/theme-style'
+import { FONT_CLASS } from '../fonts'
 
 // The vendored sidebar persists its open state in this cookie.
 const SIDEBAR_COOKIE = 'sidebar_state'
-const sans = Geist({ subsets: ['latin'], variable: '--font-sans' })
-const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getWorkspaceSettings()
@@ -45,7 +43,7 @@ export default async function AppLayout({ children, modal }: Readonly<{ children
   const userEmail = textSetting(context.user.email, '')
   const sidebarOpen = cookieStore.get(SIDEBAR_COOKIE)?.value !== 'false'
   return (
-    <html lang={locale} suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
+    <html lang={locale} suppressHydrationWarning className={FONT_CLASS}>
       <body style={themeStyle(settings)}>
         <ThemeProvider>
           <LocaleProvider locale={locale}>
