@@ -2,14 +2,13 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { notFound } from 'next/navigation'
 import { DirectoryForm } from '../../../directory-form'
 import { DirectoryFormHeader, DirectoryFormIntro } from '../../../directory-view'
-import { getOrganization } from '../../../../../server/crm/directory/data'
+import { getOrganizationRecord } from '../../../../../server/crm/directory/organization-record'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EditOrganizationPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
-  const data = await getOrganization((await params).id)
-  if (data === null) notFound()
-  const { record } = data
+  const record = await getOrganizationRecord((await params).id)
+  if (record === undefined) notFound()
   return (
     <>
       <DirectoryFormHeader kind="organization" record={{ id: record.id, name: record.name }} />
