@@ -24,13 +24,15 @@ interface SystemQuery {
   readonly sort?: string
 }
 
-/** A read as system work. Every portal read passes an organization filter; nothing here relies on a user. */
+/**
+ * A read as system work. Every portal read passes an organization filter; nothing here relies on a user. The limit is
+ * real: `pagination: false` would read every row and make `MAX_SHOWN` meaningless.
+ */
 async function findAsSystem(req: PayloadRequest, query: SystemQuery): Promise<Doc[]> {
   const page = await req.payload.find({
     collection: query.collection,
     where: query.where,
     limit: MAX_SHOWN,
-    pagination: false,
     depth: 0,
     overrideAccess: true,
     req,

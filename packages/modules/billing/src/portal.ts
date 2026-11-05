@@ -89,7 +89,8 @@ export async function openPortal(deps: PortalPublicDeps, secret: string): Promis
     deps.reader.organizationName(link.organizationId),
     deps.reader.documents(link.organizationId),
     deps.reader.projects(link.organizationId),
-    deps.links.markOpened(link.id, deps.clock.now()),
+    // The open timestamp is telemetry; a write failure must not hide the documents the client came to read.
+    deps.links.markOpened(link.id, deps.clock.now()).catch(() => undefined),
   ])
   if (organizationName === undefined) return fail('NOT_FOUND', PORTAL_INVALID)
   const visible = documents.filter((document) => document.organizationId === link.organizationId && shown(document))
