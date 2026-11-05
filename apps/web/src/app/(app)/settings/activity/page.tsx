@@ -2,7 +2,8 @@ import { Button } from '@ops/ui/components/ui/button'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ACTIVITY_LOG_COPY } from '../../../../i18n/activity-log-copy'
-import { catalogFor } from '../../../../i18n/locale'
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { catalogFor, type Locale } from '../../../../i18n/locale'
 import { getRequestContext } from '@/server/container'
 import { ACTIVITY_VERBS, describeActivity } from '../../../../server/crm/activity-text'
 import { loadActivityPage, type ActivityFilters, type ActivityPage } from '../../../../server/crm/activity-log'
@@ -26,8 +27,12 @@ const ROUTES: ReadonlyMap<string, string> = new Map([
   ['task', '/tasks'],
 ])
 
-const when = (time: number): string =>
-  new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(time) + ' UTC'
+const when = (time: number, locale: Locale): string =>
+  new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'UTC',
+  }).format(time) + ' UTC'
 
 type Params = Record<string, string | string[] | undefined>
 type People = Awaited<ReturnType<typeof loadOwnerOptions>>
@@ -52,29 +57,27 @@ function queryOf(filters: ActivityFilters): string {
 }
 
 function Tabs({ copy, active }: Readonly<{ copy: Copy; active: 'changes' | 'security' }>) {
-  const tab = ({ id, label, href }: Readonly<{ id: 'changes' | 'security'; label: string; href: string }>) => (
-    <Link
-      href={href}
-      aria-current={active === id ? 'page' : undefined}
-      className={active === id ? 'border-b-2 border-primary pb-1 font-medium' : 'pb-1 text-muted-foreground'}
-    >
-      {label}
-    </Link>
-  )
   return (
-    <nav className="flex gap-4 border-b text-sm" aria-label={copy.title}>
-      {tab({ id: 'changes', label: copy.changesTab, href: LOG_PATH })}
-      {tab({ id: 'security', label: copy.securityTab, href: `${LOG_PATH}?log=security` })}
-    </nav>
+    <div className="border-b">
+      <ViewSwitcher
+        label={copy.title}
+        active={active}
+        views={[
+          { id: 'changes', label: copy.changesTab, href: LOG_PATH },
+          { id: 'security', label: copy.securityTab, href: `${LOG_PATH}?log=security` },
+        ]}
+      />
+    </div>
   )
 }
 
 function FilterForm({
   copy,
+  locale,
   filters,
   people,
   base,
-}: Readonly<{ copy: Copy; filters: ActivityFilters; people: People; base: string }>) {
+}: Readonly<{ copy: Copy; locale: Locale; filters: ActivityFilters; people: People; base: string }>) {
   const exportHref = base === '' ? '/api/v1/export/activity' : '/api/v1/export/activity?' + base
   return (
     <form method="get" className="flex flex-wrap items-end gap-3 text-sm">
@@ -98,7 +101,7 @@ function FilterForm({
         <option value="">{copy.anyEvent}</option>
         {ACTIVITY_VERBS.map((verb) => (
           <option key={verb} value={verb}>
-            {describeActivity(verb)}
+            {describeActivity(verb, locale)}
           </option>
         ))}
       </Pick>
@@ -117,14 +120,14 @@ function FilterForm({
   )
 }
 
-function LogList({ copy, rows }: Readonly<{ copy: Copy; rows: ActivityPage['rows'] }>) {
+function LogList({ copy, locale, rows }: Readonly<{ copy: Copy; locale: Locale; rows: ActivityPage['rows'] }>) {
   return (
     <ul className="divide-y text-sm">
       {rows.map((row) => (
         <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
           <span className="min-w-0">
             <span className="font-medium">{row.actor === '' ? copy.system : row.actor}</span> · {row.what}
-            <span className="block text-xs text-muted-foreground">{when(row.occurredAt)}</span>
+            <span className="block text-xs text-muted-foreground">{when(row.occurredAt, locale)}</span>
           </span>
           {ROUTES.has(row.recordType) ? (
             <Link className="text-xs underline" href={(ROUTES.get(row.recordType) ?? '') + '/' + row.recordId}>
@@ -137,7 +140,7 @@ function LogList({ copy, rows }: Readonly<{ copy: Copy; rows: ActivityPage['rows
   )
 }
 
-async function RecordChanges({ params, copy }: Readonly<{ params: Params; copy: Copy }>) {
+async function RecordChanges({ params, copy, locale }: Readonly<{ params: Params; copy: Copy; locale: Locale }>) {
   const context = await getRequestContext()
   const filters = filtersOf(params)
   const page = Math.max(1, Number(firstParam(params.page) ?? 1) || 1)
@@ -145,12 +148,12 @@ async function RecordChanges({ params, copy }: Readonly<{ params: Params; copy: 
   const base = queryOf(filters)
   return (
     <SettingsForm>
-      <FilterForm copy={copy} filters={filters} people={people} base={base} />
+      <FilterForm copy={copy} locale={locale} filters={filters} people={people} base={base} />
       {log.rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{base === '' ? copy.nothing : copy.nothingMatches}</p>
       ) : (
         <>
-          <LogList copy={copy} rows={log.rows} />
+          <LogList copy={copy} locale={locale} rows={log.rows} />
           <Pager copy={copy} page={log.page} total={log.total} base={base} path={LOG_PATH} />
         </>
       )}
@@ -161,7 +164,8 @@ async function RecordChanges({ params, copy }: Readonly<{ params: Params; copy: 
 /** Who changed what: record changes, and a separate log of security and settings events. */
 export default async function ActivitySettingsPage({ searchParams }: Readonly<{ searchParams: Promise<Params> }>) {
   const params = await searchParams
-  const copy = catalogFor(ACTIVITY_LOG_COPY, await loadWorkspaceLocale())
+  const locale = await loadWorkspaceLocale()
+  const copy = catalogFor(ACTIVITY_LOG_COPY, locale)
   const security = firstParam(params.log) === 'security'
   return (
     <SettingsPage
@@ -170,7 +174,11 @@ export default async function ActivitySettingsPage({ searchParams }: Readonly<{ 
       roles={['owner', 'manager']}
     >
       <Tabs copy={copy} active={security ? 'security' : 'changes'} />
-      {security ? <SecurityLog params={params} copy={copy} /> : <RecordChanges params={params} copy={copy} />}
+      {security ? (
+        <SecurityLog params={params} copy={copy} locale={locale} />
+      ) : (
+        <RecordChanges params={params} copy={copy} locale={locale} />
+      )}
     </SettingsPage>
   )
 }

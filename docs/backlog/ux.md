@@ -38,7 +38,7 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ### 38. Inline English remains outside the copy files
 
 - Area: Copy. Effort: Moderate. Codes: R-11.
-- Now: [AGENTS.md](../../AGENTS.md#pitfalls) requires every user-facing string to live in a per-feature `*-copy.ts` with an `en` and an `es` entry, so a workspace set to Spanish shows English wherever a component holds text. Done: record pages, deal and lead boards, deal and project lists, the project form, the time log, bulk-action bars, and the settings pages General, Branding, Modules, Members, Groups, Notifications, Email, Terminology and Workflows.
+- Now: [AGENTS.md](../../AGENTS.md#pitfalls) requires every user-facing string to live in a per-feature `*-copy.ts` with an `en` and an `es` entry, so a workspace set to Spanish shows English wherever a component holds text. Done: record pages, deal and lead boards, deal and project lists, the project form, the time log, bulk-action bars, and the settings pages General, Branding, Modules, Members, Groups, Notifications, Email, Terminology, Workflows and Activity (both logs).
 - How it was measured (2026-11-05): render each page as owner in English, then in Spanish, and list the lines that are identical, ignoring words that are the same in both languages and record names. A source scan over-reports, because settings forms translate through lookups keyed by the English text.
-- Still English, about 85 lines on 10 pages: Import (15), Activity (18, the verbs), Lists (13), Sales (12), Views (10), Webhooks (5), Fields (3), Playbooks (3), Newsletter (2), Intake (2), Archive (1).
+- Still English, about 65 lines on 9 pages: Import (15), Lists (13), Sales (12), Views (10), Webhooks (5), Fields (3), Playbooks (3), Newsletter (2), Intake (2), Archive (1).
 - Fix: a copy file per page, following `modules-copy.ts`, then re-run the measurement.

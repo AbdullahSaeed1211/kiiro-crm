@@ -1,3 +1,5 @@
+import { normalizeLocale, type Locale } from '../../../i18n/locale'
+import { getWorkspaceSettings } from '../../auth/context'
 import type { Where } from 'payload'
 import type { RequestContext } from '../../container'
 import { loadPeople } from '../../people'
@@ -51,21 +53,27 @@ function personIds(activities: readonly { actor?: unknown }[], comments: readonl
   return ids.filter((id): id is string => id !== null)
 }
 
+const COMMENT_LABEL: Readonly<Record<Locale, string>> = { en: 'Comment', es: 'Comentario' }
+
 /** The recent history of an organization or contact: system activity and comments, newest first. */
 export async function listActivities(context: RequestContext, target: Target): Promise<readonly ActivityItem[]> {
   const [activities, comments] = await loadRows(context, target)
-  const people = await loadPeople(context, personIds(activities.docs, comments.docs))
+  const [people, settings] = await Promise.all([
+    loadPeople(context, personIds(activities.docs, comments.docs)),
+    getWorkspaceSettings(),
+  ])
+  const locale = normalizeLocale(settings.locale)
   const events = activities.docs.flatMap((entry) => {
     const occurredAt = typeof entry.occurredAt === 'number' ? entry.occurredAt : Date.parse(String(entry.occurredAt))
     if (!Number.isFinite(occurredAt)) return []
-    const summary = describeActivity(text(entry.verb))
+    const summary = describeActivity(text(entry.verb), locale)
     return [{ id: entry.id, occurredAt, actorName: nameOf(people, refId(entry.actor)), summary }]
   })
   const notes = comments.docs.flatMap((entry) => {
     const occurredAt = Date.parse(entry.createdAt)
     const body = entry.body.trim()
     if (!Number.isFinite(occurredAt) || body === '') return []
-    const summary = `Comment: ${body.slice(0, 140)}`
+    const summary = `${COMMENT_LABEL[locale]}: ${body.slice(0, 140)}`
     return [{ id: entry.id, occurredAt, actorName: nameOf(people, refId(entry.author)), summary }]
   })
   return [...events, ...notes].sort((left, right) => right.occurredAt - left.occurredAt).slice(0, TIMELINE_LIMIT)
