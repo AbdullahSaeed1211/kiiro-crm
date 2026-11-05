@@ -67,6 +67,8 @@ export const TASK_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>
     calendarMore: '+{count} more',
     noDatedTasks: 'No dated tasks',
     noDatedTasksDescription: 'Tasks with a start or due date show up here.',
+    timelineTruncated:
+      'Showing the {shown} soonest of {total} open tasks that have dates. Use the Table to find the rest.',
     newTask: 'New task',
   },
   es: {
@@ -134,6 +136,8 @@ export const TASK_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>
     calendarMore: '+{count} más',
     noDatedTasks: 'No hay tareas fechadas',
     noDatedTasksDescription: 'Aquí aparecen las tareas con fecha de inicio o vencimiento.',
+    timelineTruncated:
+      'Se muestran las {shown} más próximas de {total} tareas abiertas con fecha. Usa la Tabla para encontrar el resto.',
     newTask: 'Nueva tarea',
   },
 }

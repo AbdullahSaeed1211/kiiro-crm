@@ -10,6 +10,7 @@ import { loadTimelineTasks } from '../../../server/queries/work/timeline-tasks'
 import { loadTaskPeople } from '../../../server/queries/work/task-details'
 import { AssigneeFilter } from '../tasks/AssigneeFilter'
 import { assigneeOptions, validAssignee } from '../tasks/assignee-options'
+import { fill } from '../../../i18n/locale'
 import { TimelineChart } from './TimelineChart'
 import { TaskWorkspaceViews } from '../tasks/TaskWorkspaceViews'
 
@@ -33,6 +34,7 @@ export default async function TimelinePage({
   const copy = TASK_COPY[locale]
   const filter = (
     <AssigneeFilter
+      key="assignee"
       value={assignee}
       label={copy.assignee}
       allLabel={copy.anyAssignee}
@@ -47,8 +49,7 @@ export default async function TimelinePage({
           <>
             {total > tasks.length ? (
               <p className="mb-2 text-sm text-muted-foreground">
-                Showing the {tasks.length} soonest of {total} open tasks that have dates. Use the Table to find the
-                rest.
+                {fill(copy.timelineTruncated, { shown: tasks.length, total })}
               </p>
             ) : null}
             <TimelineChart title={copy.gantt} tasks={tasks} locale={locale} mine={mine} filter={filter} />
