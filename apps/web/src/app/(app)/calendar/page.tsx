@@ -208,6 +208,7 @@ export default async function CalendarPage({ searchParams }: Readonly<{ searchPa
         <PageHeader
           title={copy.calendar}
           description={copy.calendarDescription}
+          tabs={<TaskWorkspaceViews active="calendar" locale={model.locale} mine={mine} />}
           actions={
             <>
               {model.manager ? (
@@ -218,7 +219,6 @@ export default async function CalendarPage({ searchParams }: Readonly<{ searchPa
                   options={assigneeOptions(people)}
                 />
               ) : null}
-              <TaskWorkspaceViews active="calendar" locale={model.locale} mine={mine} />
               <CalendarLayoutToggle active={layout} {...layoutHrefs} copy={calendarCopy} />
             </>
           }

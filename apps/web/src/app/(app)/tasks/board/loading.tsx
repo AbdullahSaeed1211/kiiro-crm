@@ -32,11 +32,11 @@ export default function TaskBoardLoading() {
       <PageContent>
         <PageHeader
           title={copy.board}
+          tabs={<TaskWorkspaceViews active="board" locale={locale} />}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Skeleton className="h-8 w-36" aria-hidden="true" />
               <TaskCreateForm />
-              <TaskWorkspaceViews active="board" locale={locale} />
             </div>
           }
         />

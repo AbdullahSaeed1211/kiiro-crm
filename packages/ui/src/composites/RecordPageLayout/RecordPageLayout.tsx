@@ -1,8 +1,8 @@
 'use client'
 
 import { Check, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { useRef, useState, useTransition, type ReactNode } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ops/ui/components/ui/tabs'
@@ -33,6 +33,11 @@ export type RecordPageLayoutProps = Readonly<{
   tabs: readonly RecordPageTab[]
   aside?: ReactNode
   defaultTab?: string
+  /**
+   * The page builds only the open tab's content. A tab click then asks the server for the next tab, and the page stays
+   * dimmed until it arrives. Without it every tab's content is already on the page and a click only changes the address.
+   */
+  serverTabs?: boolean
   className?: string | undefined
 }>
 
@@ -100,6 +105,44 @@ function RecordTitle({
   )
 }
 
+/** Which tab is open (from the address), and how a click changes it: in the browser, or by asking the server. */
+function useRecordTabs({
+  tabs,
+  defaultTab,
+  serverTabs,
+}: Readonly<{ tabs: readonly RecordPageTab[]; defaultTab: string | undefined; serverTabs: boolean }>) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const [switching, startSwitch] = useTransition()
+  const searchParams = useSearchParams()
+  const fallbackTab = defaultTab ?? tabs[0]?.id
+  const requestedTab = searchParams.get('tab')
+  const activeTab = requestedTab !== null && tabs.some((tab) => tab.id === requestedTab) ? requestedTab : fallbackTab
+  const hrefFor = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', value)
+    return `${pathname}?${params.toString()}`
+  }
+  const prefetched = useRef(new Set<string>())
+  /** Server tabs: fetch a tab's page when the pointer or focus reaches it, so the click finds it ready. */
+  const prefetchTab = (value: string) => {
+    const href = hrefFor(value)
+    if (!serverTabs || value === activeTab || prefetched.current.has(href)) return
+    prefetched.current.add(href)
+    // 'full' fetches the dynamic page data too; the enum is not exported for client use, its value is this string.
+    router.prefetch(href, { kind: 'full' as never })
+  }
+  const handleTabChange = (value: string) => {
+    const href = hrefFor(value)
+    if (serverTabs) {
+      startSwitch(() => {
+        router.replace(href, { scroll: false })
+      })
+    } else window.history.replaceState(null, '', href)
+  }
+  return { activeTab, switching, handleTabChange, prefetchTab }
+}
+
 /** Shared record detail shell. Slots are rendered as supplied and never fetch data. */
 export function RecordPageLayout({
   breadcrumbs,
@@ -113,18 +156,10 @@ export function RecordPageLayout({
   tabs,
   aside,
   defaultTab,
+  serverTabs = false,
   className,
 }: RecordPageLayoutProps) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const fallbackTab = defaultTab ?? tabs[0]?.id
-  const requestedTab = searchParams.get('tab')
-  const activeTab = requestedTab !== null && tabs.some((tab) => tab.id === requestedTab) ? requestedTab : fallbackTab
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('tab', value)
-    window.history.replaceState(null, '', `${pathname}?${params.toString()}`)
-  }
+  const { activeTab, switching, handleTabChange, prefetchTab } = useRecordTabs({ tabs, defaultTab, serverTabs })
   return (
     <div className={cn('ops-record-page flex min-h-0 flex-col gap-4', className)}>
       {breadcrumbs === undefined ? null : <nav aria-label={labels.breadcrumb}>{breadcrumbs}</nav>}
@@ -143,12 +178,28 @@ export function RecordPageLayout({
       <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-0">
         <TabsList variant="line">
           {tabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} disabled={tab.disabled}>
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              disabled={tab.disabled}
+              onPointerEnter={() => {
+                prefetchTab(tab.id)
+              }}
+              onFocus={() => {
+                prefetchTab(tab.id)
+              }}
+            >
               {tab.label}
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="ops-record-grid grid min-h-[28rem] content-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div
+          aria-busy={switching}
+          className={cn(
+            'ops-record-grid grid min-h-[28rem] content-start gap-4 transition-opacity lg:grid-cols-[minmax(0,1fr)_320px]',
+            switching && 'opacity-60',
+          )}
+        >
           <div className="min-w-0">
             {tabs.map((tab) => (
               <TabsContent key={tab.id} value={tab.id} className="mt-4">

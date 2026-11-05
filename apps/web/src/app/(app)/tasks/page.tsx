@@ -18,6 +18,7 @@ import { catalogFor } from '../../../i18n/locale'
 import { TaskGroupToggle } from './TaskGroupToggle'
 import { TaskListFilters } from './TaskListFilters'
 import { TasksHeaderActions } from './TasksHeaderActions'
+import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 import { labelsFor, paginationOf, taskColumns, toRow } from './task-table'
 import { parseTaskView, savedViewSort, taskListHref, taskModeOf } from './task-view-params'
 import { parseTaskDue } from '../../../server/queries/work/task-due-filter'
@@ -77,6 +78,7 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
           title={title}
           count={result.total}
           description={catalogFor(SECTION_HELP_COPY, locale).tasks}
+          tabs={<TaskWorkspaceViews active="table" locale={locale} mine={view === 'mine'} />}
           actions={
             <TasksHeaderActions
               view={view}

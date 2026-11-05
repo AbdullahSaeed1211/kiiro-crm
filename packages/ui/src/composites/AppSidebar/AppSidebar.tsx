@@ -24,8 +24,14 @@ export type NavItem = Readonly<{
   icon: LucideIcon
   /** Marks the current section; the app decides by exact or prefix route match. */
   active?: boolean
-  /** Count or marker at the end of the row, hidden while the sidebar is collapsed. */
+  /** Count at the end of the row, hidden while the sidebar is collapsed (a dot replaces it). It takes no layout space. */
   badge?: ReactNode
+  /** `alert` marks a count that needs attention, such as overdue work. */
+  badgeTone?: 'default' | 'alert'
+  /** Plain-language reading of the badge for screen readers, such as "3 overdue". */
+  badgeLabel?: string
+  /** Keys that reach this page from the keyboard, shown in the tooltip, such as "G T". */
+  shortcut?: string
 }>
 
 /** A run of sidebar links with an optional group label. */
@@ -72,6 +78,35 @@ function BrandMark({
   )
 }
 
+function NavTooltip({ item }: Readonly<{ item: NavItem }>) {
+  if (item.shortcut === undefined) return <>{item.label}</>
+  return (
+    <span className="flex items-center gap-2">
+      {item.label}
+      <kbd className="rounded border border-background/30 px-1 font-sans text-[10px] opacity-80">{item.shortcut}</kbd>
+    </span>
+  )
+}
+
+/** The count beside a link. It is positioned over the row, so it never changes the row's size. */
+function NavBadge({ item }: Readonly<{ item: NavItem }>) {
+  const alert = item.badgeTone === 'alert'
+  return (
+    <>
+      <SidebarMenuBadge
+        aria-hidden
+        className={alert ? 'bg-destructive/10 text-destructive peer-data-active/menu-button:text-destructive' : ''}
+      >
+        {item.badge}
+      </SidebarMenuBadge>
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute top-1 right-1 hidden size-2 rounded-full group-data-[collapsible=icon]:block ${alert ? 'bg-destructive' : 'bg-primary'}`}
+      />
+    </>
+  )
+}
+
 function NavLink({ item }: Readonly<{ item: NavItem }>) {
   const Icon = item.icon
   const active = item.active ?? false
@@ -79,13 +114,14 @@ function NavLink({ item }: Readonly<{ item: NavItem }>) {
     <SidebarMenuItem>
       <SidebarMenuButton
         isActive={active}
-        tooltip={item.label}
+        tooltip={{ children: <NavTooltip item={item} /> }}
         render={<Link href={item.href} prefetch={false} aria-current={active ? 'page' : undefined} />}
       >
         <Icon />
         <span>{item.label}</span>
+        {item.badgeLabel === undefined ? null : <span className="sr-only">{item.badgeLabel}</span>}
       </SidebarMenuButton>
-      {item.badge === undefined ? null : <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+      {item.badge === undefined ? null : <NavBadge item={item} />}
     </SidebarMenuItem>
   )
 }

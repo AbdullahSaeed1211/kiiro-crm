@@ -1,5 +1,8 @@
 'use client'
 
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { PROJECT_PAGE_COPY } from '../../../../i18n/project-page-copy'
 import { RecordForm, type FormValue, type RecordFieldConfig } from '@ops/ui/composites/RecordForm'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -20,22 +23,29 @@ export function ProjectCreateForm({
   cancelHref: string
 }>) {
   const router = useRouter()
+  const copy = catalogFor(PROJECT_PAGE_COPY, useLocale())
   const [error, setError] = useState<string | undefined>()
   const fields: readonly RecordFieldConfig[] = [
-    { name: 'name', label: 'Project name', required: true, maxLength: 200, placeholder: 'e.g. Website redesign' },
+    {
+      name: 'name',
+      label: copy.projectName,
+      required: true,
+      maxLength: 200,
+      placeholder: copy.projectNamePlaceholder,
+    },
     {
       name: 'organizationId',
-      label: 'Organization',
+      label: copy.organization,
       type: 'select',
-      placeholder: 'No organization',
+      placeholder: copy.noOrganization,
       options: organizations,
     },
     {
       name: 'description',
-      label: 'Description',
+      label: copy.description,
       type: 'textarea',
       maxLength: 20000,
-      placeholder: 'What is this project for?',
+      placeholder: copy.descriptionPlaceholder,
     },
   ]
   const submit = async (values: Record<string, FormValue>) => {
@@ -66,10 +76,10 @@ export function ProjectCreateForm({
         fields={fields}
         initialValues={{ name: '', organizationId, description: '' }}
         labels={{
-          submit: 'Create project',
-          saving: 'Creating…',
-          cancel: 'Cancel',
-          required: 'This field is required.',
+          submit: copy.createProject,
+          saving: copy.creating,
+          cancel: copy.cancelTitle,
+          required: copy.required,
         }}
         onSubmit={submit}
         onCancel={() => {

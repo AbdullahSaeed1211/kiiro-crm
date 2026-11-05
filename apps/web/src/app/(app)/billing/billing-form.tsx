@@ -18,6 +18,8 @@ import { formatMoney } from './money'
 export interface FormStart {
   readonly kind: DocumentKind
   readonly currency: string
+  /** The client the document starts for, when it was opened from a client's page. */
+  readonly client?: { readonly id: string; readonly name: string }
   /** Present when a draft is being edited. */
   readonly edit?: { readonly id: string; readonly expectedUpdatedAt: number; readonly company: string }
   readonly lines?: readonly LineDraft[]
@@ -83,7 +85,7 @@ function HeaderFields({
 }>) {
   return (
     <>
-      {start.edit === undefined ? (
+      {start.edit === undefined && start.client === undefined ? (
         <label className="grid gap-1 text-sm">
           <span className="font-medium">{copy.company}</span>
           <RecordPicker
@@ -97,7 +99,7 @@ function HeaderFields({
           />
         </label>
       ) : (
-        <p className="text-sm font-medium">{start.edit.company}</p>
+        <p className="text-sm font-medium">{start.edit?.company ?? start.client?.name}</p>
       )}
       <div className="flex flex-wrap gap-3">
         <label className="grid gap-1 text-sm">
@@ -165,11 +167,13 @@ function ErrorLine({ message }: Readonly<{ message: string }>) {
   )
 }
 
+const clientIdOf = (start: FormStart): string => start.client?.id ?? ''
+
 /** Makes or edits a draft quote or invoice. */
 export function BillingForm({ start }: Readonly<{ start: FormStart }>) {
   const { save, error, saving, copy } = useSave(start)
   const initial = initialOf(start)
-  const [organizationId, setOrganizationId] = useState('')
+  const [organizationId, setOrganizationId] = useState(clientIdOf(start))
   const [currency, setCurrency] = useState(start.currency)
   const [lines, setLines] = useState<readonly LineDraft[]>(initial.lines)
   const [note, setNote] = useState(initial.note)

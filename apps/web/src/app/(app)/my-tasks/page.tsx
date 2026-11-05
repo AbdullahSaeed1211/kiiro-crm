@@ -71,7 +71,7 @@ export default async function MyTasksPage({
         <PageHeader
           title={copy.title}
           description={copy.description}
-          actions={<TaskWorkspaceViews active="mine" locale={model.locale} mine />}
+          tabs={<TaskWorkspaceViews active="mine" locale={model.locale} mine />}
         />
         {todayQuickAdd(model)}
         {isEmpty ? (

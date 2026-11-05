@@ -1,3 +1,4 @@
+import { getOrganizationRecord } from '../../crm/directory/organization-record'
 import { asId } from '@ops/kernel'
 import type { CrmRecordType } from '@ops/module-crm'
 import { visibleFields, type CustomValue } from '@ops/platform'
@@ -24,7 +25,10 @@ function asValue(value: unknown): CustomValue {
 /** Loads the fields the actor may see on a record, their stored values, and whether the actor may edit them. */
 export async function loadCustomFieldsView(type: CrmRecordType, id: string): Promise<CustomFieldsView | undefined> {
   const deps = await crmDeps(await getRequestContext())
-  const [record, definitions] = await Promise.all([deps.repo.get(type, asId(id)), deps.repo.loadFieldDefinitions(type)])
+  const [record, definitions] = await Promise.all([
+    type === 'organization' ? getOrganizationRecord(id) : deps.repo.get(type, asId(id)),
+    deps.repo.loadFieldDefinitions(type),
+  ])
   if (record === undefined) return undefined
   const fields = visibleFields(definitions, deps.actor)
   const values = Object.fromEntries(fields.map((field) => [field.key, asValue(record.customData[field.key])]))

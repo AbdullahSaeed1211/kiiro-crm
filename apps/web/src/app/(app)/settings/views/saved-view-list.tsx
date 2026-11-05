@@ -9,10 +9,9 @@ import {
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@ops/ui/components/ui/button'
-
-function recordTypeLabel(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}s`
-}
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { VIEWS_COPY } from '../../../../i18n/views-copy'
 
 export function SavedViewList({
   views,
@@ -27,6 +26,7 @@ export function SavedViewList({
     isDefault: boolean
   }[]
 }>) {
+  const copy = catalogFor(VIEWS_COPY, useLocale())
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
@@ -36,10 +36,10 @@ export function SavedViewList({
   useEffect(() => {
     if (editingId !== null && window.matchMedia('(min-width: 768px)').matches) inputRef.current?.focus()
   }, [editingId])
-  if (views.length === 0) return <p className="text-sm text-muted-foreground">No saved views yet.</p>
+  if (views.length === 0) return <p className="text-sm text-muted-foreground">{copy.empty}</p>
   return (
     <>
-      <ul className="divide-y rounded-lg border" aria-label="Saved views">
+      <ul className="divide-y rounded-lg border" aria-label={copy.listAria}>
         {views.map((view) => (
           <li
             className="flex flex-col items-stretch gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
@@ -47,7 +47,7 @@ export function SavedViewList({
           >
             {editingId === view.id ? (
               <label className="min-w-48 flex-1">
-                <span className="sr-only">Saved view name</span>
+                <span className="sr-only">{copy.renameAria}</span>
                 <input
                   className="h-8 w-full rounded-md border bg-background px-2"
                   maxLength={120}
@@ -69,11 +69,14 @@ export function SavedViewList({
             )}
             <span className="flex w-full flex-wrap items-center justify-start gap-3 sm:w-auto sm:justify-end">
               <span className="text-xs text-muted-foreground sm:whitespace-nowrap">
-                {recordTypeLabel(view.recordType)} · {view.ownerId === null ? 'Shared' : 'Personal'} · {view.kind}
+                {copy.types[view.recordType] ?? view.recordType} · {view.ownerId === null ? copy.shared : copy.personal}{' '}
+                · {copy.kinds[view.kind] ?? view.kind}
               </span>
-              {view.pinned ? <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">Pinned</span> : null}
+              {view.pinned ? (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">{copy.pinned}</span>
+              ) : null}
               {view.isDefault ? (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default</span>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">{copy.default}</span>
               ) : null}
               <Button
                 variant="link"
@@ -92,7 +95,7 @@ export function SavedViewList({
                   })
                 }}
               >
-                {view.pinned ? 'Unpin' : 'Pin'}
+                {view.pinned ? copy.unpin : copy.pin}
               </Button>
               <Button
                 variant="link"
@@ -111,7 +114,7 @@ export function SavedViewList({
                   })
                 }}
               >
-                {view.isDefault ? 'Default' : 'Set default'}
+                {view.isDefault ? copy.default : copy.setDefault}
               </Button>
               {editingId === view.id ? (
                 <>
@@ -137,7 +140,7 @@ export function SavedViewList({
                       })
                     }}
                   >
-                    {pendingId === view.id ? 'Saving…' : 'Save'}
+                    {pendingId === view.id ? copy.saving : copy.save}
                   </Button>
                   <Button
                     variant="link"
@@ -150,7 +153,7 @@ export function SavedViewList({
                       setDraftName('')
                     }}
                   >
-                    Cancel
+                    {copy.cancel}
                   </Button>
                 </>
               ) : (
@@ -165,7 +168,7 @@ export function SavedViewList({
                     setError('')
                   }}
                 >
-                  Edit
+                  {copy.edit}
                 </Button>
               )}
               <Button
@@ -175,7 +178,7 @@ export function SavedViewList({
                 disabled={pendingId !== null || editingId !== null}
                 type="button"
                 onClick={() => {
-                  if (!window.confirm(`Delete “${view.name}”?`)) return
+                  if (!window.confirm(copy.confirmDelete.replace('{name}', view.name))) return
                   setPendingId(view.id)
                   setError('')
                   void deleteConfiguration({ collection: 'savedViews', id: view.id }).then((result) => {
@@ -184,7 +187,7 @@ export function SavedViewList({
                   })
                 }}
               >
-                {pendingId === view.id ? 'Deleting…' : 'Delete'}
+                {pendingId === view.id ? copy.deleting : copy.delete}
               </Button>
             </span>
           </li>

@@ -1,3 +1,4 @@
+import { termsFromTemplate } from '../settings/terminology'
 import {
   templateFor,
   type TemplateField,
@@ -194,7 +195,7 @@ async function applySettings(context: PayloadContext, template: VerticalTemplate
     slug: 'settings',
     data: {
       modules: { ...objectOf(settings.modules), ...template.modules },
-      terminology: { ...objectOf(settings.terminology), ...template.terminology },
+      terminology: { ...objectOf(settings.terminology), ...termsFromTemplate(template.terminology) },
       appliedTemplates: alreadyApplied ? applied : [...applied, { key: template.key, version: template.version }],
     },
     overrideAccess: true,

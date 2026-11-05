@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { shellLabels } from '../../../server/shell-labels'
 import { getOutboundEmailEnabled } from '../../../server/capabilities'
 import { requireRole } from '../../../server/auth/context'
 import { listInboxMessages } from '../../../server/crm/directory/helpers'
@@ -24,6 +25,7 @@ export default async function InboxPage({
 }: Readonly<{ searchParams: Promise<{ direction?: string; status?: string }> }>) {
   const context = await requireRole('owner', 'manager')
   const locale: Locale = await loadWorkspaceLocale()
+  const label = await shellLabels()
   const params = await searchParams
   const direction = params.direction === 'inbound' || params.direction === 'outbound' ? params.direction : undefined
   const status = params.status === 'failed' ? params.status : undefined
@@ -33,7 +35,7 @@ export default async function InboxPage({
   ])
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Inbox' }]} />
+      <AppHeader breadcrumbs={[{ label: label('inbox') }]} />
       <InboxClient
         messages={messages}
         locale={locale}

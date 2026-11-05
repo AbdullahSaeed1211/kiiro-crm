@@ -91,7 +91,8 @@ export async function uploadBrandAsset(request: Request, { params }: Params): Pr
   if (!(file instanceof File)) return badRequest('A file is required.')
   if (file.size === 0 || file.size > MAX_BRAND_BYTES) return badRequest('Brand assets must be 1 MB or smaller.')
   if (!isBrandContentType(file.type)) return badRequest('Use PNG, JPEG, SVG, WebP, GIF, or ICO.')
-  const key = `brand/${asset}.${extensionFor(file)}`
+  // A new name per upload: the current picture stays in place until the new one is saved.
+  const key = `brand/${asset}-${crypto.randomUUID().slice(0, 8)}.${extensionFor(file)}`
   const req = requestForUser(payload, context.user)
   const { env } = await getCloudflareContext({ async: true })
   const settings = (await payload.findGlobal({
@@ -134,9 +135,10 @@ export async function deleteBrandAsset(request: Request, { params }: Params): Pr
   })) as unknown as Record<string, unknown>
   const oldKey = assetKey(asset, settings)
   const { env } = await getCloudflareContext({ async: true })
-  if (oldKey && isBrandKey(oldKey)) await env.R2.delete(oldKey)
   const field = asset === 'logo' ? 'logoFileKey' : 'faviconFileKey'
+  // Clear the reference first: a failure then leaves the picture in place instead of a reference to a missing file.
   await payload.updateGlobal({ slug: 'settings', data: { [field]: null }, overrideAccess: true, req })
+  if (oldKey && isBrandKey(oldKey)) await env.R2.delete(oldKey)
   revalidatePath('/', 'layout')
   revalidatePath('/settings/branding')
   return Response.json({ ok: true })

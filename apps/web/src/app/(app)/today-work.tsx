@@ -1,7 +1,7 @@
 import { Clock3 } from 'lucide-react'
 import { DAY_MS } from '@ops/module-work'
 import Link from 'next/link'
-import { buttonVariants } from '@ops/ui/components/ui/button'
+import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import type { DashboardTask, DashboardWork } from '../../server/queries/work/dashboard-work'
 import { TodayItem } from './today-queue'
@@ -22,22 +22,16 @@ export function TodayScopeSwitch({ work }: Readonly<{ work: DashboardWork }>) {
   if (!work.canSeeTeam) return null
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   return (
-    <nav aria-label={copy.scopeLabel} className="flex flex-wrap items-center gap-2">
-      <Link
-        href="/?scope=mine"
-        aria-current={work.team ? undefined : 'page'}
-        className={buttonVariants({ variant: work.team ? 'ghost' : 'secondary', size: 'sm' })}
-      >
-        {copy.mine}
-      </Link>
-      <Link
-        href="/?scope=team"
-        aria-current={work.team ? 'page' : undefined}
-        className={buttonVariants({ variant: work.team ? 'secondary' : 'ghost', size: 'sm' })}
-      >
-        {copy.team}
-      </Link>
-    </nav>
+    <div className="basis-full border-b border-border">
+      <ViewSwitcher
+        label={copy.scopeLabel}
+        active={work.team ? 'team' : 'mine'}
+        views={[
+          { id: 'mine', label: copy.mine, href: '/?scope=mine' },
+          { id: 'team', label: copy.team, href: '/?scope=team' },
+        ]}
+      />
+    </div>
   )
 }
 

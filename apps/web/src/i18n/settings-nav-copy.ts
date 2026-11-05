@@ -2,13 +2,7 @@ import type { Locale } from './locale'
 
 export interface SettingsNavCopy {
   readonly settings: string
-  readonly common: string
   readonly advanced: string
-  readonly profile: string
-  readonly general: string
-  readonly members: string
-  readonly notifications: string
-  readonly allSettings: string
   readonly groupLabels: Readonly<Record<string, string>>
   readonly items: Readonly<Record<string, string>>
 }
@@ -16,13 +10,7 @@ export interface SettingsNavCopy {
 export const SETTINGS_NAV_COPY: Readonly<Record<Locale, SettingsNavCopy>> = {
   en: {
     settings: 'Settings',
-    common: 'Common',
     advanced: 'All settings',
-    profile: 'Profile',
-    general: 'General',
-    members: 'Members',
-    notifications: 'Notifications',
-    allSettings: 'Browse all settings',
     groupLabels: {
       workspace: 'Workspace',
       people: 'People & access',
@@ -57,13 +45,7 @@ export const SETTINGS_NAV_COPY: Readonly<Record<Locale, SettingsNavCopy>> = {
   },
   es: {
     settings: 'Configuración',
-    common: 'Frecuentes',
     advanced: 'Todos los ajustes',
-    profile: 'Perfil',
-    general: 'General',
-    members: 'Miembros',
-    notifications: 'Notificaciones',
-    allSettings: 'Ver todos los ajustes',
     groupLabels: {
       workspace: 'Espacio de trabajo',
       people: 'Personas y acceso',

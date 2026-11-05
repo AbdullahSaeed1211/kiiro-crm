@@ -6,6 +6,9 @@ import { useState } from 'react'
 import { saveWebhooks, testWebhook } from '../../../../server/actions/settings/webhooks'
 import { CheckboxGroup } from '../checkbox-group'
 import { useSave } from '../sales/use-save'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { WEBHOOKS_COPY } from '../../../../i18n/webhooks-copy'
 
 type Hook = Readonly<{
   id: string
@@ -124,15 +127,13 @@ function HookEditor({
 
 /** The owner's list of webhooks: where events go, which ones, and the secret that signs them. */
 export function WebhooksForm({ initial }: Readonly<{ initial: readonly Hook[] }>) {
+  const copy = catalogFor(WEBHOOKS_COPY, useLocale())
   const [hooks, setHooks] = useState<readonly Hook[]>(initial)
   const { save, message, pending } = useSave(saveWebhooks)
   return (
     <div className="grid gap-3 text-sm">
       <h2 className="font-medium">Webhooks</h2>
-      <p className="text-muted-foreground">
-        Save a webhook before sending a test. A test sends a webhook.test event and shows what the other system
-        answered.
-      </p>
+      <p className="text-muted-foreground">{copy.help}</p>
       {hooks.map((hook, index) => (
         <HookEditor
           key={hook.id}
@@ -153,7 +154,7 @@ export function WebhooksForm({ initial }: Readonly<{ initial: readonly Hook[] }>
             setHooks([...hooks, newHook()])
           }}
         >
-          Add webhook
+          {copy.add}
         </Button>
         <Button
           size="sm"
@@ -162,7 +163,7 @@ export function WebhooksForm({ initial }: Readonly<{ initial: readonly Hook[] }>
             save(hooks)
           }}
         >
-          Save webhooks
+          {copy.save}
         </Button>
         {message === null ? null : <span role="status">{message}</span>}
       </div>

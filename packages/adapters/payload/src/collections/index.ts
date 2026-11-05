@@ -17,6 +17,7 @@ import { timeEntriesCollection } from './time-entries'
 import { attendanceCollection } from './attendance'
 import { auditEventsCollection } from './audit-events'
 import { billingDocumentsCollection } from './billing-documents'
+import { portalLinksCollection } from './portal-links'
 import { campaignQueueCollection } from './campaign-queue'
 import { callLogsCollection, contentItemsCollection, deliverablesCollection } from './agency-work'
 import { demoManifestsCollection } from './demo-manifests'
@@ -73,6 +74,7 @@ export const spikeCollections: readonly CollectionConfig[] = [
   demoManifestsCollection,
   auditEventsCollection,
   billingDocumentsCollection,
+  portalLinksCollection,
   campaignQueueCollection,
   callLogsCollection,
   deliverablesCollection,

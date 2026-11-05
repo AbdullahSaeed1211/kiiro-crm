@@ -1,8 +1,11 @@
+import type { OrganizationTab } from '../../server/crm/directory/organizations'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { RecordNotesTab } from './record-notes-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
-import { RecordPageLayout } from '@ops/ui/composites/RecordPageLayout'
+import { RecordPageLayout, type RecordPageTab } from '@ops/ui/composites/RecordPageLayout'
 import { UsersRound } from 'lucide-react'
+import type { ReactNode } from 'react'
+import type { Outstanding } from '../../server/billing/queries'
 import type { OrganizationRecord } from '@ops/module-crm'
 import type {
   ActivityItem,
@@ -36,6 +39,7 @@ function organizationTabs(
     copy: RecordCopy
     locale: string
     outboundEmailEnabled: boolean
+    tab: OrganizationTab
   }>,
 ) {
   const { record, activity, emailMessages, relatedTasks, attachments, copy, locale, outboundEmailEnabled } = input
@@ -47,7 +51,7 @@ function organizationTabs(
     {
       recordType: 'organization',
       recordId: record.id,
-      notes: <RecordNotesTab recordType="organization" recordId={record.id} />,
+      notes: input.tab === 'notes' ? <RecordNotesTab recordType="organization" recordId={record.id} /> : null,
       recipient: record.email,
       outboundEmailEnabled,
       tasks: relatedTasks,
@@ -56,22 +60,22 @@ function organizationTabs(
   )
 }
 
-function OrganizationAside({
-  record,
-  owner,
-  copy,
-}: Readonly<{ record: OrganizationRecord; owner: PersonSummary | null; copy: RecordCopy }>) {
+/** The record's details, its created and updated times, and its custom fields. */
+function OrganizationAsideColumn({ record, copy }: Readonly<{ record: OrganizationRecord; copy: RecordCopy }>) {
+  return (
+    <div className="grid gap-4">
+      <RecordDetails type="organization" id={record.id} />
+      <OrganizationAside record={record} copy={copy} />
+      <RecordCustomFields type="organization" id={record.id} />
+    </div>
+  )
+}
+
+/** Created and updated times. The owner shows once, in the header, rather than again here. */
+function OrganizationAside({ record, copy }: Readonly<{ record: OrganizationRecord; copy: RecordCopy }>) {
   return (
     <DetailCard title={copy.record}>
-      <dl className="grid gap-3 text-sm">
-        <div>
-          <dt className="text-xs text-muted-foreground">{copy.owner}</dt>
-          <dd className="mt-0.5">{personLabel(owner)}</dd>
-        </div>
-      </dl>
-      <div className="mt-3">
-        <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} copy={copy} />
-      </div>
+      <Meta createdAt={record.createdAt} updatedAt={record.updatedAt} copy={copy} />
     </DetailCard>
   )
 }
@@ -90,7 +94,7 @@ function organizationOverviewTab(
     organizationId: string
     relations: OrganizationRelations
     nextDueTask: RelatedTask | null
-    owner: PersonSummary | null
+    outstanding?: Outstanding
     readiness: OrganizationReadiness
     copy: RecordCopy
     overviewCopy: OrganizationOverviewCopy
@@ -104,22 +108,44 @@ function organizationOverviewTab(
   }
 }
 
+/** The tabs with Billing after Tasks, so work and money sit together. */
+function withBilling(
+  tabs: readonly RecordPageTab[],
+  billing: { label: string; content: ReactNode } | undefined,
+): readonly RecordPageTab[] {
+  if (billing === undefined) return tabs
+  const at = tabs.findIndex((tab) => tab.id === 'tasks') + 1
+  return [...tabs.slice(0, at), { id: 'billing', ...billing }, ...tabs.slice(at)]
+}
+
+/** Everything the client page shows, with only the open tab's own parts filled in. */
+interface OrganizationPageData {
+  record: OrganizationRecord
+  owner: PersonSummary | null
+  relations: OrganizationRelations
+  activity: readonly ActivityItem[]
+  emailMessages: readonly EmailThreadMessage[]
+  relatedTasks: readonly RelatedTask[]
+  nextDueTask: RelatedTask | null
+  readiness: OrganizationReadiness
+  attachments: readonly RecordAttachment[]
+}
+
 export async function OrganizationRecordView({
   data,
   outboundEmailEnabled,
+  billing,
+  outstanding,
+  tab,
 }: Readonly<{
-  data: {
-    record: OrganizationRecord
-    owner: PersonSummary | null
-    relations: OrganizationRelations
-    activity: readonly ActivityItem[]
-    emailMessages: readonly EmailThreadMessage[]
-    relatedTasks: readonly RelatedTask[]
-    nextDueTask: RelatedTask | null
-    readiness: OrganizationReadiness
-    attachments: readonly RecordAttachment[]
-  }
+  data: OrganizationPageData
   outboundEmailEnabled: boolean
+  /** The Billing tab, for the people who may see it. */
+  billing?: { label: string; content: ReactNode }
+  /** What the client owes, for the people who handle billing. */
+  outstanding?: Outstanding
+  /** The open tab; only its content is built. */
+  tab: OrganizationTab
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments } = data
   const locale = await loadWorkspaceLocale()
@@ -134,6 +160,7 @@ export async function OrganizationRecordView({
     copy,
     locale,
     outboundEmailEnabled,
+    tab,
   })
   return (
     <>
@@ -141,6 +168,7 @@ export async function OrganizationRecordView({
       <PageContent>
         <RecordPageLayout
           className="ops-organization-record"
+          serverTabs
           labels={{ breadcrumb: copy.organizationLabel, saveTitle: copy.saveName, cancelTitle: copy.cancel }}
           title={record.name}
           owner={<OrganizationOwner owner={owner} />}
@@ -152,6 +180,7 @@ export async function OrganizationRecordView({
               recordLabel={record.name}
               archive={<ArchiveRecordControl type="organization" id={record.id} label={record.name} />}
               editHref={`/organizations/${record.id}/edit`}
+              primary
               email={record.email}
               phone={record.phone}
               outboundEmailEnabled={outboundEmailEnabled}
@@ -162,21 +191,15 @@ export async function OrganizationRecordView({
               organizationId: record.id,
               relations,
               nextDueTask,
-              owner,
+              ...(outstanding === undefined ? {} : { outstanding }),
               readiness,
               copy,
               overviewCopy,
               locale,
             }),
-            ...tabs,
+            ...withBilling(tabs, billing),
           ]}
-          aside={
-            <div className="grid gap-4">
-              <RecordDetails type="organization" id={record.id} />
-              <OrganizationAside record={record} owner={owner} copy={copy} />
-              <RecordCustomFields type="organization" id={record.id} />
-            </div>
-          }
+          aside={<OrganizationAsideColumn record={record} copy={copy} />}
         />
       </PageContent>
     </>

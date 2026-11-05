@@ -1,7 +1,7 @@
+import { loadLogContext } from '../log-support'
 import type { Where } from 'payload'
 import type { AuditEvent as AuditEventDoc } from '../../payload-types'
 import type { RequestContext } from '../container'
-import { loadPeople } from '../people'
 import { refId } from '../crm/directory/normalize'
 import { describeAudit } from './audit-text'
 
@@ -51,7 +51,7 @@ function whereFor(filters: AuditFilters): Where {
 }
 
 async function rowsFor(context: RequestContext, docs: readonly AuditEventDoc[]): Promise<AuditRow[]> {
-  const people = await loadPeople(
+  const { people, locale } = await loadLogContext(
     context,
     docs.flatMap((entry) => refId(entry.actor) ?? []),
   )
@@ -60,7 +60,7 @@ async function rowsFor(context: RequestContext, docs: readonly AuditEventDoc[]):
     occurredAt: entry.occurredAt,
     actor: people.get(refId(entry.actor) ?? '')?.name ?? '',
     verb: entry.verb,
-    what: describeAudit(entry.verb),
+    what: describeAudit(entry.verb, locale),
     summary: entry.summary ?? '',
   }))
 }

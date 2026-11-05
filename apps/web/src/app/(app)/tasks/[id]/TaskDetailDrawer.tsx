@@ -52,6 +52,9 @@ function optimisticTask(input: {
       return { ...next, groupId: change.groupId }
     case 'ownerOnly':
       return { ...next, ownerOnly: change.ownerOnly }
+    case 'client':
+      // The sheet shows no client field; the task page shows it after the refresh.
+      return next
     case 'dates':
       return { ...next, startAt: change.startAt, dueAt: change.dueAt }
     case 'description':

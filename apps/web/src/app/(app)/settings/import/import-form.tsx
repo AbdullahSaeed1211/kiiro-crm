@@ -6,16 +6,14 @@ import type { ImportReport } from '@ops/module-crm'
 import { useEffect, useState, useTransition } from 'react'
 import { importCsvAction, suggestColumnsAction } from '../../../../server/crm/import'
 import type { ColumnChoice } from '../../../../server/crm/import-mapping'
+import { catalogFor, fill } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { IMPORT_COPY, type ImportCopy } from '../../../../i18n/import-copy'
 import { ColumnMapper, firstPicks, namesFor } from './column-mapper'
 import { describeClientError } from '../../client-errors'
 
-const TYPES = [
-  ['organization', 'Organizations'],
-  ['contact', 'Contacts'],
-  ['lead', 'Leads'],
-  ['deal', 'Deals'],
-] as const
-type ImportType = (typeof TYPES)[number][0]
+const TYPES = ['organization', 'contact', 'lead', 'deal'] as const
+type ImportType = (typeof TYPES)[number]
 
 const MAX_BYTES = 5_000_000
 const SHOWN_ERRORS = 50
@@ -25,43 +23,40 @@ interface Outcome {
   readonly report: ImportReport
 }
 
-function summary({ dryRun, report }: Outcome): string {
-  const lead = dryRun ? 'Check complete, nothing was imported yet.' : 'Import complete.'
-  const created = dryRun ? 'can be created' : 'created'
-  const parts = [
-    `${lead} ${String(report.total)} rows read: ${String(report.created)} ${created}`,
-    `${String(report.skipped)} skipped as already existing`,
-    `${String(report.errors.length)} with problems.`,
-  ]
+function summary({ dryRun, report }: Outcome, copy: ImportCopy): string {
+  const text = fill(copy.summary, {
+    lead: dryRun ? copy.checkDone : copy.importDone,
+    total: report.total,
+    created: report.created,
+    createdWord: dryRun ? copy.canBeCreated : copy.created,
+    skipped: report.skipped,
+    errors: report.errors.length,
+  })
   const added = report.organizationsCreated
-  const verb = dryRun ? 'would be' : 'were'
-  const organizations = added > 0 ? ` ${String(added)} new organizations ${verb} added.` : ''
-  return `${parts.join(', ')}${organizations}`
+  if (added === 0) return text
+  return `${text} ${fill(dryRun ? copy.newOrgsWould : copy.newOrgsDid, { n: added })}`
 }
 
 function Report({ outcome }: Readonly<{ outcome: Outcome }>) {
+  const copy = catalogFor(IMPORT_COPY, useLocale())
   const { report } = outcome
   return (
     <div className="grid gap-2 rounded-lg border p-4 text-sm" role="status">
-      <p className="font-medium">{summary(outcome)}</p>
-      {outcome.dryRun && report.errors.length > 0 ? (
-        <p className="text-muted-foreground">
-          The import skips rows with problems. Fix the file and check it again to include them.
-        </p>
-      ) : null}
+      <p className="font-medium">{summary(outcome, copy)}</p>
+      {outcome.dryRun && report.errors.length > 0 ? <p className="text-muted-foreground">{copy.problemsHint}</p> : null}
       {report.ignoredColumns.length > 0 ? (
-        <p className="text-muted-foreground">
-          Columns not recognised and left out: {report.ignoredColumns.join(', ')}.
-        </p>
+        <p className="text-muted-foreground">{fill(copy.ignored, { list: report.ignoredColumns.join(', ') })}</p>
       ) : null}
       {report.errors.length > 0 ? (
         <ul className="grid gap-1">
           {report.errors.slice(0, SHOWN_ERRORS).map((error) => (
             <li key={error.row}>
-              <span className="font-medium">Row {error.row}:</span> {error.message}
+              <span className="font-medium">{fill(copy.row, { n: error.row })}</span> {error.message}
             </li>
           ))}
-          {report.errors.length > SHOWN_ERRORS ? <li>…and {report.errors.length - SHOWN_ERRORS} more.</li> : null}
+          {report.errors.length > SHOWN_ERRORS ? (
+            <li>{fill(copy.more, { n: report.errors.length - SHOWN_ERRORS })}</li>
+          ) : null}
         </ul>
       ) : null}
     </div>
@@ -69,13 +64,13 @@ function Report({ outcome }: Readonly<{ outcome: Outcome }>) {
 }
 
 /** The chosen file's text and name, read in the browser; files over the limit are refused with a message. */
-function useCsvFile() {
+function useCsvFile(tooBigText: string) {
   const [csv, setCsv] = useState<string | null>(null)
   const [fileName, setFileName] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
   const choose = async (file: File | undefined) => {
     const tooBig = file !== undefined && file.size > MAX_BYTES
-    setProblem(tooBig ? 'The file is larger than 5 MB.' : null)
+    setProblem(tooBig ? tooBigText : null)
     if (file === undefined || tooBig) {
       setCsv(null)
       return
@@ -88,6 +83,7 @@ function useCsvFile() {
 
 /** Runs the check or the import and keeps the latest report or error. */
 function useImportRun(input: {
+  readonly failed: string
   readonly type: ImportType
   readonly csv: string | null
   readonly names: (string | null)[] | undefined
@@ -97,7 +93,7 @@ function useImportRun(input: {
   const [pending, startTransition] = useTransition()
   const run = (dryRun: boolean) => {
     if (input.csv === null) return
-    const { type, csv, names } = input
+    const { type, csv, names, failed } = input
     setError(null)
     startTransition(async () => {
       try {
@@ -105,7 +101,7 @@ function useImportRun(input: {
         if (result.ok) setOutcome({ dryRun, report: result.data })
         else setError(result.error.message)
       } catch (caught) {
-        setError(describeClientError(caught, { context: 'csv import', fallback: 'Unable to import. Try again.' }))
+        setError(describeClientError(caught, { context: 'csv import', fallback: failed }))
       }
     })
   }
@@ -153,9 +149,10 @@ function isReadyToCheck(state: Readonly<{ hasFile: boolean; mappingReady: boolea
 /** Pick a record type and a CSV file, check it, then import it; every row is reported. */
 export function ImportForm({ initialType = 'contact' }: Readonly<{ initialType?: ImportType }>) {
   const [type, setType] = useState<ImportType>(initialType)
-  const file = useCsvFile()
+  const copy = catalogFor(IMPORT_COPY, useLocale())
+  const file = useCsvFile(copy.tooBig)
   const mapping = useColumnPicks(type, file.csv)
-  const job = useImportRun({ type, csv: file.csv, names: mapping.names })
+  const job = useImportRun({ failed: copy.failed, type, csv: file.csv, names: mapping.names })
   const problem = job.error ?? file.problem
   const canCheck = isReadyToCheck({ hasFile: file.csv !== null, mappingReady: mapping.ready, pending: job.pending })
   const canImport = canCheck && job.outcome?.dryRun === true
@@ -163,23 +160,23 @@ export function ImportForm({ initialType = 'contact' }: Readonly<{ initialType?:
     <div className="grid gap-4 text-sm">
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1">
-          <span className="font-medium">Import</span>
+          <span className="font-medium">{copy.importLabel}</span>
           <NativeSelect
             value={type}
             onChange={(event) => {
-              setType(TYPES.find(([value]) => value === event.target.value)?.[0] ?? 'contact')
+              setType(TYPES.find((value) => value === event.target.value) ?? 'contact')
               job.reset()
             }}
           >
-            {TYPES.map(([value, label]) => (
+            {TYPES.map((value) => (
               <NativeSelectOption key={value} value={value}>
-                {label}
+                {copy.types[value]}
               </NativeSelectOption>
             ))}
           </NativeSelect>
         </label>
         <label className="grid gap-1">
-          <span className="font-medium">CSV file</span>
+          <span className="font-medium">{copy.fileLabel}</span>
           <input
             accept=".csv,text/csv"
             type="file"
@@ -208,7 +205,7 @@ export function ImportForm({ initialType = 'contact' }: Readonly<{ initialType?:
             job.run(true)
           }}
         >
-          Check file
+          {copy.check}
         </Button>
         <Button
           size="sm"
@@ -217,7 +214,7 @@ export function ImportForm({ initialType = 'contact' }: Readonly<{ initialType?:
             job.run(false)
           }}
         >
-          Import
+          {copy.import}
         </Button>
         {file.csv === null ? null : <span className="text-muted-foreground">{file.fileName}</span>}
       </div>

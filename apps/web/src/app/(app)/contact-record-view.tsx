@@ -9,6 +9,7 @@ import type { ContactRecord } from '@ops/module-crm'
 import type {
   ActivityItem,
   ContactRelations,
+  ContactTab,
   EmailThreadMessage,
   PersonSummary,
   RecordAttachment,
@@ -73,6 +74,7 @@ function ContactAside({
 
 export async function ContactRecordView({
   data,
+  tab,
   outboundEmailEnabled,
 }: Readonly<{
   data: {
@@ -84,6 +86,7 @@ export async function ContactRecordView({
     relatedTasks: readonly RelatedTask[]
     attachments: readonly RecordAttachment[]
   }
+  tab: ContactTab
   outboundEmailEnabled: boolean
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, attachments } = data
@@ -98,8 +101,8 @@ export async function ContactRecordView({
     {
       recordType: 'contact',
       recordId: record.id,
-      notes: <RecordNotesTab recordType="contact" recordId={record.id} />,
-      calls: <RecordCallLogsTab recordType="contact" recordId={record.id} />,
+      notes: tab === 'notes' ? <RecordNotesTab recordType="contact" recordId={record.id} /> : null,
+      calls: tab === 'calls' ? <RecordCallLogsTab recordType="contact" recordId={record.id} /> : null,
       recipient: record.email,
       outboundEmailEnabled,
       tasks: relatedTasks,
@@ -111,6 +114,7 @@ export async function ContactRecordView({
       <AppHeader breadcrumbs={[{ label: copy.contactsCrumb, href: '/contacts' }, { label: title }]} />
       <PageContent>
         <RecordPageLayout
+          serverTabs
           labels={{ breadcrumb: copy.contactLabel, saveTitle: copy.saveName, cancelTitle: copy.cancel }}
           title={title}
           owner={

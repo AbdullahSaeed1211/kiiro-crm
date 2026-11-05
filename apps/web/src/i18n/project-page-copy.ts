@@ -26,6 +26,13 @@ export interface ProjectPageCopy {
   readonly members: string
   readonly targetEnd: string
   readonly noTarget: string
+  readonly projectName: string
+  readonly projectNamePlaceholder: string
+  readonly noOrganization: string
+  readonly descriptionPlaceholder: string
+  readonly createProject: string
+  readonly creating: string
+  readonly required: string
 }
 
 export const PROJECT_PAGE_COPY: Readonly<Record<Locale, ProjectPageCopy>> = {
@@ -53,6 +60,13 @@ export const PROJECT_PAGE_COPY: Readonly<Record<Locale, ProjectPageCopy>> = {
     members: 'Members',
     targetEnd: 'Target end',
     noTarget: 'No target',
+    projectName: 'Project name',
+    projectNamePlaceholder: 'e.g. Website redesign',
+    noOrganization: 'No organization',
+    descriptionPlaceholder: 'What is this project for?',
+    createProject: 'Create project',
+    creating: 'Creating…',
+    required: 'This field is required.',
   },
   es: {
     projects: 'Proyectos',
@@ -78,5 +92,12 @@ export const PROJECT_PAGE_COPY: Readonly<Record<Locale, ProjectPageCopy>> = {
     members: 'Miembros',
     targetEnd: 'Fecha objetivo',
     noTarget: 'Sin fecha objetivo',
+    projectName: 'Nombre del proyecto',
+    projectNamePlaceholder: 'p. ej. Rediseño del sitio web',
+    noOrganization: 'Sin organización',
+    descriptionPlaceholder: '¿Para qué es este proyecto?',
+    createProject: 'Crear proyecto',
+    creating: 'Creando…',
+    required: 'Este campo es obligatorio.',
   },
 }

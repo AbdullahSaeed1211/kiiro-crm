@@ -45,45 +45,80 @@ const between = (field: 'dueAt' | 'completedAt', from: number, to: number): Wher
   and: [{ [field]: { greater_than_equal: from } }, { [field]: { less_than: to } }],
 })
 
-/** Counts for tasks matching `owner`: one person, nobody (`null`), or everyone (`undefined`). */
-async function countsFor(
-  context: RequestContext,
-  input: { owner: string | null | undefined; range: ReportRange; today: number; finished: readonly string[] },
-): Promise<TaskCounts> {
-  const { owner, range, today, finished } = input
-  const who: Where[] =
-    owner === undefined ? [] : [owner === null ? { assignees: { exists: false } } : { assignees: { contains: owner } }]
-  const open: Where[] = finished.length === 0 ? [] : [{ stageId: { not_in: finished } }]
-  const count = async (...clauses: Where[]): Promise<number> =>
-    (
-      await context.payload.count({
-        collection: 'tasks',
-        where: { and: [...who, ...clauses] },
-        overrideAccess: false,
-        req: context.req,
-      })
-    ).totalDocs
-  const [openTasks, completedTasks, overdueTasks] = await Promise.all([
-    count(...open, between('dueAt', range.from, range.to)),
-    count(between('completedAt', range.from, range.to)),
+interface TaskRow {
+  readonly stageId?: unknown
+  readonly dueAt?: unknown
+  readonly completedAt?: unknown
+  readonly assignees?: unknown
+}
+
+const inRange = (value: unknown, from: number, to: number): boolean =>
+  typeof value === 'number' && value >= from && value < to
+
+/** What one task adds to the counts: due and open, finished in the range, and open past its date. */
+function countTask(
+  row: TaskRow,
+  input: { range: ReportRange; today: number; finished: ReadonlySet<string> },
+): TaskCounts {
+  const { range, today, finished } = input
+  const open = !finished.has(text(row.stageId))
+  return {
+    openTasks: open && inRange(row.dueAt, range.from, range.to) ? 1 : 0,
+    completedTasks: inRange(row.completedAt, range.from, range.to) ? 1 : 0,
     // Overdue means due before today's date, so a task due today is not late yet.
-    count(...open, between('dueAt', range.from, Math.min(range.to, today))),
-  ])
-  return { openTasks, completedTasks, overdueTasks }
+    overdueTasks: open && inRange(row.dueAt, range.from, Math.min(range.to, today)) ? 1 : 0,
+  }
+}
+
+const add = (a: TaskCounts | undefined, b: TaskCounts): TaskCounts => ({
+  openTasks: (a?.openTasks ?? 0) + b.openTasks,
+  completedTasks: (a?.completedTasks ?? 0) + b.completedTasks,
+  overdueTasks: (a?.overdueTasks ?? 0) + b.overdueTasks,
+})
+
+/** Counts per assignee (`null` for nobody) and overall, from the tasks that touch the range. */
+function tally(rows: readonly TaskRow[], input: { range: ReportRange; today: number; finished: ReadonlySet<string> }) {
+  let totals = add(undefined, { openTasks: 0, completedTasks: 0, overdueTasks: 0 })
+  const byOwner = new Map<string | null, TaskCounts>()
+  for (const row of rows) {
+    const counts = countTask(row, input)
+    totals = add(totals, counts)
+    const owners = Array.isArray(row.assignees)
+      ? row.assignees.filter((id): id is string => typeof id === 'string')
+      : []
+    for (const owner of owners.length > 0 ? owners : [null]) byOwner.set(owner, add(byOwner.get(owner), counts))
+  }
+  return { totals, byOwner }
 }
 
 const empty = (counts: TaskCounts): boolean =>
   counts.openTasks === 0 && counts.completedTasks === 0 && counts.overdueTasks === 0
 
+/** The tasks due or finished in the range, with only the four fields the counts need. */
+function tasksInRange(context: RequestContext, range: ReportRange) {
+  return context.payload.find({
+    collection: 'tasks',
+    where: { or: [between('dueAt', range.from, range.to), between('completedAt', range.from, range.to)] },
+    select: { stageId: true, dueAt: true, completedAt: true, assignees: true },
+    limit: 0,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+}
+
 /**
- * Task figures for the report, as a handful of count queries per person instead of reading every task, so the report
- * costs about the same with six thousand tasks as with sixty.
+ * Task figures for the report from one query: the tasks due or finished in the range, with only the four fields the
+ * counts need. This replaced about three count queries per person, which cost 25 queries and over two seconds for six
+ * people; the one query grows with the tasks in the range, not with the people.
  */
 export async function loadTaskFigures(
   context: RequestContext,
   input: { range: ReportRange; now: number },
 ): Promise<TaskFigures> {
-  const [finished, settings, users] = await Promise.all([
+  const { range } = input
+  const [finished, settings, users, tasks] = await Promise.all([
     finishedStages(context),
     getWorkspaceSettings(),
     context.payload.find({
@@ -95,16 +130,18 @@ export async function loadTaskFigures(
       overrideAccess: false,
       req: context.req,
     }),
+    tasksInRange(context, range),
   ])
   const people = new Map(users.docs.map((user) => [user.id, user.name]))
   const timeZone = text(settings.timezone) || 'UTC'
-  const today = todayAsDueAt(input.now, timeZone)
-  const run = (owner: string | null | undefined) => countsFor(context, { owner, finished, range: input.range, today })
-  const owners: (string | null)[] = [...people.keys(), null]
-  const [everyone, each] = await Promise.all([run(undefined), Promise.all(owners.map(run))])
+  const { totals, byOwner } = tally(tasks.docs, {
+    range,
+    today: todayAsDueAt(input.now, timeZone),
+    finished: new Set(finished),
+  })
   return {
-    totals: everyone,
-    byOwner: new Map(owners.flatMap((owner, index) => (empty(each[index]) ? [] : [[owner, each[index]] as const]))),
+    totals,
+    byOwner: new Map([...byOwner].filter(([, counts]) => !empty(counts))),
     people,
     locale: normalizeLocale(settings.locale),
     timeZone,

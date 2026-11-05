@@ -200,17 +200,17 @@ export default async function LeadFollowUpsPage({
         <PageHeader
           title={copy.title}
           count={result.total}
+          tabs={
+            <ViewSwitcher
+              label={viewsCopy.label}
+              active="followUps"
+              views={leadViews({ tableHref: '/leads', boardHref: '/leads/board', copy: viewsCopy })}
+            />
+          }
           actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href={toggleHref} className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted">
-                {mine ? copy.showEveryone : copy.onlyMine}
-              </Link>
-              <ViewSwitcher
-                label={viewsCopy.label}
-                active="followUps"
-                views={leadViews({ tableHref: '/leads', boardHref: '/leads/board', copy: viewsCopy })}
-              />
-            </div>
+            <Link href={toggleHref} className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted">
+              {mine ? copy.showEveryone : copy.onlyMine}
+            </Link>
           }
         />
         <FollowUpResults

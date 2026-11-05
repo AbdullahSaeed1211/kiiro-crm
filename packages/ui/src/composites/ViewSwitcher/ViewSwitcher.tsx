@@ -3,7 +3,10 @@ import { cn } from '@ops/ui/lib/utils'
 
 export type ViewOption = Readonly<{ id: string; label: string; href: string }>
 
-/** A small segmented control that links between the representations of one list, such as table, board and calendar. */
+/**
+ * One row of tabs that link between the representations of a list, such as table, board and calendar. The row never
+ * wraps: on a phone it scrolls sideways, so it keeps one height on every screen. Give it to `PageHeader`'s `tabs`.
+ */
 export function ViewSwitcher({
   label,
   views,
@@ -12,7 +15,7 @@ export function ViewSwitcher({
   return (
     <nav
       aria-label={label}
-      className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-border p-0.5"
+      className="no-scrollbar -mb-px -ml-2.5 flex w-full max-w-full items-end gap-1 overflow-x-auto"
     >
       {views.map((view) => {
         const selected = view.id === active
@@ -22,8 +25,11 @@ export function ViewSwitcher({
             href={view.href}
             aria-current={selected ? 'page' : undefined}
             className={cn(
-              'inline-flex h-9 shrink-0 items-center rounded-md px-3 text-xs font-medium sm:h-7 sm:px-2.5 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-              selected ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+              'relative inline-flex h-9 shrink-0 items-center px-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-md',
+              'after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors',
+              selected
+                ? 'text-foreground after:bg-primary'
+                : 'text-muted-foreground after:bg-transparent hover:text-foreground',
             )}
           >
             {view.label}

@@ -40,6 +40,23 @@ async function taskWithTime(page: Page): Promise<string> {
   throw new Error('no task with logged time; run pnpm seed:demo first')
 }
 
+/** A client with projects and deals, so the client screenshot shows a full hub. */
+async function clientWithWork(page: Page): Promise<string> {
+  const response = await page.request.get(`${BASE}/api/v1/organizations?limit=40`)
+  const body = (await response.json()) as { data: { records?: { id: string }[] } | { id: string }[] }
+  const records = Array.isArray(body.data) ? body.data : (body.data.records ?? [])
+  for (const organization of records) {
+    await page.goto(`${BASE}/organizations/${organization.id}`, { waitUntil: 'load' })
+    await page.waitForTimeout(500)
+    if (
+      (await page.locator('a[href^="/projects/"]').count()) > 0 &&
+      (await page.locator('a[href^="/deals/"]').count()) > 0
+    )
+      return organization.id
+  }
+  throw new Error('no client with a project and a deal; run pnpm seed:demo first')
+}
+
 /**
  * Captures the README screenshots from a running app that holds the demo data (`pnpm seed:demo`), signed in as the demo
  * owner. Everything shown is fictional.
@@ -50,6 +67,7 @@ export async function main(): Promise<number> {
   const desktop = await signIn(await browser.newContext({ viewport: { width: 1440, height: 900 } }))
   for (const shot of [
     { route: '/', name: 'dashboard' },
+    { route: '/tasks', name: 'tasks' },
     { route: '/leads/board', name: 'leads-board' },
     { route: '/deals/board', name: 'deals-board' },
     { route: '/tasks/board', name: 'tasks-board' },
@@ -58,6 +76,7 @@ export async function main(): Promise<number> {
   ]) {
     await shoot(desktop, shot)
   }
+  await shoot(desktop, { route: `/organizations/${await clientWithWork(desktop)}`, name: 'client' })
   await shoot(desktop, { route: `/tasks/${await taskWithTime(desktop)}`, name: 'task-detail' })
   const phone = await signIn(await browser.newContext({ ...devices['iPhone 13'] }))
   await shoot(phone, { route: '/', name: 'mobile-dashboard' })

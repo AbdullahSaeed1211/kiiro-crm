@@ -6,6 +6,8 @@ import { getProductContext } from '../../../../server/auth/context'
 import { payloadData } from '../../../../server/auth/api'
 import { DeliveryLog, type DeliveryRow } from './delivery-log'
 import { WebhooksForm } from './webhooks-form'
+import { catalogFor } from '../../../../i18n/locale'
+import { WEBHOOKS_COPY } from '../../../../i18n/webhooks-copy'
 
 export const metadata: Metadata = { title: 'Webhooks' }
 export const dynamic = 'force-dynamic'
@@ -54,7 +56,7 @@ export default async function WebhooksSettingsPage() {
         <WebhooksForm initial={saved.success ? saved.data : []} />
       </SettingsForm>
       <SettingsForm>
-        <DeliveryLog rows={deliveries} />
+        <DeliveryLog rows={deliveries} copy={catalogFor(WEBHOOKS_COPY, settings.locale)} />
       </SettingsForm>
     </SettingsPage>
   )

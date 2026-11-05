@@ -1,7 +1,8 @@
+import type { Locale } from '../../i18n/locale'
+import { loadLogContext } from '../log-support'
 import type { Where } from 'payload'
 import type { Activity } from '../../payload-types'
 import type { RequestContext } from '../container'
-import { loadPeople } from '../people'
 import { describeActivity } from './activity-text'
 import { refId, text } from './directory/normalize'
 
@@ -62,15 +63,15 @@ function whereFor(filters: ActivityFilters): Where {
   return parts.length === 0 ? {} : { and: parts }
 }
 
-function toRow(entry: Activity, actor: string): ActivityRow | null {
+function toRow(entry: Activity, input: Readonly<{ actor: string; locale: Locale }>): ActivityRow | null {
   const occurredAt = typeof entry.occurredAt === 'number' ? entry.occurredAt : Date.parse(String(entry.occurredAt))
   if (!Number.isFinite(occurredAt)) return null
   const verb = text(entry.verb) ?? ''
   return {
     id: entry.id,
     occurredAt,
-    actor,
-    what: describeActivity(verb === '' ? null : verb),
+    actor: input.actor,
+    what: describeActivity(verb === '' ? null : verb, input.locale),
     verb,
     recordType: text(entry.recordType) ?? '',
     recordId: text(entry.recordId) ?? '',
@@ -78,12 +79,12 @@ function toRow(entry: Activity, actor: string): ActivityRow | null {
 }
 
 async function rowsFor(context: RequestContext, docs: readonly Activity[]): Promise<ActivityRow[]> {
-  const people = await loadPeople(
+  const { people, locale } = await loadLogContext(
     context,
     docs.flatMap((entry) => refId(entry.actor) ?? []),
   )
   return docs.flatMap((entry) => {
-    const row = toRow(entry, people.get(refId(entry.actor) ?? '')?.name ?? '')
+    const row = toRow(entry, { actor: people.get(refId(entry.actor) ?? '')?.name ?? '', locale })
     return row === null ? [] : [row]
   })
 }

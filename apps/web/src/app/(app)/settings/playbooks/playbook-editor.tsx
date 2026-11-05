@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ActionResult } from '../../../../server/action-result'
 import { PlaybookTasks } from './playbook-tasks'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { PLAYBOOKS_COPY } from '../../../../i18n/playbooks-copy'
 
 const newPlaybook = (): Playbook => ({ id: crypto.randomUUID(), name: '', onDealWon: false, tasks: [] })
 
@@ -58,6 +61,7 @@ export function PlaybookEditor({
   action,
 }: Readonly<{ initial: readonly Playbook[]; action: (input: unknown) => Promise<ActionResult> }>) {
   const router = useRouter()
+  const copy = catalogFor(PLAYBOOKS_COPY, useLocale())
   const [playbooks, setPlaybooks] = useState<Playbook[]>([...initial])
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -99,10 +103,10 @@ export function PlaybookEditor({
             setPlaybooks((current) => [...current, newPlaybook()])
           }}
         >
-          Add playbook
+          {copy.add}
         </Button>
         <Button disabled={pending} onClick={() => void save()}>
-          {pending ? 'Saving…' : 'Save playbooks'}
+          {pending ? copy.saving : copy.save}
         </Button>
         {message === null ? null : (
           <p className="text-sm text-muted-foreground" role="status">

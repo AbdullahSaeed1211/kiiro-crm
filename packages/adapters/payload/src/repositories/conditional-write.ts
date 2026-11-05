@@ -93,3 +93,22 @@ export async function writeIfUnchanged(payload: Payload, write: VersionedWrite):
   const rows = await db.drizzle.update(table).set(values).where(guard).returning({ id })
   return rows.length > 0
 }
+
+/**
+ * Sets only the named columns of one row, with no read-modify-write. Payload's own update rewrites every column, so
+ * two writers that touch different fields at once (opening a portal link while it is being revoked) can undo each other.
+ */
+export async function setColumns(
+  payload: Payload,
+  write: Readonly<{ collection: CollectionSlug; id: string; data: Readonly<Record<string, unknown>> }>,
+): Promise<void> {
+  const db = drizzleAdapter(payload)
+  const table = tableOf(db, write.collection)
+  for (const key of Object.keys(write.data)) columnOf(table, key)
+  const id = columnOf(table, 'id')
+  await db.drizzle
+    .update(table)
+    .set({ ...write.data })
+    .where(db.operators.equals(id, write.id))
+    .returning({ id })
+}

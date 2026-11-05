@@ -102,7 +102,7 @@ Done when: each feature has a yes/no/defer decision recorded in an ADR or spec s
 Design: [quotes, invoices, portal, rules, audit log](design/quotes-invoices-portal-rules-audit.md). Owner priority: bill the work and show it to the client.
 
 - Order: audit log, then quotes and invoices, then the client portal, then automation rules. Payments through a processor wait for the tenant's account.
-- Status (2026-10-13): audit log, quotes and invoices are built. The client portal is not built; the design's token login and scope are unchanged. Automation rules are not built.
+- Status (2026-11-05): audit log, quotes, invoices and the client portal are built. The portal is scoped to the contact's company, not the contact (see the design). Automation rules are not built.
 
 Depends on: wave 10. Done when: each feature is verified signed in on production, and the portal has passing scope and token tests.
 
@@ -119,3 +119,9 @@ Source: the owner's walkthrough on 2026-10-13. Staff should open the app and kno
 - Findings: UX 37.
 
 Depends on: nothing. Done when: UX 37 is fixed and verified signed in on production.
+
+## 13. Navigation, shell and speed
+
+Done (2026-11-04), with the measured gain in [net gain](net-gain.md): [navigation design](design/navigation.md); breadcrumb labels from terminology and copy; a theme choice that survives blocked storage; the phone timeline's layout shift; currency changes that keep saved deal amounts; logo replacement that keeps the old file until the new one is saved; and the first speed pass in [performance](performance.md). Open: the remaining hotspots listed there.
+
+Depends on: nothing. Done when: every page in [performance](performance.md#where-it-stands) is at or under its query budget.

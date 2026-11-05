@@ -6,23 +6,32 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useGuardedTransition } from '../use-guarded-transition'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
+import { BULK_COPY } from '../../../i18n/bulk-copy'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { taskFormLabels } from '../../../i18n/task-form-copy'
 import { completeTasks } from '../../../server/actions/work/tasks/completeTasks'
 import { updateTasks } from '../../../server/actions/work/tasks/updateTasks'
 
 type Versions = ReadonlyMap<string, number>
 
-const PRIORITIES = [
-  ['none', 'None'],
-  ['low', 'Low'],
-  ['medium', 'Medium'],
-  ['high', 'High'],
-  ['urgent', 'Urgent'],
-] as const
+const PRIORITIES = ['none', 'low', 'medium', 'high', 'urgent'] as const
 
-const summary = (done: number, skipped: number): string => `${String(done)} changed, ${String(skipped)} skipped`
+const PRIORITY_KEY = {
+  none: 'priorityNone',
+  low: 'priorityLow',
+  medium: 'priorityMedium',
+  high: 'priorityHigh',
+  urgent: 'priorityUrgent',
+} as const
 
 function BulkBar({ ids, versions }: Readonly<{ ids: readonly string[]; versions: Versions }>) {
   const router = useRouter()
+  const locale = useLocale()
+  const copy = catalogFor(BULK_COPY, locale)
+  const priorityCopy = taskFormLabels(locale)
+  const summary = (changed: number, skipped: number): string =>
+    copy.result.replace('{updated}', String(changed)).replace('{skipped}', String(skipped))
   const [message, setMessage] = useState<string | null>(null)
   const [priority, setPriority] = useState('')
   const [pending, startTransition] = useGuardedTransition(setMessage)
@@ -38,7 +47,7 @@ function BulkBar({ ids, versions }: Readonly<{ ids: readonly string[]; versions:
     })
   }
   return (
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Bulk actions">
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={copy.group}>
       <Button
         size="sm"
         disabled={pending}
@@ -49,11 +58,11 @@ function BulkBar({ ids, versions }: Readonly<{ ids: readonly string[]; versions:
           })
         }}
       >
-        Mark {ids.length} done
+        {copy.markDone.replace('{count}', String(ids.length))}
       </Button>
       <NativeSelect
         size="sm"
-        aria-label="Set priority"
+        aria-label={copy.setPriority}
         value={priority}
         disabled={pending}
         onChange={(event) => {
@@ -66,10 +75,10 @@ function BulkBar({ ids, versions }: Readonly<{ ids: readonly string[]; versions:
             })
         }}
       >
-        <option value="">Set priority…</option>
-        {PRIORITIES.map(([value, label]) => (
+        <option value="">{copy.setPriorityPlaceholder}</option>
+        {PRIORITIES.map((value) => (
           <option key={value} value={value}>
-            {label}
+            {priorityCopy[PRIORITY_KEY[value]]}
           </option>
         ))}
       </NativeSelect>
@@ -84,7 +93,7 @@ function BulkBar({ ids, versions }: Readonly<{ ids: readonly string[]; versions:
           })
         }}
       >
-        Assign to me
+        {copy.assignToMe}
       </Button>
       {message === null ? null : (
         <span role="status" className="text-xs text-muted-foreground">

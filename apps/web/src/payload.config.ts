@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { traceSql } from './server/sql-trace'
 import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
 import { r2Storage } from '@payloadcms/storage-r2'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
@@ -120,7 +121,7 @@ export default buildConfig({
   maxDepth: 2,
   // Committed migrations are the only schema source (spec §11), so development schema push is off.
   db: sqliteD1Adapter({
-    binding: env.D1,
+    binding: traceSql(env.D1),
     idType: 'uuid',
     push: false,
     migrationDir: path.resolve(dirname, 'migrations'),

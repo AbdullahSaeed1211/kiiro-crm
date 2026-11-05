@@ -7,8 +7,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@ops/ui/components/ui/breadcrumb'
-import { Separator } from '@ops/ui/components/ui/separator'
 import { ResponsiveSidebarTrigger } from './ResponsiveSidebarTrigger'
+import { SectionCrumb, TrailReporter } from './trail'
 
 /** One breadcrumb level; the last level is the current page. */
 export type BreadcrumbEntry = Readonly<{
@@ -53,10 +53,12 @@ export function AppHeader({ breadcrumbs, actions }: AppHeaderProps) {
   const lastIndex = levels.length - 1
   return (
     <header className="ops-app-header sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-4 md:rounded-t-xl">
+      <TrailReporter entries={levels} />
       <ResponsiveSidebarTrigger />
-      <Separator orientation="vertical" className="my-auto mr-2 data-vertical:h-4" />
       <Breadcrumb className="min-w-0">
         <BreadcrumbList className="flex-nowrap">
+          {/* Names the nav group ("Work", "Clients") above a top-level page; at most three levels show in all. */}
+          {levels.length <= 2 ? <SectionCrumb firstLabel={levels[0]?.label} /> : null}
           {levels.map((entry, index) => (
             <Fragment key={`${entry.label}:${entry.href ?? ''}`}>
               {index > 0 ? <BreadcrumbSeparator className="max-md:hidden" /> : null}

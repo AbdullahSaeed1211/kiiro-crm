@@ -2,15 +2,8 @@
 
 import { useEffect } from 'react'
 
-/** Press `g`, then one of these keys, to jump to a section. */
-export const GO_KEYS: Readonly<Partial<Record<string, string>>> = {
-  d: '/',
-  m: '/my-tasks',
-  t: '/tasks',
-  l: '/leads',
-  p: '/projects',
-  c: '/calendar',
-}
+/** Press `g`, then a section's letter, to jump there. The letters come from the navigation model, so they follow what the viewer can see. */
+type GoKeys = Readonly<Partial<Record<string, string>>>
 
 /** Press this key on its own to start a new task. */
 export const NEW_TASK_KEY = 'c'
@@ -58,9 +51,9 @@ const SIMPLE_KEYS: Readonly<Partial<Record<string, Action>>> = {
 }
 
 /** What a key does, given whether `g` was just pressed. */
-function actionFor(key: string, armed: boolean): Action {
+function actionFor(key: string, armed: boolean, goKeys: GoKeys): Action {
   if (armed) {
-    const href = GO_KEYS[key]
+    const href = goKeys[key]
     return href === undefined ? null : { kind: 'go', href }
   }
   if (key === 'n') {
@@ -91,7 +84,8 @@ export function useWorkspaceShortcuts({
   openSearch,
   openHelp,
   go,
-}: Readonly<{ openSearch: () => void; openHelp: () => void; go: (href: string) => void }>) {
+  goKeys,
+}: Readonly<{ openSearch: () => void; openHelp: () => void; go: (href: string) => void; goKeys: GoKeys }>) {
   const openSearchOrFocus = () => {
     if (!focusPageSearch()) openSearch()
   }
@@ -99,7 +93,7 @@ export function useWorkspaceShortcuts({
     let armedUntil = 0
     const onKeyDown = (event: KeyboardEvent) => {
       if (ignored(event)) return
-      const action = actionFor(event.key.toLowerCase(), Date.now() < armedUntil)
+      const action = actionFor(event.key.toLowerCase(), Date.now() < armedUntil, goKeys)
       armedUntil = action?.kind === 'arm' ? Date.now() + SEQUENCE_MS : 0
       if (action === null || action.kind === 'arm') return
       event.preventDefault()
@@ -111,5 +105,5 @@ export function useWorkspaceShortcuts({
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [openSearch, openHelp, go])
+  }, [openSearch, openHelp, go, goKeys])
 }

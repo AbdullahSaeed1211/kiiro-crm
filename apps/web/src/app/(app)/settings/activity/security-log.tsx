@@ -1,3 +1,4 @@
+import type { Locale } from '../../../../i18n/locale'
 import { Button } from '@ops/ui/components/ui/button'
 import Link from 'next/link'
 import { AUDIT_VERBS, describeAudit } from '../../../../server/audit/audit-text'
@@ -58,7 +59,7 @@ function Events({ copy, log, base }: Readonly<{ copy: Copy; log: AuditPage; base
 }
 
 /** The security and settings events, newest first, with filters and paging. */
-export async function SecurityLog({ params, copy }: Readonly<{ params: Params; copy: Copy }>) {
+export async function SecurityLog({ params, copy, locale }: Readonly<{ params: Params; copy: Copy; locale: Locale }>) {
   const context = await getRequestContext()
   const filters = filtersOf(params)
   const page = Math.max(1, Number(firstParam(params.page) ?? 1) || 1)
@@ -80,7 +81,7 @@ export async function SecurityLog({ params, copy }: Readonly<{ params: Params; c
           <option value="">{copy.anyEvent}</option>
           {AUDIT_VERBS.map((verb) => (
             <option key={verb} value={verb}>
-              {describeAudit(verb)}
+              {describeAudit(verb, locale)}
             </option>
           ))}
         </Pick>

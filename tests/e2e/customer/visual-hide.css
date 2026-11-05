@@ -1,0 +1,16 @@
+/* Hidden before the frame diffs in visual.spec.ts: everything that changes with the seed's dates or the day. */
+[data-slot='sidebar-menu-badge'],
+.ops-page-header h1 .tabular-nums,
+.ops-page-header p,
+.ops-page-content > :not(.ops-page-header, .ops-record-page):not(:has(.ops-page-header, .ops-record-page)),
+.ops-page-content :has(> .ops-page-header) > :not(.ops-page-header),
+.ops-record-grid,
+nextjs-portal {
+  visibility: hidden !important;
+}
+
+*,
+*::before,
+*::after {
+  caret-color: transparent !important;
+}

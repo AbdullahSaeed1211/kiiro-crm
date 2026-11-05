@@ -3,6 +3,9 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { SALES_SETTINGS_COPY } from '../../../../i18n/sales-settings-copy'
 import { useState } from 'react'
 import { saveLeadRules } from '../../../../server/actions/settings/sales'
 import { CheckboxGroup } from '../checkbox-group'
@@ -24,32 +27,33 @@ function RuleEditor({
   onChange: (next: Rule) => void
   onRemove: () => void
 }>) {
+  const copy = catalogFor(SALES_SETTINGS_COPY, useLocale()).rules
   return (
     <div className="grid gap-2 rounded-md border p-3">
       <Input
-        aria-label="Rule name"
-        placeholder="Rule name"
+        aria-label={copy.nameLabel}
+        placeholder={copy.nameLabel}
         value={rule.name}
         onChange={(event) => {
           onChange({ ...rule, name: event.target.value })
         }}
       />
       <NativeSelect
-        aria-label="Lead source"
+        aria-label={copy.sourceLabel}
         value={rule.sourceId ?? ''}
         onChange={(event) => {
           onChange({ ...rule, sourceId: event.target.value === '' ? null : event.target.value })
         }}
       >
-        <option value="">Every new lead</option>
+        <option value="">{copy.everyLead}</option>
         {sources.map((source) => (
           <option key={source.id} value={source.id}>
-            Only leads from {source.name}
+            {copy.onlyFrom.replace('{name}', source.name)}
           </option>
         ))}
       </NativeSelect>
       <CheckboxGroup
-        label="Give the leads to (in turn)"
+        label={copy.ownersLabel}
         options={people}
         values={rule.ownerIds}
         onChange={(ownerIds) => {
@@ -57,7 +61,7 @@ function RuleEditor({
         }}
       />
       <Button variant="ghost" size="sm" className="w-fit" onClick={onRemove}>
-        Remove rule
+        {copy.remove}
       </Button>
     </div>
   )
@@ -69,15 +73,13 @@ export function LeadRulesForm({
   sources,
   people,
 }: Readonly<{ initial: readonly Rule[]; sources: readonly Choice[]; people: readonly Choice[] }>) {
+  const copy = catalogFor(SALES_SETTINGS_COPY, useLocale()).rules
   const [rules, setRules] = useState<readonly Rule[]>(initial)
   const { save, message, pending } = useSave(saveLeadRules)
   return (
     <div className="grid gap-3 text-sm">
-      <h2 className="font-medium">Lead assignment</h2>
-      <p className="text-muted-foreground">
-        A new lead with no owner goes to the next person in the rule that matches its source. A rule for one source wins
-        over the "every new lead" rule. An owner chosen on the lead is never changed.
-      </p>
+      <h2 className="font-medium">{copy.title}</h2>
+      <p className="text-muted-foreground">{copy.help}</p>
       {rules.map((rule, index) => (
         <RuleEditor
           key={rule.id}
@@ -100,7 +102,7 @@ export function LeadRulesForm({
             setRules([...rules, { id: crypto.randomUUID(), name: '', sourceId: null, ownerIds: [] }])
           }}
         >
-          Add rule
+          {copy.add}
         </Button>
         <Button
           size="sm"
@@ -109,7 +111,7 @@ export function LeadRulesForm({
             save(rules)
           }}
         >
-          Save rules
+          {copy.save}
         </Button>
         {message === null ? null : <span role="status">{message}</span>}
       </div>

@@ -122,6 +122,7 @@ export default async function TaskBoardPage({
               ? `Showing ${String(records.length)} of ${String(page.total)} open and recently finished tasks. Use the Table to find the rest.`
               : undefined
           }
+          tabs={<TaskWorkspaceViews active="board" locale={locale} mine={mine} />}
           actions={
             <div className="flex flex-wrap items-center justify-end gap-2">
               <AssigneeFilter
@@ -131,7 +132,6 @@ export default async function TaskBoardPage({
                 options={assigneeOptions(people)}
               />
               <TaskCreateForm />
-              <TaskWorkspaceViews active="board" locale={locale} mine={mine} />
             </div>
           }
         />

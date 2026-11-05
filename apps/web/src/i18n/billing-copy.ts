@@ -13,6 +13,8 @@ export interface BillingCopy {
   readonly dueInvoice: string
   readonly dueQuote: string
   readonly nothing: string
+  /** The tab on a client's page. */
+  readonly clientTab: string
   readonly previous: string
   readonly next: string
   readonly states: Readonly<Record<string, string>>
@@ -80,6 +82,7 @@ export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
     dueInvoice: 'Due date',
     dueQuote: 'Valid until',
     nothing: 'Nothing here yet.',
+    clientTab: 'Billing',
     previous: 'Previous',
     next: 'Next',
     states: {
@@ -159,6 +162,7 @@ export const BILLING_COPY: Readonly<Record<'en' | 'es', BillingCopy>> = {
     dueInvoice: 'Fecha de pago',
     dueQuote: 'Válida hasta',
     nothing: 'Todavía no hay nada.',
+    clientTab: 'Facturación',
     previous: 'Anterior',
     next: 'Siguiente',
     states: {

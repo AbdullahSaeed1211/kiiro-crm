@@ -9,6 +9,7 @@ import { catalogFor } from '../../../i18n/locale'
 import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
 import { useLocale } from '../../../i18n/locale-context'
 import { TasksHeaderActions } from './TasksHeaderActions'
+import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 
 function TaskRowsSkeleton({ label }: Readonly<{ label: string }>) {
   return (
@@ -35,6 +36,7 @@ export default function TasksLoading() {
         <PageHeader
           title={copy.openTasks}
           description={catalogFor(SECTION_HELP_COPY, locale).tasks}
+          tabs={<TaskWorkspaceViews active="table" locale={locale} />}
           actions={<TasksHeaderActions view="open" locale={locale} savedViews={[]} initial={{}} />}
         />
         <div className="flex flex-wrap items-center gap-2" aria-hidden="true">

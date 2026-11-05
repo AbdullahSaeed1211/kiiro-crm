@@ -22,31 +22,46 @@ import {
 } from 'lucide-react'
 import { SHELL_COPY, type Locale } from '../../i18n/config'
 
-type NavLink = readonly [key: string, href: string, icon: LucideIcon]
+/** One place a person can go: the sidebar, the command menu and the `g` shortcuts all read this list. */
+export type NavLink = Readonly<{ key: string; href: string; icon: LucideIcon; shortcut?: string }>
 
 const TODAY: readonly NavLink[] = [
-  ['dashboard', '/', LayoutDashboard],
-  ['attendance', '/attendance', Clock],
+  { key: 'dashboard', href: '/', icon: LayoutDashboard, shortcut: 'd' },
+  { key: 'attendance', href: '/attendance', icon: Clock, shortcut: 'a' },
 ]
-const MY_TASKS: NavLink = ['myTasks', '/my-tasks', CircleCheckBig]
-const SALES_DESK: NavLink = ['salesWorkspace', '/sales', PhoneCall]
+const MY_TASKS = { key: 'myTasks', href: '/my-tasks', icon: CircleCheckBig, shortcut: 'm' }
+const SALES_DESK = { key: 'salesWorkspace', href: '/sales', icon: PhoneCall, shortcut: 'w' }
 const SALES: readonly NavLink[] = [
-  ['leads', '/leads', UserPlus],
-  ['deals', '/deals', Handshake],
+  { key: 'leads', href: '/leads', icon: UserPlus, shortcut: 'l' },
+  { key: 'deals', href: '/deals', icon: Handshake, shortcut: 'e' },
 ]
 const CLIENTS: readonly NavLink[] = [
-  ['organizations', '/organizations', Building2],
-  ['contacts', '/contacts', Contact],
+  { key: 'organizations', href: '/organizations', icon: Building2, shortcut: 'o' },
+  { key: 'contacts', href: '/contacts', icon: Contact, shortcut: 'k' },
 ]
 const WORK: readonly NavLink[] = [
-  ['tasks', '/tasks', ListTodo],
-  ['projects', '/projects', FolderKanban],
-  ['calendar', '/calendar', CalendarDays],
-  ['contentCalendar', '/content-calendar', FileText],
-  ['repeatingTasks', '/tasks/repeating', Repeat2],
+  { key: 'tasks', href: '/tasks', icon: ListTodo, shortcut: 't' },
+  { key: 'projects', href: '/projects', icon: FolderKanban, shortcut: 'p' },
+  { key: 'calendar', href: '/calendar', icon: CalendarDays, shortcut: 'c' },
+  { key: 'contentCalendar', href: '/content-calendar', icon: FileText },
+  { key: 'repeatingTasks', href: '/tasks/repeating', icon: Repeat2 },
 ]
+const TEAM = { key: 'teamAssignments', href: '/team', icon: Users, shortcut: 'u' }
 
-function isActive(pathname: string, href: string): boolean {
+/** Who is looking, and what the workspace has switched on. */
+export type NavViewer = Readonly<{
+  modules: Readonly<Record<string, boolean>>
+  terminology: Readonly<Record<string, unknown>>
+  role: string
+  workProfile: WorkProfile
+  locale: Locale
+}>
+
+/** A link ready to show: translated, with the keys that reach it. */
+export type NavEntry = Readonly<{ key: string; href: string; icon: LucideIcon; label: string; shortcut?: string }>
+export type NavSection = Readonly<{ id: string; label?: string; entries: readonly NavEntry[] }>
+
+export function isNavActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/'
   if (href === '/tasks') return isTaskRouteActive(pathname)
   return pathname === href || pathname.startsWith(`${href}/`)
@@ -58,162 +73,120 @@ function isTaskRouteActive(pathname: string): boolean {
   return pathname.startsWith('/timeline') || (pathname.startsWith('/tasks') && !pathname.startsWith('/tasks/repeating'))
 }
 
-function isAdminRole(role: string): boolean {
-  return role === 'owner' || role === 'manager'
+const isAdminRole = (role: string): boolean => role === 'owner' || role === 'manager'
+
+function termLabel(viewer: NavViewer, key: string): string {
+  const value = viewer.terminology[key]
+  return typeof value === 'string' && value !== '' ? value : (SHELL_COPY[viewer.locale][key] ?? key)
 }
 
-function navLabel({
-  terminology,
-  copy,
-  key,
-}: Readonly<{
-  terminology: Readonly<Record<string, unknown>>
-  copy: Readonly<Record<string, string>>
-  key: string
-}>) {
-  const value = terminology[key]
-  return typeof value === 'string' && value !== '' ? value : (copy[key] ?? key)
-}
-
-function clientGroupLabel({
-  terminology,
-  copy,
-}: Readonly<{
-  terminology: Readonly<Record<string, unknown>>
-  copy: Readonly<Record<string, string>>
-}>): string {
-  const clients = terminology.clientsGroup
+function clientGroupLabel(viewer: NavViewer): string {
+  const clients = viewer.terminology.clientsGroup
   if (typeof clients === 'string' && clients !== '') return clients
   // Existing workspaces customize the organization term; keep it for the group
   // heading while using the new customer-facing default in other workspaces.
-  const organizations = terminology.organizations
-  return typeof organizations === 'string' && organizations !== '' ? organizations : copy.clientsGroup
+  const organizations = viewer.terminology.organizations
+  return typeof organizations === 'string' && organizations !== ''
+    ? organizations
+    : SHELL_COPY[viewer.locale].clientsGroup
 }
 
-function createNavItem({
-  pathname,
-  terminology,
-  copy,
-}: Readonly<{
-  pathname: string
-  terminology: Readonly<Record<string, unknown>>
-  copy: Readonly<Record<string, string>>
-}>): (link: NavLink) => NavGroup['items'][number] {
-  return ([key, href, icon]) => ({
-    label: navLabel({ terminology, copy, key }),
-    href,
-    icon,
-    active: isActive(pathname, href),
-  })
+const REPORTS: NavLink = { key: 'reports', href: '/reports', icon: ChartNoAxesCombined, shortcut: 'r' }
+const INBOX: NavLink = { key: 'inbox', href: '/inbox', icon: Mail, shortcut: 'i' }
+const BILLING: NavLink = { key: 'billing', href: '/billing', icon: ReceiptText, shortcut: 'b' }
+
+function workLinks(viewer: NavViewer): readonly NavLink[] {
+  const admin = isAdminRole(viewer.role)
+  if (viewer.workProfile === 'sales' && !admin) return [MY_TASKS]
+  return [MY_TASKS, ...WORK, ...(admin ? [TEAM] : [])]
 }
 
-function todayAndWorkGroups({
-  modules,
-  role,
-  workProfile,
-  terminology,
-  copy,
-  item,
-}: Readonly<{
-  modules: Readonly<Record<string, boolean>>
-  role: string
-  workProfile: WorkProfile
-  terminology: Readonly<Record<string, unknown>>
-  copy: Readonly<Record<string, string>>
-  item: (link: NavLink) => NavGroup['items'][number]
-}>): NavGroup[] {
-  const groups: NavGroup[] = [{ id: 'today', items: TODAY.map(item) }]
-  if (!modules.work) return [{ ...groups[0], items: [...TODAY, MY_TASKS].map(item) }]
+const only = (condition: boolean, links: readonly NavLink[]): readonly NavLink[] => (condition ? links : [])
 
-  const workLinks =
-    workProfile === 'sales' && !isAdminRole(role)
-      ? [MY_TASKS]
-      : [MY_TASKS, ...WORK, ...(isAdminRole(role) ? ([['teamAssignments', '/team', Users]] as const) : [])]
-  groups.push({ id: 'work', label: navLabel({ terminology, copy, key: 'workGroup' }), items: workLinks.map(item) })
-  return groups
-}
-
-function clientAndSalesGroups({
-  modules,
-  terminology,
-  copy,
-  role,
-  workProfile,
-  item,
-}: Readonly<{
-  modules: Readonly<Record<string, boolean>>
-  terminology: Readonly<Record<string, unknown>>
-  copy: Readonly<Record<string, string>>
-  role: string
-  workProfile: WorkProfile
-  item: (link: NavLink) => NavGroup['items'][number]
-}>): NavGroup[] {
-  if (!modules.crm) return []
-  const groups: NavGroup[] = [
-    { id: 'clients', label: clientGroupLabel({ terminology, copy }), items: CLIENTS.map(item) },
-  ]
-  if (isAdminRole(role) || workProfile === 'sales') {
-    groups.push({
+/** The groups as plain link lists; roles and switched-off modules are decided here and nowhere else. */
+function sectionLinks(
+  viewer: NavViewer,
+): readonly Readonly<{ id: string; label?: string; links: readonly NavLink[] }>[] {
+  const { modules, role, workProfile } = viewer
+  const admin = isAdminRole(role)
+  const tools = [...only(modules.work, [REPORTS]), ...only(modules.mail, [INBOX]), ...only(modules.work, [BILLING])]
+  const groups = [
+    { id: 'today', links: modules.work ? TODAY : [...TODAY, MY_TASKS] },
+    { id: 'work', label: termLabel(viewer, 'workGroup'), links: only(modules.work, workLinks(viewer)) },
+    { id: 'clients', label: clientGroupLabel(viewer), links: only(modules.crm, CLIENTS) },
+    {
       id: 'sales',
-      label: navLabel({ terminology, copy, key: 'salesGroup' }),
-      items: [SALES_DESK, ...SALES].map(item),
-    })
-  }
-  return groups
-}
-
-function adminUtilityGroups({
-  modules,
-  role,
-  terminology,
-  copy,
-  item,
-}: Readonly<{
-  modules: Readonly<Record<string, boolean>>
-  role: string
-  terminology: Readonly<Record<string, unknown>>
-  copy: Readonly<Record<string, string>>
-  item: (link: NavLink) => NavGroup['items'][number]
-}>): NavGroup[] {
-  if (!isAdminRole(role)) return []
-  const groups: NavGroup[] = []
-  if (modules.work) groups.push({ id: 'reports', items: [item(['reports', '/reports', ChartNoAxesCombined])] })
-
-  const utilities: readonly NavLink[] = [
-    ...(modules.mail ? ([['inbox', '/inbox', Mail]] as const) : []),
-    ...(modules.work ? ([['billing', '/billing', ReceiptText]] as const) : []),
+      label: termLabel(viewer, 'salesGroup'),
+      links: only(modules.crm && (admin || workProfile === 'sales'), [SALES_DESK, ...SALES]),
+    },
+    { id: 'utilities', label: termLabel(viewer, 'utilitiesGroup'), links: only(admin, tools) },
   ]
-  if (utilities.length > 0) {
-    groups.push({
-      id: 'utilities',
-      label: navLabel({ terminology, copy, key: 'utilitiesGroup' }),
-      items: utilities.map(item),
-    })
-  }
-  return groups
+  return groups.filter((group) => group.links.length > 0)
 }
 
+/** Every group the viewer may see, in order, with translated labels. */
+export function navSections(viewer: NavViewer): NavSection[] {
+  return sectionLinks(viewer).map(({ id, label, links }) => ({
+    id,
+    label,
+    entries: links.map((item) => ({ ...item, label: termLabel(viewer, item.key) })),
+  }))
+}
+
+/** Everything the viewer can go to, flat: what the command menu lists and the `g` shortcuts reach. */
+export const navEntries = (sections: readonly NavSection[]): NavEntry[] => sections.flatMap((item) => item.entries)
+
+/** The sidebar's view of the model: the current page marked, and a count where one applies. */
 export function navGroups({
+  sections,
   pathname,
-  modules,
-  terminology,
-  role,
-  workProfile,
-  locale,
+  counts,
+  countLabels,
 }: Readonly<{
+  sections: readonly NavSection[]
   pathname: string
-  modules: Readonly<Record<string, boolean>>
-  terminology: Readonly<Record<string, unknown>>
-  role: string
-  workProfile: WorkProfile
-  locale: Locale
+  counts: Readonly<Partial<Record<string, number>>>
+  countLabels: Readonly<Partial<Record<string, (count: number) => string>>>
 }>): NavGroup[] {
-  const copy = SHELL_COPY[locale]
-  const item = createNavItem({ pathname, terminology, copy })
+  return sections.map((item) => ({
+    id: item.id,
+    label: item.label,
+    items: item.entries.map((nav) => {
+      const count = counts[nav.key] ?? 0
+      return {
+        label: nav.label,
+        href: nav.href,
+        icon: nav.icon,
+        active: isNavActive(pathname, nav.href),
+        shortcut: nav.shortcut === undefined ? undefined : `G ${nav.shortcut.toUpperCase()}`,
+        ...(count > 0
+          ? {
+              badge: count > 99 ? '99+' : count,
+              badgeTone: 'alert' as const,
+              badgeLabel: countLabels[nav.key]?.(count),
+            }
+          : {}),
+      }
+    }),
+  }))
+}
+
+/** What the "New" menu and the command menu's Create group offer, by module. */
+export function createLinks(viewer: NavViewer): readonly Readonly<{ key: string; href: string; icon: LucideIcon }>[] {
+  const { modules } = viewer
   return [
-    ...todayAndWorkGroups({ modules, role, workProfile, terminology, copy, item }),
-    ...clientAndSalesGroups({ modules, terminology, copy, role, workProfile, item }),
-    ...adminUtilityGroups({ modules, role, terminology, copy, item }),
+    ...(modules.work ? [{ key: 'newTask', href: '/tasks/new', icon: ListTodo }] : []),
+    ...(modules.work ? [{ key: 'newProject', href: '/projects/new', icon: FolderKanban }] : []),
+    // Leads belong to the sales desk, so they are offered wherever the Leads link is.
+    ...(modules.crm && (isAdminRole(viewer.role) || viewer.workProfile === 'sales')
+      ? [{ key: 'newLead', href: '/leads/new', icon: UserPlus }]
+      : []),
+    ...(modules.crm
+      ? [
+          { key: 'newContact', href: '/contacts/new', icon: Contact },
+          { key: 'newOrganization', href: '/organizations/new', icon: Building2 },
+        ]
+      : []),
   ]
 }
 

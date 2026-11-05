@@ -1,5 +1,8 @@
 'use client'
 
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { TIME_LOG_COPY } from '../../../../i18n/time-log-copy'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { useRouter } from 'next/navigation'
@@ -54,6 +57,7 @@ export function TimeLogForm({
   entries,
 }: Readonly<{ taskId: string; today: string; entries: readonly Row[] }>) {
   const router = useRouter()
+  const copy = catalogFor(TIME_LOG_COPY, useLocale())
   const [duration, setDuration] = useState('')
   const [day, setDay] = useState(today)
   const [note, setNote] = useState('')
@@ -82,7 +86,7 @@ export function TimeLogForm({
       <EntryList entries={entries} pending={pending} onRemove={remove} />
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          aria-label="Time spent"
+          aria-label={copy.timeSpent}
           placeholder="1h 30m"
           className="w-24"
           value={duration}
@@ -91,7 +95,7 @@ export function TimeLogForm({
           }}
         />
         <Input
-          aria-label="Day worked"
+          aria-label={copy.dayWorked}
           type="date"
           className="w-40"
           value={day}
@@ -101,8 +105,8 @@ export function TimeLogForm({
           }}
         />
         <Input
-          aria-label="Time note"
-          placeholder="What you did (optional)"
+          aria-label={copy.timeNote}
+          placeholder={copy.notePlaceholder}
           className="min-w-40 flex-1"
           value={note}
           onChange={(event) => {
@@ -110,7 +114,7 @@ export function TimeLogForm({
           }}
         />
         <Button size="sm" variant="outline" disabled={pending || duration.trim() === ''} onClick={add}>
-          Log time
+          {copy.logTime}
         </Button>
       </div>
       {message === null ? null : <p role="status">{message}</p>}

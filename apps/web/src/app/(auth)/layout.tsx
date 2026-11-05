@@ -1,12 +1,9 @@
 import '@ops/ui/globals.css'
 import { ThemeProvider } from '@ops/ui'
-import { Geist, Geist_Mono } from 'next/font/google'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { loadSignInBrand } from '../../server/branding/sign-in-brand'
-
-const sans = Geist({ subsets: ['latin'], variable: '--font-sans' })
-const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
+import { FONT_CLASS } from '../fonts'
 
 export const metadata: Metadata = {
   title: 'Sign in',
@@ -17,7 +14,7 @@ export default async function AuthLayout({ children }: Readonly<{ children: Reac
   const brand = await loadSignInBrand()
   const appName = brand.appName
   return (
-    <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
+    <html lang="en" suppressHydrationWarning className={FONT_CLASS}>
       <body>
         <ThemeProvider>
           <main className="ops-auth-shell">

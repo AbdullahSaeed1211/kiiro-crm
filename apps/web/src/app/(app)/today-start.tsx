@@ -8,7 +8,8 @@ import type { WorkProfile } from '@ops/platform'
 
 export type HomeProfile = WorkProfile | 'admin'
 
-function canCreateLead(work: DashboardWork, profile: HomeProfile): boolean {
+/** Leads belong to the sales desk: owners, managers and sales staff see and create them, delivery staff do not. */
+export function canSeeLeads(work: DashboardWork, profile: HomeProfile): boolean {
   return work.crmEnabled && (profile === 'admin' || profile === 'sales')
 }
 
@@ -22,8 +23,8 @@ export function TodayActions({ work, profile }: Readonly<{ work: DashboardWork; 
           {copy.salesWorkspace}
         </Button>
       ) : null}
-      {canCreateLead(work, profile) ? (
-        <Button nativeButton={false} render={<Link href="/leads/new" />}>
+      {canSeeLeads(work, profile) ? (
+        <Button variant="outline" nativeButton={false} render={<Link href="/leads/new" />}>
           {copy.newLead}
         </Button>
       ) : null}
@@ -33,7 +34,7 @@ export function TodayActions({ work, profile }: Readonly<{ work: DashboardWork; 
 
 function emptyStart(work: DashboardWork, profile: HomeProfile) {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
-  const leadStart = canCreateLead(work, profile)
+  const leadStart = canSeeLeads(work, profile)
   if (profile === 'consultant') {
     return {
       title: copy.consultantEmptyTitle,

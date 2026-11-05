@@ -1,12 +1,12 @@
 'use server'
 
+import { mergeTerminology } from './terminology'
 import { revalidatePath } from 'next/cache'
 import { can } from '@ops/platform'
 import { actionError, actionFailure, actionOk } from '../../action-result'
-import { getProductContext, requireRole } from '../../auth/context'
+import { getProductContext, getWorkspaceSettings, requireRole } from '../../auth/context'
 import { recordOf, stringValue } from './input'
 import { recordAuditEvent } from '../../audit/record'
-import { restampDealCurrency } from '../../crm/restamp-deal-currency'
 import { isSupportedCurrency } from '../../../i18n/currencies'
 import type { ActionResult } from '../../action-result'
 export type { ActionResult } from '../../action-result'
@@ -18,11 +18,6 @@ function normalizeSettings(data: Record<string, unknown>): Record<string, unknow
   }
   return normalized
 }
-/** A new workspace currency applies to the deals already saved, not only to new ones. */
-async function followCurrency(payload: Parameters<typeof restampDealCurrency>[0], currency: unknown): Promise<void> {
-  if (typeof currency === 'string') await restampDealCurrency(payload, currency)
-}
-
 export async function updateSettings(input: unknown): Promise<ActionResult> {
   const context = await getProductContext()
   const data = normalizeSettings(recordOf(input))
@@ -35,7 +30,6 @@ export async function updateSettings(input: unknown): Promise<ActionResult> {
   if (!owner && !managerUpdate) return actionError('FORBIDDEN', 'You do not have permission to update these settings.')
   try {
     await context.payload.updateGlobal({ slug: 'settings', data, overrideAccess: true, req: context.req })
-    await followCurrency(context.payload, data.currency)
     await recordAuditEvent(context, { verb: 'settings.changed', summary: keys.join(', '), data: { keys } })
     revalidatePath('/settings')
     return actionOk()
@@ -66,8 +60,11 @@ export async function saveEmailSettings(input: unknown): Promise<ActionResult> {
   })
 }
 
+/** Saves the renamable terms and keeps everything else stored with them (see `mergeTerminology`). */
 export async function saveTerminology(input: unknown): Promise<ActionResult> {
-  return updateSettings({ terminology: recordOf(input) })
+  const settings = await getWorkspaceSettings()
+  const merged = mergeTerminology(recordOf(settings.terminology), recordOf(input))
+  return 'error' in merged ? actionError('VALIDATION', merged.error) : updateSettings({ terminology: merged.value })
 }
 
 export async function saveProfile(input: unknown): Promise<ActionResult> {

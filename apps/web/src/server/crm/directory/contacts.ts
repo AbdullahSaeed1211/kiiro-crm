@@ -1,3 +1,4 @@
+import { gate } from './tab-gate'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, LeadRecord, OrganizationRecord } from '@ops/module-crm'
 import type { Where } from 'payload'
@@ -85,7 +86,6 @@ export async function listContacts(
 
 /** The rows for one page of contacts, with their owners and the names of their organizations. */
 async function contactItems(context: RequestContext, records: readonly ContactRecord[]): Promise<ContactListItem[]> {
-  const repo = createCrmRepository(context.req)
   const organizationIds = [
     ...new Set(records.flatMap((record) => (record.organizationId === null ? [] : [record.organizationId]))),
   ]
@@ -94,13 +94,21 @@ async function contactItems(context: RequestContext, records: readonly ContactRe
       context,
       records.flatMap((record) => (record.ownerId === null ? [] : [record.ownerId])),
     ),
-    Promise.all(organizationIds.map((id) => repo.get('organization', id))),
+    // One query for every organization on the page; reading them one by one cost two queries per row.
+    organizationIds.length === 0
+      ? { docs: [] }
+      : context.payload.find({
+          collection: 'organizations',
+          where: { id: { in: organizationIds } },
+          select: { name: true },
+          pagination: false,
+          limit: 0,
+          depth: 0,
+          overrideAccess: false,
+          req: context.req,
+        }),
   ])
-  const byId = new Map(
-    organizations.flatMap((organization) =>
-      organization === undefined ? [] : [[organization.id, organization] as const],
-    ),
-  )
+  const byId = new Map(organizations.docs.map((organization) => [organization.id, organization] as const))
   return records.map((record) => {
     const organization = record.organizationId === null ? undefined : byId.get(record.organizationId)
     return {
@@ -124,7 +132,27 @@ interface ContactDetailDeps {
   }
 }
 
-export async function getContact(id: string): Promise<{
+/** The reads behind a contact's open tab, and the owner's name for the header. */
+async function contactDetails(context: RequestContext, record: ContactRecord, tab: ContactTab) {
+  const only = gate(tab)
+  const target = { recordType: 'contact', recordId: record.id, parentAuthorized: true } as const
+  const [people, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
+    loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
+    only('activity', [], () => listActivities(context, target)),
+    only('email', [], () => listEmailMessages(context, target)),
+    only('tasks', [], () => listRelatedTasks(context, 'contact', record.id)),
+    only('files', [], () => listRecordAttachments(context, 'contact', record.id)),
+  ])
+  return { people, activity, emailMessages, relatedTasks, attachments }
+}
+
+/** The tabs of a contact's page; each one is built from its own reads. */
+export type ContactTab = 'notes' | 'calls' | 'activity' | 'tasks' | 'files' | 'email'
+
+export async function getContact(
+  id: string,
+  tab: ContactTab = 'notes',
+): Promise<{
   readonly record: ContactRecord
   readonly owner: PersonSummary | null
   readonly relations: ContactRelations
@@ -148,20 +176,14 @@ export async function getContact(id: string): Promise<{
     }),
   ])
 
-  const [people, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
-    loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
-    listActivities(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
-    listEmailMessages(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
-    listRelatedTasks(context, 'contact', record.id),
-    listRecordAttachments(context, 'contact', record.id),
-  ])
+  const { people, ...details } = await contactDetails(context, record, tab)
 
   return buildContactDetail(record, {
     organization: organization ?? null,
     leads,
     deals: deals.records,
     people,
-    details: { activity, emailMessages, relatedTasks, attachments },
+    details,
   })
 }
 

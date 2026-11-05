@@ -3,6 +3,9 @@
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { Textarea } from '@ops/ui/components/ui/textarea'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { SALES_SETTINGS_COPY } from '../../../../i18n/sales-settings-copy'
 import { useState } from 'react'
 import { saveEmailTemplates } from '../../../../server/actions/settings/sales'
 import { useSave } from './use-save'
@@ -14,27 +17,28 @@ function TemplateEditor({
   onChange,
   onRemove,
 }: Readonly<{ template: Template; onChange: (next: Template) => void; onRemove: () => void }>) {
+  const copy = catalogFor(SALES_SETTINGS_COPY, useLocale()).templates
   return (
     <div className="grid gap-2 rounded-md border p-3">
       <Input
-        aria-label="Template name"
-        placeholder="Template name"
+        aria-label={copy.nameLabel}
+        placeholder={copy.nameLabel}
         value={template.name}
         onChange={(event) => {
           onChange({ ...template, name: event.target.value })
         }}
       />
       <Input
-        aria-label="Subject"
-        placeholder="Subject"
+        aria-label={copy.subjectLabel}
+        placeholder={copy.subjectLabel}
         value={template.subject}
         onChange={(event) => {
           onChange({ ...template, subject: event.target.value })
         }}
       />
       <Textarea
-        aria-label="Message"
-        placeholder="Message. Use {{firstName}} for the person's first name."
+        aria-label={copy.messageLabel}
+        placeholder={copy.messagePlaceholder}
         className="min-h-28"
         value={template.body}
         onChange={(event) => {
@@ -42,7 +46,7 @@ function TemplateEditor({
         }}
       />
       <Button variant="ghost" size="sm" className="w-fit" onClick={onRemove}>
-        Remove template
+        {copy.remove}
       </Button>
     </div>
   )
@@ -50,14 +54,13 @@ function TemplateEditor({
 
 /** Reusable email subjects and messages; staff insert one from the email box on a lead or contact. */
 export function EmailTemplatesForm({ initial }: Readonly<{ initial: readonly Template[] }>) {
+  const copy = catalogFor(SALES_SETTINGS_COPY, useLocale()).templates
   const [templates, setTemplates] = useState<readonly Template[]>(initial)
   const { save, message, pending } = useSave(saveEmailTemplates)
   return (
     <div className="grid gap-3 text-sm">
-      <h2 className="font-medium">Email templates</h2>
-      <p className="text-muted-foreground">
-        Write common messages once. {'{{firstName}}'} becomes the recipient's first name.
-      </p>
+      <h2 className="font-medium">{copy.title}</h2>
+      <p className="text-muted-foreground">{copy.help}</p>
       {templates.map((template, index) => (
         <TemplateEditor
           key={template.id}
@@ -78,7 +81,7 @@ export function EmailTemplatesForm({ initial }: Readonly<{ initial: readonly Tem
             setTemplates([...templates, { id: crypto.randomUUID(), name: '', subject: '', body: '' }])
           }}
         >
-          Add template
+          {copy.add}
         </Button>
         <Button
           size="sm"
@@ -87,7 +90,7 @@ export function EmailTemplatesForm({ initial }: Readonly<{ initial: readonly Tem
             save(templates)
           }}
         >
-          Save templates
+          {copy.save}
         </Button>
         {message === null ? null : <span role="status">{message}</span>}
       </div>

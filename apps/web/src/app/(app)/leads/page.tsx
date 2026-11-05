@@ -1,4 +1,5 @@
 import { TABLE_LABELS } from '../../../i18n/table-labels'
+import { shellLabels } from '../../../server/shell-labels'
 import { LIST_COPY, type ListCopy } from '../../../i18n/list-copy'
 import { Avatar, AvatarFallback } from '@ops/ui/components/ui/avatar'
 import { initials } from '@ops/ui/lib/initials'
@@ -221,6 +222,7 @@ function LeadTable({
 }
 
 export default async function LeadsPage({ searchParams }: Readonly<{ searchParams: Promise<SearchParams> }>) {
+  const label = await shellLabels()
   const locale = await loadWorkspaceLocale()
   const help = catalogFor(SECTION_HELP_COPY, locale)
   const leadViewsCopy = catalogFor(LEAD_VIEWS_COPY, locale)
@@ -238,16 +240,16 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
   })
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Leads' }]} />
+      <AppHeader breadcrumbs={[{ label: label('leads') }]} />
       <PageContent>
         <PageHeader
           title="Leads"
           description={help.leads}
           count={result.total}
+          tabs={viewSwitcher(params, leadViewsCopy)}
           actions={
             <>
               <LeadCreateDialogClient />
-              {viewSwitcher(params, leadViewsCopy)}
               <LeadViewControls
                 views={[{ id: 'all', label: moreCopy.allOpenLeads, query: '' }, ...views]}
                 canImportExport={canBulk}

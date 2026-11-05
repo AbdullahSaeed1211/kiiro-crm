@@ -11,6 +11,9 @@ export interface OrganizationOverviewCopy {
   readonly noPendingResponses: string
   readonly taskUnit: string
   readonly deliverableUnit: string
+  readonly outstanding: string
+  readonly nothingOwed: string
+  readonly overdueInvoices: string
 }
 
 export const ORGANIZATION_OVERVIEW_COPY: Readonly<Record<Locale, OrganizationOverviewCopy>> = {
@@ -25,6 +28,9 @@ export const ORGANIZATION_OVERVIEW_COPY: Readonly<Record<Locale, OrganizationOve
     noPendingResponses: 'No items awaiting a response',
     taskUnit: 'tasks',
     deliverableUnit: 'deliverables',
+    outstanding: 'Outstanding',
+    nothingOwed: 'Nothing owed',
+    overdueInvoices: '{count} overdue',
   },
   es: {
     nextDueItem: 'Próximo elemento pendiente',
@@ -37,5 +43,8 @@ export const ORGANIZATION_OVERVIEW_COPY: Readonly<Record<Locale, OrganizationOve
     noPendingResponses: 'No hay elementos pendientes de respuesta',
     taskUnit: 'tareas',
     deliverableUnit: 'entregables',
+    outstanding: 'Pendiente de cobro',
+    nothingOwed: 'Nada pendiente',
+    overdueInvoices: '{count} vencidas',
   },
 }

@@ -1,4 +1,6 @@
+import { DEAL_BOARD_COPY } from '../../../i18n/deal-board-copy'
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
+import { shellLabels } from '../../../server/shell-labels'
 import { ExportLink } from '../ExportLink'
 import { TABLE_LABELS } from '../../../i18n/table-labels'
 import { LIST_COPY, type ListCopy } from '../../../i18n/list-copy'
@@ -131,7 +133,9 @@ export default async function DealsPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const locale = await loadWorkspaceLocale()
+  const label = await shellLabels()
   const help = catalogFor(SECTION_HELP_COPY, locale)
+  const dealCopy = catalogFor(DEAL_BOARD_COPY, locale)
   const controls = catalogFor(CRM_LIST_CONTROLS_COPY, locale)
   const params = await searchParams
   const rawQuery = firstParam(params.q)?.trim() ?? ''
@@ -145,28 +149,26 @@ export default async function DealsPage({
   const currency = typeof settings.currency === 'string' ? settings.currency : 'USD'
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Deals' }]} />
+      <AppHeader breadcrumbs={[{ label: label('deals') }]} />
       <PageContent>
         <PageHeader
-          title="Deals"
+          title={label('deals')}
           description={help.deals}
           count={data.total}
+          tabs={
+            <ViewSwitcher
+              label={dealCopy.views}
+              active="table"
+              views={[
+                { id: 'table', label: dealCopy.table, href: '/deals' },
+                { id: 'board', label: dealCopy.boardView, href: boardHref(rawQuery) },
+              ]}
+            />
+          }
           actions={
             <div className="flex items-center gap-2">
               <DealCreateDialog currency={currency} />
               <ExportLink kind="deals" />
-              <ViewSwitcher
-                label="Deal views"
-                active="table"
-                views={[
-                  { id: 'table', label: 'Table', href: '/deals' },
-                  {
-                    id: 'board',
-                    label: 'Board',
-                    href: boardHref(rawQuery),
-                  },
-                ]}
-              />
             </div>
           }
         />

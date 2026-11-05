@@ -1,6 +1,6 @@
 # Quotes, invoices, client portal, automation rules and audit log
 
-Status: the audit log, quotes and invoices are built (Settings, Activity; Billing). The client portal and automation rules are proposals; nothing of them is built.
+Status: the audit log, quotes, invoices and the client portal are built (Settings, Activity; Billing; a client's Billing tab and `/portal/<token>`). Automation rules are a proposal.
 
 ## Why
 
@@ -15,7 +15,7 @@ An agency sells work, bills it, and reports on it to the client. Today the produ
 | Tax                           | A tax rate per line, in basis points. Totals are computed on the server and stored.                                                 | Totals must not change when rates change later.                                                                     |
 | Numbering                     | A per-tenant counter with a prefix (for example `INV-0001`). Numbers are never reused.                                              | Accountants expect gap-free sequences.                                                                              |
 | Client portal login           | A link sent to the client contact, no password. The link carries a random token that is stored hashed, expires, and can be revoked. | Clients will not create accounts. Same pattern as invitations.                                                      |
-| Portal scope                  | Read and act on that contact's own quotes and invoices, and read the status of their projects. Nothing else.                        | Smallest surface that is still useful.                                                                              |
+| Portal scope                  | Read and act on the quotes and invoices of the contact's company, and read the progress of its projects. Nothing else.              | Agencies bill the company, and most documents name no contact, so a contact-only view would be empty.               |
 | Automation                    | A rule is one trigger, optional conditions, and one or more actions, evaluated by the existing cron job and by record events.       | The engine reuses events and jobs that exist.                                                                       |
 | Audit log                     | Extend the Activity page. Add filters, paging, CSV export and security events.                                                      | The data exists for records; security events do not.                                                                |
 
@@ -31,10 +31,14 @@ An agency sells work, bills it, and reports on it to the client. Today the produ
 
 ## Client portal
 
-- A staff member sends a portal link from the organization or contact page. The page lists the links sent and lets staff revoke each one.
-- The portal pages live under `/portal/<token>`. They use no staff session, no sidebar and no staff API. They read through a dedicated use case that takes the token and returns only that contact's records.
-- Actions on the portal: accept or decline a quote, view and print an invoice, view project status. Each action writes an activity row with the contact as the actor.
-- Wrong, expired and revoked tokens give one neutral page. The portal never says which of the three it was.
+- An owner or manager creates a link on the client's Billing tab for one of the client's contacts. The address is shown once, to copy or to email; the email goes through the normal send path and is logged on the client. The tab lists the links sent, when each was last opened, and Revoke.
+- A link holds a random 256-bit token. Only its SHA-256 is stored (`portalLinks`). A link lasts 30 days and can be revoked at once.
+- The portal lives at `/portal/<token>` with the tenant's name, logo and colour, no sidebar and no staff session. It reads through the billing module's portal use cases, which narrow every read to the link's company.
+- The client sees sent, accepted, declined and paid documents; drafts and voided documents stay internal. Projects show their stage, done and open task counts and target date, never task names, notes or people.
+- The client can open and print any document, pay an invoice through the payment link the agency added, and accept or decline a sent quote that has not expired. An answer is a compare-and-set write, and the security log records it with the link.
+- A wrong, expired or revoked link gets one page: "This link no longer works." The page does not say which.
+- The pages carry `referrer: no-referrer` and `noindex` meta tags, so the token does not leave through a payment link or a search engine.
+- Opening a link and revoking it write single columns, never the whole row: a whole-row write from an open that was in flight undid a revoke during verification.
 
 ## Automation rules
 

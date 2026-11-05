@@ -9,7 +9,7 @@ import { loadDashboardWork, type DashboardWork } from '../../server/queries/work
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { TodayScopeSwitch, TodayOverdueDisclosure } from './today-work'
 import { TodayPersonFilter } from './today-person-filter'
-import { TodayActions, TodayStart, type HomeProfile } from './today-start'
+import { canSeeLeads, TodayActions, TodayStart, type HomeProfile } from './today-start'
 import { DashboardFollowUps } from './DashboardFollowUps'
 import { TodayTaskQuickAdd } from './today-task-quick-add'
 import { TodayPlan } from './today-plan'
@@ -95,11 +95,15 @@ function TodayPrimaryColumn({
   )
 }
 
-function TodaySecondaryColumn({ work, context }: Readonly<{ work: DashboardWork; context: RequestContext }>) {
+function TodaySecondaryColumn({
+  work,
+  context,
+  profile,
+}: Readonly<{ work: DashboardWork; context: RequestContext; profile: HomeProfile }>) {
   return (
     <div className="grid min-w-0 content-start gap-3">
       <h2 className="text-sm font-semibold">{DASHBOARD_TODAY_COPY[work.locale].needsAttention}</h2>
-      {work.crmEnabled ? <DashboardFollowUps context={context} work={work} /> : null}
+      {canSeeLeads(work, profile) ? <DashboardFollowUps context={context} work={work} /> : null}
       {work.workEnabled ? <TodayOverdueDisclosure work={work} /> : null}
     </div>
   )
@@ -120,7 +124,7 @@ function TodayContent({
       </p>
       <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
         <TodayPrimaryColumn work={work} profile={profile} firstRun={firstRun} />
-        <TodaySecondaryColumn work={work} context={context} />
+        <TodaySecondaryColumn work={work} context={context} profile={profile} />
       </div>
       <nav aria-label={copy.quickLinks} className="flex flex-wrap gap-5 text-sm text-muted-foreground">
         {links.map((link) => (
@@ -170,7 +174,7 @@ export default async function DashboardPage({
             locale={work.locale}
             timeZone={attendance.timeZone}
           />
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 empty:hidden">
             <TodayScopeSwitch work={work} />
             <TodayPersonFilter work={work} />
           </div>

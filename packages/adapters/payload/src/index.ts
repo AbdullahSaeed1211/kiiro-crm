@@ -43,6 +43,7 @@ export {
 export { createIntakeStore, findIntakeForm, toIntakeForm } from './repositories/intake-store'
 export { createJobRunStore, createJobSources } from './repositories/job-store'
 export { createBillingRepository, listBillingPage } from './repositories/billing-repository'
+export { createPortalLinkStore, createPortalReader, decideAsSystem } from './repositories/portal-repository'
 export {
   createCrmRepository,
   listCrmPage,

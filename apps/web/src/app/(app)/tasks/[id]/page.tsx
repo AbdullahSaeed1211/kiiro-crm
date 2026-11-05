@@ -1,10 +1,12 @@
 import { AppHeader } from '@ops/ui/composites/AppHeader'
+import { shellLabels } from '../../../../server/shell-labels'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { loadTaskView } from '../../../../server/queries/work/task-details'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
 import { ArchiveWorkControl } from '../../archive-work-control'
+import { TaskClientField } from './TaskClientField'
 import { TimeLog } from './time-log'
 import { firstParam, safeReturnTo } from '../../search-params'
 
@@ -20,6 +22,7 @@ export default async function TaskPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }>) {
   const { id } = await params
+  const label = await shellLabels()
   const query = searchParams === undefined ? {} : await searchParams
   const panel = firstParam(query.panel) === '1'
   const returnTo = safeReturnTo(firstParam(query.returnTo), '/tasks')
@@ -27,7 +30,7 @@ export default async function TaskPage({
   if (view === undefined) notFound()
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: 'Tasks', href: returnTo }, { label: view.task.title }]} />
+      <AppHeader breadcrumbs={[{ label: label('tasks'), href: returnTo }, { label: view.task.title }]} />
       <PageContent>
         <TaskDetailDrawer
           task={view.task}
@@ -36,6 +39,12 @@ export default async function TaskPage({
           returnTo={returnTo}
           extra={
             <>
+              <TaskClientField
+                taskId={view.task.id}
+                updatedAt={view.task.updatedAt}
+                related={view.related}
+                editable={view.options.canUpdate}
+              />
               <TimeLog taskId={view.task.id} />
               <ArchiveWorkControl type="task" id={view.task.id} label={view.task.title} />
             </>

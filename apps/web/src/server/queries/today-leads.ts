@@ -6,7 +6,12 @@ import { todayLeadScope } from './today-lead-scope'
 
 const SHOWN = 5
 const DAY_MS = 86_400_000
-type TodayLeadFilter = Readonly<{ scope?: 'mine' | 'team'; person?: string }>
+type TodayLeadFilter = Readonly<{
+  scope?: 'mine' | 'team'
+  person?: string
+  /** Workflow stages the caller already loaded, so they are not read twice. */
+  workflow?: Awaited<ReturnType<typeof loadWorkflowStages>>
+}>
 type TodayLeadDoc = Readonly<{
   id: string
   title: string
@@ -29,7 +34,7 @@ export async function attentionLeadWhere(
   dayStart: number,
   filter: TodayLeadFilter = {},
 ): Promise<Where> {
-  const workflow = await loadWorkflowStages(context, 'lead')
+  const workflow = filter.workflow ?? (await loadWorkflowStages(context, 'lead'))
   const scope = todayLeadScope(context.actor, filter.scope !== 'mine', filter.person ?? 'everyone')
   return {
     and: [

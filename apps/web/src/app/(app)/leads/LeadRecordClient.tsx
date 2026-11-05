@@ -229,6 +229,7 @@ function LeadRecordLayout({
     <>
       <LeadError message={error} />
       <RecordPageLayout
+        serverTabs
         labels={{ breadcrumb: copy.breadcrumb, saveTitle: copy.saveTitle, cancelTitle: copy.cancelTitle }}
         title={lead.title}
         onTitleChange={onSaveTitle}

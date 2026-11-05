@@ -4,6 +4,9 @@ import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { catalogFor } from '../../../../i18n/locale'
+import { LISTS_COPY } from '../../../../i18n/lists-copy'
+import { useLocale } from '../../../../i18n/locale-context'
 import { useGuardedTransition } from '../../use-guarded-transition'
 import { addListItem, removeListItem } from '../../../../server/actions/settings/lists'
 
@@ -13,12 +16,9 @@ export interface ListItem {
 }
 
 /** One editable list: its items with a Remove button each, and a field to add another. */
-export function ListEditor({
-  kind,
-  title,
-  help,
-  items,
-}: Readonly<{ kind: 'source' | 'lostReason'; title: string; help: string; items: readonly ListItem[] }>) {
+export function ListEditor({ kind, items }: Readonly<{ kind: 'source' | 'lostReason'; items: readonly ListItem[] }>) {
+  const copy = catalogFor(LISTS_COPY, useLocale())
+  const { title, help } = copy[kind]
   const router = useRouter()
   const [name, setName] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -30,7 +30,7 @@ export function ListEditor({
         after()
         setMessage(null)
         router.refresh()
-      } else setMessage(result.error?.message ?? 'Unable to save.')
+      } else setMessage(result.error?.message ?? copy.failed)
     })
   }
   return (
@@ -38,7 +38,7 @@ export function ListEditor({
       <h2 className="font-medium">{title}</h2>
       <p className="text-muted-foreground">{help}</p>
       {items.length === 0 ? (
-        <p className="text-muted-foreground">Nothing here yet. Add the first one below.</p>
+        <p className="text-muted-foreground">{copy.empty}</p>
       ) : (
         <ul className="divide-y">
           {items.map((item) => (
@@ -48,7 +48,7 @@ export function ListEditor({
                 variant="ghost"
                 size="sm"
                 disabled={pending}
-                aria-label={`Remove ${item.name}`}
+                aria-label={copy.removeAria.replace('{name}', item.name)}
                 onClick={() => {
                   run(
                     () => removeListItem({ kind, id: item.id }),
@@ -56,7 +56,7 @@ export function ListEditor({
                   )
                 }}
               >
-                Remove
+                {copy.remove}
               </Button>
             </li>
           ))}
@@ -64,7 +64,7 @@ export function ListEditor({
       )}
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          aria-label={`New ${title.toLowerCase()} entry`}
+          aria-label={copy.newEntryAria.replace('{list}', title.toLowerCase())}
           className="max-w-64"
           value={name}
           onChange={(event) => {
@@ -84,7 +84,7 @@ export function ListEditor({
             )
           }}
         >
-          Add
+          {copy.add}
         </Button>
         {message === null ? null : <span role="status">{message}</span>}
       </div>

@@ -163,6 +163,12 @@ export const EXTRA_CONTRACTS = {
     summary: 'Mark a notification as read.',
     success: 200,
   },
+  'nav.counts': {
+    method: 'GET',
+    path: '/api/v1/nav/counts',
+    summary: 'The counts shown beside sidebar links: your overdue tasks and the leads waiting on you.',
+    success: 200,
+  },
   'search.records': {
     method: 'GET',
     path: '/api/v1/search',

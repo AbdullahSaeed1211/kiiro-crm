@@ -8,6 +8,16 @@ import type { REPORT_COPY } from '../../../i18n/config'
 
 type ReportCopy = (typeof REPORT_COPY)[keyof typeof REPORT_COPY]
 
+/** What the line beside the form says: the applied range, or why the typed one could not be applied. */
+function rangeMessage({
+  range,
+  copy,
+  formattedRange,
+}: Readonly<{ range: ReportRange; copy: ReportCopy; formattedRange: string }>): string {
+  if (range.problem === 'invalid') return copy.rangeInvalid
+  return range.problem === 'reversed' ? copy.rangeReversed : formattedRange
+}
+
 export function ReportRangeControls({
   range,
   copy,
@@ -49,7 +59,7 @@ export function ReportRangeControls({
         <input
           name="from"
           type="date"
-          defaultValue={range.fromDate}
+          defaultValue={range.entered?.from ?? range.fromDate}
           onChange={() => {
             setSelectedRange('custom')
           }}
@@ -61,7 +71,7 @@ export function ReportRangeControls({
         <input
           name="to"
           type="date"
-          defaultValue={range.toDate}
+          defaultValue={range.entered?.to ?? range.toDate}
           onChange={() => {
             setSelectedRange('custom')
           }}
@@ -71,8 +81,11 @@ export function ReportRangeControls({
       <Button size="lg" type="submit">
         {copy.apply}
       </Button>
-      <output className="text-xs text-muted-foreground" aria-live="polite">
-        {formattedRange}
+      <output
+        className={`text-xs ${range.problem === undefined ? 'text-muted-foreground' : 'text-destructive'}`}
+        aria-live="polite"
+      >
+        {rangeMessage({ range, copy, formattedRange })}
       </output>
     </form>
   )

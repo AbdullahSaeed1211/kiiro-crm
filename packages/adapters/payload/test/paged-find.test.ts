@@ -18,6 +18,8 @@ function fakeFind(total: number) {
 
 // D1 rejects a statement with more than 100 bound variables, so a read of everything must never ask for more than 90.
 describe('withPagedFind', () => {
+  describeSmallReads()
+
   it('reads everything in chunks of at most 90 and returns one result in order', async () => {
     const { find, calls } = fakeFind(250)
     const result = await withPagedFind(find)({ pagination: false })
@@ -52,3 +54,22 @@ describe('withPagedFind', () => {
     expect((await withPagedFind(find)({ limit: 200 })).docs).toHaveLength(200)
   })
 })
+
+function describeSmallReads() {
+  // Every unpaginated read passes through here, and a count query in front of each one doubled the statements per page.
+  it('answers a read of a small table in one call, without a count', async () => {
+    const { find, calls } = fakeFind(40)
+    const result = await withPagedFind(find)({ pagination: false, limit: 0 })
+    expect(result.docs).toHaveLength(40)
+    expect(result.totalDocs).toBe(40)
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.pagination).toBe(false)
+  })
+
+  it('reads exactly one chunk and finds the table ends there', async () => {
+    const { find } = fakeFind(PAGE_CHUNK)
+    const result = await withPagedFind(find)({ pagination: false })
+    expect(result.docs).toHaveLength(PAGE_CHUNK)
+    expect(result.totalDocs).toBe(PAGE_CHUNK)
+  })
+}
