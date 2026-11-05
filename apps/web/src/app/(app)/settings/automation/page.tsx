@@ -2,7 +2,7 @@ import { automationRulesSchema } from '@ops/module-automation'
 import type { Metadata } from 'next'
 import { AUTOMATION_COPY } from '../../../../i18n/automation-copy'
 import { catalogFor, normalizeLocale } from '../../../../i18n/locale'
-import { getProductContext, getWorkspaceSettings } from '../../../../server/auth/context'
+import { getProductContext, getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { AutomationRulesForm } from './automation-rules-form'
 import { RunHistory, type RuleRunRow, type StoredAction } from './run-history'
@@ -95,6 +95,7 @@ async function recentRuns(): Promise<readonly RuleRunRow[]> {
 
 /** Automation: the workspace's rules, and what the last runs did. */
 export default async function AutomationSettingsPage() {
+  await requireRole('owner', 'manager')
   const [settings, people, sources, stages, runs] = await Promise.all([
     getWorkspaceSettings(),
     activePeople(),
