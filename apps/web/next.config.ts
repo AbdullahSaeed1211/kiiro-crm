@@ -23,9 +23,10 @@ const nextConfig: NextConfig = {
   // Packages with Cloudflare Workers (workerd) specific code: https://opennext.js.org/cloudflare/howtos/workerd
   serverExternalPackages: ['jose', 'pg-cloudflare'],
   // One page-data worker: each worker would start its own local Wrangler proxy on the same local D1 file (SQLITE_BUSY).
-  // A fully prefetched record tab stays reusable for the minimum 30s, so a hover-prefetched tab opens instantly
-  // without leaving data stale for long (server actions clear the cache on every write).
-  experimental: { cpus: 1, staleTimes: { dynamic: 0, static: 30 } },
+  // A visited route keeps its payload for 30s, so going back to a list is immediate; every server action calls
+  // revalidatePath, which clears the cache for the person who saved. Another person's change can take up to 30s
+  // to appear on a page that is already open.
+  experimental: { cpus: 1, staleTimes: { dynamic: 30, static: 30 } },
   webpack: (webpackConfig: WebpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],
