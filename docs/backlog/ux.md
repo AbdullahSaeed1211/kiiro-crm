@@ -19,18 +19,8 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ## Minor
 
-### 33. Duplicate React key on mobile timeline
-
-- Area: Boards and calendar. Effort: Quick. Codes: B-10.
-- Seen in the browser console at 390px. Our code keys by id, so the likely source is the SVAR grid's internal rows when toggling Grid and Chart. Reproduce it before fixing.
-
 ### 34. Closing a task panel on phones loses focus
 
 - Area: Tasks. Effort: Quick. Codes: A-04.
 - In mobile WebKit (390px), pressing Escape on a task panel opened from `/calendar` returns to the calendar, but the task link is not focused; desktop Chromium focuses it. `app-frame.tsx` focuses `[data-task-link-id]` on the pathname change, and something focuses after it. Found by `route-health.spec.ts` "task details preserve origin", which fails on the mobile project at `v0.2.0`.
-
-### 35. The phone timeline logs a React key warning
-
-- Area: Tasks. Effort: Quick. Codes: R-10.
-- Status: the mobile accessibility check passes after the wrapper repairs SVAR row semantics and hides the chart-only table from the accessibility tree. The separate React key warning remains unresolved.
-- At 390px `/timeline` switches the Gantt to compact mode and React logs "Each child in a list should have a unique key" from inside `@svar-ui/react-gantt`. The route-health budget test counts console errors. Find which prop (columns, compact grid config) produces unkeyed children, or report it upstream and filter that one message in the test.
+- Status: fix applied, not yet verified in WebKit. Safari does not focus a tapped link, so the dialog's default focus return lands on the page body after our effect. `TaskSheet` now passes `finalFocus` to focus the task's visible link directly. Chromium passes with and without the fix; WebKit could not be downloaded in the sandbox. Run the mobile project to close this.

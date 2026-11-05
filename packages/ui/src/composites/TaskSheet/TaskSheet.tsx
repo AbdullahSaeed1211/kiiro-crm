@@ -27,6 +27,15 @@ function useCloseGuard(onClose: () => void): { guard: CloseGuard; requestClose: 
   return { guard, requestClose }
 }
 
+/**
+ * The visible link that opens this task, if the page behind the panel has one. Closing focuses it directly:
+ * Safari does not focus a tapped link, so the default "focus what was focused before" lands on the page body.
+ */
+function taskTrigger(taskId: string): HTMLElement | null {
+  const links = document.querySelectorAll<HTMLElement>(`[data-task-link-id="${CSS.escape(taskId)}"]`)
+  return [...links].find((link) => link.getClientRects().length > 0) ?? null
+}
+
 /** Task detail in a right-side panel over the page that opened it. */
 export function TaskSheet({ onClose, ...props }: TaskViewProps & Readonly<{ onClose: () => void }>) {
   const { guard, requestClose } = useCloseGuard(onClose)
@@ -39,6 +48,7 @@ export function TaskSheet({ onClose, ...props }: TaskViewProps & Readonly<{ onCl
     >
       <SheetContent
         side="right"
+        finalFocus={() => taskTrigger(props.task.id) ?? true}
         className="flex w-full flex-col overflow-hidden overscroll-contain p-0 sm:max-w-[560px]"
       >
         <TaskSheetContent {...props} asPage={false} onClose={requestClose} guard={guard} />
