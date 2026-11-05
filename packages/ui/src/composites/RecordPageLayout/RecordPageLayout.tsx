@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, X } from 'lucide-react'
-import { useState, useTransition, type ReactNode } from 'react'
+import { useRef, useState, useTransition, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@ops/ui/components/ui/button'
 import { Input } from '@ops/ui/components/ui/input'
@@ -118,17 +118,29 @@ function useRecordTabs({
   const fallbackTab = defaultTab ?? tabs[0]?.id
   const requestedTab = searchParams.get('tab')
   const activeTab = requestedTab !== null && tabs.some((tab) => tab.id === requestedTab) ? requestedTab : fallbackTab
-  const handleTabChange = (value: string) => {
+  const hrefFor = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', value)
-    const href = `${pathname}?${params.toString()}`
+    return `${pathname}?${params.toString()}`
+  }
+  const prefetched = useRef(new Set<string>())
+  /** Server tabs: fetch a tab's page when the pointer or focus reaches it, so the click finds it ready. */
+  const prefetchTab = (value: string) => {
+    const href = hrefFor(value)
+    if (!serverTabs || value === activeTab || prefetched.current.has(href)) return
+    prefetched.current.add(href)
+    // 'full' fetches the dynamic page data too; the enum is not exported for client use, its value is this string.
+    router.prefetch(href, { kind: 'full' as never })
+  }
+  const handleTabChange = (value: string) => {
+    const href = hrefFor(value)
     if (serverTabs) {
       startSwitch(() => {
         router.replace(href, { scroll: false })
       })
     } else window.history.replaceState(null, '', href)
   }
-  return { activeTab, switching, handleTabChange }
+  return { activeTab, switching, handleTabChange, prefetchTab }
 }
 
 /** Shared record detail shell. Slots are rendered as supplied and never fetch data. */
@@ -147,7 +159,7 @@ export function RecordPageLayout({
   serverTabs = false,
   className,
 }: RecordPageLayoutProps) {
-  const { activeTab, switching, handleTabChange } = useRecordTabs({ tabs, defaultTab, serverTabs })
+  const { activeTab, switching, handleTabChange, prefetchTab } = useRecordTabs({ tabs, defaultTab, serverTabs })
   return (
     <div className={cn('ops-record-page flex min-h-0 flex-col gap-4', className)}>
       {breadcrumbs === undefined ? null : <nav aria-label={labels.breadcrumb}>{breadcrumbs}</nav>}
@@ -166,7 +178,17 @@ export function RecordPageLayout({
       <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-0">
         <TabsList variant="line">
           {tabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} disabled={tab.disabled}>
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              disabled={tab.disabled}
+              onPointerEnter={() => {
+                prefetchTab(tab.id)
+              }}
+              onFocus={() => {
+                prefetchTab(tab.id)
+              }}
+            >
               {tab.label}
             </TabsTrigger>
           ))}
