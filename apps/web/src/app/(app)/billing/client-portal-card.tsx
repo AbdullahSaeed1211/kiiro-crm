@@ -133,6 +133,7 @@ function CreateLink({
 function LinkRow({ link, locale }: Readonly<{ link: PortalLinkRow; locale: string }>) {
   const copy = catalogFor(PORTAL_STAFF_COPY, useLocale())
   const router = useRouter()
+  const [revokeFailed, setRevokeFailed] = useState(false)
   const date = (time: number) => new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(time)
   const detail = [
     link.state === 'active' ? fill(copy.until, { date: date(link.expiresAt) }) : '',
@@ -153,8 +154,9 @@ function LinkRow({ link, locale }: Readonly<{ link: PortalLinkRow; locale: strin
             labels={{ cancel: copy.cancel, confirm: copy.revoke, confirming: copy.revoking }}
             destructive
             onConfirm={async () => {
-              await revokePortal({ id: link.id })
-              router.refresh()
+              const result = await revokePortal({ id: link.id })
+              setRevokeFailed(!result.ok)
+              if (result.ok) router.refresh()
             }}
             trigger={
               <Button variant="link" size="sm" className="text-destructive" type="button">
@@ -164,6 +166,11 @@ function LinkRow({ link, locale }: Readonly<{ link: PortalLinkRow; locale: strin
           />
         )}
       </span>
+      {revokeFailed ? (
+        <span role="alert" className="basis-full text-xs text-destructive">
+          {copy.revokeFailed}
+        </span>
+      ) : null}
     </li>
   )
 }

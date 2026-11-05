@@ -27,6 +27,7 @@ export interface PortalStaffCopy {
   readonly revokeTitle: string
   readonly revokeHelp: string
   readonly revoking: string
+  readonly revokeFailed: string
   readonly cancel: string
 }
 
@@ -82,6 +83,7 @@ export const PORTAL_STAFF_COPY: Readonly<Record<Locale, PortalStaffCopy>> = {
     revokeTitle: 'Revoke this link?',
     revokeHelp: 'It stops working right away.',
     revoking: 'Revoking…',
+    revokeFailed: 'Could not revoke this link. Try again.',
     cancel: 'Cancel',
   },
   es: {
@@ -110,6 +112,7 @@ export const PORTAL_STAFF_COPY: Readonly<Record<Locale, PortalStaffCopy>> = {
     revokeTitle: '¿Revocar este enlace?',
     revokeHelp: 'Deja de funcionar al instante.',
     revoking: 'Revocando…',
+    revokeFailed: 'No se pudo revocar este enlace. Inténtalo de nuevo.',
     cancel: 'Cancelar',
   },
 }
