@@ -164,7 +164,7 @@ export default async function ProjectsPage({ searchParams }: Readonly<{ searchPa
       <AppHeader breadcrumbs={[{ label: label('projects') }]} />
       <PageContent>
         <PageHeader
-          title="Projects"
+          title={label('projects')}
           description={help.projects}
           count={matched.length}
           actions={

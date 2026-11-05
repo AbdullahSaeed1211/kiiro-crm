@@ -38,9 +38,5 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 ### 38. Inline English remains outside the copy files
 
 - Area: Copy. Effort: Moderate. Codes: R-11.
-- Now: [AGENTS.md](../../AGENTS.md#pitfalls) requires every user-facing string to live in a per-feature `*-copy.ts` with an `en` and an `es` entry, so a workspace set to Spanish shows English wherever a component holds text. These still do:
-  - the shared record primitives in `record-view-primitives.tsx` (`Meta`, `RelationList`, `recordTabs` tab names, the activity feed labels), which the contact, organization, lead and deal pages all call;
-  - `contact-record-view.tsx`, `organization-record-view.tsx` and `directory-form.tsx`;
-  - `deals/page.tsx` and `projects/page.tsx` (column headers, filters, sort options);
-  - most pages under `settings/`.
-- Fix: Give the record primitives one `record-copy.ts` and pass the chosen catalog in. `recordTabs` is called from server pages and from the client `LeadRecordClient`, so the catalog arrives as an argument, not through a hook. Then move each page's strings into its own copy file, following `project-page-copy.ts`.
+- Now: [AGENTS.md](../../AGENTS.md#pitfalls) requires every user-facing string to live in a per-feature `*-copy.ts` with an `en` and an `es` entry, so a workspace set to Spanish shows English wherever a component holds text. The record pages, deal and lead boards, deal and project lists, project form, time log and bulk-action bars are done. A scan of `apps/web/src/app/(app)` (2026-11-05) still finds about 260 strings: about 210 across 25 files under `settings/` (notifications, intake, views, email templates, webhooks, branding, modules and others) and about 45 in reports charts, onboarding, inbox and error pages.
+- Fix: give each settings page its own copy file, following `project-page-copy.ts`, and pass the chosen catalog in. Start with the pages every owner opens: general, branding, modules, members.

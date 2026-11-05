@@ -1,3 +1,4 @@
+import { DEAL_BOARD_COPY } from '../../../i18n/deal-board-copy'
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { shellLabels } from '../../../server/shell-labels'
 import { ExportLink } from '../ExportLink'
@@ -134,6 +135,7 @@ export default async function DealsPage({
   const locale = await loadWorkspaceLocale()
   const label = await shellLabels()
   const help = catalogFor(SECTION_HELP_COPY, locale)
+  const dealCopy = catalogFor(DEAL_BOARD_COPY, locale)
   const controls = catalogFor(CRM_LIST_CONTROLS_COPY, locale)
   const params = await searchParams
   const rawQuery = firstParam(params.q)?.trim() ?? ''
@@ -150,16 +152,16 @@ export default async function DealsPage({
       <AppHeader breadcrumbs={[{ label: label('deals') }]} />
       <PageContent>
         <PageHeader
-          title="Deals"
+          title={label('deals')}
           description={help.deals}
           count={data.total}
           tabs={
             <ViewSwitcher
-              label="Deal views"
+              label={dealCopy.views}
               active="table"
               views={[
-                { id: 'table', label: 'Table', href: '/deals' },
-                { id: 'board', label: 'Board', href: boardHref(rawQuery) },
+                { id: 'table', label: dealCopy.table, href: '/deals' },
+                { id: 'board', label: dealCopy.boardView, href: boardHref(rawQuery) },
               ]}
             />
           }

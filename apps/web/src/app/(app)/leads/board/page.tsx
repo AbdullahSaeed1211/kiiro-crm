@@ -1,3 +1,4 @@
+import { boardLabels } from '../../../../i18n/board-labels-copy'
 import { ViewSwitcher } from '@ops/ui/composites/ViewSwitcher'
 import { shellLabels } from '../../../../server/shell-labels'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
@@ -69,13 +70,7 @@ export default async function LeadBoardPage({
           stages={result.stages}
           cards={cards}
           lostReasons={result.lostReasons}
-          labels={{
-            expand: 'Expand {name}',
-            collapse: 'Collapse {name}',
-            moveTo: 'Move to…',
-            moveFailed: 'Could not move the lead',
-            conflict: 'Updated by someone else, refreshed',
-          }}
+          labels={boardLabels(locale, 'lead')}
         />
       </PageContent>
     </>

@@ -5,6 +5,9 @@ import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { DataTable, type DataTableProps } from '@ops/ui/composites/DataTable'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { BULK_COPY } from '../../i18n/bulk-copy'
+import { catalogFor } from '../../i18n/locale'
+import { useLocale } from '../../i18n/locale-context'
 import { useGuardedTransition } from './use-guarded-transition'
 
 type Option = Readonly<{ id: string; name: string }>
@@ -54,6 +57,7 @@ function BulkSelect({
 
 function BulkBar({ ids, owners, stages, assign, move }: Readonly<{ ids: readonly string[] } & BulkOptions>) {
   const router = useRouter()
+  const copy = catalogFor(BULK_COPY, useLocale())
   const [ownerId, setOwnerId] = useState('')
   const [stageId, setStageId] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -68,27 +72,29 @@ function BulkBar({ ids, owners, stages, assign, move }: Readonly<{ ids: readonly
         setMessage(result.error.message)
         return
       }
-      setMessage(`${String(result.data.updated)} updated, ${String(result.data.skipped)} skipped`)
+      setMessage(
+        copy.result.replace('{updated}', String(result.data.updated)).replace('{skipped}', String(result.data.skipped)),
+      )
       setOwnerId('')
       setStageId('')
       router.refresh()
     })
   }
   return (
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Bulk actions">
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={copy.group}>
       <BulkSelect
-        label="Assign owner"
-        placeholder="Assign owner…"
+        label={copy.assignOwner}
+        placeholder={copy.assignOwnerPlaceholder}
         value={ownerId}
-        options={[{ id: 'none', name: 'Unassigned' }, ...owners]}
+        options={[{ id: 'none', name: copy.unassigned }, ...owners]}
         onChange={(value) => {
           setOwnerId(value)
           setStageId('')
         }}
       />
       <BulkSelect
-        label="Move to stage"
-        placeholder="Move to stage…"
+        label={copy.moveToStage}
+        placeholder={copy.moveToStagePlaceholder}
         value={stageId}
         options={stages}
         onChange={(value) => {
@@ -97,7 +103,7 @@ function BulkBar({ ids, owners, stages, assign, move }: Readonly<{ ids: readonly
         }}
       />
       <Button size="sm" disabled={(ownerId === '' && stageId === '') || pending} onClick={apply}>
-        Apply to {ids.length}
+        {copy.apply.replace('{count}', String(ids.length))}
       </Button>
       {message === null ? null : (
         <span role="status" className="text-xs text-muted-foreground">
