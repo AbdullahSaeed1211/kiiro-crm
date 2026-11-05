@@ -1,16 +1,24 @@
 'use client'
 import { Button } from '@ops/ui/components/ui/button'
+import type { GroupsCopy } from '../../../i18n/groups-copy'
 
 function GroupItemName({
+  copy,
   editing,
   draft,
   groupName,
   onDraftChange,
-}: Readonly<{ editing: boolean; draft: string; groupName: string; onDraftChange: (value: string) => void }>) {
+}: Readonly<{
+  copy: GroupsCopy
+  editing: boolean
+  draft: string
+  groupName: string
+  onDraftChange: (value: string) => void
+}>) {
   return editing ? (
     <input
       className="h-9 min-w-48 flex-1 rounded-md border bg-background px-2"
-      aria-label="Group name"
+      aria-label={copy.groupName}
       maxLength={120}
       value={draft}
       onChange={(event) => {
@@ -23,6 +31,7 @@ function GroupItemName({
 }
 
 function GroupItemActions({
+  copy,
   editing,
   pending,
   groupId,
@@ -32,6 +41,7 @@ function GroupItemActions({
   onSave,
   onDelete,
 }: Readonly<{
+  copy: GroupsCopy
   editing: boolean
   pending: boolean
   groupId: string
@@ -54,7 +64,7 @@ function GroupItemActions({
               onSave(groupId)
             }}
           >
-            Save
+            {copy.save}
           </Button>
           <Button
             variant="link"
@@ -65,7 +75,7 @@ function GroupItemActions({
               onCancel()
             }}
           >
-            Cancel
+            {copy.cancel}
           </Button>
         </>
       ) : (
@@ -77,7 +87,7 @@ function GroupItemActions({
             onEdit(groupId, groupName)
           }}
         >
-          Edit
+          {copy.edit}
         </Button>
       )}
       <Button
@@ -90,13 +100,14 @@ function GroupItemActions({
           onDelete({ id: groupId, name: groupName })
         }}
       >
-        Delete
+        {copy.delete}
       </Button>
     </span>
   )
 }
 
 export function GroupListItem({
+  copy,
   group,
   editing,
   draft,
@@ -107,6 +118,7 @@ export function GroupListItem({
   onDelete,
   onDraftChange,
 }: Readonly<{
+  copy: GroupsCopy
   group: { id: string; name: string }
   editing: boolean
   draft: string
@@ -119,8 +131,9 @@ export function GroupListItem({
 }>) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm" key={group.id}>
-      <GroupItemName editing={editing} draft={draft} groupName={group.name} onDraftChange={onDraftChange} />
+      <GroupItemName copy={copy} editing={editing} draft={draft} groupName={group.name} onDraftChange={onDraftChange} />
       <GroupItemActions
+        copy={copy}
         editing={editing}
         pending={pending}
         groupId={group.id}

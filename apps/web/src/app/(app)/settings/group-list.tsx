@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { describeClientError } from '../client-errors'
 import { GroupListItem } from './group-list-items'
 import type { GroupAction } from './form-utils'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { GROUPS_COPY } from '../../../i18n/groups-copy'
+import type { GroupsCopy } from '../../../i18n/groups-copy'
 
 function GroupListMessage({ message }: Readonly<{ message: string | undefined }>) {
   if (!message) return null
@@ -15,20 +19,21 @@ function GroupListMessage({ message }: Readonly<{ message: string | undefined }>
   )
 }
 
-function GroupListHeader() {
+function GroupListHeader({ copy }: Readonly<{ copy: GroupsCopy }>) {
   return (
     <div>
-      <h2 className="text-sm font-semibold">Existing groups</h2>
-      <p className="text-sm text-muted-foreground">Rename or remove teams without leaving this page.</p>
+      <h2 className="text-sm font-semibold">{copy.existing}</h2>
+      <p className="text-sm text-muted-foreground">{copy.existingHelp}</p>
     </div>
   )
 }
 
-function GroupEmptyState() {
-  return <p className="text-sm text-muted-foreground">No groups yet.</p>
+function GroupEmptyState({ copy }: Readonly<{ copy: GroupsCopy }>) {
+  return <p className="text-sm text-muted-foreground">{copy.none}</p>
 }
 
 function GroupListContent({
+  copy,
   groups,
   editing,
   draft,
@@ -39,6 +44,7 @@ function GroupListContent({
   onDelete,
   onDraftChange,
 }: Readonly<{
+  copy: GroupsCopy
   groups: readonly { id: string; name: string }[]
   editing: string | null
   draft: string
@@ -49,12 +55,13 @@ function GroupListContent({
   onDelete: (group: { id: string; name: string }) => void
   onDraftChange: (value: string) => void
 }>) {
-  if (groups.length === 0) return <GroupEmptyState />
+  if (groups.length === 0) return <GroupEmptyState copy={copy} />
   return (
-    <ul className="divide-y rounded-lg border" aria-label="Groups">
+    <ul className="divide-y rounded-lg border" aria-label={copy.list}>
       {groups.map((group) => (
         <GroupListItem
           key={group.id}
+          copy={copy}
           group={group}
           editing={editing === group.id}
           draft={draft}
@@ -70,20 +77,6 @@ function GroupListContent({
   )
 }
 
-function handleSaveError(error: unknown) {
-  return describeClientError(error, {
-    context: 'group update',
-    fallback: 'Could not save this group. Please try again.',
-  })
-}
-
-function handleDeleteError(error: unknown) {
-  return describeClientError(error, {
-    context: 'group delete',
-    fallback: 'Could not delete this group. Please try again.',
-  })
-}
-
 export function GroupList({
   groups,
   action,
@@ -94,6 +87,7 @@ export function GroupList({
   deleteAction: GroupAction
 }>) {
   const router = useRouter()
+  const copy = catalogFor(GROUPS_COPY, useLocale())
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState(false)
@@ -104,27 +98,27 @@ export function GroupList({
     setPending(true)
     try {
       const result = await action({ id, name: draft.trim() })
-      setMessage(result.ok ? 'Group saved.' : result.error.message)
+      setMessage(result.ok ? copy.saved : result.error.message)
       if (result.ok) {
         setEditing(null)
         router.refresh()
       }
     } catch (error) {
-      setMessage(handleSaveError(error))
+      setMessage(describeClientError(error, { context: 'group update', fallback: copy.updateFailed }))
     } finally {
       setPending(false)
     }
   }
 
   const remove = async (group: { id: string; name: string }) => {
-    if (!window.confirm(`Delete the “${group.name}” group?`)) return
+    if (!window.confirm(copy.confirmDelete.replace('{name}', group.name))) return
     setPending(true)
     try {
       const result = await deleteAction({ id: group.id })
-      setMessage(result.ok ? 'Group deleted.' : result.error.message)
+      setMessage(result.ok ? copy.deleted : result.error.message)
       if (result.ok) router.refresh()
     } catch (error) {
-      setMessage(handleDeleteError(error))
+      setMessage(describeClientError(error, { context: 'group delete', fallback: copy.deleteFailed }))
     } finally {
       setPending(false)
     }
@@ -132,8 +126,9 @@ export function GroupList({
 
   return (
     <div className="space-y-3 border-t pt-5">
-      <GroupListHeader />
+      <GroupListHeader copy={copy} />
       <GroupListContent
+        copy={copy}
         groups={groups}
         editing={editing}
         draft={draft}

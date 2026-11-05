@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { saveModules } from '../../../../server/actions/settings'
 import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
+import { normalizeLocale } from '../../../../i18n/config'
+import { MODULES_COPY } from '../../../../i18n/modules-copy'
 import { ModuleSettingsForm } from './module-settings-form'
 
 export const metadata: Metadata = { title: 'Modules' }
@@ -14,10 +16,7 @@ export default async function ModulesSettingsPage() {
   return (
     <SettingsPage title="Modules" description="Choose which workspace capabilities are available." roles={['owner']}>
       <SettingsForm>
-        <p className="text-sm text-muted-foreground">
-          Turn off surfaces your business does not use. Existing data remains safely stored and can be shown again
-          later.
-        </p>
+        <p className="text-sm text-muted-foreground">{MODULES_COPY[normalizeLocale(settings.locale)].intro}</p>
         <ModuleSettingsForm
           action={saveModules}
           initialValues={{

@@ -4,8 +4,12 @@ import { useState, type SyntheticEvent } from 'react'
 import { describeClientError } from '../client-errors'
 import { formText, type GroupAction } from './form-utils'
 import { Button } from '@ops/ui/components/ui/button'
+import { catalogFor } from '../../../i18n/locale'
+import { useLocale } from '../../../i18n/locale-context'
+import { GROUPS_COPY } from '../../../i18n/groups-copy'
 
 export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
+  const copy = catalogFor(GROUPS_COPY, useLocale())
   const [name, setName] = useState('')
   const [message, setMessage] = useState<string>()
   const [pending, setPending] = useState(false)
@@ -17,10 +21,10 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
     setPending(true)
     try {
       const result = await action({ name: submittedName })
-      setMessage(result.ok ? 'Group saved.' : result.error.message)
+      setMessage(result.ok ? copy.saved : result.error.message)
       if (result.ok) setName('')
     } catch (error) {
-      setMessage(describeClientError(error, { context: 'group save', fallback: 'Unable to save group. Try again.' }))
+      setMessage(describeClientError(error, { context: 'group save', fallback: copy.saveFailed }))
     } finally {
       setPending(false)
     }
@@ -34,7 +38,7 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
       }}
     >
       <label className="sr-only" htmlFor="group-name">
-        Group name
+        {copy.groupName}
       </label>
       <input
         id="group-name"
@@ -44,13 +48,13 @@ export function GroupForm({ action }: Readonly<{ action: GroupAction }>) {
         onChange={(event) => {
           setName(event.target.value)
         }}
-        placeholder="Sales"
+        placeholder={copy.namePlaceholder}
         required
         value={name}
         disabled={pending}
       />
       <Button size="lg" type="submit" disabled={pending}>
-        {pending ? 'Saving…' : 'Create group'}
+        {pending ? copy.saving : copy.create}
       </Button>
       {message !== undefined && (
         <p className="text-sm text-muted-foreground sm:col-span-2" role="status" aria-live="polite">

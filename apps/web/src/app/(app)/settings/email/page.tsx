@@ -6,6 +6,8 @@ import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { Badge } from '@ops/ui/components/ui/badge'
 import { MailCheck, MailWarning } from 'lucide-react'
+import { normalizeLocale } from '../../../../i18n/config'
+import { EMAIL_SETTINGS_COPY } from '../../../../i18n/email-settings-copy'
 
 export const metadata: Metadata = { title: 'Email' }
 export const dynamic = 'force-dynamic'
@@ -20,6 +22,7 @@ export default async function EmailSettingsPage() {
   const { env } = await getCloudflareContext({ async: true })
   const settings = await getWorkspaceSettings()
   const email = record(settings.email)
+  const copy = EMAIL_SETTINGS_COPY[normalizeLocale(settings.locale)]
   const outboundEmailEnabled = env.MAIL_TRANSPORT === 'cloudflare' || env.MAIL_TRANSPORT === 'console'
   return (
     <SettingsPage
@@ -30,15 +33,13 @@ export default async function EmailSettingsPage() {
       <SettingsForm>
         <div className={outboundEmailEnabled ? undefined : 'opacity-60'}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-medium">Outbound sender</h2>
+            <h2 className="font-medium">{copy.outbound}</h2>
             <Badge variant={outboundEmailEnabled ? 'secondary' : 'outline'}>
               {outboundEmailEnabled ? <MailCheck aria-hidden /> : <MailWarning aria-hidden />}
-              {outboundEmailEnabled ? 'Available' : 'Unavailable'}
+              {outboundEmailEnabled ? copy.available : copy.unavailable}
             </Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            These values come from the deployed Worker configuration.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{copy.fromDeployment}</p>
         </div>
         {outboundEmailEnabled ? null : (
           <div
@@ -46,28 +47,28 @@ export default async function EmailSettingsPage() {
             role="status"
           >
             <MailWarning aria-hidden className="mt-0.5 size-4 shrink-0" />
-            <p>Email sending will be available after Cloudflare Email Sending is enabled.</p>
+            <p>{copy.notEnabled}</p>
           </div>
         )}
         <dl className="grid gap-3 text-sm">
           <div>
-            <dt className="font-medium">From name</dt>
-            <dd className="text-muted-foreground">{value(email.fromName) || env.MAIL_FROM_NAME || 'Not configured'}</dd>
+            <dt className="font-medium">{copy.fromName}</dt>
+            <dd className="text-muted-foreground">
+              {value(email.fromName) || env.MAIL_FROM_NAME || copy.notConfigured}
+            </dd>
           </div>
           <div>
-            <dt className="font-medium">From address</dt>
+            <dt className="font-medium">{copy.fromAddress}</dt>
             <dd className="text-muted-foreground">
-              {value(email.fromAddress) || env.MAIL_FROM_ADDRESS || 'Not configured'}
+              {value(email.fromAddress) || env.MAIL_FROM_ADDRESS || copy.notConfigured}
             </dd>
           </div>
         </dl>
       </SettingsForm>
       <SettingsForm>
         <div>
-          <h2 className="font-medium">Inbound addressing</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            These values are stored in workspace settings and used when composing inbound record addresses.
-          </p>
+          <h2 className="font-medium">{copy.inbound}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{copy.inboundHelp}</p>
         </div>
         <SettingsActionForm
           action={saveEmailSettings}
