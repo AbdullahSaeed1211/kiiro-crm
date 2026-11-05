@@ -1,4 +1,5 @@
 import { makeCampaigns, makeEmails, makeNotes } from './model-activity'
+import { makeDocuments } from './model-billing'
 import { makeContacts, makeDeals, makeLeads, makeOrgs } from './model-crm'
 import { makeProjects, makeTasks } from './model-work'
 import { createRandom } from './random'
@@ -13,8 +14,9 @@ export function buildDemoDataset(senderAddress: string, seed = 20261001): DemoDa
   const { deals, leads } = makeDeals({ random, orgs, contacts, leads: firstLeads })
   const projects = makeProjects(random, deals, orgs)
   const tasks = makeTasks(random, projects)
+  const documents = makeDocuments({ random, deals, projects, contacts })
   const notes = makeNotes({ random, leads, deals, contacts, orgs })
   const emails = makeEmails({ random, leads, contacts, senderAddress })
   const campaigns = makeCampaigns(random, contacts)
-  return { orgs, contacts, leads, deals, projects, tasks, notes, emails, campaigns }
+  return { orgs, contacts, leads, deals, projects, tasks, documents, notes, emails, campaigns }
 }

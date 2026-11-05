@@ -85,6 +85,30 @@ export interface DemoTask {
   readonly dueDay: number
 }
 
+export interface DemoDocumentLine {
+  readonly description: string
+  readonly quantityMilli: number
+  readonly unitPriceMinor: number
+  readonly taxBps: number
+}
+
+/** A quote or invoice for a client's deal; the writer gives it its number. */
+export interface DemoDocument {
+  readonly key: string
+  readonly kind: 'quote' | 'invoice'
+  readonly orgKey: string
+  readonly contactKey: string
+  readonly dealKey: string
+  readonly status: 'draft' | 'sent' | 'accepted' | 'declined' | 'paid'
+  readonly lines: readonly DemoDocumentLine[]
+  readonly note: string
+  readonly createdDay: number
+  readonly sentDay: number | null
+  readonly decidedDay: number | null
+  readonly paidDay: number | null
+  readonly dueDay: number | null
+}
+
 export interface DemoNote {
   readonly recordType: 'lead' | 'deal' | 'contact'
   readonly recordKey: string
@@ -122,6 +146,7 @@ export interface DemoDataset {
   readonly deals: readonly DemoDeal[]
   readonly projects: readonly DemoProject[]
   readonly tasks: readonly DemoTask[]
+  readonly documents: readonly DemoDocument[]
   readonly notes: readonly DemoNote[]
   readonly emails: readonly DemoEmail[]
   readonly campaigns: readonly DemoCampaign[]

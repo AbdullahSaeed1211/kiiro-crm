@@ -13,6 +13,7 @@ import { buildDemoDataset } from './model'
 import { findDemoEntries } from './reconcile'
 import { need } from './need'
 import { writeActivityAll } from './write-all'
+import { writeDocuments } from './write-billing'
 import {
   applySettings,
   ensureFieldDefinitions,
@@ -71,8 +72,7 @@ async function workspaceContext(payload: SeedPayload, now: number): Promise<Writ
 
 async function writeAll(context: WriteContext, options: DemoOptions): Promise<void> {
   const { payload } = context
-  await ensureTeam(context)
-  await ensureFieldDefinitions(context)
+  await Promise.all([ensureTeam(context), ensureFieldDefinitions(context)])
   const [workflows, lookups] = await Promise.all([loadWorkflows(payload), loadLookups(payload)])
   const data = buildDemoDataset(SENDER)
   const settings = await payload.findGlobal({ ...LOCAL, slug: 'settings' })
@@ -83,6 +83,7 @@ async function writeAll(context: WriteContext, options: DemoOptions): Promise<vo
   await writeDeals(context, { data, lookups: crm })
   await writeProjects(context, { data, workflows })
   await writeTasks(context, { data, workflows })
+  await writeDocuments(context, { data, currency })
   await writeActivityAll(context, { data, workflows, sender: SENDER })
   if (options.workspace !== true) await applySettings(payload)
 }
