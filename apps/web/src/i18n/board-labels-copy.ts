@@ -11,7 +11,7 @@ interface BoardLabelsCopy {
   readonly moveFailedLead: string
 }
 
-export const BOARD_LABELS_COPY: Readonly<Record<Locale, BoardLabelsCopy>> = {
+const BOARD_LABELS_COPY: Readonly<Record<Locale, BoardLabelsCopy>> = {
   en: {
     expand: 'Expand {name}',
     collapse: 'Collapse {name}',
