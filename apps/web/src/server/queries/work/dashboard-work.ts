@@ -25,47 +25,49 @@ async function taskSection(
   const finishedStages = options.finishedStages ?? []
   const limit = options.limit ?? SHOWN
   const request = { collection: 'tasks' as const, where, overrideAccess: false, req: context.req }
-  const [page, total] = await Promise.all([
-    context.payload.find({
-      ...request,
-      sort: ['dueAt', 'id'],
-      limit,
-      depth: 0,
-      select: {
-        id: true,
-        title: true,
-        stageId: true,
-        updatedAt: true,
-        dueAt: true,
-        project: true,
-        relatedType: true,
-        relatedId: true,
-        assignees: true,
-      },
-    }),
-    context.payload.count(request),
-  ])
+  // The page's own total is the count, so the same rows are not counted twice.
+  const page = await context.payload.find({
+    ...request,
+    sort: ['dueAt', 'id'],
+    limit,
+    depth: 0,
+    select: {
+      id: true,
+      title: true,
+      stageId: true,
+      updatedAt: true,
+      dueAt: true,
+      project: true,
+      relatedType: true,
+      relatedId: true,
+      assignees: true,
+    },
+  })
   return {
-    count: total.totalDocs,
+    count: page.totalDocs,
     items: page.docs.map((doc) => dashboardTask(doc, finishedStages)),
   }
 }
 
-async function enrich(context: RequestContext, sections: readonly TaskSection[]): Promise<TaskSection[]> {
+async function enrich(
+  context: RequestContext,
+  sections: readonly TaskSection[],
+  known: ReadonlyMap<string, { readonly name: string }>,
+): Promise<TaskSection[]> {
   const tasks = sections.flatMap((section) => section.items)
+  const assigneeIds = tasks.flatMap((task) => task.assigneeIds)
+  // People already read for the scope are not read again for their own tasks.
+  const missing = assigneeIds.filter((id) => !known.has(id))
   const [contexts, people] = await Promise.all([
     loadTaskContexts(context, tasks),
-    loadPeople(
-      context,
-      tasks.flatMap((task) => task.assigneeIds),
-    ),
+    missing.length === 0 ? Promise.resolve(new Map<string, { readonly name: string }>()) : loadPeople(context, missing),
   ])
   return sections.map((section) => ({
     ...section,
     items: section.items.map((task) => ({
       ...task,
       context: contexts.get(task.id)?.label ?? null,
-      people: task.assigneeIds.flatMap((id) => people.get(id)?.name ?? []),
+      people: task.assigneeIds.flatMap((id) => known.get(id)?.name ?? people.get(id)?.name ?? []),
     })),
   }))
 }
@@ -156,7 +158,7 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
       loadTasks: ({ context: taskContext, where, finishedStages: closed, limit }) =>
         taskSection(taskContext, where, { finishedStages: closed, limit }),
     }),
-    enrich(context, [overdue, dueToday]),
+    enrich(context, [overdue, dueToday], new Map(scope.people.map((person) => [person.id, person]))),
   ])
   return {
     overdue: enriched[0] ?? empty,

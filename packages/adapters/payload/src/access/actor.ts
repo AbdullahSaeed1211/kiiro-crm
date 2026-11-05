@@ -32,7 +32,9 @@ const PROFILE_ACCESS: Readonly<
   },
 }
 const MAX_REPORT_DEPTH = 5
-const actors = new WeakMap<PayloadRequest, Promise<Actor | undefined>>()
+// Keyed by the user document, not the request: Payload builds a fresh request for each local operation, while the
+// authenticated user object is shared by all of them, so one request loads its actor once.
+const actors = new WeakMap<object, Promise<Actor | undefined>>()
 
 function roleOf(user: object): { readonly role: Role; readonly known: boolean } {
   const roleValue = read(user, FIELDS.role)
@@ -109,11 +111,13 @@ async function loadActor(req: PayloadRequest): Promise<Actor | undefined> {
   return { ...base, reportIds: await loadReportIds(req, base.id) }
 }
 
-/** The actor of an authenticated request; staff reports are loaded once per request. */
+/** The actor of an authenticated request; one load per signed-in user object, however many operations share it. */
 export function resolveActor(req: PayloadRequest): Promise<Actor | undefined> {
-  const cached = actors.get(req)
+  const user = req.user
+  if (user === null) return Promise.resolve(undefined)
+  const cached = actors.get(user)
   if (cached !== undefined) return cached
   const pending = loadActor(req)
-  actors.set(req, pending)
+  actors.set(user, pending)
   return pending
 }

@@ -63,6 +63,16 @@ describe('spike access', () => {
     await SPIKE_ACCESS.projects.update(staff)
     expect(staff.queries()).toBe(2)
   })
+
+  it('resolves the actor once across the requests one signed-in user makes', async () => {
+    // Payload builds a fresh request for each local operation; the authenticated user object is shared by all of them.
+    const signedIn = user('s1', 'staff')
+    const first = request(signedIn, { s1: ['r1'] })
+    const second = request(signedIn, { s1: ['r1'] })
+    await SPIKE_ACCESS.projects.read(first)
+    await SPIKE_ACCESS.projects.update(second)
+    expect(first.queries() + second.queries()).toBe(2)
+  })
 })
 
 describe('spike access for people', () => {

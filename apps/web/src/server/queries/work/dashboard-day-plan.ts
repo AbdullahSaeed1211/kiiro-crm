@@ -41,21 +41,19 @@ export async function loadDashboardDayPlan(options: {
   const userIds = planUserIds(scope)
   if (userIds.length === 0) return { count: 0, items: [] }
   const where: Where = { and: [{ day: { equals: scope.dayStart } }, { user: { in: userIds } }] }
-  const [plans, total] = await Promise.all([
-    context.payload.find({
-      collection: 'taskDayPlans',
-      where,
-      sort: ['createdAt', 'id'],
-      limit: 30,
-      depth: 0,
-      select: { task: true, user: true },
-      overrideAccess: false,
-      req: context.req,
-    }),
-    context.payload.count({ collection: 'taskDayPlans', where, overrideAccess: false, req: context.req }),
-  ])
+  // The page's own total is the count, so the day plans are not counted twice.
+  const plans = await context.payload.find({
+    collection: 'taskDayPlans',
+    where,
+    sort: ['createdAt', 'id'],
+    limit: 30,
+    depth: 0,
+    select: { task: true, user: true },
+    overrideAccess: false,
+    req: context.req,
+  })
   const ids = plans.docs.flatMap((plan) => (typeof plan.task === 'string' ? [plan.task] : []))
-  if (ids.length === 0) return { count: total.totalDocs, items: [] }
+  if (ids.length === 0) return { count: plans.totalDocs, items: [] }
   const tasks = await loadTasks({ context, where: { id: { in: ids } }, finishedStages, limit: 30 })
   const byId = new Map(tasks.items.map((task) => [String(task.id), task]))
   const people = new Map(scope.people.map((person) => [person.id, person.name]))
@@ -64,5 +62,5 @@ export async function loadDashboardDayPlan(options: {
     const userId = typeof plan.user === 'string' ? plan.user : ''
     return task === undefined || userId === '' ? [] : [{ userId, personName: people.get(userId) ?? '', task }]
   })
-  return { count: total.totalDocs, items }
+  return { count: plans.totalDocs, items }
 }

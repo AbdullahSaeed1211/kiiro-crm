@@ -17,6 +17,11 @@ export interface AttendanceRecord {
 export interface AttendanceRepository {
   open(userId: string): Promise<AttendanceRecord | undefined>
   latest(userId: string): Promise<AttendanceRecord | undefined>
+  /** The open and latest entries together, so a page showing both reads once. */
+  current(userId: string): Promise<{
+    readonly open: AttendanceRecord | undefined
+    readonly latest: AttendanceRecord | undefined
+  }>
   get(id: string): Promise<AttendanceRecord | undefined>
   create(input: Omit<AttendanceRecord, 'id'>): Promise<AttendanceRecord | undefined>
   close(input: {

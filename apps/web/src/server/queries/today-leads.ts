@@ -55,20 +55,18 @@ export async function loadTodayLeads(
   const person = scope.team ? requested.person : 'everyone'
   const where = await attentionLeadWhere(context, dayStart, { scope: scope.team ? 'team' : 'mine', person })
   const request = { depth: 0, overrideAccess: false, req: context.req }
-  const [page, total] = await Promise.all([
-    context.payload.find({
-      collection: 'leads',
-      ...request,
-      where,
-      sort: ['nextActionAt', 'createdAt', 'id'],
-      limit: SHOWN,
-      select: { title: true, companyName: true, email: true, owner: true, assignees: true, nextActionAt: true },
-    }),
-    context.payload.count({ collection: 'leads', where, overrideAccess: false, req: context.req }),
-  ])
+  // The page's own total is the count, so the same leads are not counted twice.
+  const page = await context.payload.find({
+    collection: 'leads',
+    ...request,
+    where,
+    sort: ['nextActionAt', 'createdAt', 'id'],
+    limit: SHOWN,
+    select: { title: true, companyName: true, email: true, owner: true, assignees: true, nextActionAt: true },
+  })
   const people = await loadPeople(context, page.docs.flatMap(leadPersonIds))
   return {
-    count: total.totalDocs,
+    count: page.totalDocs,
     items: todayLeadItems(page.docs, people),
     personHref: viewAllHref(scope.team, person),
   }

@@ -65,6 +65,16 @@ export function createAttendanceRepository(req: PayloadRequest): AttendanceRepos
       const [doc] = await find({ user: { equals: userId } })
       return doc === undefined ? undefined : mapped(doc)
     },
+    current: async (userId) => {
+      // One read covers the person's latest entry and the entry still open for them.
+      const docs = await find({ or: [{ user: { equals: userId } }, { openKey: { equals: userId } }] }, 50)
+      const openDoc = docs.find((doc) => textOf(doc, 'openKey') === userId)
+      const last = docs.at(0)
+      return {
+        open: openDoc === undefined ? undefined : mapped(openDoc),
+        latest: last === undefined ? undefined : mapped(last),
+      }
+    },
     get: async (id) => {
       const doc = await get(id)
       return doc === undefined ? undefined : mapped(doc)

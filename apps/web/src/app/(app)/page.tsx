@@ -28,7 +28,8 @@ async function loadTodayAttendance(
   timeZone: string
 }> {
   const repo = attendanceDeps(context).repo
-  const [open, latest, settings] = await Promise.all([repo.open(actorId), repo.latest(actorId), getWorkspaceSettings()])
+  const [current, settings] = await Promise.all([repo.current(actorId), getWorkspaceSettings()])
+  const { open, latest } = current
   const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
   const now = Date.now()
   let checkedOut: AttendanceRecord | null = null
@@ -143,11 +144,11 @@ export default async function DashboardPage({
 }: Readonly<{ searchParams: Promise<{ readonly scope?: string; readonly person?: string }> }>) {
   const [context, params] = await Promise.all([getRequestContext(), searchParams])
   const requestedScope = params.scope === 'mine' || params.scope === 'team' ? params.scope : undefined
-  const [work, hasRecords] = await Promise.all([
+  const [work, hasRecords, attendance] = await Promise.all([
     loadDashboardWork(context, requestedScope, params.person),
     hasDashboardRecords(context),
+    loadTodayAttendance(context, String(context.actor.id)),
   ])
-  const attendance = await loadTodayAttendance(context, String(context.actor.id))
   const firstRun = !hasRecords
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   const profile: HomeProfile = work.canSeeTeam ? 'admin' : (context.actor.workProfile ?? 'delivery')
