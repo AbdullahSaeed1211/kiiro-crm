@@ -8,13 +8,6 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ## Critical
 
-### 3. The E2E suite can't see broken layouts
-
-- Area: Tests. Effort: Quick.
-- Now: `route-health.spec.ts:351-356` checks that an "Assignees" heading is visible and that `[data-slot="sheet-content"]` has no matches. The broken page passes both. It saves a screenshot, but nothing ever compares it. Most routes get only a "heading is visible" check.
-- Fix: Add `toHaveScreenshot` diffs for the core surfaces, and geometry checks: the content box must not intersect the header, and a standalone route must have no Close button. The file already uses bounding boxes and layout-shift checks for the panel, so this reuses a known technique.
-- Status: partly fixed. A geometry check now asserts the standalone task page does not overlap the app header and has no Close button; it fails until the page gets its own layout. `layout-shift.spec.ts` now watches nine routes at two widths for layout shift. Screenshot diffs are not added yet.
-
 ## Major
 
 ## Minor
