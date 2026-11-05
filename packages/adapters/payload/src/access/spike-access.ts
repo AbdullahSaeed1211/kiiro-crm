@@ -106,6 +106,7 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.deliverables]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.contentItems]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.auditEvents]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.portalLinks]: { read: managerUp, ...systemWrites },
   [COLLECTIONS.webhookDeliveries]: { read: ownerOnly, ...systemWrites },
   [COLLECTIONS.timeEntries]: {
     read: allow((actor) => isManagerUp(actor) || { user: { equals: actor.id } }),

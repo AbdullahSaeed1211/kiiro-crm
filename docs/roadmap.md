@@ -102,7 +102,7 @@ Done when: each feature has a yes/no/defer decision recorded in an ADR or spec s
 Design: [quotes, invoices, portal, rules, audit log](design/quotes-invoices-portal-rules-audit.md). Owner priority: bill the work and show it to the client.
 
 - Order: audit log, then quotes and invoices, then the client portal, then automation rules. Payments through a processor wait for the tenant's account.
-- Status (2026-10-13): audit log, quotes and invoices are built. The client portal is not built; the design's token login and scope are unchanged. Automation rules are not built.
+- Status (2026-11-05): audit log, quotes, invoices and the client portal are built. The portal is scoped to the contact's company, not the contact (see the design). Automation rules are not built.
 
 Depends on: wave 10. Done when: each feature is verified signed in on production, and the portal has passing scope and token tests.
 

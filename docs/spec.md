@@ -122,7 +122,7 @@ git clone --depth 1 --filter=blob:none --sparse https://github.com/odoo/odoo.git
 ## 1. Goals / non-goals
 **Goals:** replace spreadsheets, email inboxes and paid seat-based tools for service businesses; isolated per-client deploys;
 runtime white-label; lead intake from existing websites; inbound + outbound email on records; strict code quality.
-**Non-goals:** shared-row multitenancy (never without ADR); client portal (Phase 4); billing/invoicing (never in core); native apps
+**Non-goals:** shared-row multitenancy (never without ADR); billing/invoicing (never in core); native apps
 (never, responsive web only); runtime custom entity types (Phase 4+); telephony/WhatsApp (Phase 4); clinical/medical records (never without privacy ADR).
 
 ---

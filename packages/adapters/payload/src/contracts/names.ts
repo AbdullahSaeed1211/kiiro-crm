@@ -13,6 +13,7 @@ export const COLLECTIONS = {
   emailMessages: 'emailMessages',
   auditEvents: 'auditEvents',
   billingDocuments: 'billingDocuments',
+  portalLinks: 'portalLinks',
   jobRuns: 'jobRuns',
   intakeForms: 'intakeForms',
   intakeSubmissions: 'intakeSubmissions',

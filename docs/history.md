@@ -174,3 +174,10 @@ Verification for this pass was local: static gates, unit and integration tests, 
 ## Navigation and app shell (2026-11-04)
 
 One navigation model now drives the sidebar, the command menu, the `g` shortcuts and the New menu, so roles and switched-off modules are decided in one place (the command menu used to offer Leads and Deals to staff who could not open them). The sidebar footer is one account menu, Reports joined Utilities so every link fits at 900 px, links show overdue and follow-up counts without taking space, the header got a New menu and a group-first breadcrumb, and a record's title sets the browser tab. Foldable groups, a mobile tab bar and a recents list were rejected because each changes the page after it paints. Design and verification: [navigation design](design/navigation.md).
+
+## Client portal (2026-11-05)
+
+- Owners and managers send a client contact a private link from the client's Billing tab, and can revoke it.
+- The client sees their company's sent quotes and invoices and project progress at `/portal/<token>`, accepts or declines quotes, prints documents and pays through the agency's payment link.
+- Use cases live in the billing module and are tested through an in-memory double for company scope, hidden drafts, and the same answer for wrong, expired and revoked links.
+- Verification found a lost update: Payload's update rewrites the whole row, so an open in flight undid a revoke. Link timestamps are now single-column writes (`setColumns`).

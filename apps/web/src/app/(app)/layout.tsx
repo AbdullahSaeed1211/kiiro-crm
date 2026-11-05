@@ -4,14 +4,14 @@ import { ThemeProvider } from '@ops/ui'
 import { Toaster } from '@ops/ui/components/ui/sonner'
 import { cookies } from 'next/headers'
 import { Geist, Geist_Mono } from 'next/font/google'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
 import { getProductContext, getWorkspaceSettings } from '../../server/auth/context'
 import { AppFrame } from './app-frame'
 import { normalizeLocale } from '../../i18n/config'
 import { brandPresentation } from '../../server/branding/presentation'
 import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
-import { accessibleBrandColors } from '../../server/branding/accessible-colors'
+import { themeStyle } from '../../server/branding/theme-style'
 
 // The vendored sidebar persists its open state in this cookie.
 const SIDEBAR_COOKIE = 'sidebar_state'
@@ -31,30 +31,6 @@ function settingsRecord(value: unknown): Record<string, unknown> {
 
 function textSetting(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim() !== '' ? value : fallback
-}
-
-function primaryThemeStyle(value: unknown): Record<string, string> {
-  if (typeof value !== 'string' || !/^#[\da-f]{6}$/i.test(value)) return {}
-  const colors = accessibleBrandColors(value)
-  return {
-    '--primary': value,
-    '--ring': value,
-    '--primary-foreground': colors.foreground,
-    '--primary-text-light': colors.textOnLight,
-    '--primary-text-dark': colors.textOnDark,
-  }
-}
-
-function themeStyle(settings: Record<string, unknown>): CSSProperties {
-  const brand = settingsRecord(settings.brand)
-  const radiusValue = brand.radius
-  let radius: string | undefined
-  if (radiusValue === 'sm') radius = '0.45rem'
-  else if (radiusValue === 'lg') radius = '0.95rem'
-  return {
-    ...primaryThemeStyle(brand.primaryHex),
-    ...(radius === undefined ? {} : { '--radius': radius }),
-  } as CSSProperties
 }
 
 /** Root layout of the product UI with the application frame (spec §16). */

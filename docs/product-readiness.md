@@ -24,7 +24,7 @@ Ordered by how directly each one stops a buyer. Each has an owner document; none
 1. **Licence.** The README badge says proprietary, and the code-licence decision is open ([spec D-30, Q-001](spec.md); ADR-0003 is reserved). A buyer needs written terms before money moves.
 2. **Provisioning is an operator task.** A new customer needs `pnpm tenant:new`, a provision run and a Cloudflare account with Workers Paid. Self-serve signup is designed, not built ([design](design/self-serve-saas.md), roadmap wave 7).
 3. **Only one live tenant.** The pilot-week criteria (spec §20.6) are not measured, so there is no evidence of daily use by a second business ([roadmap](roadmap.md) wave 4).
-4. **No client portal.** Clients cannot see their work or invoices; designed in [quotes, invoices, portal](design/quotes-invoices-portal-rules-audit.md), not built. Payments through a processor wait for a tenant account.
+4. **Client portal: built.** Clients see their quotes, invoices and project progress through a private link and accept quotes ([design](design/quotes-invoices-portal-rules-audit.md#client-portal)). Payments through a processor wait for a tenant account.
 5. **No automation rules or custom record types.** Lead assignment rules exist; general "when X, do Y" does not. Gmail and two-way calendar sync, call logs and SMS campaigns are deferred or partial.
 6. **Speed is unproven on real infrastructure.** Query counts are fixed on the worst pages ([performance](performance.md)); the 200 ms target has not been measured on Cloudflare.
 7. **Open defects.** The [UX backlog](backlog/ux.md) lists a critical gap (the end-to-end suite still has no screenshot diffs), a settings navigation mismatch (UX 39) and silent report-range fallbacks (UX 42).
@@ -36,7 +36,7 @@ Ordered by how directly each one stops a buyer. Each has an owner document; none
 2. Fix UX 39 and 42, then add screenshot diffs (UX 3).
 3. Measure [performance](performance.md) on a deployed tenant and close the listed hotspots.
 4. Run the pilot week for a second business and record the §20.6 results (item 3).
-5. Build the client portal, then self-serve provisioning (items 4 and 2).
+5. Self-serve provisioning (item 2).
 
 ## Demo path
 

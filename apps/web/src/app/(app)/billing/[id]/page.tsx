@@ -11,7 +11,7 @@ import { loadWorkspaceLocale } from '../../../../server/queries/work/read-models
 import { BillingActions } from '../billing-actions'
 import { BillingEmail } from '../billing-email'
 import { emailDraftFor } from '../billing-email-draft'
-import { formatMoney } from '../money'
+import { DocumentLines } from '../document-lines'
 import { StatusChip } from '../status-chip'
 
 export const dynamic = 'force-dynamic'
@@ -22,53 +22,6 @@ const PRINT_ONLY =
   '@media print { body * { visibility: hidden } .billing-print, .billing-print * { visibility: visible } .billing-print { position: absolute; left: 0; top: 0; width: 100% } }'
 
 type Props = Readonly<{ copy: BillingCopy; view: BillingView; locale: string }>
-
-function Lines({ copy, view, locale }: Props) {
-  const { document } = view
-  const money = (minor: number) => formatMoney({ minor, currency: document.currency, locale })
-  return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b text-left text-xs text-muted-foreground">
-          <th className="py-2">{copy.itemDescription}</th>
-          <th className="py-2 text-right">{copy.quantity}</th>
-          <th className="py-2 text-right">{copy.unitPrice}</th>
-          <th className="py-2 text-right">{copy.taxPercent}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {document.lines.map((line, index) => (
-          <tr key={index} className="border-b">
-            <td className="py-2">{line.description}</td>
-            <td className="py-2 text-right tabular-nums">{line.quantityMilli / 1000}</td>
-            <td className="py-2 text-right tabular-nums">{money(line.unitPriceMinor)}</td>
-            <td className="py-2 text-right tabular-nums">{line.taxBps / 100}</td>
-          </tr>
-        ))}
-      </tbody>
-      <tfoot className="tabular-nums">
-        <tr>
-          <td colSpan={3} className="pt-3 text-right">
-            {copy.subtotal}
-          </td>
-          <td className="pt-3 text-right">{money(document.subtotalMinor)}</td>
-        </tr>
-        <tr>
-          <td colSpan={3} className="text-right">
-            {copy.tax}
-          </td>
-          <td className="text-right">{money(document.taxMinor)}</td>
-        </tr>
-        <tr className="font-semibold">
-          <td colSpan={3} className="text-right">
-            {copy.total}
-          </td>
-          <td className="text-right">{money(document.totalMinor)}</td>
-        </tr>
-      </tfoot>
-    </table>
-  )
-}
 
 function Summary({ copy, view, locale }: Props) {
   const { document } = view
@@ -126,7 +79,7 @@ export default async function BillingDetailPage({ params }: Readonly<{ params: P
         />
         <article className="billing-print grid max-w-3xl gap-4 rounded-lg border bg-card p-4">
           <Summary copy={copy} view={view} locale={locale} />
-          <Lines copy={copy} view={view} locale={locale} />
+          <DocumentLines copy={copy} document={view.document} locale={locale} />
           {document.note === null ? null : <p className="text-sm">{document.note}</p>}
         </article>
       </PageContent>

@@ -99,6 +99,7 @@ export interface Config {
     demoManifests: DemoManifest;
     auditEvents: AuditEvent;
     billingDocuments: BillingDocument;
+    portalLinks: PortalLink;
     campaignQueue: CampaignQueue;
     callLogs: CallLog;
     deliverables: Deliverable;
@@ -143,6 +144,7 @@ export interface Config {
     demoManifests: DemoManifestsSelect<false> | DemoManifestsSelect<true>;
     auditEvents: AuditEventsSelect<false> | AuditEventsSelect<true>;
     billingDocuments: BillingDocumentsSelect<false> | BillingDocumentsSelect<true>;
+    portalLinks: PortalLinksSelect<false> | PortalLinksSelect<true>;
     campaignQueue: CampaignQueueSelect<false> | CampaignQueueSelect<true>;
     callLogs: CallLogsSelect<false> | CallLogsSelect<true>;
     deliverables: DeliverablesSelect<false> | DeliverablesSelect<true>;
@@ -1175,6 +1177,32 @@ export interface BillingDocument {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "portalLinks".
+ */
+export interface PortalLink {
+  id: string;
+  organization: string | Organization;
+  contact: string | Contact;
+  email: string;
+  tokenHash: string;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  expiresAt: number;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  revokedAt?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  lastOpenedAt?: number | null;
+  createdBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "campaignQueue".
  */
 export interface CampaignQueue {
@@ -1434,6 +1462,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'billingDocuments';
         value: string | BillingDocument;
+      } | null)
+    | ({
+        relationTo: 'portalLinks';
+        value: string | PortalLink;
       } | null)
     | ({
         relationTo: 'campaignQueue';
@@ -2069,6 +2101,22 @@ export interface BillingDocumentsSelect<T extends boolean = true> {
   subtotalMinor?: T;
   taxMinor?: T;
   totalMinor?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "portalLinks_select".
+ */
+export interface PortalLinksSelect<T extends boolean = true> {
+  organization?: T;
+  contact?: T;
+  email?: T;
+  tokenHash?: T;
+  expiresAt?: T;
+  revokedAt?: T;
+  lastOpenedAt?: T;
   createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
