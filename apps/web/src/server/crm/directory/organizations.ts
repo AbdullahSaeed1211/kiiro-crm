@@ -63,21 +63,54 @@ async function openDealCounts(
   return counts
 }
 
-async function organizationDetails(context: RequestContext, record: OrganizationRecord) {
-  const [people, projects, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
+/** The tabs of a client's page; each one is built from its own reads. */
+export type OrganizationTab = 'overview' | 'notes' | 'activity' | 'tasks' | 'billing' | 'files' | 'email'
+
+const EMPTY_READINESS: OrganizationReadiness = { overdueTaskCount: 0, pendingApprovalCount: 0 }
+
+/** Runs a read only when `tab` is the open one; every other tab gets `empty` and costs no query. */
+const gate =
+  (tab: OrganizationTab) =>
+  <T>(open: OrganizationTab, empty: T, load: () => Promise<T>): Promise<T> =>
+    tab === open ? load() : Promise.resolve(empty)
+
+const NO_RECORDS = { records: [], total: 0 }
+
+async function organizationDetails(context: RequestContext, record: OrganizationRecord, tab: OrganizationTab) {
+  const only = gate(tab)
+  const target = { recordType: 'organization', recordId: record.id, parentAuthorized: true } as const
+  const where = { organization: { equals: record.id } }
+  const [people, projects, contacts, deals] = await Promise.all([
     loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
-    listProjects(context, record.id),
-    listActivities(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
-    listEmailMessages(context, { recordType: 'organization', recordId: record.id, parentAuthorized: true }),
-    listRelatedTasks(context, 'organization', record.id),
-    listRecordAttachments(context, 'organization', record.id),
+    only('overview', [], () => listProjects(context, record.id)),
+    only('overview', NO_RECORDS, () =>
+      listCrmPage(context.req, { type: 'contact', where, page: 1, limit: RELATED_LIMIT }),
+    ),
+    only('overview', NO_RECORDS, () =>
+      listCrmPage(context.req, { type: 'deal', where, page: 1, limit: RELATED_LIMIT }),
+    ),
   ])
   const projectIds = projects.map((project) => project.id)
-  const [nextDueTask, readiness] = await Promise.all([
-    nextOrganizationTask(context, record.id, projectIds),
-    organizationReadiness(context, record.id, projectIds),
+  const [activity, emailMessages, relatedTasks, attachments, nextDueTask, readiness] = await Promise.all([
+    only('activity', [], () => listActivities(context, target)),
+    only('email', [], () => listEmailMessages(context, target)),
+    only('tasks', [], () => listRelatedTasks(context, 'organization', record.id)),
+    only('files', [], () => listRecordAttachments(context, 'organization', record.id)),
+    only('overview', null, () => nextOrganizationTask(context, record.id, projectIds)),
+    only('overview', EMPTY_READINESS, () => organizationReadiness(context, record.id, projectIds)),
   ])
-  return { people, projects, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments }
+  return {
+    people,
+    projects,
+    contacts,
+    deals,
+    activity,
+    emailMessages,
+    relatedTasks,
+    nextDueTask,
+    readiness,
+    attachments,
+  }
 }
 
 export async function listOrganizations(
@@ -143,7 +176,10 @@ export async function getOrganizationLabel(id: string): Promise<string | null> {
   return record?.name ?? null
 }
 
-export async function getOrganization(id: string): Promise<{
+export async function getOrganization(
+  id: string,
+  tab: OrganizationTab = 'overview',
+): Promise<{
   readonly record: OrganizationRecord
   readonly owner: PersonSummary | null
   readonly relations: OrganizationRelations
@@ -155,20 +191,15 @@ export async function getOrganization(id: string): Promise<{
   readonly attachments: readonly RecordAttachment[]
 } | null> {
   const context = await getRequestContext()
-  const where = { organization: { equals: id } }
-  const [record, contacts, deals] = await Promise.all([
-    getOrganizationRecord(id),
-    listCrmPage(context.req, { type: 'contact', where, page: 1, limit: RELATED_LIMIT }),
-    listCrmPage(context.req, { type: 'deal', where, page: 1, limit: RELATED_LIMIT }),
-  ])
+  const record = await getOrganizationRecord(id)
   if (record === undefined) return null
-  const details = await organizationDetails(context, record)
+  const details = await organizationDetails(context, record, tab)
   return {
     record,
     owner: record.ownerId === null ? null : (details.people.get(record.ownerId) ?? null),
     relations: {
-      contacts: contacts.records,
-      deals: deals.records,
+      contacts: details.contacts.records,
+      deals: details.deals.records,
       projects: details.projects,
     },
     activity: details.activity,

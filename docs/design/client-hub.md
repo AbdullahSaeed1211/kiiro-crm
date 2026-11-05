@@ -15,7 +15,7 @@ The client page (`/organizations/<id>`) gathers everything about one client behi
 | Overview, Notes, Activity, Tasks, Files, Email | as before                                                                                   | everyone with access to the client                      |
 | Billing                                        | that client's quotes and invoices, with New quote and New invoice already set to the client | owners and managers (the same rule as the Billing page) |
 
-Tabs switch in the browser without asking the server again (`RecordPageLayout` only updates the address), so every tab's content is part of the page. Staff do not pay for Billing: it is built only for owners and managers.
+The server builds only the open tab (`?tab=`). A click on a tab asks the server for that tab, and the page stays dimmed until it arrives (`RecordPageLayout` `serverTabs`). Each tab runs its own reads: the Overview about 18 statements, every other tab 6 or 7, where building every tab on every visit cost 28. Other record pages (contacts, leads, deals, projects) keep instant tabs because they still build every tab; Billing is built only for owners and managers.
 
 ## Overview
 

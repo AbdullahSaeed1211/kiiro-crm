@@ -17,7 +17,7 @@ export {
   queryValue,
 } from './utils'
 
-export type { DirectoryPage, OrganizationRelations } from './organizations'
+export type { DirectoryPage, OrganizationRelations, OrganizationTab } from './organizations'
 export {
   getOrganization,
   getOrganizationLabel,

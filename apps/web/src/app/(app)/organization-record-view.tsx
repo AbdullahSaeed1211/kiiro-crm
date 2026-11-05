@@ -1,3 +1,4 @@
+import type { OrganizationTab } from '../../server/crm/directory/organizations'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { RecordNotesTab } from './record-notes-tab'
 import { PageContent } from '@ops/ui/composites/AppShell'
@@ -38,6 +39,7 @@ function organizationTabs(
     copy: RecordCopy
     locale: string
     outboundEmailEnabled: boolean
+    tab: OrganizationTab
   }>,
 ) {
   const { record, activity, emailMessages, relatedTasks, attachments, copy, locale, outboundEmailEnabled } = input
@@ -49,7 +51,7 @@ function organizationTabs(
     {
       recordType: 'organization',
       recordId: record.id,
-      notes: <RecordNotesTab recordType="organization" recordId={record.id} />,
+      notes: input.tab === 'notes' ? <RecordNotesTab recordType="organization" recordId={record.id} /> : null,
       recipient: record.email,
       outboundEmailEnabled,
       tasks: relatedTasks,
@@ -116,28 +118,34 @@ function withBilling(
   return [...tabs.slice(0, at), { id: 'billing', ...billing }, ...tabs.slice(at)]
 }
 
+/** Everything the client page shows, with only the open tab's own parts filled in. */
+interface OrganizationPageData {
+  record: OrganizationRecord
+  owner: PersonSummary | null
+  relations: OrganizationRelations
+  activity: readonly ActivityItem[]
+  emailMessages: readonly EmailThreadMessage[]
+  relatedTasks: readonly RelatedTask[]
+  nextDueTask: RelatedTask | null
+  readiness: OrganizationReadiness
+  attachments: readonly RecordAttachment[]
+}
+
 export async function OrganizationRecordView({
   data,
   outboundEmailEnabled,
   billing,
   outstanding,
+  tab,
 }: Readonly<{
-  data: {
-    record: OrganizationRecord
-    owner: PersonSummary | null
-    relations: OrganizationRelations
-    activity: readonly ActivityItem[]
-    emailMessages: readonly EmailThreadMessage[]
-    relatedTasks: readonly RelatedTask[]
-    nextDueTask: RelatedTask | null
-    readiness: OrganizationReadiness
-    attachments: readonly RecordAttachment[]
-  }
+  data: OrganizationPageData
   outboundEmailEnabled: boolean
   /** The Billing tab, for the people who may see it. */
   billing?: { label: string; content: ReactNode }
   /** What the client owes, for the people who handle billing. */
   outstanding?: Outstanding
+  /** The open tab; only its content is built. */
+  tab: OrganizationTab
 }>) {
   const { record, owner, relations, activity, emailMessages, relatedTasks, nextDueTask, readiness, attachments } = data
   const locale = await loadWorkspaceLocale()
@@ -152,6 +160,7 @@ export async function OrganizationRecordView({
     copy,
     locale,
     outboundEmailEnabled,
+    tab,
   })
   return (
     <>
@@ -159,6 +168,7 @@ export async function OrganizationRecordView({
       <PageContent>
         <RecordPageLayout
           className="ops-organization-record"
+          serverTabs
           labels={{ breadcrumb: copy.organizationLabel, saveTitle: copy.saveName, cancelTitle: copy.cancel }}
           title={record.name}
           owner={<OrganizationOwner owner={owner} />}
