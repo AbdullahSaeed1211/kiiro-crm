@@ -25,3 +25,23 @@ test('staff see a client without the Billing tab', async ({ page }) => {
   await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Billing' })).toHaveCount(0)
 })
+
+// Contacts and leads build only the open tab, like clients: a click must bring that tab's content.
+for (const [kind, list, link] of [
+  ['contact', '/contacts', 'a[href^="/contacts/"]:not([href$="new"])'],
+  ['lead', '/leads', 'a[href^="/leads/"]:not([href*="board"]):not([href*="follow"]):not([href$="new"])'],
+] as const) {
+  test(`every tab of a ${kind} opens when clicked`, async ({ page }) => {
+    test.setTimeout(120_000)
+    await signInAs(page, 'owner')
+    await page.goto(list, { waitUntil: 'networkidle' })
+    await page.locator(link).locator('visible=true').first().click()
+    await expect(page.getByRole('tab', { name: 'Activity' })).toBeVisible()
+    for (const name of ['Activity', 'Tasks', 'Files', 'Email', 'Notes']) {
+      await page.getByRole('tab', { name }).click()
+      await expect(page.getByRole('tab', { name, selected: true })).toBeVisible()
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+      await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0)
+    }
+  })
+}

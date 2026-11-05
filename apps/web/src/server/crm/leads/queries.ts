@@ -1,10 +1,11 @@
+import { cache } from 'react'
+import { leadTabData, type LeadTab } from './lead-tab-data'
 import { workflowOrThrow } from '../../workflow-result'
 import { createCrmRepository, listCrmPage, type CrmPageResult } from '@ops/adapter-payload'
 import type { LeadRecord, LookupRecord } from '@ops/module-crm'
 import { isManagerUp, type Workflow } from '@ops/platform'
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { loadPeople } from '../../people'
-import { listEmailMessages, listRecordAttachments, listRelatedTasks } from '../directory/helpers'
 import { asId } from '@ops/kernel'
 
 import { activityItem } from './lead-activity'
@@ -190,39 +191,33 @@ export async function listLeads(
   return resultFromPage({ context, pageResult, sources, lostReasons, workflow, params })
 }
 
-/** Reads one authorized lead and its supporting details/activity. */
-// eslint-disable-next-line max-lines-per-function -- lead detail loads the complete authorized record context in one boundary.
-export async function getLeadPage(id: string): Promise<LeadPageData | null> {
+/** One lead, read once per request: the page's title and its body both ask for it. */
+export const getLeadRecord = cache(async (id: string) => {
+  const context = await getRequestContext()
+  return createCrmRepository(context.req).get('lead', asId(id))
+})
+
+/** Reads one authorized lead, what its header and side panel need, and the open tab's own data. */
+export async function getLeadPage(id: string, tab: LeadTab = 'notes'): Promise<LeadPageData | null> {
   const context = await getRequestContext()
   const repo = createCrmRepository(context.req)
-  const lead = await repo.get('lead', asId(id))
+  const lead = await getLeadRecord(id)
   if (lead === undefined) return null
-  const [workflow, sources, lostReasons, activityPage, emailMessages, relatedTasks, attachments] = await Promise.all([
+  const [workflow, sources, lostReasons, users, tabData] = await Promise.all([
     repo.loadWorkflow(lead.workflowId),
     repo.listLookups('source'),
     repo.listLookups('lostReason'),
     context.payload.find({
-      collection: 'activity',
-      where: { and: [{ recordType: { equals: 'lead' } }, { recordId: { equals: id } }] },
-      sort: '-occurredAt',
+      collection: 'users',
+      where: { active: { equals: true } },
       depth: 0,
-      limit: 30,
-      overrideAccess: true,
+      limit: 0,
+      overrideAccess: false,
       req: context.req,
     }),
-    listEmailMessages(context, { recordType: 'lead', recordId: id, parentAuthorized: true }),
-    listRelatedTasks(context, 'lead', id),
-    listRecordAttachments(context, 'lead', id),
+    leadTabData(context, id, tab),
   ])
   const stages = workflow === undefined ? [] : toStages(workflow)
-  const users = await context.payload.find({
-    collection: 'users',
-    where: { active: { equals: true } },
-    depth: 0,
-    limit: 0,
-    overrideAccess: false,
-    req: context.req,
-  })
   const people = personMap(users.docs)
   const item = makeListItem({
     lead,
@@ -237,10 +232,10 @@ export async function getLeadPage(id: string): Promise<LeadPageData | null> {
     sources,
     lostReasons,
     people: [...people.values()],
-    activities: activityPage.docs.map((row) => activityItem(row, people)),
-    emailMessages,
-    relatedTasks,
-    attachments,
+    activities: tabData.activityRows.map((row) => activityItem(row, people)),
+    emailMessages: tabData.emailMessages,
+    relatedTasks: tabData.relatedTasks,
+    attachments: tabData.attachments,
   }
 }
 

@@ -1,3 +1,4 @@
+import { gate } from './tab-gate'
 import { getOrganizationRecord } from './organization-record'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
@@ -67,12 +68,6 @@ async function openDealCounts(
 export type OrganizationTab = 'overview' | 'notes' | 'activity' | 'tasks' | 'billing' | 'files' | 'email'
 
 const EMPTY_READINESS: OrganizationReadiness = { overdueTaskCount: 0, pendingApprovalCount: 0 }
-
-/** Runs a read only when `tab` is the open one; every other tab gets `empty` and costs no query. */
-const gate =
-  (tab: OrganizationTab) =>
-  <T>(open: OrganizationTab, empty: T, load: () => Promise<T>): Promise<T> =>
-    tab === open ? load() : Promise.resolve(empty)
 
 const NO_RECORDS = { records: [], total: 0 }
 

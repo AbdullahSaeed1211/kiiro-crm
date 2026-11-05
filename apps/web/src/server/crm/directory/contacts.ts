@@ -1,3 +1,4 @@
+import { gate } from './tab-gate'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, LeadRecord, OrganizationRecord } from '@ops/module-crm'
 import type { Where } from 'payload'
@@ -131,7 +132,27 @@ interface ContactDetailDeps {
   }
 }
 
-export async function getContact(id: string): Promise<{
+/** The reads behind a contact's open tab, and the owner's name for the header. */
+async function contactDetails(context: RequestContext, record: ContactRecord, tab: ContactTab) {
+  const only = gate(tab)
+  const target = { recordType: 'contact', recordId: record.id, parentAuthorized: true } as const
+  const [people, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
+    loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
+    only('activity', [], () => listActivities(context, target)),
+    only('email', [], () => listEmailMessages(context, target)),
+    only('tasks', [], () => listRelatedTasks(context, 'contact', record.id)),
+    only('files', [], () => listRecordAttachments(context, 'contact', record.id)),
+  ])
+  return { people, activity, emailMessages, relatedTasks, attachments }
+}
+
+/** The tabs of a contact's page; each one is built from its own reads. */
+export type ContactTab = 'notes' | 'calls' | 'activity' | 'tasks' | 'files' | 'email'
+
+export async function getContact(
+  id: string,
+  tab: ContactTab = 'notes',
+): Promise<{
   readonly record: ContactRecord
   readonly owner: PersonSummary | null
   readonly relations: ContactRelations
@@ -155,20 +176,14 @@ export async function getContact(id: string): Promise<{
     }),
   ])
 
-  const [people, activity, emailMessages, relatedTasks, attachments] = await Promise.all([
-    loadPeople(context, record.ownerId === null ? [] : [record.ownerId]),
-    listActivities(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
-    listEmailMessages(context, { recordType: 'contact', recordId: record.id, parentAuthorized: true }),
-    listRelatedTasks(context, 'contact', record.id),
-    listRecordAttachments(context, 'contact', record.id),
-  ])
+  const { people, ...details } = await contactDetails(context, record, tab)
 
   return buildContactDetail(record, {
     organization: organization ?? null,
     leads,
     deals: deals.records,
     people,
-    details: { activity, emailMessages, relatedTasks, attachments },
+    details,
   })
 }
 

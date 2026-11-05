@@ -26,5 +26,5 @@ export {
   organizationChoice,
 } from './organizations'
 
-export type { ContactRelations } from './contacts'
+export type { ContactRelations, ContactTab } from './contacts'
 export { getContact, listContacts } from './contacts'
