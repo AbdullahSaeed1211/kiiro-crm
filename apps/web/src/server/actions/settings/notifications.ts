@@ -16,6 +16,7 @@ const NOTIFICATION_TYPES = new Set([
   'email_received',
   'invitation_accepted',
   'stalled',
+  'automation',
 ])
 
 function notificationChannels(value: unknown): Record<string, { inApp: boolean; email: boolean }> | undefined {

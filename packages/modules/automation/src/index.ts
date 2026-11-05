@@ -1,0 +1,22 @@
+/** Public API of @ops/module-automation: rule shapes, matching and run identity. */
+export {
+  ACTION_KINDS,
+  CONDITION_FIELDS,
+  CONDITION_OPS,
+  TASK_ASSIGNEES,
+  TRIGGER_KINDS,
+  automationRulesSchema,
+  matchesConditions,
+  planFor,
+  runKey,
+  type AutomationRule,
+  type ActionKind,
+  type ConditionField,
+  type ConditionOp,
+  type RuleAction,
+  type RuleCandidate,
+  type RuleCondition,
+  type RuleTrigger,
+  type TaskAssignee,
+  type TriggerKind,
+} from './domain/rules'

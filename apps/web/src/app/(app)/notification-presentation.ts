@@ -38,6 +38,7 @@ const KIND_KEYS: Readonly<Record<string, string>> = {
   email_received: 'emailReceived',
   invitation_accepted: 'invitationAccepted',
   stalled: 'stalled',
+  automation: 'automation',
 }
 
 const ACTION_KEYS: Readonly<Partial<Record<string, string>>> = {

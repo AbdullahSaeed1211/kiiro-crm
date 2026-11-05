@@ -93,6 +93,7 @@ export interface Config {
     notifications: Notification;
     emailMessages: EmailMessage;
     jobRuns: JobRun;
+    ruleRuns: RuleRun;
     timeEntries: TimeEntry;
     attendance: Attendance;
     webhookDeliveries: WebhookDelivery;
@@ -138,6 +139,7 @@ export interface Config {
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     emailMessages: EmailMessagesSelect<false> | EmailMessagesSelect<true>;
     jobRuns: JobRunsSelect<false> | JobRunsSelect<true>;
+    ruleRuns: RuleRunsSelect<false> | RuleRunsSelect<true>;
     timeEntries: TimeEntriesSelect<false> | TimeEntriesSelect<true>;
     attendance: AttendanceSelect<false> | AttendanceSelect<true>;
     webhookDeliveries: WebhookDeliveriesSelect<false> | WebhookDeliveriesSelect<true>;
@@ -916,7 +918,8 @@ export interface Notification {
     | 'intake_received'
     | 'email_received'
     | 'invitation_accepted'
-    | 'stalled';
+    | 'stalled'
+    | 'automation';
   recordType?: ('organization' | 'project' | 'task' | 'contact' | 'lead' | 'deal') | null;
   recordId?: string | null;
   actor?: (string | null) | User;
@@ -1012,6 +1015,40 @@ export interface JobRun {
     | number
     | boolean
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ruleRuns".
+ */
+export interface RuleRun {
+  id: string;
+  key: string;
+  ruleId: string;
+  ruleName: string;
+  recordType: string;
+  recordId: string;
+  trigger: string;
+  status: 'running' | 'done' | 'failed';
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  startedAt: number;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  finishedAt?: number | null;
+  actions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  error?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1438,6 +1475,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'jobRuns';
         value: string | JobRun;
+      } | null)
+    | ({
+        relationTo: 'ruleRuns';
+        value: string | RuleRun;
       } | null)
     | ({
         relationTo: 'timeEntries';
@@ -2005,6 +2046,25 @@ export interface JobRunsSelect<T extends boolean = true> {
   skipped?: T;
   durationMs?: T;
   cursor?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ruleRuns_select".
+ */
+export interface RuleRunsSelect<T extends boolean = true> {
+  key?: T;
+  ruleId?: T;
+  ruleName?: T;
+  recordType?: T;
+  recordId?: T;
+  trigger?: T;
+  status?: T;
+  startedAt?: T;
+  finishedAt?: T;
+  actions?: T;
+  error?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2723,6 +2783,15 @@ export interface Setting {
     | number
     | boolean
     | null;
+  automationRules?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   webhooks?:
     | {
         [k: string]: unknown;
@@ -2785,6 +2854,7 @@ export interface SettingsSelect<T extends boolean = true> {
   responseTargetHours?: T;
   emailTemplates?: T;
   automations?: T;
+  automationRules?: T;
   webhooks?: T;
   stalledDays?: T;
   email?:

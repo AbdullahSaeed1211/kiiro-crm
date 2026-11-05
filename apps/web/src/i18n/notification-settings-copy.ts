@@ -36,6 +36,10 @@ export const NOTIFICATION_SETTINGS_COPY: Readonly<Record<Locale, NotificationSet
         label: 'Stalled records',
         description: 'A record has not changed for the configured threshold.',
       },
+      automation: {
+        label: 'Automation',
+        description: 'A rule notifies you about a record.',
+      },
     },
     notification: 'Notification',
     inApp: 'In-app',
@@ -61,6 +65,10 @@ export const NOTIFICATION_SETTINGS_COPY: Readonly<Record<Locale, NotificationSet
       stalled: {
         label: 'Registros estancados',
         description: 'Un registro no ha cambiado durante el umbral configurado.',
+      },
+      automation: {
+        label: 'Automatización',
+        description: 'Una regla te avisa sobre un registro.',
       },
     },
     notification: 'Notificación',

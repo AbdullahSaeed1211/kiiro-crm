@@ -84,6 +84,9 @@ importers:
       '@ops/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@ops/module-automation':
+        specifier: workspace:*
+        version: link:../../packages/modules/automation
       '@ops/module-billing':
         specifier: workspace:*
         version: link:../../packages/modules/billing
@@ -221,6 +224,25 @@ importers:
         version: 6.0.3
 
   packages/kernel:
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.2
+        version: 22.20.2
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  packages/modules/automation:
+    dependencies:
+      '@ops/kernel':
+        specifier: workspace:*
+        version: link:../../kernel
+      '@ops/platform':
+        specifier: workspace:*
+        version: link:../../platform
+      zod:
+        specifier: 4.6.2
+        version: 4.6.2
     devDependencies:
       '@types/node':
         specifier: 22.20.2

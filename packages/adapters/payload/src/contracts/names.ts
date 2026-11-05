@@ -15,6 +15,7 @@ export const COLLECTIONS = {
   billingDocuments: 'billingDocuments',
   portalLinks: 'portalLinks',
   jobRuns: 'jobRuns',
+  ruleRuns: 'ruleRuns',
   intakeForms: 'intakeForms',
   intakeSubmissions: 'intakeSubmissions',
   contacts: 'contacts',

@@ -25,6 +25,7 @@ const TYPE_IDS = [
   'email_received',
   'invitation_accepted',
   'stalled',
+  'automation',
 ] as const
 
 function defaults(source: Readonly<Record<string, unknown>>): Record<string, ChannelState> {

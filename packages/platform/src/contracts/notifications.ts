@@ -12,6 +12,7 @@ export type NotificationType =
   | 'email_received'
   | 'invitation_accepted'
   | 'stalled'
+  | 'automation'
 
 /** A notification to insert; `dedupeKey` is unique, so repeating an insert never creates a duplicate. */
 export interface NotificationInput {

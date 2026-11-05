@@ -76,6 +76,8 @@ export const settingsGlobal: GlobalConfig = {
     { name: 'emailTemplates', type: 'json', defaultValue: [] },
     // Rules run when a lead is created; validated by `leadRulesSchema` in @ops/module-crm before they are saved.
     { name: 'automations', type: 'json', defaultValue: [] },
+    // Rules the cron engine evaluates; validated by `automationRulesSchema` in @ops/module-automation before they are saved.
+    { name: 'automationRules', type: 'json', defaultValue: [] },
     // Where record events are sent; validated by `webhooksSchema` in @ops/module-crm. Secrets stay with owners.
     { name: 'webhooks', type: 'json', defaultValue: [], access: { read: ownerFieldRead } },
     { name: 'stalledDays', type: 'number', required: true, defaultValue: 14, min: 1, max: 365 },

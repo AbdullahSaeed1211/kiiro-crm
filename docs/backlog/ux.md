@@ -14,5 +14,5 @@ Reference files are cited to show observed behavior. Copy code only from MIT or 
 
 ### 40. Open product work from the 2026-11-05 session
 
-- Automation rules (roadmap wave 11, design in `docs/design/quotes-invoices-portal-rules-audit.md#automation-rules`): not started.
+- Automation rules (roadmap wave 11, design in `docs/design/quotes-invoices-portal-rules-audit.md#automation-rules`): v1 is built. Owners and managers edit up to 20 rules at `/settings/automation`, a cron job evaluates them every 15 minutes, and each (rule, record, trigger time) runs once with its history on the page. Triggers cover new leads, unanswered leads, deal stage changes, won and lost deals, and overdue tasks; conditions match source, owner, stage or deal value; actions create a task, assign an owner or notify a person. Remaining: send-email-template and move-stage actions, and evaluating rules from record events instead of only from cron.
 - Server error messages are English in Spanish workspaces; a shared approach is needed before changing 50 action files.

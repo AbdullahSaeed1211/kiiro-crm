@@ -13,6 +13,7 @@ import { dealsCollection } from './deals'
 import { emailMessagesCollection } from './email-messages'
 import { fieldDefinitionsCollection } from './config'
 import { jobRunsCollection } from './job-runs'
+import { ruleRunsCollection } from './rule-runs'
 import { timeEntriesCollection } from './time-entries'
 import { attendanceCollection } from './attendance'
 import { auditEventsCollection } from './audit-events'
@@ -68,6 +69,7 @@ export const spikeCollections: readonly CollectionConfig[] = [
   collaborationNotificationsCollection,
   emailMessagesCollection,
   jobRunsCollection,
+  ruleRunsCollection,
   timeEntriesCollection,
   attendanceCollection,
   webhookDeliveriesCollection,

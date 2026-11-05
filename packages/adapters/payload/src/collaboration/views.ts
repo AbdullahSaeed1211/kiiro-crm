@@ -24,7 +24,16 @@ export function canManageView(input: { owner: string | null; actorId: string; ma
 
 /** Returns the default channel settings for a new user. */
 export function defaultNotificationPreferences(role: 'owner' | 'manager' | 'staff') {
-  const enabled = ['assigned', 'mentioned', 'intake_received', 'email_received', 'due_soon', 'overdue', 'stalled']
+  const enabled = [
+    'assigned',
+    'mentioned',
+    'intake_received',
+    'email_received',
+    'due_soon',
+    'overdue',
+    'stalled',
+    'automation',
+  ]
   const channels = Object.fromEntries(
     [...enabled, 'digest'].map((type) => [type, { inApp: type !== 'digest', email: type !== 'digest' }]),
   )

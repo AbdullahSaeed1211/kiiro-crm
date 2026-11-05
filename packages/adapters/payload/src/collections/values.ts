@@ -69,6 +69,7 @@ export const NOTIFICATION_TYPE_VALUES = [
   'email_received',
   'invitation_accepted',
   'stalled',
+  'automation',
 ] as const satisfies readonly NotificationType[]
 
 /**
@@ -98,6 +99,9 @@ export const EMAIL_STATUS_VALUES = ['queued', 'sent', 'failed', 'received', 'qua
 
 /** Job run states; a run is claimed as `running` so a duplicate cron invocation for the same window is skipped (§13). */
 export const JOB_RUN_STATUS_VALUES = ['running', 'completed', 'failed'] as const
+
+/** Rule run states; a run is claimed as `running` on the unique run key so a repeated pass skips it. */
+export const RULE_RUN_STATUS_VALUES = ['running', 'done', 'failed'] as const
 
 /** Locales the settings global accepts (spec §9.12). */
 export const LOCALE_VALUES = ['en', 'es'] as const

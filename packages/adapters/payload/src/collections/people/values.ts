@@ -20,4 +20,5 @@ export const NOTIFICATION_PREF_TYPES = [
   'email_received',
   'invitation_accepted',
   'stalled',
+  'automation',
 ] as const

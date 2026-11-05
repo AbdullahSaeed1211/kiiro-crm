@@ -65,6 +65,7 @@ const GROUPS: readonly SettingsGroup[] = [
       ['email', '/settings/email', Mail, ['owner']],
       ['newsletter', '/settings/newsletter', Megaphone, ['owner', 'manager']],
       ['sales', '/settings/sales', TrendingUp, ['owner', 'manager']],
+      ['automation', '/settings/automation', Workflow, ['owner', 'manager']],
       ['intake', '/settings/intake', FileInput, ['owner', 'manager']],
     ],
   ],

@@ -19,6 +19,7 @@ import {
 } from '@ops/adapter-payload'
 import { getPayload, type Payload } from 'payload'
 import { runDailyBackup } from '../../../../backup/daily-backup'
+import { runAutomationRules } from '../../../../automation/run-rules'
 import { sendNextRound } from '../../../../newsletter/queue'
 import { catchUpRepeatingTasks } from '../../../../work/repeat-catch-up'
 
@@ -27,6 +28,11 @@ function agencyJobs(payload: Payload, timeZone: string): readonly CronJob[] {
     {
       name: 'work.monthlyDesign',
       run: async (window) => ok(await runMonthlyDesignOrders(payload, window.end, timeZone)),
+    },
+    {
+      // Rule runs claim themselves on `ruleRuns`; actions never evaluate rules in turn, so this stays cron-only.
+      name: 'automation.rules',
+      run: async (window) => ok(await runAutomationRules({ payload, window, timeZone })),
     },
     createDueSoonJob({
       name: 'schedule.dueSoon',

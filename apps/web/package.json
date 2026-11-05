@@ -17,6 +17,7 @@
     "@ops/adapter-cloudflare": "workspace:*",
     "@ops/adapter-payload": "workspace:*",
     "@ops/kernel": "workspace:*",
+    "@ops/module-automation": "workspace:*",
     "@ops/module-crm": "workspace:*",
     "@ops/module-identity": "workspace:*",
     "@ops/module-billing": "workspace:*",

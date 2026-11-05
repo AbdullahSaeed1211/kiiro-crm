@@ -181,3 +181,10 @@ One navigation model now drives the sidebar, the command menu, the `g` shortcuts
 - The client sees their company's sent quotes and invoices and project progress at `/portal/<token>`, accepts or declines quotes, prints documents and pays through the agency's payment link.
 - Use cases live in the billing module and are tested through an in-memory double for company scope, hidden drafts, and the same answer for wrong, expired and revoked links.
 - Verification found a lost update: Payload's update rewrites the whole row, so an open in flight undid a revoke. Link timestamps are now single-column writes (`setColumns`).
+
+## Automation rules (2026-11-05)
+
+- Owners and managers edit up to 20 workspace rules at `/settings/automation`; each rule has a trigger, up to five conditions and up to five actions, all chosen from pickers rather than code.
+- Triggers cover new leads, leads with no reply after a chosen number of days, deal stage changes, won and lost deals, and overdue tasks. Conditions match source, owner, stage or deal value. Actions create a task, assign a lead or deal owner, or notify a person.
+- The cron job evaluates enabled rules every 15 minutes. A rule run row is created before its actions start, so the unique run key is the idempotency claim: a second pass over the same (rule, record, trigger time) skips it. Each run stores its action results, and the page shows the latest 20 runs with links to their records.
+- The rule schema and matching functions are a pure `@ops/module-automation` package; Payload reads and writes stay in `apps/web/src/server/automation`. Rule evaluation is cron-only in v1, so an action never starts another rule in the same pass.
