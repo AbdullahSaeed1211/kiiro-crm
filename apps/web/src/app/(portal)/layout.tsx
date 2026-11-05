@@ -6,7 +6,6 @@ import { themeStyle } from '../../server/branding/theme-style'
 import { loadPortalWorkspace } from '../../server/billing/portal-page'
 import { FONT_CLASS } from '../fonts'
 
-
 export async function generateMetadata(): Promise<Metadata> {
   const { brand } = await loadPortalWorkspace()
   return {

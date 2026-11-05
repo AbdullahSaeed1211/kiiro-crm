@@ -5,7 +5,6 @@ import type { ReactNode } from 'react'
 import { loadSignInBrand } from '../../server/branding/sign-in-brand'
 import { FONT_CLASS } from '../fonts'
 
-
 export const metadata: Metadata = {
   title: 'Sign in',
   icons: { icon: '/api/v1/brand/favicon' },
