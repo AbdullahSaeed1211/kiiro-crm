@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { saveConfiguration } from '../../../../server/actions/settings/configuration'
 import { listSavedViews } from '../../../../server/queries/settings/listSavedViews'
+import { getWorkspaceSettings } from '../../../../server/auth/context'
+import { catalogFor } from '../../../../i18n/locale'
+import { VIEWS_COPY } from '../../../../i18n/views-copy'
 import { SettingsActionForm } from '../settings-action-form'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { SavedViewList } from './saved-view-list'
@@ -11,7 +14,11 @@ export const dynamic = 'force-dynamic'
 const RECORD_TYPES = ['organization', 'contact', 'lead', 'deal', 'project', 'task'] as const
 
 export default async function ViewsSettingsPage() {
-  const savedViews = (await Promise.all(RECORD_TYPES.map((recordType) => listSavedViews(recordType)))).flat()
+  const [savedViews, settings] = await Promise.all([
+    Promise.all(RECORD_TYPES.map((recordType) => listSavedViews(recordType))).then((lists) => lists.flat()),
+    getWorkspaceSettings(),
+  ])
+  const copy = catalogFor(VIEWS_COPY, settings.locale)
   return (
     <SettingsPage
       title="Views"
@@ -19,10 +26,7 @@ export default async function ViewsSettingsPage() {
       roles={['owner', 'manager']}
     >
       <SettingsForm>
-        <p className="text-sm text-muted-foreground">
-          Shared views are available to everyone in this workspace. Personal views can be added from the relevant list
-          when that surface supports them.
-        </p>
+        <p className="text-sm text-muted-foreground">{copy.intro}</p>
         <SettingsActionForm
           action={saveConfiguration}
           fixedValues={{
@@ -66,8 +70,8 @@ export default async function ViewsSettingsPage() {
         />
         <div className="space-y-3 border-t pt-5">
           <div>
-            <h2 className="text-sm font-semibold">Saved views</h2>
-            <p className="text-sm text-muted-foreground">Shared and personal views available in each record list.</p>
+            <h2 className="text-sm font-semibold">{copy.listTitle}</h2>
+            <p className="text-sm text-muted-foreground">{copy.listIntro}</p>
           </div>
           <SavedViewList views={savedViews} />
         </div>

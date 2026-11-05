@@ -28,20 +28,10 @@ export default async function ListsSettingsPage() {
       roles={['owner', 'manager']}
     >
       <SettingsForm>
-        <ListEditor
-          kind="source"
-          title="Lead sources"
-          help="Where leads come from. Used on every lead, in assignment rules and in the Where leads come from chart."
-          items={sources}
-        />
+        <ListEditor kind="source" items={sources} />
       </SettingsForm>
       <SettingsForm>
-        <ListEditor
-          kind="lostReason"
-          title="Lost reasons"
-          help="Why a lead or deal was lost. A reason is required when marking one lost."
-          items={lostReasons}
-        />
+        <ListEditor kind="lostReason" items={lostReasons} />
       </SettingsForm>
     </SettingsPage>
   )
