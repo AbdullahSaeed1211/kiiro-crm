@@ -6,7 +6,7 @@ import { Label } from '@ops/ui/components/ui/label'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { Textarea } from '@ops/ui/components/ui/textarea'
 import Script from 'next/script'
-import { useState, type Dispatch, type SetStateAction, type SyntheticEvent } from 'react'
+import { useEffect, useState, type Dispatch, type SetStateAction, type SyntheticEvent } from 'react'
 import { visibleFormFields, checkedFormAnswers, type FormField } from '@ops/module-intake'
 import { BookingInstant } from './booking-instant'
 import type { Locale } from '../../../../i18n/locale'
@@ -167,6 +167,10 @@ export function HostedForm({
   const [state, setState] = useState<FormState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [values, setValues] = useState<Record<string, string>>({})
+  // The public layout is shared by every tenant, so the page's locale names the document language.
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
   const visible = visibleFormFields(fields, values)
   if (state === 'done')
     return (
