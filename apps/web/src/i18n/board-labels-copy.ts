@@ -2,7 +2,7 @@ import type { KanbanBoardLabels } from '@ops/ui/composites/KanbanBoard'
 import type { Locale } from './locale'
 
 /** What the deal and lead boards say beside their cards and columns. */
-export interface BoardLabelsCopy {
+interface BoardLabelsCopy {
   readonly expand: string
   readonly collapse: string
   readonly moveTo: string
