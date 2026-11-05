@@ -15,7 +15,7 @@ The client page (`/organizations/<id>`) gathers everything about one client behi
 | Overview, Notes, Activity, Tasks, Files, Email | as before                                                                                   | everyone with access to the client                      |
 | Billing                                        | that client's quotes and invoices, with New quote and New invoice already set to the client | owners and managers (the same rule as the Billing page) |
 
-Billing's list is read only while its tab is open (`?tab=billing`), so the other tabs and staff pay nothing for it.
+Tabs switch in the browser without asking the server again (`RecordPageLayout` only updates the address), so every tab's content is part of the page. Staff do not pay for Billing: it is built only for owners and managers.
 
 ## Overview
 

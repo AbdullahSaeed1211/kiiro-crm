@@ -1,3 +1,4 @@
+import { getOrganizationRecord } from './organization-record'
 import { createCrmRepository, listCrmPage } from '@ops/adapter-payload'
 import type { ContactRecord, DealRecord, OrganizationRecord } from '@ops/module-crm'
 import { getRequestContext, type RequestContext } from '@/server/container'
@@ -154,10 +155,9 @@ export async function getOrganization(id: string): Promise<{
   readonly attachments: readonly RecordAttachment[]
 } | null> {
   const context = await getRequestContext()
-  const repo = createCrmRepository(context.req)
   const where = { organization: { equals: id } }
   const [record, contacts, deals] = await Promise.all([
-    repo.get('organization', id as OrganizationRecord['id']),
+    getOrganizationRecord(id),
     listCrmPage(context.req, { type: 'contact', where, page: 1, limit: RELATED_LIMIT }),
     listCrmPage(context.req, { type: 'deal', where, page: 1, limit: RELATED_LIMIT }),
   ])

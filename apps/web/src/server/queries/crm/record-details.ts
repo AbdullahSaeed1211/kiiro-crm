@@ -1,3 +1,4 @@
+import { getOrganizationRecord } from '../../crm/directory/organization-record'
 import { asId } from '@ops/kernel'
 import type { CrmRecordType } from '@ops/module-crm'
 import type { CustomFieldView } from '@ops/ui/composites/CustomFields'
@@ -38,7 +39,7 @@ const FIELD_CONFIGS: Readonly<
 /** Loads the built-in record fields for a CRM record that can be edited. */
 export async function loadRecordDetailsView(type: CrmRecordType, id: string): Promise<RecordDetailsView | undefined> {
   const deps = await crmDeps(await getRequestContext())
-  const record = await deps.repo.get(type, asId(id))
+  const record = type === 'organization' ? await getOrganizationRecord(id) : await deps.repo.get(type, asId(id))
   if (record === undefined) return undefined
 
   const fieldConfigs = FIELD_CONFIGS[type]
