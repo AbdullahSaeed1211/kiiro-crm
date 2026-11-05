@@ -19,14 +19,15 @@ function outcome(row: DeliveryRow): string {
 }
 
 /** What the other systems answered to the latest events, kept for two weeks. */
-export function DeliveryLog({ rows }: Readonly<{ rows: readonly DeliveryRow[] }>) {
+export function DeliveryLog({
+  rows,
+  copy,
+}: Readonly<{ rows: readonly DeliveryRow[]; copy: Readonly<{ recent: string; none: string }> }>) {
   return (
     <div className="grid gap-2 text-sm">
-      <h2 className="font-medium">Recent deliveries</h2>
+      <h2 className="font-medium">{copy.recent}</h2>
       {rows.length === 0 ? (
-        <p className="text-muted-foreground">
-          Nothing has been sent yet. Each event, and what the other system answered, is listed here for two weeks.
-        </p>
+        <p className="text-muted-foreground">{copy.none}</p>
       ) : (
         <ul className="divide-y">
           {rows.map((row) => (

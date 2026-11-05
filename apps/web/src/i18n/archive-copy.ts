@@ -11,6 +11,8 @@ export interface ArchiveCopy {
   readonly failed: string
   readonly restore: string
   readonly restoreFailed: string
+  /** Settings, Archive: shown when nothing is archived. */
+  readonly none: string
 }
 
 export const ARCHIVE_COPY: Readonly<Record<Locale, ArchiveCopy>> = {
@@ -24,6 +26,7 @@ export const ARCHIVE_COPY: Readonly<Record<Locale, ArchiveCopy>> = {
     failed: 'Could not archive it. Try again.',
     restore: 'Restore',
     restoreFailed: 'Could not restore it. Try again.',
+    none: 'Nothing is archived.',
   },
   es: {
     archive: 'Archivar',
@@ -35,5 +38,6 @@ export const ARCHIVE_COPY: Readonly<Record<Locale, ArchiveCopy>> = {
     failed: 'No se pudo archivar. Inténtalo de nuevo.',
     restore: 'Restaurar',
     restoreFailed: 'No se pudo restaurar. Inténtalo de nuevo.',
+    none: 'No hay nada archivado.',
   },
 }

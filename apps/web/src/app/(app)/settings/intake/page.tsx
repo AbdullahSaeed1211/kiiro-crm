@@ -18,6 +18,8 @@ import { loadIntakeTargets } from '../../../../server/queries/settings/intake-ta
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { getWorkspaceSettings } from '../../../../server/auth/context'
 import { normalizeLocale } from '../../../../i18n/config'
+import { catalogFor } from '../../../../i18n/locale'
+import { INTAKE_PAGE_COPY } from '../../../../i18n/intake-page-copy'
 
 export const metadata: Metadata = { title: 'Intake' }
 export const dynamic = 'force-dynamic'
@@ -46,6 +48,7 @@ export default async function IntakeSettingsPage() {
     getWorkspaceSettings(),
   ])
   const locale = normalizeLocale(settings.locale)
+  const copy = catalogFor(INTAKE_PAGE_COPY, locale)
   const timeZone = typeof settings.timezone === 'string' ? settings.timezone : 'UTC'
   const relationId = (value: unknown): string | undefined => {
     if (typeof value === 'string' || typeof value === 'number') return String(value)
@@ -118,16 +121,14 @@ export default async function IntakeSettingsPage() {
       roles={['owner', 'manager']}
     >
       <details className="rounded-xl border bg-background px-4 py-3">
-        <summary className="cursor-pointer text-sm font-medium">Create a form</summary>
+        <summary className="cursor-pointer text-sm font-medium">{copy.create}</summary>
         <div className="pt-4">
-          <p className="mb-4 text-sm text-muted-foreground">
-            New forms start fail-closed: add an exact website origin before accepting browser submissions.
-          </p>
+          <p className="mb-4 text-sm text-muted-foreground">{copy.failClosed}</p>
           <IntakeCreateForm action={createIntakeForm} />
         </div>
       </details>
       <div className="grid gap-3">
-        {formViews.length === 0 ? <p className="text-sm text-muted-foreground">No intake forms yet.</p> : null}
+        {formViews.length === 0 ? <p className="text-sm text-muted-foreground">{copy.none}</p> : null}
         {formViews.map((form, index) => (
           <details className="rounded-xl border bg-background" key={form.id} name="intake-form" open={index === 0}>
             <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm marker:hidden">

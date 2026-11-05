@@ -36,12 +36,12 @@ export const LISTS_COPY: Readonly<Record<Locale, ListsCopy>> = {
   },
   es: {
     source: {
-      title: 'Orígenes de leads',
-      help: 'De dónde llegan los leads. Se usa en cada lead, en las reglas de asignación y en el gráfico De dónde llegan los leads.',
+      title: 'Orígenes de prospectos',
+      help: 'De dónde llegan los prospectos. Se usa en cada prospecto, en las reglas de asignación y en el gráfico De dónde llegan los prospectos.',
     },
     lostReason: {
       title: 'Motivos de pérdida',
-      help: 'Por qué se perdió un lead o un trato. Hace falta un motivo al marcarlo como perdido.',
+      help: 'Por qué se perdió un prospecto o una oportunidad. Hace falta un motivo al marcarlo como perdido.',
     },
     empty: 'Aún no hay nada. Agrega el primero abajo.',
     remove: 'Quitar',

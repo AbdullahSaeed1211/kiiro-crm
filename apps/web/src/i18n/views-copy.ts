@@ -86,8 +86,8 @@ export const VIEWS_COPY: Readonly<Record<Locale, ViewsCopy>> = {
     types: {
       organization: 'Organizaciones',
       contact: 'Contactos',
-      lead: 'Leads',
-      deal: 'Tratos',
+      lead: 'Prospectos',
+      deal: 'Oportunidades',
       project: 'Proyectos',
       task: 'Tareas',
     },

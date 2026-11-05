@@ -28,7 +28,7 @@ Ordered by how directly each one stops a buyer. Each has an owner document; none
 5. **No automation rules or custom record types.** Lead assignment rules exist; general "when X, do Y" does not. Gmail and two-way calendar sync, call logs and SMS campaigns are deferred or partial.
 6. **Speed is unproven on real infrastructure.** Query counts are fixed on the worst pages ([performance](performance.md)); the 200 ms target has not been measured on Cloudflare.
 7. **Open defects.** The [UX backlog](backlog/ux.md) lists a critical gap (the end-to-end suite still has no screenshot diffs), a settings navigation mismatch (UX 39) and silent report-range fallbacks (UX 42).
-8. **Copy outside the catalogs.** Spanish workspaces still show English in record pages and most settings pages (UX 38).
+8. **Copy outside the catalogs.** Record pages, boards, lists and every settings page are translated. Server error messages from actions and import row errors are still English.
 
 ## Suggested order
 

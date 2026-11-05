@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
-import { getProductContext } from '../../../../server/auth/context'
+import { getProductContext, getWorkspaceSettings } from '../../../../server/auth/context'
 import { loadArchived } from '../../../../server/crm/archived'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { RestoreButton } from './restore-button'
+import { catalogFor } from '../../../../i18n/locale'
+import { ARCHIVE_COPY } from '../../../../i18n/archive-copy'
 
 export const metadata: Metadata = { title: 'Archive' }
 export const dynamic = 'force-dynamic'
@@ -21,7 +23,8 @@ const archivedOn = (time: number): string =>
 
 /** Records that were archived, with a way to bring each one back. */
 export default async function ArchiveSettingsPage() {
-  const archived = await loadArchived(await getProductContext())
+  const [archived, settings] = await Promise.all([loadArchived(await getProductContext()), getWorkspaceSettings()])
+  const copy = catalogFor(ARCHIVE_COPY, settings.locale)
   return (
     <SettingsPage
       title="Archive"
@@ -30,7 +33,7 @@ export default async function ArchiveSettingsPage() {
     >
       <SettingsForm>
         {archived.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing is archived.</p>
+          <p className="text-sm text-muted-foreground">{copy.none}</p>
         ) : (
           <ul className="divide-y text-sm">
             {archived.map((record) => (

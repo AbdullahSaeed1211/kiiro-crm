@@ -9,6 +9,9 @@ import { useState } from 'react'
 import { useGuardedTransition } from '../../use-guarded-transition'
 import { enableNewsletter, sendNewsletter } from '../../../../server/actions/newsletter'
 import { AudienceEditor } from './audience-editor'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { NEWSLETTER_COPY } from '../../../../i18n/newsletter-copy'
 
 type Audience = Readonly<{ name: string; count: number }>
 
@@ -53,14 +56,11 @@ function useTask(): { run: Task; message: string | null; pending: boolean } {
 }
 
 function EnableNewsletter() {
+  const copy = catalogFor(NEWSLETTER_COPY, useLocale())
   const { run, message, pending } = useTask()
   return (
     <div className="grid gap-3 text-sm">
-      <p>
-        Turn this on to add a "Newsletter subscriber" checkbox to every contact and a "Newsletter opt-in" checkbox to
-        every lead. Contacts who are ticked receive the newsletter; when a lead who opted in is converted, its contact
-        is ticked. Map a website form question to the lead's opt-in under Settings, Intake.
-      </p>
+      <p>{copy.intro}</p>
       <Button
         className="w-fit"
         disabled={pending}
@@ -71,7 +71,7 @@ function EnableNewsletter() {
           })
         }}
       >
-        Turn on newsletter
+        {copy.enable}
       </Button>
       {message === null ? null : <span role="alert">{message}</span>}
     </div>

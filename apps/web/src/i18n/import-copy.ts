@@ -64,14 +64,14 @@ export const IMPORT_COPY: Readonly<Record<Locale, ImportCopy>> = {
     steps: [
       'Descarga la plantilla de lo que vas a importar y complétala (CSV, hasta 5 MB y 500 filas).',
       'Elige el archivo y pulsa Revisar archivo. No se guarda nada; se revisa cada fila y se listan los problemas.',
-      'Cuando la revisión se vea bien, pulsa Importar. Las personas, empresas y tratos que ya existen se omiten.',
+      'Cuando la revisión se vea bien, pulsa Importar. Las personas, empresas y oportunidades que ya existen se omiten.',
     ],
     template: 'Plantilla de {name}',
     exportTitle: 'Exportar',
     exportHelp:
-      'Descarga todos los registros que puedes ver, con tus campos personalizados, como un CSV que abre cualquier hoja de cálculo. Los archivos de organizaciones, contactos, leads y tratos se pueden volver a importar.',
-    types: { organization: 'Organizaciones', contact: 'Contactos', lead: 'Leads', deal: 'Tratos' },
-    typeSingular: { organization: 'Organización', contact: 'Contacto', lead: 'Lead' },
+      'Descarga todos los registros que puedes ver, con tus campos personalizados, como un CSV que abre cualquier hoja de cálculo. Los archivos de organizaciones, contactos, prospectos y oportunidades se pueden volver a importar.',
+    types: { organization: 'Organizaciones', contact: 'Contactos', lead: 'Prospectos', deal: 'Oportunidades' },
+    typeSingular: { organization: 'Organización', contact: 'Contacto', lead: 'Prospecto' },
     importLabel: 'Importar',
     fileLabel: 'Archivo CSV',
     check: 'Revisar archivo',

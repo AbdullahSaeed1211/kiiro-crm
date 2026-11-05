@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { deleteConfiguration, saveConfiguration } from '../../../../server/actions/settings/configuration'
-import { requireRole } from '../../../../server/auth/context'
+import { getWorkspaceSettings, requireRole } from '../../../../server/auth/context'
 import { SettingsForm, SettingsPage } from '../settings-shell'
 import { FieldDefinitionEditor } from './field-definition-editor'
+import { catalogFor } from '../../../../i18n/locale'
+import { FIELDS_COPY } from '../../../../i18n/fields-copy'
 
 export const metadata: Metadata = { title: 'Fields' }
 export const dynamic = 'force-dynamic'
@@ -14,6 +16,7 @@ const stringList = (value: unknown): string[] =>
 
 export default async function FieldsSettingsPage() {
   const context = await requireRole('owner', 'manager')
+  const copy = catalogFor(FIELDS_COPY, (await getWorkspaceSettings()).locale)
   const result = await context.payload.find({
     collection: 'fieldDefinitions',
     sort: 'recordType',
@@ -37,10 +40,7 @@ export default async function FieldsSettingsPage() {
   return (
     <SettingsPage title="Fields" description="Customize the fields shown on your records." roles={['owner', 'manager']}>
       <SettingsForm>
-        <p className="text-sm text-muted-foreground">
-          Add business-specific fields once and reuse them across forms and record pages. Hidden and sensitive fields
-          remain governed by workspace roles.
-        </p>
+        <p className="text-sm text-muted-foreground">{copy.intro}</p>
         <FieldDefinitionEditor fields={fields} action={saveConfiguration} deleteAction={deleteConfiguration} />
       </SettingsForm>
     </SettingsPage>

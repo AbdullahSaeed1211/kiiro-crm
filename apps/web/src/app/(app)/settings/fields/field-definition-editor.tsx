@@ -7,6 +7,9 @@ import { useFieldDelete } from './use-field-delete'
 import { FieldForm } from './field-form'
 import { FieldList } from './field-list'
 import { Button } from '@ops/ui/components/ui/button'
+import { catalogFor } from '../../../../i18n/locale'
+import { useLocale } from '../../../../i18n/locale-context'
+import { FIELDS_COPY } from '../../../../i18n/fields-copy'
 
 interface FieldDefinitionEditorProps {
   fields: readonly FieldDefinition[]
@@ -15,6 +18,7 @@ interface FieldDefinitionEditorProps {
 }
 
 export function FieldDefinitionEditor({ fields, action, deleteAction }: Readonly<FieldDefinitionEditorProps>) {
+  const copy = catalogFor(FIELDS_COPY, useLocale())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [message, setMessage] = useState<string>()
@@ -61,7 +65,7 @@ export function FieldDefinitionEditor({ fields, action, deleteAction }: Readonly
         />
       ) : (
         <Button variant="outline" size="lg" type="button" onClick={handleAddClick}>
-          Add custom field
+          {copy.add}
         </Button>
       )}
       {displayMessage ? (
