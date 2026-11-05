@@ -1,9 +1,7 @@
-import { normalizeLocale } from '../../i18n/locale'
-import { getWorkspaceSettings } from '../auth/context'
+import { loadLogContext } from '../log-support'
 import type { Where } from 'payload'
 import type { AuditEvent as AuditEventDoc } from '../../payload-types'
 import type { RequestContext } from '../container'
-import { loadPeople } from '../people'
 import { refId } from '../crm/directory/normalize'
 import { describeAudit } from './audit-text'
 
@@ -53,14 +51,10 @@ function whereFor(filters: AuditFilters): Where {
 }
 
 async function rowsFor(context: RequestContext, docs: readonly AuditEventDoc[]): Promise<AuditRow[]> {
-  const [people, settings] = await Promise.all([
-    loadPeople(
-      context,
-      docs.flatMap((entry) => refId(entry.actor) ?? []),
-    ),
-    getWorkspaceSettings(),
-  ])
-  const locale = normalizeLocale(settings.locale)
+  const { people, locale } = await loadLogContext(
+    context,
+    docs.flatMap((entry) => refId(entry.actor) ?? []),
+  )
   return docs.map((entry) => ({
     id: entry.id,
     occurredAt: entry.occurredAt,

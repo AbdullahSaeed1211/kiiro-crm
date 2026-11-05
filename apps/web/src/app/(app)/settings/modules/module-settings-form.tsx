@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ActionResult } from '../../../../server/actions/settings'
-import { Button } from '@ops/ui/components/ui/button'
+import { SaveBar } from '../save-bar'
 import { catalogFor } from '../../../../i18n/locale'
 import { useLocale } from '../../../../i18n/locale-context'
 import { MODULES_COPY } from '../../../../i18n/modules-copy'
@@ -65,23 +65,15 @@ export function ModuleSettingsForm({
           )
         })}
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          size="lg"
-          type="button"
-          onClick={() => {
-            void save()
-          }}
-          disabled={pending}
-        >
-          {pending ? copy.saving : copy.save}
-        </Button>
-        {message ? (
-          <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-            {message}
-          </p>
-        ) : null}
-      </div>
+      <SaveBar
+        pending={pending}
+        label={copy.save}
+        pendingLabel={copy.saving}
+        message={message}
+        onSave={() => {
+          void save()
+        }}
+      />
     </div>
   )
 }

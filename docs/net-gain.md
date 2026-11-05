@@ -69,11 +69,13 @@ The 200 ms target on Cloudflare, production-build timings (the local build did n
 
 ## Since the first version of this table
 
-| Area                                         | Before                                     | After                                                                     |
-| -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- |
-| Making a task for a client or for someone    | no client or assignee on the New task page | both, on the page; a Client field on the task panel; staff keep their own |
-| A client's money                             | not on the client page                     | Billing tab and an Outstanding figure (owners and managers)               |
-| Settings pages reachable without a click     | 3 of 18                                    | 18 of 18 on desktop                                                       |
-| Vertical-template vocabulary shown in the UI | never (wrong keys)                         | yes                                                                       |
-| Report ranges that silently fell back        | all invalid ones                           | none; the reason is shown                                                 |
-| Stale end-to-end specs                       | 3                                          | 0 (the emailed-quote spec needs a mail service)                           |
+| Area                                             | Before                                                                             | After                                                                                                       |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Making a task for a client or for someone        | no client or assignee on the New task page                                         | both, on the page; a Client field on the task panel; staff keep their own                                   |
+| A client's money                                 | not on the client page                                                             | Billing tab and an Outstanding figure (owners and managers)                                                 |
+| Settings pages reachable without a click         | 3 of 18                                                                            | 18 of 18 on desktop                                                                                         |
+| Vertical-template vocabulary shown in the UI     | never (wrong keys)                                                                 | yes                                                                                                         |
+| Report ranges that silently fell back            | all invalid ones                                                                   | none; the reason is shown                                                                                   |
+| Stale end-to-end specs                           | 3                                                                                  | 0 (the emailed-quote spec needs a mail service)                                                             |
+| Spanish on the screens staff and owners use most | English on record pages, deals, projects, bulk bars, time log and 9 settings pages | Spanish on all of them; 9 low-traffic admin pages (about 65 lines) left, measured in [UX 38](backlog/ux.md) |
+| Hand-made tab strips                             | 4 (Billing, Activity, Today scope, task and deal views)                            | 0; every one uses the shared tab strip                                                                      |

@@ -1,9 +1,8 @@
-import { normalizeLocale, type Locale } from '../../i18n/locale'
-import { getWorkspaceSettings } from '../auth/context'
+import type { Locale } from '../../i18n/locale'
+import { loadLogContext } from '../log-support'
 import type { Where } from 'payload'
 import type { Activity } from '../../payload-types'
 import type { RequestContext } from '../container'
-import { loadPeople } from '../people'
 import { describeActivity } from './activity-text'
 import { refId, text } from './directory/normalize'
 
@@ -80,14 +79,10 @@ function toRow(entry: Activity, input: Readonly<{ actor: string; locale: Locale 
 }
 
 async function rowsFor(context: RequestContext, docs: readonly Activity[]): Promise<ActivityRow[]> {
-  const [people, settings] = await Promise.all([
-    loadPeople(
-      context,
-      docs.flatMap((entry) => refId(entry.actor) ?? []),
-    ),
-    getWorkspaceSettings(),
-  ])
-  const locale = normalizeLocale(settings.locale)
+  const { people, locale } = await loadLogContext(
+    context,
+    docs.flatMap((entry) => refId(entry.actor) ?? []),
+  )
   return docs.flatMap((entry) => {
     const row = toRow(entry, { actor: people.get(refId(entry.actor) ?? '')?.name ?? '', locale })
     return row === null ? [] : [row]
