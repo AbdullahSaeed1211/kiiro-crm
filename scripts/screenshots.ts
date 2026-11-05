@@ -80,8 +80,29 @@ async function taskWithTime(page: Page): Promise<string> {
   throw new Error('no task with logged time; run pnpm seed:demo first')
 }
 
-/** A client with projects and deals, so the client screenshot shows a full hub. */
+/** Organizations with a sent or paid invoice, so the portal screenshot shows real documents. */
+async function clientsWithInvoices(page: Page): Promise<string[]> {
+  const ids = await page.evaluate(async () => {
+    const response = await fetch('/api/v1/billing?limit=40')
+    const body = (await response.json()) as {
+      data?: { records?: { kind?: string; status?: string; organizationId?: string }[] }
+    }
+    const records = body.data?.records ?? []
+    return records
+      .filter((record) => record.kind === 'invoice' && (record.status === 'sent' || record.status === 'paid'))
+      .flatMap((record) => (record.organizationId === undefined ? [] : [record.organizationId]))
+  })
+  return [...new Set(ids)]
+}
+
+/** A client with a project and a deal, preferring one with an invoice, so the hub and portal show a full record. */
 async function clientWithWork(page: Page): Promise<string> {
+  const withInvoices = await clientsWithInvoices(page)
+  for (const id of withInvoices) {
+    await page.goto(`${BASE}/organizations/${id}`, { waitUntil: 'load' })
+    await page.waitForTimeout(500)
+    if ((await page.locator('a[href^="/projects/"]').count()) > 0) return id
+  }
   for (const organization of await recordsOf(page, '/api/v1/organizations?limit=40')) {
     await page.goto(`${BASE}/organizations/${organization.id}`, { waitUntil: 'load' })
     await page.waitForTimeout(500)
