@@ -75,13 +75,13 @@ function SubmittedMessage({
 }
 
 /** The input for one question, chosen by its type and named by its key. */
-function Control({ field, id }: Readonly<{ field: Field; id: string }>) {
+function Control({ field, id, locale }: Readonly<{ field: Field; id: string; locale: Locale }>) {
   if (field.type === 'textarea')
     return <Textarea id={id} name={field.key} required={field.required} maxLength={2000} className="min-h-28" />
   if (field.type === 'select')
     return (
       <NativeSelect id={id} name={field.key} required={field.required} className="w-full">
-        <option value="">Choose…</option>
+        <option value="">{INTAKE_BOOKING_COPY[locale].chooseOption}</option>
         {field.options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -126,7 +126,7 @@ function Question({ field, timeZone, locale }: Readonly<{ field: Field }> & Pres
         {field.label}
         {field.required ? ' *' : ''}
       </Label>
-      <Control field={field} id={id} />
+      <Control field={field} id={id} locale={locale} />
     </div>
   )
 }
@@ -205,7 +205,7 @@ export function HostedForm({
         </p>
       )}
       <Button type="submit" disabled={state === 'sending'}>
-        {state === 'sending' ? 'Sending…' : 'Send'}
+        {state === 'sending' ? INTAKE_BOOKING_COPY[locale].sending : INTAKE_BOOKING_COPY[locale].send}
       </Button>
     </form>
   )
