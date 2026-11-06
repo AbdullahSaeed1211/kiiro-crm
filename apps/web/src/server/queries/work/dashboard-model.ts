@@ -41,6 +41,7 @@ export interface DashboardWork {
   readonly workEnabled: boolean
   readonly overdue: TaskSection
   readonly dueToday: TaskSection
+  readonly upcoming: TaskSection
   readonly plan: PlanSection
   readonly planCandidates: TaskSection
 }

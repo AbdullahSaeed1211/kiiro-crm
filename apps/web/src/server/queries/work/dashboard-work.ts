@@ -13,6 +13,8 @@ export type { DashboardPlanItem, DashboardTask, DashboardWork } from './dashboar
 
 import { loadWorkflowStages } from '../workflow-stages'
 const SHOWN = 5
+/** How far ahead the Today page looks for work that is not due yet. */
+const UPCOMING_DAYS = 14
 
 const empty: TaskSection = { count: 0, items: [] }
 
@@ -72,7 +74,7 @@ async function enrich(
   }))
 }
 
-type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'plan' | 'planCandidates'>
+type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'upcoming' | 'plan' | 'planCandidates'>
 
 async function teamPeople(context: RequestContext) {
   if (!isManagerUp(context.actor)) return []
@@ -132,6 +134,11 @@ function taskOwnershipWhere(context: RequestContext, scope: DashboardScope): Whe
   return [{ assignees: { contains: scope.personFilter } }]
 }
 
+/** Work whose deadline falls in `[from, to)`, kept open by the caller's stage clauses. */
+const dueWindow = (clauses: readonly Where[], from: number, to: number): Where => ({
+  and: [...clauses, { dueAt: { greater_than_equal: from } }, { dueAt: { less_than: to } }],
+})
+
 async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
   const workflow = await loadWorkflowStages(context, 'task')
   const finishedStages = workflow.closed
@@ -139,15 +146,10 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     ...(workflow.closed.length ? [{ stageId: { not_in: workflow.closed } }] : []),
     ...taskOwnershipWhere(context, scope),
   ]
-  const [overdue, dueToday] = await Promise.all([
+  const [overdue, dueToday, upcoming] = await Promise.all([
     taskSection(context, { and: [...clauses, { dueAt: { less_than: scope.dayStart } }] }),
-    taskSection(context, {
-      and: [
-        ...clauses,
-        { dueAt: { greater_than_equal: scope.dayStart } },
-        { dueAt: { less_than: scope.dayStart + DAY_MS } },
-      ],
-    }),
+    taskSection(context, dueWindow(clauses, scope.dayStart, scope.dayStart + DAY_MS)),
+    taskSection(context, dueWindow(clauses, scope.dayStart + DAY_MS, scope.dayStart + UPCOMING_DAYS * DAY_MS)),
   ])
   const candidates = await candidateTasks(context, scope, finishedStages)
   const [plan, enriched] = await Promise.all([
@@ -158,11 +160,12 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
       loadTasks: ({ context: taskContext, where, finishedStages: closed, limit }) =>
         taskSection(taskContext, where, { finishedStages: closed, limit }),
     }),
-    enrich(context, [overdue, dueToday], new Map(scope.people.map((person) => [person.id, person]))),
+    enrich(context, [overdue, dueToday, upcoming], new Map(scope.people.map((person) => [person.id, person]))),
   ])
   return {
     overdue: enriched[0] ?? empty,
     dueToday: enriched[1] ?? empty,
+    upcoming: enriched[2] ?? empty,
     plan,
     planCandidates: candidates,
   }
@@ -191,6 +194,13 @@ export async function loadDashboardWork(
   const personFilter = canSelectPerson ? authorizedPersonFilter(requestedPerson, people) : 'everyone'
   const scope = { ...dashboardScope(settings, context, { requestedScope, personFilter }), people }
   if (!scope.workEnabled)
-    return { ...scope, overdue: empty, dueToday: empty, plan: { count: 0, items: [] }, planCandidates: empty }
+    return {
+      ...scope,
+      overdue: empty,
+      dueToday: empty,
+      upcoming: empty,
+      plan: { count: 0, items: [] },
+      planCandidates: empty,
+    }
   return { ...scope, ...(await dashboardQueues(context, scope)) }
 }

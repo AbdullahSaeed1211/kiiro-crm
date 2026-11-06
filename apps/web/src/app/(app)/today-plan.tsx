@@ -13,6 +13,7 @@ import { TodayItem } from './today-queue'
 import { taskHref } from './task-navigation'
 import { TaskCompleteButton } from './my-tasks/TaskCompleteButton'
 import { DueTodayDisclosure } from './today-due-today'
+import { UpcomingDisclosure } from './today-upcoming'
 import { CandidateList, TaskSearchField } from './today-plan-dialog-parts'
 
 const PLAN_PREVIEW = 5
@@ -235,6 +236,7 @@ export function TodayPlan({ work }: Readonly<{ work: DashboardWork }>) {
         </details>
       ) : null}
       <DueTodayDisclosure work={work} />
+      <UpcomingDisclosure work={work} />
     </section>
   )
 }
