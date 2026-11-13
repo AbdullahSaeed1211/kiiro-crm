@@ -59,7 +59,7 @@ describe('automationRulesSchema', () => {
     )
   })
 
-  it('rejects a rule with no actions and more than twenty rules', () => {
+  it('rejects a rule with no actions and more than 20 rules', () => {
     expect(firstIssue([rule({ actions: [] })])).toBeDefined()
     expect(firstIssue(Array.from({ length: 21 }, (_, index) => rule({ id: `rule-${String(index)}` })))).toBeDefined()
   })
