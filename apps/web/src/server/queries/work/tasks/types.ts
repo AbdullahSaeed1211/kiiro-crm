@@ -31,6 +31,7 @@ export interface TaskListItem {
   /** The version a change to this task must name, so two people editing at once do not overwrite each other. */
   readonly updatedAt: number
   readonly stage: TaskStage
+  readonly isFinished: boolean
   readonly priority: TaskPriority
   readonly assignees: readonly TaskAssignee[]
   /** UTC epoch milliseconds (decision D-09); null when the task has no due date. */

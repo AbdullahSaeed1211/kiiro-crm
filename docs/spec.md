@@ -640,6 +640,7 @@ Shared views: manager_up. Personal: any user; ≤ 30 per user per record type.
 `Layout { recordType; sidebarFields: string[]; quickCreateFields: string[] }` (one per record type in Phase 1).
 
 ### 9.10 Permissions (pure policy)
+The member UI calls the persisted `manager` role **Admin**. It manages agency work and staff assignments across the tenant; ownership, owner-only tasks and workspace settings remain restricted to owners.
 Actor: `{ id; role; groupIds; reportIds (transitive via reportsTo, depth ≤ 5); active }`. Inactive actors are FORBIDDEN everywhere.
 `can(actor, action, resource)`; actions: `read | create | update | delete | assign | convert | manage_settings | manage_members | manage_workflows | manage_intake | admin_panel`.
 | Capability | owner | manager | staff |
@@ -1050,6 +1051,9 @@ Stepper (vertical left on ≥ md, top on mobile); each step saves on Continue; B
 7 **Done**: checklist (sender verified, team invited, intake connected, first record) → sets `onboardedAt` → `/`.
 
 ### 17.3 Today `/`
+Owners and admins see **Recent activity** for active tenant accounts: **Active now** means a server-timestamped interaction signal within two minutes; **Recently active** covers two to fifteen minutes. Visible, recently used tabs report at most once per minute; hidden or idle tabs stop reporting. Explicit logout clears the signal. The panel ages its labels locally and offers Refresh for a new snapshot; this is not a list of all valid login sessions.
+
+**Currently working on** is an explicit selection, separate from attendance and time entries. Start/Stop is available on assigned open tasks in Today, Tasks and My tasks. Owners and admins see current-day team selections only when the linked task remains open, assigned and readable. Team assignments lists person, task, workflow status, current work, project and due date. Its open count deduplicates shared tasks, includes unassigned work, and refreshes after task changes.
 Today starts with a compact **Mark attendance now** control for the authenticated person, including when an owner or manager is viewing team work. It records check-in using the server receipt time and, while checked in, offers check-out and shows the recorded start; a completed session shows its checkout and duration. Check-in and checkout retain separate reported and server-submitted Unix millisecond timestamps.
 
 Today has a personal **My plan today** list for explicit intent, alongside **Needs attention**. Quick-add creates an open task assigned to the actor with no deadline, then adds that task to the actor's plan for the current workspace calendar date. An already assigned open task can also be added or removed from the plan without changing its deadline, assignment, or another assignee's plan. The plan is private by default and stored per user and workspace date; owners and authorized managers may inspect daily plans in the team/person overview, while staff cannot read or write another person's plan. The date is represented as UTC midnight for the workspace calendar date, derived from the workspace timezone.

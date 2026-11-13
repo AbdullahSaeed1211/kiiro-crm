@@ -8,6 +8,7 @@ import { useState, type ReactNode } from 'react'
 import type { WorkProfile } from '@ops/platform'
 import { WorkspaceTools } from './workspace-tools'
 import { AccountMenu } from './account-menu'
+import { PresenceHeartbeat } from './presence-heartbeat'
 import { ShortcutsHelp } from './shortcuts-help'
 import { useDocumentTitle, useTaskFocusReturn } from './use-frame-effects'
 import { useShellNavigation } from './use-shell-navigation'
@@ -70,6 +71,7 @@ export function AppFrame({
         {children}
       </HeaderTrailProvider>
       <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} entries={entries} />
+      <PresenceHeartbeat />
     </AppShell>
   )
 }

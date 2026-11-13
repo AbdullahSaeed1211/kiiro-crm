@@ -58,9 +58,30 @@ export const personalTaskDayPlanRead = allow((actor): Where =>
 
 function currentFocusRead(actor: Actor): Where {
   if (actor.role === 'owner') return {}
-  if (actor.role === 'manager') return { user: { in: [actor.id, ...actor.reportIds] } }
+  // Managers read team focus only through server queries that validate the related task's
+  // normal work scope before returning it. Direct collection reads stay private to self.
   return { user: { equals: actor.id } }
 }
+
+function presenceRead(actor: Actor): Where {
+  if (actor.role === 'owner' || actor.role === 'manager') return {}
+  return { user: { equals: actor.id } }
+}
+
+function relationId(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (typeof value === 'object' && value !== null && 'id' in value) return String(value.id)
+  return undefined
+}
+
+async function createOwnPresence({ req, data }: Parameters<Access>[0]): Promise<boolean> {
+  const actor = await resolveActor(req)
+  const input: unknown = data
+  const user: unknown = typeof input === 'object' && input !== null ? Reflect.get(input, 'user') : undefined
+  return actor?.active === true && relationId(user) === String(actor.id)
+}
+
+const updateOwnPresence = allow((actor) => ({ user: { equals: actor.id } }))
 
 // Owners update every user, managers staff users and themselves, staff only themselves (spec §11.1). Field-level
 // limits (a manager promoting staff, staff editing only name and avatar) arrive with the M3 collection hooks.
@@ -90,6 +111,12 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.currentFocus]: {
     read: allow(currentFocusRead),
     ...systemWrites,
+  },
+  [COLLECTIONS.presence]: {
+    read: allow(presenceRead),
+    create: createOwnPresence,
+    update: updateOwnPresence,
+    delete: updateOwnPresence,
   },
   [COLLECTIONS.workflows]: { read: anyActive, ...managedByLeads },
   [COLLECTIONS.billingDocuments]: { read: managerUp, create: managerUp, update: managerUp, delete: managerUp },

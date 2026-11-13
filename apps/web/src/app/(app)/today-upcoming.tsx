@@ -5,7 +5,7 @@ import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import type { DashboardTask, DashboardWork } from '../../server/queries/work/dashboard-work'
 import { TodayItem } from './today-queue'
 import { taskHref } from './task-navigation'
-import { CurrentFocusButton } from './today-current-work'
+import { CurrentFocusButton } from './current-focus-button'
 
 function dueDetail(task: DashboardTask, work: DashboardWork): string {
   const copy = DASHBOARD_TODAY_COPY[work.locale]

@@ -32,6 +32,7 @@ describe('toTaskListItem', () => {
   it('uses the workflow stage and only the assignees the user can see', () => {
     const people = new Map([['u1', { name: 'Ada Example', email: 'ada@example.test' }]])
     expect(toTaskListItem(task, { workflow, people })).toEqual({
+      isFinished: false,
       id: 't1',
       title: 'Draft checklist',
       updatedAt: 2,

@@ -1,59 +1,17 @@
 'use client'
 
 import { Button } from '@ops/ui/components/ui/button'
-import { Play, RefreshCw, Square } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import type { DashboardCurrentFocus, DashboardWork } from '../../server/queries/work/dashboard-work'
-import { updateCurrentFocus } from '../../server/actions/work/tasks/currentFocus'
 import { taskHref } from './task-navigation'
+import { CurrentFocusButton } from './current-focus-button'
 
 function timeLabel(value: number, work: DashboardWork): string {
   return new Intl.DateTimeFormat(work.locale, { hour: 'numeric', minute: '2-digit', timeZone: work.timeZone }).format(
     value,
-  )
-}
-
-export function CurrentFocusButton({
-  taskId,
-  active,
-  locale,
-}: Readonly<{ taskId: string; active: boolean; locale: DashboardWork['locale'] }>) {
-  const router = useRouter()
-  const copy = DASHBOARD_TODAY_COPY[locale]
-  const label = active ? copy.stopWorking : copy.startWorking
-  const [pending, setPending] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const description = failed ? copy.focusFailed : label
-  async function update() {
-    if (pending) return
-    setPending(true)
-    setFailed(false)
-    try {
-      const result = await updateCurrentFocus(active ? { action: 'stop' } : { action: 'start', taskId })
-      if (result.ok) router.refresh()
-      else setFailed(true)
-    } catch {
-      setFailed(true)
-    } finally {
-      setPending(false)
-    }
-  }
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant={active ? 'secondary' : 'ghost'}
-      disabled={pending}
-      onClick={() => void update()}
-      aria-label={description}
-      title={description}
-    >
-      {active ? <Square aria-hidden className="size-3.5 fill-current" /> : <Play aria-hidden className="size-4" />}
-      {label}
-    </Button>
   )
 }
 

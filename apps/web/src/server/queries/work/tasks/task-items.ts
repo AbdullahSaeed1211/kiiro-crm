@@ -16,7 +16,8 @@ interface TaskItemOptions {
 /** Maps a task record to a tasks-list row with its workflow stage and the assignees the user can see. */
 export function toTaskListItem(task: TaskRecord, options: TaskItemOptions): TaskListItem {
   const { workflow, people, context = null } = options
-  const stage = workflow.stages.find((candidate) => candidate.id === task.stageId) ?? UNKNOWN_STAGE
+  const configuredStage = workflow.stages.find((candidate) => candidate.id === task.stageId)
+  const stage = configuredStage ?? UNKNOWN_STAGE
   const assignees = task.assigneeIds.flatMap((id) => {
     const person = people.get(id)
     return person === undefined ? [] : [{ id, ...person }]
@@ -26,6 +27,8 @@ export function toTaskListItem(task: TaskRecord, options: TaskItemOptions): Task
     title: task.title,
     updatedAt: task.updatedAt,
     stage: { name: stage.name, color: stage.color, position: stage.position },
+    isFinished:
+      configuredStage !== undefined && ['done_success', 'done_failure', 'cancelled'].includes(configuredStage.category),
     priority: task.priority,
     assignees,
     dueAt: task.dueAt,

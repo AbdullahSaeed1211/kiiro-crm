@@ -1,7 +1,8 @@
 import { asId } from '@ops/kernel'
-import { canMarkTaskOwnerOnly, canUpdateTask } from '@ops/module-work'
+import { canMarkTaskOwnerOnly } from '@ops/module-work'
+import { can } from '@ops/platform'
 import type { TaskSheetOptions, TaskSheetTask } from '@ops/ui/composites/TaskSheet'
-import { getRequestContext, workCommandDeps, type RequestContext } from '@/server/container'
+import { getRequestContext, type RequestContext } from '@/server/container'
 import { loadTaskContexts } from './tasks/task-contexts'
 import { loadWorkspaceLocale, mapTask, workflowStages, type StageLabel } from './read-models'
 
@@ -56,6 +57,7 @@ const DETAIL_FIELDS = {
   parentTask: true,
   group: true,
   ownerOnly: true,
+  project: true,
   relatedType: true,
   relatedId: true,
 } as const
@@ -99,12 +101,6 @@ async function loadParent(context: RequestContext, value: unknown): Promise<Task
   return parent === undefined ? null : { id: parent.id, title: parent.title }
 }
 
-async function canEdit(context: RequestContext, taskId: string): Promise<boolean> {
-  const deps = await workCommandDeps(context)
-  const record = await deps.repo.getTask(asId(taskId))
-  return record !== undefined && canUpdateTask(deps, record)
-}
-
 function subtasksOf(
   docs: readonly { id: string; title: string; stageId?: string | null; updatedAt: string }[],
   terminal: ReadonlySet<string>,
@@ -115,6 +111,24 @@ function subtasksOf(
     complete: terminal.has(sub.stageId ?? ''),
     updatedAt: Date.parse(sub.updatedAt),
   }))
+}
+
+function canUpdateTaskFromDoc(context: RequestContext, doc: Record<string, unknown>): boolean {
+  const assignees = Array.isArray(doc.assignees)
+    ? doc.assignees.flatMap((value: unknown) =>
+        typeof value === 'string' || typeof value === 'number' ? [asId(String(value))] : [],
+      )
+    : []
+  const parentId = typeof doc.project === 'string' ? asId(doc.project) : null
+  const groupId = typeof doc.group === 'string' ? asId(doc.group) : undefined
+  return can(context.actor, 'update', {
+    type: 'task',
+    assigneeIds: assignees,
+    parentId,
+    relatedRecordType: typeof doc.relatedType === 'string' ? doc.relatedType : null,
+    ownerOnly: doc.ownerOnly === true,
+    ...(groupId === undefined ? {} : { groupId }),
+  })
 }
 
 /** The linked record's name and address when the viewer may read it. */
@@ -172,11 +186,8 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
   const stages = workflowStages(workflowPage.docs)
   const terminal = new Set(stages.filter((stage) => isTerminalCategory(stage.category)).map((stage) => stage.id))
   const task = mapTask(doc, new Map<string, StageLabel>(stages.map((stage) => [stage.id, stage])))
-  const [parent, canUpdate, related] = await Promise.all([
-    loadParent(context, doc.parentTask),
-    canEdit(context, task.id),
-    loadRelated(context, doc),
-  ])
+  const canUpdate = canUpdateTaskFromDoc(context, doc)
+  const [parent, related] = await Promise.all([loadParent(context, doc.parentTask), loadRelated(context, doc)])
   const subtasks = subtasksOf(subtaskPage.docs, terminal)
   return {
     related,

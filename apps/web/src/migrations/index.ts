@@ -34,6 +34,7 @@ import * as migration_20261029_195615 from './20261029_195615';
 import * as migration_20261105_090000_portal_links from './20261105_090000_portal_links';
 import * as migration_20261105_150000_automation_rules from './20261105_150000_automation_rules';
 import * as migration_20261113_090000_current_focus from './20261113_090000_current_focus';
+import * as migration_20261113_120000_presence from './20261113_120000_presence';
 
 export const migrations = [
   {
@@ -187,4 +188,5 @@ export const migrations = [
   { up: migration_20261105_090000_portal_links.up, down: migration_20261105_090000_portal_links.down, name: '20261105_090000_portal_links' },
   { up: migration_20261105_150000_automation_rules.up, down: migration_20261105_150000_automation_rules.down, name: '20261105_150000_automation_rules' },
   { up: migration_20261113_090000_current_focus.up, down: migration_20261113_090000_current_focus.down, name: '20261113_090000_current_focus' },
+  { up: migration_20261113_120000_presence.up, down: migration_20261113_120000_presence.down, name: '20261113_120000_presence' },
 ];

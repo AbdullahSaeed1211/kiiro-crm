@@ -1,4 +1,5 @@
 import { isManagerUp } from '@ops/platform'
+import { sameCalendarDayIn } from '@ops/module-work'
 import { getRequestContext, type RequestContext } from '@/server/container'
 import { loadWorkReadModel } from './read-models'
 
@@ -7,6 +8,8 @@ const TERMINAL = new Set(['done_success', 'done_failure', 'cancelled'])
 export interface TeamAssignmentTask {
   readonly id: string
   readonly title: string
+  readonly status: string
+  readonly currentWork: boolean
   readonly dueAt: number | null
   readonly projectId: string | null
   readonly projectName: string | null
@@ -19,19 +22,10 @@ export interface TeamAssignmentProject {
   readonly targetEndAt: number | null
 }
 
-interface TeamAssignmentDue {
-  readonly kind: 'task' | 'project'
-  readonly id: string
-  readonly title: string
-  readonly dueAt: number
-}
-
 export interface TeamAssignmentMember {
   readonly id: string
   readonly name: string
-  readonly openTaskCount: number
-  readonly openProjectCount: number
-  readonly nextDue: TeamAssignmentDue | null
+  readonly tasks: readonly TeamAssignmentTask[]
 }
 
 export interface TeamAssignmentsModel {
@@ -43,12 +37,25 @@ export interface TeamAssignmentsModel {
 }
 
 function taskItem(
-  task: Readonly<{ id: string; title: string; dueAt: number | null; projectId: string | null }>,
-  projectNames: ReadonlyMap<string, string>,
+  task: Readonly<{
+    id: string
+    title: string
+    stage: string
+    dueAt: number | null
+    projectId: string | null
+  }>,
+  options: Readonly<{
+    currentFocus: ReadonlySet<string>
+    projectNames: ReadonlyMap<string, string>
+    memberId: string | null
+  }>,
 ): TeamAssignmentTask {
+  const { currentFocus, projectNames, memberId } = options
   return {
     id: task.id,
     title: task.title,
+    status: task.stage,
+    currentWork: memberId !== null && currentFocus.has(`${memberId}:${task.id}`),
     dueAt: task.dueAt,
     projectId: task.projectId,
     projectName: task.projectId === null ? null : (projectNames.get(task.projectId) ?? null),
@@ -64,44 +71,26 @@ function compareDue(
   return left.dueAt - right.dueAt || left.title.localeCompare(right.title)
 }
 
-function nextDueForMember(
-  tasks: readonly TeamAssignmentTask[],
-  projects: ReturnType<typeof activeProjectsOf>,
-): TeamAssignmentDue | null {
-  const datedTasks = tasks
-    .filter((task): task is TeamAssignmentTask & { dueAt: number } => task.dueAt !== null)
-    .map((task) => ({ kind: 'task' as const, id: task.id, title: task.title, dueAt: task.dueAt }))
-  const datedProjects = projects
-    .filter((project): project is typeof project & { targetEndAt: number } => project.targetEndAt !== null)
-    .map((project) => ({ kind: 'project' as const, id: project.id, title: project.name, dueAt: project.targetEndAt }))
-  return [...datedTasks, ...datedProjects].sort(compareDue)[0] ?? null
-}
-
 function memberRows({
   people,
   activeTasks,
-  activeProjects,
+  currentFocus,
   projectNames,
 }: Readonly<{
   people: ReadonlyMap<string, string>
   activeTasks: ReturnType<typeof activeTasksOf>
-  activeProjects: ReturnType<typeof activeProjectsOf>
+  currentFocus: ReadonlySet<string>
   projectNames: ReadonlyMap<string, string>
 }>): TeamAssignmentMember[] {
   return [...people]
     .map(([id, name]) => {
       const assignedTasks = activeTasks
         .filter((task) => task.assigneeIds.includes(id))
-        .map((task) => taskItem(task, projectNames))
-      const memberProjects = activeProjects.filter(
-        (project) => project.ownerId === id || project.memberIds.includes(id),
-      )
+        .map((task) => taskItem(task, { currentFocus, projectNames, memberId: id }))
       return {
         id,
         name,
-        openTaskCount: assignedTasks.length,
-        openProjectCount: memberProjects.length,
-        nextDue: nextDueForMember(assignedTasks, memberProjects),
+        tasks: assignedTasks,
       }
     })
     .sort((left, right) => left.name.localeCompare(right.name))
@@ -124,11 +113,12 @@ export async function loadTeamAssignments(context?: RequestContext): Promise<Tea
   const projectNames = new Map(model.projects.map((project) => [project.id, project.name] as const))
   const activeProjects = activeProjectsOf(model)
   const activeTasks = activeTasksOf(model)
-  const members = memberRows({ people: model.people, activeTasks, activeProjects, projectNames })
+  const currentFocus = await loadTeamFocus(requestContext, model)
+  const members = memberRows({ people: model.people, activeTasks, currentFocus, projectNames })
 
   const unassignedTasks = activeTasks
     .filter((task) => task.assigneeIds.length === 0)
-    .map((task) => taskItem(task, projectNames))
+    .map((task) => taskItem(task, { currentFocus, projectNames, memberId: null }))
     .sort(compareDue)
   const ownerGapProjects = activeProjects
     .filter((project) => project.ownerId === null)
@@ -147,4 +137,39 @@ export async function loadTeamAssignments(context?: RequestContext): Promise<Tea
     unassignedTasks,
     ownerGapProjects,
   }
+}
+
+function relationshipId(value: unknown): string | null {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (typeof value !== 'object' || value === null) return null
+  const id: unknown = Reflect.get(value, 'id')
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : null
+}
+
+async function loadTeamFocus(requestContext: RequestContext, model: Awaited<ReturnType<typeof loadWorkReadModel>>) {
+  const focusPage = await requestContext.payload.find({
+    collection: 'currentFocus',
+    where: { user: { in: [...model.people.keys()] } },
+    select: { user: true, task: true, startedAt: true },
+    limit: Math.max(model.people.size, 1),
+    depth: 0,
+    // The manager-gated page intersects these focus rows with active, access-scoped tasks below.
+    overrideAccess: true,
+    req: requestContext.req,
+  })
+  return new Set(
+    focusPage.docs.flatMap((doc) => {
+      const userId = relationshipId(doc.user)
+      const taskId = relationshipId(doc.task)
+      const startedAt = Reflect.get(doc, 'startedAt')
+      const isToday =
+        typeof startedAt === 'number' &&
+        sameCalendarDayIn({
+          first: startedAt,
+          second: Date.now(),
+          timeZone: model.timeZone,
+        })
+      return userId === null || taskId === null || !isToday ? [] : [`${userId}:${taskId}`]
+    }),
+  )
 }

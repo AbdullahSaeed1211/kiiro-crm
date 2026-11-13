@@ -30,6 +30,12 @@ export interface DashboardCurrentFocus {
   readonly startedAt: number
   readonly stale: boolean
 }
+export interface DashboardPresence {
+  readonly userId: string
+  readonly personName: string
+  readonly lastSeenAt: number
+  readonly state: 'active' | 'recent'
+}
 interface PlanSection {
   readonly count: number
   readonly items: readonly DashboardPlanItem[]
@@ -52,5 +58,6 @@ export interface DashboardWork {
   readonly plan: PlanSection
   readonly planCandidates: TaskSection
   readonly currentFocus: readonly DashboardCurrentFocus[]
+  readonly presence: readonly DashboardPresence[]
   readonly refreshedAt: number
 }

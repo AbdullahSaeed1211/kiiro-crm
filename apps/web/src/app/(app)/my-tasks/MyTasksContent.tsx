@@ -10,6 +10,7 @@ import type { MyTaskModel } from '../../../server/queries/work/my-task-model'
 import { taskHref } from '../task-navigation'
 import { PriorityCell } from '../tasks/priority-cell'
 import { TaskCompleteButton } from './TaskCompleteButton'
+import { CurrentFocusButton } from '../current-focus-button'
 
 const SECTIONS = ['overdue', 'today', 'next7Days', 'later', 'noDueDate'] as const
 
@@ -81,7 +82,12 @@ function TaskRow({
             <MissedPeriods task={task} copy={copy} />
           </div>
         </div>
-        <TaskCompleteButton taskId={task.id} title={task.title} updatedAt={task.updatedAt} />
+        <div className="flex shrink-0 items-center gap-1">
+          {model.currentFocusTaskId === task.id || task.assigneeIds.some((id) => String(id) === model.actorId) ? (
+            <CurrentFocusButton taskId={task.id} active={model.currentFocusTaskId === task.id} locale={model.locale} />
+          ) : null}
+          <TaskCompleteButton taskId={task.id} title={task.title} updatedAt={task.updatedAt} />
+        </div>
       </div>
     </li>
   )

@@ -22,6 +22,8 @@ import { TaskWorkspaceViews } from './TaskWorkspaceViews'
 import { labelsFor, paginationOf, taskColumns, toRow } from './task-table'
 import { parseTaskView, savedViewSort, taskListHref, taskModeOf } from './task-view-params'
 import { parseTaskDue } from '../../../server/queries/work/task-due-filter'
+import { currentFocusForSelf } from '../../../server/queries/work/current-focus-for-self'
+import type { TaskListItem } from '../../../server/queries/work/tasks/types'
 
 const PAGE_TITLE = 'Tasks'
 
@@ -46,7 +48,35 @@ function readFilters(params: Params, actorId: string) {
   }
 }
 
-/** Tasks list (spec §17.5). */
+function taskRows({
+  items,
+  returnTo,
+  locale,
+  actorId,
+  currentFocusTaskId,
+  grouped,
+  noProject,
+}: Readonly<{
+  items: readonly TaskListItem[]
+  returnTo: string
+  locale: Awaited<ReturnType<typeof loadWorkspaceLocale>>
+  actorId: string
+  currentFocusTaskId: string | null
+  grouped: boolean
+  noProject: string
+}>) {
+  return items.map((task) =>
+    toRow({
+      task,
+      returnTo,
+      locale,
+      actorId,
+      currentFocusTaskId,
+      ...(grouped && { group: projectName(task) ?? noProject }),
+    }),
+  )
+}
+
 export default async function TasksPage({ searchParams }: Readonly<{ searchParams: Promise<Params> }>) {
   const params = await searchParams
   const context = await getRequestContext()
@@ -65,8 +95,17 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
   const taskMode = taskModeOf(view, selectedSavedView)
   const title = selectedSavedView?.name ?? { all: copy.allTasks, mine: copy.myTasks, open: copy.openTasks }[taskMode]
   const returnTo = taskListHref({ sort, page, view, search, assignee, due })
-  const result = await listTasks({ page, sort: effectiveSort, view: taskMode, search, assignee, due }, context)
+  const [result, currentFocusTaskId] = await Promise.all([
+    listTasks({ page, sort: effectiveSort, view: taskMode, search, assignee, due }, context),
+    currentFocusForSelf(context),
+  ])
   const grouped = effectiveSort.key === 'project'
+  const rows = taskRows({
+    items: result.items,
+    ...{ returnTo, locale, currentFocusTaskId, grouped },
+    actorId: String(context.actor.id),
+    noProject: copy.noProject,
+  })
   const narrowed = search !== '' || assignee !== '' || due !== ''
   const emptyTitle = narrowed ? copy.noTasksMatch : copy.noTasks
   const emptyBody = narrowed ? copy.noTasksMatchDescription : copy.noTasksDescription
@@ -108,14 +147,12 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
             />
           }
           columns={taskColumns({ sort: effectiveSort, view, locale, search, assignee, due })}
-          rows={result.items.map((task) =>
-            toRow({ task, returnTo, locale, ...(grouped && { group: projectName(task) ?? copy.noProject }) }),
-          )}
+          rows={rows}
           sort={{ id: effectiveSort.key, desc: effectiveSort.desc }}
           pagination={paginationOf({ result, sort: effectiveSort, view, search, assignee, due })}
           labels={labelsFor(locale)}
           emptyState={<EmptyState icon={ListTodo} title={emptyTitle} description={emptyBody} />}
-          mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees'] }}
+          mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees', 'focus'] }}
         />
       </PageContent>
     </>

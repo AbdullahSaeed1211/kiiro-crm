@@ -78,6 +78,7 @@ export interface Config {
     tasks: Task;
     taskDayPlans: TaskDayPlan;
     currentFocus: CurrentFocus;
+    presence: Presence;
     workflows: Workflow;
     fieldDefinitions: FieldDefinition;
     savedViews: SavedView;
@@ -125,6 +126,7 @@ export interface Config {
     tasks: TasksSelect<false> | TasksSelect<true>;
     taskDayPlans: TaskDayPlansSelect<false> | TaskDayPlansSelect<true>;
     currentFocus: CurrentFocusSelect<false> | CurrentFocusSelect<true>;
+    presence: PresenceSelect<false> | PresenceSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
     fieldDefinitions: FieldDefinitionsSelect<false> | FieldDefinitionsSelect<true>;
     savedViews: SavedViewsSelect<false> | SavedViewsSelect<true>;
@@ -590,6 +592,20 @@ export interface CurrentFocus {
    * UTC time in milliseconds since 1970-01-01
    */
   startedAt: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "presence".
+ */
+export interface Presence {
+  id: string;
+  user: string | User;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  lastSeenAt: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -1434,6 +1450,10 @@ export interface PayloadLockedDocument {
         value: string | CurrentFocus;
       } | null)
     | ({
+        relationTo: 'presence';
+        value: string | Presence;
+      } | null)
+    | ({
         relationTo: 'workflows';
         value: string | Workflow;
       } | null)
@@ -1811,6 +1831,16 @@ export interface CurrentFocusSelect<T extends boolean = true> {
   user?: T;
   task?: T;
   startedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "presence_select".
+ */
+export interface PresenceSelect<T extends boolean = true> {
+  user?: T;
+  lastSeenAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

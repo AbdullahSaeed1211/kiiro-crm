@@ -67,6 +67,7 @@ export { createUnitOfWork, probeTransactions, type TransactionProbe } from './uo
 export { toWhere, withScope } from './where/to-where'
 export { installPagedFind } from './paged-find'
 export { createAttendanceRepository } from './repositories/attendance'
+export { createPresenceRepository, type PresenceRow } from './repositories/presence-repository'
 export { setWebhookScheduler } from './hooks/webhooks'
 export {
   appendDemoEntries,

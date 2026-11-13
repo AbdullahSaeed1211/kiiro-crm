@@ -33,48 +33,45 @@ function labelsFor(locale: Locale) {
   }
 }
 
-function personColumns(locale: Locale): readonly DataTableColumn[] {
+function assignmentColumns(locale: Locale): readonly DataTableColumn[] {
   const copy = TEAM_ASSIGNMENTS_COPY[locale]
   return [
     { id: 'person', header: copy.people },
-    { id: 'tasks', header: copy.openTasks, numeric: true },
-    { id: 'projects', header: copy.projects, numeric: true },
-    { id: 'nextDue', header: copy.nextDue },
+    { id: 'task', header: copy.task },
+    { id: 'status', header: copy.status },
+    { id: 'currentWork', header: copy.currentWork },
+    { id: 'project', header: copy.project },
+    { id: 'due', header: copy.due },
   ]
 }
 
-function personRows(members: readonly TeamAssignmentMember[], locale: Locale): readonly DataTableRow[] {
-  const copy = TEAM_ASSIGNMENTS_COPY[locale]
-  return members.map((member) => ({
-    id: member.id,
-    cells: {
-      person: (
-        <Link href={`/tasks?view=open&assignee=${encodeURIComponent(member.id)}`} className="font-medium">
-          {member.name}
-        </Link>
-      ),
-      tasks: String(member.openTaskCount),
-      projects: String(member.openProjectCount),
-      nextDue:
-        member.nextDue === null ? (
-          <Badge variant="outline">
-            {member.openTaskCount + member.openProjectCount === 0 ? copy.noOpenAssignments : copy.noDatedWork}
-          </Badge>
-        ) : (
-          <div className="grid gap-0.5">
-            <Link
-              href={
-                member.nextDue.kind === 'task' ? taskHref(member.nextDue.id, '/team') : `/projects/${member.nextDue.id}`
-              }
-              className="truncate font-medium"
-            >
-              {member.nextDue.title}
-            </Link>
-            <span className="text-xs text-muted-foreground">{dateLabel(member.nextDue.dueAt, locale)}</span>
-          </div>
+function assignmentRows(members: readonly TeamAssignmentMember[], locale: Locale): readonly DataTableRow[] {
+  return members.flatMap((member) =>
+    member.tasks.map((task) => ({
+      id: `${member.id}:${task.id}`,
+      cells: {
+        person: (
+          <Link href={`/tasks?view=open&assignee=${encodeURIComponent(member.id)}`} className="font-medium">
+            {member.name}
+          </Link>
         ),
-    },
-  }))
+        task: (
+          <Link href={taskHref(task.id, '/team')} className="font-medium">
+            {task.title}
+          </Link>
+        ),
+        status: <Badge variant="outline">{task.status}</Badge>,
+        currentWork: task.currentWork ? <Badge>{TEAM_ASSIGNMENTS_COPY[locale].inProgress}</Badge> : '—',
+        project:
+          task.projectId === null || task.projectName === null ? (
+            '—'
+          ) : (
+            <Link href={`/projects/${task.projectId}`}>{task.projectName}</Link>
+          ),
+        due: task.dueAt === null ? '—' : dateLabel(task.dueAt, locale),
+      },
+    })),
+  )
 }
 
 function taskColumns(locale: Locale): readonly DataTableColumn[] {
@@ -138,10 +135,21 @@ type TeamViewProps = Readonly<{
 function SummaryCards({ members, unassignedTasks, ownerGapProjects, locale }: TeamViewProps) {
   const copy = TEAM_ASSIGNMENTS_COPY[locale]
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <section className="rounded-lg border bg-card p-4">
         <p className="text-xs font-medium text-muted-foreground">{copy.people}</p>
         <p className="mt-1 text-2xl font-semibold tabular-nums">{members.length}</p>
+      </section>
+      <section className="rounded-lg border bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground">{copy.openTasks}</p>
+        <p className="mt-1 text-2xl font-semibold tabular-nums">
+          {
+            new Set([
+              ...members.flatMap((member) => member.tasks.map((task) => task.id)),
+              ...unassignedTasks.map((task) => task.id),
+            ]).size
+          }
+        </p>
       </section>
       <section className="rounded-lg border bg-card p-4">
         <p className="text-xs font-medium text-muted-foreground">{copy.unassignedTasks}</p>
@@ -155,23 +163,24 @@ function SummaryCards({ members, unassignedTasks, ownerGapProjects, locale }: Te
   )
 }
 
-function PeopleSection({ locale, members }: Pick<TeamViewProps, 'locale' | 'members'>) {
+function AssignmentsSection({ locale, members }: Pick<TeamViewProps, 'locale' | 'members'>) {
   const copy = TEAM_ASSIGNMENTS_COPY[locale]
+  const rows = assignmentRows(members, locale)
   return (
     <section className="grid gap-3" aria-labelledby="team-assignments-heading">
       <div>
         <h2 id="team-assignments-heading" className="text-base font-semibold">
           {copy.people}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{copy.description}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.assignmentDescription}</p>
       </div>
       <DataTable
-        columns={personColumns(locale)}
-        rows={personRows(members, locale)}
-        pagination={{ page: 1, pageSize: Math.max(members.length, 1), total: members.length }}
+        columns={assignmentColumns(locale)}
+        rows={rows}
+        pagination={{ page: 1, pageSize: Math.max(rows.length, 1), total: rows.length }}
         labels={labelsFor(locale)}
-        emptyState={<EmptyState icon={Users} title={copy.noPeople} />}
-        mobileCard={{ cells: ['person', 'tasks', 'projects', 'nextDue'] }}
+        emptyState={<EmptyState icon={Users} title={copy.noAssignedTasks} />}
+        mobileCard={{ cells: ['person', 'task', 'status', 'currentWork', 'project', 'due'] }}
       />
     </section>
   )
@@ -223,7 +232,7 @@ export function TeamAssignmentsView(props: TeamViewProps) {
   return (
     <div className="grid gap-6">
       <SummaryCards {...props} />
-      <PeopleSection locale={props.locale} members={props.members} />
+      <AssignmentsSection locale={props.locale} members={props.members} />
       <UnassignedTasksSection {...props} />
       <ProjectOwnerGapsSection {...props} />
     </div>

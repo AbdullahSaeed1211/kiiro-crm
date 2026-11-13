@@ -11,6 +11,7 @@ import {
   type WorkListTask,
   type WorkReadModel,
 } from './read-models'
+import { currentFocusForSelf } from './current-focus-for-self'
 
 const TEAM_TASK_LIMIT = 100
 const FINISHED: ReadonlySet<string> = new Set(['done_success', 'done_failure', 'cancelled'])
@@ -25,6 +26,7 @@ function workEnabled(settings: Record<string, unknown>): boolean {
 /** The signed-in user's tasks with what My tasks needs to render them. */
 export type MyTaskModel = Pick<WorkReadModel, 'tasks' | 'actorId' | 'timeZone' | 'stages' | 'locale'> & {
   readonly workEnabled: boolean
+  readonly currentFocusTaskId: string | null
   /** Name of each project the tasks belong to, by project id. */
   readonly projectNames: Readonly<Record<string, string>>
   /** Open tasks of the person's groups that nobody has taken yet. */
@@ -72,11 +74,22 @@ async function loadTeamTasks(
     .filter((task) => task.assigneeIds.length === 0 && !FINISHED.has(task.stageCategory))
 }
 
+async function projectNamesForTaskSets(
+  context: RequestContext,
+  tasks: readonly WorkListTask[],
+  teamTasks: readonly WorkListTask[],
+): Promise<Record<string, string>> {
+  const projectIds = [
+    ...new Set([...tasks, ...teamTasks].flatMap((task) => (task.projectId === null ? [] : [task.projectId]))),
+  ]
+  return projectNamesFor(context, projectIds)
+}
+
 /** Reads only the signed-in user's tasks for the dedicated My tasks page. */
 export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskModel> {
   const requestContext = context ?? (await getRequestContext())
   const request = { depth: 0, overrideAccess: false as const, req: requestContext.req }
-  const [taskPage, workflowPage, settings] = await Promise.all([
+  const [taskPage, workflowPage, settings, currentFocusTaskId] = await Promise.all([
     requestContext.payload.find({
       collection: 'tasks',
       ...request,
@@ -93,24 +106,24 @@ export async function loadMyTaskModel(context?: RequestContext): Promise<MyTaskM
       pagination: false,
     }),
     getWorkspaceSettings(),
+    currentFocusForSelf(requestContext),
   ])
   const stages = new Map<string, StageLabel>()
   const workflows = workflowPage.docs as readonly object[]
   for (const workflow of workflows) addStages(stages, workflow)
   const tasks = (taskPage.docs as readonly object[]).map((doc) => mapTask(doc, stages))
   const teamTasks = await loadTeamTasks(requestContext, stages)
-  const projectIds = [
-    ...new Set([...tasks, ...teamTasks].flatMap((task) => (task.projectId === null ? [] : [task.projectId]))),
-  ]
+  const projectNames = await projectNamesForTaskSets(requestContext, tasks, teamTasks)
   return {
     tasks,
     teamTasks,
-    projectNames: await projectNamesFor(requestContext, projectIds),
+    projectNames,
     actorId: String(requestContext.actor.id),
     timeZone: text(settings, 'timezone') || 'UTC',
     stages: workflowStages(workflows),
     locale: normalizeLocale(value(settings, 'locale')),
     workEnabled: workEnabled(settings),
+    currentFocusTaskId,
   }
 }
 

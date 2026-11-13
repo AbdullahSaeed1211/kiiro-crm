@@ -16,6 +16,8 @@ import { formatDate } from '../../../i18n/format'
 import { formatTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import type { TaskListItem, TaskListResult, TaskSort, TaskSortKey } from '../../../server/queries/work/tasks/types'
 import { taskHref } from '../task-navigation'
+import { DASHBOARD_TODAY_COPY } from '../../../i18n/dashboard-today-copy'
+import { CurrentFocusButton } from '../current-focus-button'
 
 const AVATAR_LIMIT = 3
 
@@ -63,7 +65,18 @@ export function toRow({
   returnTo,
   locale,
   group,
-}: Readonly<{ task: TaskListItem; returnTo: string; locale: Locale; group?: string }>): DataTableRow {
+  actorId,
+  currentFocusTaskId,
+}: Readonly<{
+  task: TaskListItem
+  returnTo: string
+  locale: Locale
+  group?: string
+  actorId: string
+  currentFocusTaskId: string | null
+}>): DataTableRow {
+  const assignedToMe = task.assignees.some((assignee) => assignee.id === actorId)
+  const active = currentFocusTaskId === task.id
   return {
     id: task.id,
     href: taskHref(task.id, returnTo),
@@ -90,6 +103,10 @@ export function toRow({
             {task.context.label}
           </Link>
         ),
+      focus:
+        active || (assignedToMe && !task.isFinished) ? (
+          <CurrentFocusButton taskId={task.id} active={active} locale={locale} />
+        ) : null,
     },
   }
 }
@@ -117,6 +134,7 @@ export function taskColumns({
   due?: string
 }>): DataTableColumn[] {
   const copy = TASK_COPY[locale]
+  const focusCopy = DASHBOARD_TODAY_COPY[locale]
   // Clicking the active ascending column flips it to descending; any other click sorts ascending from page 1.
   const sortHref = (key: TaskSortKey): string =>
     listQuery({
@@ -133,6 +151,7 @@ export function taskColumns({
     { id: 'assignees', header: copy.assignees },
     { id: 'dueAt', header: copy.due, sortHref: sortHref('dueAt') },
     { id: 'context', header: copy.project, sortHref: sortHref('project') },
+    { id: 'focus', header: focusCopy.focusColumn },
   ]
 }
 

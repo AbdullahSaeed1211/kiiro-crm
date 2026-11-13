@@ -15,7 +15,7 @@ import { TaskCompleteButton } from './my-tasks/TaskCompleteButton'
 import { DueTodayDisclosure } from './today-due-today'
 import { UpcomingDisclosure } from './today-upcoming'
 import { CandidateList, TaskSearchField } from './today-plan-dialog-parts'
-import { CurrentFocusButton } from './today-current-work'
+import { CurrentFocusButton } from './current-focus-button'
 
 const PLAN_PREVIEW = 5
 const CANDIDATE_PREVIEW = 5

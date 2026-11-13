@@ -15,6 +15,7 @@ import { TodayTaskQuickAdd } from './today-task-quick-add'
 import { TodayPlan } from './today-plan'
 import { TodayAttendance } from './today-attendance'
 import { TodayCurrentWork } from './today-current-work'
+import { TodayPresence } from './today-presence'
 import { attendanceDeps } from '@/server/attendance'
 import { getWorkspaceSettings } from '@/server/auth/context'
 import { sameCalendarDayIn } from '@ops/module-work'
@@ -89,6 +90,7 @@ function TodayPrimaryColumn({
   return (
     <div className="grid min-w-0 content-start gap-4">
       {work.workEnabled ? <TodayCurrentWork work={work} /> : null}
+      <TodayPresenceSlot work={work} />
       {work.workEnabled ? <TodayTaskQuickAdd locale={work.locale} focusPersonalAfterCreate={work.team} /> : null}
       {work.workEnabled ? <TodayPlan work={work} /> : null}
       {firstRun && work.crmEnabled && (profile === 'admin' || profile === 'sales') ? (
@@ -96,6 +98,10 @@ function TodayPrimaryColumn({
       ) : null}
     </div>
   )
+}
+
+function TodayPresenceSlot({ work }: Readonly<{ work: DashboardWork }>) {
+  return work.canSeeTeam ? <TodayPresence work={work} /> : null
 }
 
 function TodaySecondaryColumn({

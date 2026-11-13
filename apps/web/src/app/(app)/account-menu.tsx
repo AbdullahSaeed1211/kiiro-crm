@@ -17,9 +17,11 @@ import { ChevronsUpDown, Keyboard, LogOut, Settings, User } from 'lucide-react'
 import Link from 'next/link'
 import { SEARCH_COPY, SHELL_COPY, type Locale } from '../../i18n/config'
 import { NAV_COPY } from '../../i18n/nav-copy'
+import { clearPresence } from '../../server/actions/presence'
 
 async function logOut() {
   try {
+    await clearPresence()
     await fetch('/api/users/logout', { method: 'POST', credentials: 'same-origin' })
   } finally {
     window.location.assign('/login')

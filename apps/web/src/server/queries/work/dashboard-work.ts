@@ -1,25 +1,24 @@
 import type { Where } from 'payload'
-import { DAY_MS, sameCalendarDayIn, todayAsDueAt } from '@ops/module-work'
+import { DAY_MS, todayAsDueAt } from '@ops/module-work'
 import { isManagerUp } from '@ops/platform'
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
-import type { CurrentFocus } from '../../../payload-types'
 import { loadPeople } from '../../people'
 import { loadTaskContexts } from './tasks/task-contexts'
 import { loadDashboardDayPlan } from './dashboard-day-plan'
 import { dashboardTask } from './dashboard-task'
+import { focusRow } from './dashboard-focus-row'
 import type { DashboardCurrentFocus, DashboardWork, TaskSection } from './dashboard-model'
 export type { DashboardCurrentFocus, DashboardPlanItem, DashboardTask, DashboardWork } from './dashboard-model'
 
 import { loadWorkflowStages } from '../workflow-stages'
+import { loadDashboardPresence } from './dashboard-presence'
 const SHOWN = 5
-/** How far ahead the Today page looks for work that is not due yet. */
 const UPCOMING_DAYS = 14
 
 const empty: TaskSection = { count: 0, items: [] }
 
-/** Reads only five rows and the exact count; the database applies the user's normal record scope. */
 async function taskSection(
   context: RequestContext,
   where: Where,
@@ -77,20 +76,14 @@ async function enrich(
 
 type DashboardScope = Omit<
   DashboardWork,
-  'overdue' | 'dueToday' | 'upcoming' | 'plan' | 'planCandidates' | 'currentFocus' | 'refreshedAt'
+  'overdue' | 'dueToday' | 'upcoming' | 'plan' | 'planCandidates' | 'currentFocus' | 'presence' | 'refreshedAt'
 >
 
 async function teamPeople(context: RequestContext) {
   if (!isManagerUp(context.actor)) return []
-  const where: Where = {
-    and: [
-      { active: { equals: true } },
-      ...(context.actor.role === 'owner' ? [] : [{ id: { in: context.actor.reportIds.map(String) } }]),
-    ],
-  }
   const result = await context.payload.find({
     collection: 'users',
-    where,
+    where: { active: { equals: true } },
     sort: ['name', 'id'],
     limit: 0,
     pagination: false,
@@ -101,6 +94,7 @@ async function teamPeople(context: RequestContext) {
   return result.docs.map((person) => ({ id: person.id, name: person.name }))
 }
 
+/** Presence exposes only names and a coarse activity signal, so managers see the tenant-wide active roster. */
 function dashboardScope(
   settings: Awaited<ReturnType<typeof getWorkspaceSettings>>,
   context: RequestContext,
@@ -156,7 +150,7 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     taskSection(context, dueWindow(clauses, scope.dayStart + DAY_MS, scope.dayStart + UPCOMING_DAYS * DAY_MS)),
   ])
   const candidates = await candidateTasks(context, scope, finishedStages)
-  const [plan, enriched, currentFocus] = await Promise.all([
+  const [plan, enriched, currentFocus, presence] = await Promise.all([
     loadDashboardDayPlan({
       context,
       scope,
@@ -166,6 +160,7 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     }),
     enrich(context, [overdue, dueToday, upcoming], new Map(scope.people.map((person) => [person.id, person]))),
     loadCurrentFocus(context, scope, finishedStages),
+    loadDashboardPresence(context),
   ])
   return {
     overdue: enriched[0] ?? empty,
@@ -174,6 +169,7 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     plan,
     planCandidates: candidates,
     currentFocus,
+    presence,
   }
 }
 
@@ -195,7 +191,9 @@ async function loadCurrentFocus(
     sort: ['startedAt', 'user'],
     limit: 100,
     depth: 0,
-    overrideAccess: false,
+    // The collection keeps manager reads private by default. This team query is manager-gated,
+    // constrains users to the active roster, and validates each linked task through taskSection.
+    overrideAccess: isManagerUp(context.actor),
     req: context.req,
   })
   const rows = page.docs.flatMap((doc) => focusRow(doc, scope, Date.now()))
@@ -212,27 +210,6 @@ async function loadCurrentFocus(
     const task = byTask.get(row.taskId)
     return task?.assigneeIds.includes(row.userId) ? [{ ...row, task }] : []
   })
-}
-
-interface FocusRow {
-  readonly userId: string
-  readonly taskId: string
-  readonly startedAt: number
-  readonly personName: string
-  readonly stale: boolean
-}
-
-function relationshipId(value: string | number | { readonly id: string | number }): string {
-  return typeof value === 'object' ? String(value.id) : String(value)
-}
-
-function focusRow(doc: CurrentFocus, scope: DashboardScope, now: number): FocusRow[] {
-  const userId = relationshipId(doc.user)
-  const personName = scope.people.find((person) => person.id === userId)?.name ?? ''
-  const today = sameCalendarDayIn({ first: doc.startedAt, second: now, timeZone: scope.timeZone })
-  return today || userId === scope.actorId
-    ? [{ userId, taskId: relationshipId(doc.task), startedAt: doc.startedAt, personName, stale: !today }]
-    : []
 }
 
 async function candidateTasks(context: RequestContext, scope: DashboardScope, finishedStages: readonly string[]) {
@@ -266,6 +243,7 @@ export async function loadDashboardWork(
       plan: { count: 0, items: [] },
       planCandidates: empty,
       currentFocus: [],
+      presence: [],
       refreshedAt: Date.now(),
     }
   return { ...scope, ...(await dashboardQueues(context, scope)), refreshedAt: Date.now() }
