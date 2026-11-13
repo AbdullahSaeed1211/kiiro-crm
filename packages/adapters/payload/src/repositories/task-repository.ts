@@ -9,6 +9,7 @@ import { workArchiveAccess } from './work-archive'
 import { createUnitOfWork } from '../uow/unit-of-work'
 import { agencyWorkMethods } from './agency-work'
 import { taskDayPlanMethods } from './task-day-plan-repository'
+import { currentFocusMethods } from './current-focus-repository'
 import { projectData, taskData, projectPatchData, taskPatchData } from './task-write-data'
 import { activityData, transitionData } from './stage-codecs'
 import {
@@ -235,6 +236,7 @@ export function createTaskRepository(req: PayloadRequest): Repository {
     ...listTasksMethods(req),
     ...taskWriteMethods(req),
     ...taskDayPlanMethods(req),
+    ...currentFocusMethods(req),
     ...projectMethods(req),
     ...moveMethods(req),
     ...agencyWorkMethods(req),

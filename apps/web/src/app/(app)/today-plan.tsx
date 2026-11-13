@@ -15,6 +15,7 @@ import { TaskCompleteButton } from './my-tasks/TaskCompleteButton'
 import { DueTodayDisclosure } from './today-due-today'
 import { UpcomingDisclosure } from './today-upcoming'
 import { CandidateList, TaskSearchField } from './today-plan-dialog-parts'
+import { CurrentFocusButton } from './today-current-work'
 
 const PLAN_PREVIEW = 5
 const CANDIDATE_PREVIEW = 5
@@ -35,27 +36,48 @@ function planDetail(item: DashboardPlanItem, work: DashboardWork): string {
   return [
     work.team ? item.personName : '',
     item.task.context ?? copy.internal,
-    item.task.people.join(', ') || copy.unassigned,
+    item.task.people.join(', ') || (item.task.assigneeIds.length === 0 ? copy.unassigned : ''),
   ]
     .filter(Boolean)
     .join(' · ')
 }
 
-function PlanRow({ item, work }: Readonly<{ item: DashboardPlanItem; work: DashboardWork }>) {
-  const copy = DASHBOARD_TODAY_COPY[work.locale]
-  const mayComplete = !work.team && item.task.assigneeIds.includes(work.actorId) && !item.task.isFinished
-  const mayRemove = !work.team && item.userId === work.actorId
-  const accessory = (
+function planAccessory(item: DashboardPlanItem, work: DashboardWork) {
+  return (
     <>
-      {mayComplete ? (
-        <TaskCompleteButton taskId={String(item.task.id)} title={item.task.title} updatedAt={item.task.updatedAt} />
-      ) : null}
-      {mayRemove ? <RemovePlanButton item={item} work={work} /> : null}
-      {item.task.isFinished ? (
-        <Check aria-label={copy.completedTasks} className="size-4 text-muted-foreground" />
-      ) : null}
+      {focusControl(item, work)}
+      {completeControl(item, work)}
+      {removeControl(item, work)}
+      {completedMark(item, work)}
     </>
   )
+}
+
+function focusControl(item: DashboardPlanItem, work: DashboardWork) {
+  if (work.team || item.userId !== work.actorId || item.task.isFinished) return null
+  const current = work.currentFocus.find((focus) => focus.userId === work.actorId)
+  return (
+    <CurrentFocusButton taskId={String(item.task.id)} active={current?.task.id === item.task.id} locale={work.locale} />
+  )
+}
+
+function completeControl(item: DashboardPlanItem, work: DashboardWork) {
+  if (work.team || item.task.isFinished || !item.task.assigneeIds.includes(work.actorId)) return null
+  return <TaskCompleteButton taskId={String(item.task.id)} title={item.task.title} updatedAt={item.task.updatedAt} />
+}
+
+function removeControl(item: DashboardPlanItem, work: DashboardWork) {
+  return !work.team && item.userId === work.actorId ? <RemovePlanButton item={item} work={work} /> : null
+}
+
+function completedMark(item: DashboardPlanItem, work: DashboardWork) {
+  return item.task.isFinished ? (
+    <Check aria-label={DASHBOARD_TODAY_COPY[work.locale].completedTasks} className="size-4 text-muted-foreground" />
+  ) : null
+}
+
+function PlanRow({ item, work }: Readonly<{ item: DashboardPlanItem; work: DashboardWork }>) {
+  const copy = DASHBOARD_TODAY_COPY[work.locale]
   return (
     <TodayItem
       title={item.task.title}
@@ -65,7 +87,7 @@ function PlanRow({ item, work }: Readonly<{ item: DashboardPlanItem; work: Dashb
       href={taskHref(String(item.task.id), '/')}
       action={copy.openTask}
       taskId={String(item.task.id)}
-      accessory={accessory}
+      accessory={planAccessory(item, work)}
       compact
     />
   )

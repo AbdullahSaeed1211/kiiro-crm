@@ -23,6 +23,13 @@ export interface DashboardPlanItem {
   readonly personName: string
   readonly task: DashboardTask
 }
+export interface DashboardCurrentFocus {
+  readonly userId: string
+  readonly personName: string
+  readonly task: DashboardTask
+  readonly startedAt: number
+  readonly stale: boolean
+}
 interface PlanSection {
   readonly count: number
   readonly items: readonly DashboardPlanItem[]
@@ -44,4 +51,6 @@ export interface DashboardWork {
   readonly upcoming: TaskSection
   readonly plan: PlanSection
   readonly planCandidates: TaskSection
+  readonly currentFocus: readonly DashboardCurrentFocus[]
+  readonly refreshedAt: number
 }

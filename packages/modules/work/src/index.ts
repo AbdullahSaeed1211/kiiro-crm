@@ -15,6 +15,7 @@ export type {
   TaskDatePatch,
   TaskMoveWrite,
   TaskDayIntentEntry,
+  CurrentFocus,
   WorkTaskRecord,
   WorkDeps,
   WorkRecordType,
@@ -44,6 +45,7 @@ export {
   updateTask,
 } from './commands/tasks'
 export { addTaskToTodayPlan, removeTaskFromTodayPlan } from './commands/task-day-plan'
+export { setCurrentFocus } from './commands/current-focus'
 export { taskResource } from './commands/task-access'
 export { TASK_REPEATS, missedPeriods, nextOccurrence, nextRunAfter, type TaskRepeat } from './domain/recurrence'
 export { hasOpenChildren, MAX_SUBTASK_DEPTH, subtaskDepth } from './domain/rules'
@@ -64,6 +66,7 @@ export {
   createTaskSchema,
   createTodayTaskSchema,
   taskDayPlanSchema,
+  currentFocusSchema,
   expectedVersionSchema,
   moveTaskSchema,
   projectMemberSchema,

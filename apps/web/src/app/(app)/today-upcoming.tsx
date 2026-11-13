@@ -5,6 +5,7 @@ import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
 import type { DashboardTask, DashboardWork } from '../../server/queries/work/dashboard-work'
 import { TodayItem } from './today-queue'
 import { taskHref } from './task-navigation'
+import { CurrentFocusButton } from './today-current-work'
 
 function dueDetail(task: DashboardTask, work: DashboardWork): string {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
@@ -52,6 +53,15 @@ export function UpcomingDisclosure({ work }: Readonly<{ work: DashboardWork }>) 
             action={copy.openTask}
             taskId={String(task.id)}
             compact
+            accessory={
+              !work.team && task.assigneeIds.includes(work.actorId) ? (
+                <CurrentFocusButton
+                  taskId={String(task.id)}
+                  active={work.currentFocus.some((focus) => focus.userId === work.actorId && focus.task.id === task.id)}
+                  locale={work.locale}
+                />
+              ) : null
+            }
           />
         ))}
       </ul>

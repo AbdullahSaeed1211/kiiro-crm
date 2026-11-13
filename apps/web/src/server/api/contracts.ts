@@ -1,6 +1,7 @@
 import {
   createTaskSchema,
   taskDayPlanSchema,
+  currentFocusSchema,
   expectedVersionSchema,
   moveTaskSchema,
   taskDatesSchema,
@@ -88,6 +89,13 @@ const API_CONTRACTS = {
     method: 'DELETE',
     path: '/api/v1/tasks/:id/plan',
     summary: 'Remove your plan entry for a task today without changing the task.',
+    success: 200,
+  },
+  'current-focus.set': {
+    method: 'POST',
+    path: '/api/v1/current-focus',
+    summary: 'Start or stop your self-reported current task focus.',
+    body: currentFocusSchema,
     success: 200,
   },
   'calls.create': {

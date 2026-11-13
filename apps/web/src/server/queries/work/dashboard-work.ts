@@ -1,15 +1,16 @@
 import type { Where } from 'payload'
-import { DAY_MS, todayAsDueAt } from '@ops/module-work'
+import { DAY_MS, sameCalendarDayIn, todayAsDueAt } from '@ops/module-work'
 import { isManagerUp } from '@ops/platform'
 import { getWorkspaceSettings } from '../../auth/context'
 import { normalizeLocale } from '../../../i18n/config'
 import type { RequestContext } from '../../container'
+import type { CurrentFocus } from '../../../payload-types'
 import { loadPeople } from '../../people'
 import { loadTaskContexts } from './tasks/task-contexts'
 import { loadDashboardDayPlan } from './dashboard-day-plan'
 import { dashboardTask } from './dashboard-task'
-import type { DashboardWork, TaskSection } from './dashboard-model'
-export type { DashboardPlanItem, DashboardTask, DashboardWork } from './dashboard-model'
+import type { DashboardCurrentFocus, DashboardWork, TaskSection } from './dashboard-model'
+export type { DashboardCurrentFocus, DashboardPlanItem, DashboardTask, DashboardWork } from './dashboard-model'
 
 import { loadWorkflowStages } from '../workflow-stages'
 const SHOWN = 5
@@ -74,7 +75,10 @@ async function enrich(
   }))
 }
 
-type DashboardScope = Omit<DashboardWork, 'overdue' | 'dueToday' | 'upcoming' | 'plan' | 'planCandidates'>
+type DashboardScope = Omit<
+  DashboardWork,
+  'overdue' | 'dueToday' | 'upcoming' | 'plan' | 'planCandidates' | 'currentFocus' | 'refreshedAt'
+>
 
 async function teamPeople(context: RequestContext) {
   if (!isManagerUp(context.actor)) return []
@@ -152,7 +156,7 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     taskSection(context, dueWindow(clauses, scope.dayStart + DAY_MS, scope.dayStart + UPCOMING_DAYS * DAY_MS)),
   ])
   const candidates = await candidateTasks(context, scope, finishedStages)
-  const [plan, enriched] = await Promise.all([
+  const [plan, enriched, currentFocus] = await Promise.all([
     loadDashboardDayPlan({
       context,
       scope,
@@ -161,6 +165,7 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
         taskSection(taskContext, where, { finishedStages: closed, limit }),
     }),
     enrich(context, [overdue, dueToday, upcoming], new Map(scope.people.map((person) => [person.id, person]))),
+    loadCurrentFocus(context, scope, finishedStages),
   ])
   return {
     overdue: enriched[0] ?? empty,
@@ -168,7 +173,66 @@ async function dashboardQueues(context: RequestContext, scope: DashboardScope) {
     upcoming: enriched[2] ?? empty,
     plan,
     planCandidates: candidates,
+    currentFocus,
   }
+}
+
+async function loadCurrentFocus(
+  context: RequestContext,
+  scope: DashboardScope,
+  finishedStages: readonly string[],
+): Promise<readonly DashboardCurrentFocus[]> {
+  const userIds = scope.canSeeTeam ? scope.people.map((person) => person.id) : [scope.actorId]
+  const focusWhere: Where = {
+    and: [
+      { user: { in: userIds } },
+      { or: [{ startedAt: { greater_than_equal: scope.dayStart - DAY_MS } }, { user: { equals: scope.actorId } }] },
+    ],
+  }
+  const page = await context.payload.find({
+    collection: 'currentFocus',
+    where: focusWhere,
+    sort: ['startedAt', 'user'],
+    limit: 100,
+    depth: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  const rows = page.docs.flatMap((doc) => focusRow(doc, scope, Date.now()))
+  const taskIds = [...new Set(rows.map((row) => row.taskId))]
+  if (taskIds.length === 0) return []
+  const openClause: Where[] = finishedStages.length ? [{ stageId: { not_in: finishedStages } }] : []
+  const taskRows = await taskSection(
+    context,
+    { and: [{ id: { in: taskIds } }, ...openClause] },
+    { finishedStages, limit: 100 },
+  )
+  const byTask = new Map(taskRows.items.map((task) => [String(task.id), task]))
+  return rows.flatMap((row) => {
+    const task = byTask.get(row.taskId)
+    return task?.assigneeIds.includes(row.userId) ? [{ ...row, task }] : []
+  })
+}
+
+interface FocusRow {
+  readonly userId: string
+  readonly taskId: string
+  readonly startedAt: number
+  readonly personName: string
+  readonly stale: boolean
+}
+
+function relationshipId(value: string | number | { readonly id: string | number }): string {
+  return typeof value === 'object' ? String(value.id) : String(value)
+}
+
+function focusRow(doc: CurrentFocus, scope: DashboardScope, now: number): FocusRow[] {
+  const userId = relationshipId(doc.user)
+  const personName = scope.people.find((person) => person.id === userId)?.name ?? ''
+  const today = sameCalendarDayIn({ first: doc.startedAt, second: now, timeZone: scope.timeZone })
+  return today || userId === scope.actorId
+    ? [{ userId, taskId: relationshipId(doc.task), startedAt: doc.startedAt, personName, stale: !today }]
+    : []
 }
 
 async function candidateTasks(context: RequestContext, scope: DashboardScope, finishedStages: readonly string[]) {
@@ -201,6 +265,8 @@ export async function loadDashboardWork(
       upcoming: empty,
       plan: { count: 0, items: [] },
       planCandidates: empty,
+      currentFocus: [],
+      refreshedAt: Date.now(),
     }
-  return { ...scope, ...(await dashboardQueues(context, scope)) }
+  return { ...scope, ...(await dashboardQueues(context, scope)), refreshedAt: Date.now() }
 }

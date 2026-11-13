@@ -6,6 +6,7 @@ export const COLLECTIONS = {
   projects: 'projects',
   tasks: 'tasks',
   taskDayPlans: 'taskDayPlans',
+  currentFocus: 'currentFocus',
   workflows: 'workflows',
   activity: 'activity',
   attachments: 'attachments',

@@ -32,6 +32,7 @@ import { projectsCollection } from './projects'
 import { stageTransitionsCollection } from './stage-transitions'
 import { tasksCollection } from './tasks'
 import { taskDayPlansCollection } from './task-day-plans'
+import { currentFocusCollection } from './current-focus'
 import { invitationsCollection, peopleGroupsCollection, peopleUsersCollection } from './people'
 import { workflowsCollection } from './workflows'
 
@@ -53,6 +54,7 @@ export const spikeCollections: readonly CollectionConfig[] = [
   projectsCollection,
   tasksCollection,
   taskDayPlansCollection,
+  currentFocusCollection,
   workflowsCollection,
   fieldDefinitionsCollection,
   savedViewsCollection,

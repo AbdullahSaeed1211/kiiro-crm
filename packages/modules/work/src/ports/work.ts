@@ -154,6 +154,12 @@ export interface TaskDayIntentEntry {
   readonly day: number
 }
 
+export interface CurrentFocus {
+  readonly userId: Id
+  readonly taskId: Id
+  readonly startedAt: number
+}
+
 /** A task or project that was archived, as the archive screen lists it. */
 export interface ArchivedWork {
   readonly type: WorkRecordType
@@ -210,6 +216,8 @@ export interface WorkRepository extends StageStore {
   createTask(draft: TaskDraft): Promise<Result<WorkTaskRecord>>
   addTaskToDayPlan(entry: TaskDayIntentEntry): Promise<void>
   removeTaskFromDayPlan(entry: TaskDayIntentEntry): Promise<void>
+  saveCurrentFocus(focus: CurrentFocus): Promise<void>
+  clearCurrentFocus(userId: Id): Promise<void>
   updateTask(id: Id, patch: TaskPatch | TaskDatePatch, expectedUpdatedAt: number): Promise<WorkTaskRecord | undefined>
   saveTaskMove(input: TaskMoveWrite): Promise<WorkTaskRecord | undefined>
   deleteTask(id: Id): Promise<boolean>

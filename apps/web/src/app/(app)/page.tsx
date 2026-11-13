@@ -14,6 +14,7 @@ import { DashboardFollowUps } from './DashboardFollowUps'
 import { TodayTaskQuickAdd } from './today-task-quick-add'
 import { TodayPlan } from './today-plan'
 import { TodayAttendance } from './today-attendance'
+import { TodayCurrentWork } from './today-current-work'
 import { attendanceDeps } from '@/server/attendance'
 import { getWorkspaceSettings } from '@/server/auth/context'
 import { sameCalendarDayIn } from '@ops/module-work'
@@ -87,6 +88,7 @@ function TodayPrimaryColumn({
 }: Readonly<{ work: DashboardWork; profile: HomeProfile; firstRun: boolean }>) {
   return (
     <div className="grid min-w-0 content-start gap-4">
+      {work.workEnabled ? <TodayCurrentWork work={work} /> : null}
       {work.workEnabled ? <TodayTaskQuickAdd locale={work.locale} focusPersonalAfterCreate={work.team} /> : null}
       {work.workEnabled ? <TodayPlan work={work} /> : null}
       {firstRun && work.crmEnabled && (profile === 'admin' || profile === 'sales') ? (

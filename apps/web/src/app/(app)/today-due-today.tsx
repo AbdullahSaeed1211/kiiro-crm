@@ -6,6 +6,7 @@ import type { DashboardTask, DashboardWork } from '../../server/queries/work/das
 import { TodayItem } from './today-queue'
 import { taskHref } from './task-navigation'
 import { TaskCompleteButton } from './my-tasks/TaskCompleteButton'
+import { CurrentFocusButton } from './today-current-work'
 
 function dueDetail(task: DashboardTask, work: DashboardWork): string {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
@@ -44,7 +45,16 @@ export function DueTodayDisclosure({ work }: Readonly<{ work: DashboardWork }>) 
             compact
             accessory={
               !work.team && task.assigneeIds.includes(work.actorId) ? (
-                <TaskCompleteButton taskId={String(task.id)} title={task.title} updatedAt={task.updatedAt} />
+                <>
+                  <CurrentFocusButton
+                    taskId={String(task.id)}
+                    active={work.currentFocus.some(
+                      (focus) => focus.userId === work.actorId && focus.task.id === task.id,
+                    )}
+                    locale={work.locale}
+                  />
+                  <TaskCompleteButton taskId={String(task.id)} title={task.title} updatedAt={task.updatedAt} />
+                </>
               ) : null
             }
           />

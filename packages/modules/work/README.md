@@ -8,6 +8,8 @@ Work domain: projects, tasks, dependencies.
 
 The module exports project and task records, commands, the deterministic rank helpers, and `myTasksBuckets`.
 
+Current focus is an explicit, per-user selection of one open task. Starting a task replaces that person's current selection and records a Unix-millisecond `startedAt`; stopping clears it. It does not create a time entry. Dashboard team rows include only today's starts whose task remains open and assigned to that person.
+
 ## Ports
 
 - `TaskRepository`: the existing platform `StageStore` plus `loadTaskWorkflow`, `listTasks` and `saveDates` (compare-and-set on `expectedUpdatedAt`).

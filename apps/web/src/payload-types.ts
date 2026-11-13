@@ -77,6 +77,7 @@ export interface Config {
     projects: Project;
     tasks: Task;
     taskDayPlans: TaskDayPlan;
+    currentFocus: CurrentFocus;
     workflows: Workflow;
     fieldDefinitions: FieldDefinition;
     savedViews: SavedView;
@@ -123,6 +124,7 @@ export interface Config {
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     tasks: TasksSelect<false> | TasksSelect<true>;
     taskDayPlans: TaskDayPlansSelect<false> | TaskDayPlansSelect<true>;
+    currentFocus: CurrentFocusSelect<false> | CurrentFocusSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
     fieldDefinitions: FieldDefinitionsSelect<false> | FieldDefinitionsSelect<true>;
     savedViews: SavedViewsSelect<false> | SavedViewsSelect<true>;
@@ -573,6 +575,21 @@ export interface TaskDayPlan {
    * UTC midnight in milliseconds for the workspace calendar date.
    */
   day: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "currentFocus".
+ */
+export interface CurrentFocus {
+  id: string;
+  user: string | User;
+  task: string | Task;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  startedAt: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -1413,6 +1430,10 @@ export interface PayloadLockedDocument {
         value: string | TaskDayPlan;
       } | null)
     | ({
+        relationTo: 'currentFocus';
+        value: string | CurrentFocus;
+      } | null)
+    | ({
         relationTo: 'workflows';
         value: string | Workflow;
       } | null)
@@ -1779,6 +1800,17 @@ export interface TaskDayPlansSelect<T extends boolean = true> {
   user?: T;
   task?: T;
   day?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "currentFocus_select".
+ */
+export interface CurrentFocusSelect<T extends boolean = true> {
+  user?: T;
+  task?: T;
+  startedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

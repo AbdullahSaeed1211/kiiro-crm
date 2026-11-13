@@ -56,6 +56,12 @@ export const personalTaskDayPlanRead = allow((actor): Where =>
   isManagerUp(actor) ? {} : { user: { equals: actor.id } },
 )
 
+function currentFocusRead(actor: Actor): Where {
+  if (actor.role === 'owner') return {}
+  if (actor.role === 'manager') return { user: { in: [actor.id, ...actor.reportIds] } }
+  return { user: { equals: actor.id } }
+}
+
 // Owners update every user, managers staff users and themselves, staff only themselves (spec §11.1). Field-level
 // limits (a manager promoting staff, staff editing only name and avatar) arrive with the M3 collection hooks.
 function nonOwnerUserScope(actor: Actor): Where {
@@ -81,6 +87,10 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.projects]: scopedRecord(RECORD_TYPES.projects),
   [COLLECTIONS.tasks]: scopedRecord(RECORD_TYPES.tasks),
   [COLLECTIONS.taskDayPlans]: { read: personalTaskDayPlanRead, ...systemWrites },
+  [COLLECTIONS.currentFocus]: {
+    read: allow(currentFocusRead),
+    ...systemWrites,
+  },
   [COLLECTIONS.workflows]: { read: anyActive, ...managedByLeads },
   [COLLECTIONS.billingDocuments]: { read: managerUp, create: managerUp, update: managerUp, delete: managerUp },
   [COLLECTIONS.activity]: { read: managerUp, ...systemWrites },

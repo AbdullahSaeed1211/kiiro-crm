@@ -12,6 +12,10 @@ export const createTodayTaskSchema = z.strictObject({ title })
 
 /** A task can be added to or removed from the signed-in person's plan without editing its deadline. */
 export const taskDayPlanSchema = z.strictObject({ taskId: nonEmptyId })
+export const currentFocusSchema = z.discriminatedUnion('action', [
+  z.strictObject({ action: z.literal('start'), taskId: nonEmptyId }),
+  z.strictObject({ action: z.literal('stop') }),
+])
 const projectName = z.string().trim().min(1, 'Enter a project name.').max(200, 'Use 200 characters or fewer.')
 const priority = z.enum(['none', 'low', 'medium', 'high', 'urgent'])
 const version = z.number()

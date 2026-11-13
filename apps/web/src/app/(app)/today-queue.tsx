@@ -79,15 +79,21 @@ export function TodayItem({
   compact?: boolean
 }>) {
   return (
-    <li className={cn('flex items-center gap-2', compact ? 'px-3 py-2.5' : 'gap-3 px-4 py-4 sm:gap-5 sm:px-5')}>
-      <div className="min-w-0 flex-1">
+    <li
+      className={cn(
+        'flex gap-2',
+        compact && accessory !== undefined ? 'flex-col items-start sm:flex-row sm:items-center' : 'items-center',
+        compact ? 'px-3 py-2.5' : 'gap-3 px-4 py-4 sm:gap-5 sm:px-5',
+      )}
+    >
+      <div className="w-full min-w-0 flex-1">
         <p className="break-words text-sm font-medium">{title}</p>
         <p className="mt-1 break-words text-xs text-muted-foreground">{detail}</p>
         {when === undefined ? null : (
           <p className={`mt-1 text-xs ${overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{when}</p>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
         {accessory}
         <Button
           size="sm"
