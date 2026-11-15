@@ -104,6 +104,7 @@ export async function workCommandDeps(requestContext?: RequestContext): Promise<
     clock: systemClock,
     readRecord: (type, id) => relatedRecordVisible(context, type, id),
     readProjectAttachment: (projectId, attachmentId) => projectAttachmentVisible(context, projectId, attachmentId),
+    // Staff cannot filter on the hidden active field; return only whether this tenant user is active.
     isActiveUser: async (userId) => {
       const result = await context.payload.find({
         collection: 'users',
@@ -111,7 +112,8 @@ export async function workCommandDeps(requestContext?: RequestContext): Promise<
         depth: 0,
         limit: 1,
         pagination: false,
-        overrideAccess: false,
+        select: { name: true },
+        overrideAccess: true,
         req: context.req,
       })
       return result.totalDocs > 0

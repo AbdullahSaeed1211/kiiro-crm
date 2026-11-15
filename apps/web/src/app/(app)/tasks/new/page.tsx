@@ -3,7 +3,6 @@ import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
 import { asId } from '@ops/kernel'
 import { canMarkTaskOwnerOnly, TASK_REPEATS } from '@ops/module-work'
-import { isManagerUp, type Actor } from '@ops/platform'
 import { assigneeOptions } from '../assignee-options'
 import type { Metadata } from 'next'
 import { NewTaskForm } from './NewTaskForm'
@@ -43,11 +42,6 @@ async function recordContextOf(
   return { type: label === null ? null : type, id: label === null ? null : id, label }
 }
 
-/** Who the viewer may assign a task to: anyone for owners and managers, nobody else (staff keep their own). */
-function assignablePeople(actor: Actor, people: ReadonlyMap<string, string>) {
-  return isManagerUp(actor) ? assigneeOptions(people) : []
-}
-
 /** Creates a task with only project and CRM context visible to the current user. */
 export default async function NewTaskPage({
   searchParams,
@@ -70,7 +64,7 @@ export default async function NewTaskPage({
         <PageHeader title={copy.pageTitle} description={copy.captureHelp} />
         <NewTaskForm
           projects={model.projects.map(({ id, name }) => ({ value: id, label: name }))}
-          people={assignablePeople(context.actor, model.people)}
+          people={assigneeOptions(model.people)}
           projectId={projectId}
           relatedType={recordContext.type}
           relatedId={recordContext.id}

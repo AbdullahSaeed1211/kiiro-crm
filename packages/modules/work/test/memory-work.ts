@@ -84,6 +84,7 @@ export const createMemoryRepo = (): WorkRepository =>
 export const depsFor = (input: Partial<WorkDeps> = {}): WorkDeps => ({
   actor: actor('staff'),
   can: () => true,
+  isActiveUser: () => Promise.resolve(true),
   repo: createMemoryRepo(),
   uow: { run: async <T>(work: () => Promise<T>) => work() },
   clock: { now: () => 10 },

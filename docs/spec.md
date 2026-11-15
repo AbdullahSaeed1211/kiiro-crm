@@ -649,7 +649,7 @@ Actor: `{ id; role; groupIds; reportIds (transitive via reportsTo, depth ≤ 5);
 | create records | yes | yes | yes |
 | update records | all | all | scoped |
 | delete records | yes | yes | no |
-| assign others | yes | yes | only on scoped records |
+| assign others | yes | yes | on scoped records |
 | convert lead | yes | yes | scoped |
 | manage_members | all roles | staff only | no |
 | manage_settings (general, branding, email, modules) | yes | no | no |
@@ -657,6 +657,7 @@ Actor: `{ id; role; groupIds; reportIds (transitive via reportsTo, depth ≤ 5);
 | admin_panel (`/admin`) | yes | yes | no |
 **Staff scope** `scopeFilter(actor, recordType)` = OR of: `ownerId ∈ {actor.id, ...reportIds}`; `assigneeIds contains actor.id`; `groupId ∈ actor.groupIds` (when the type has a group field);
 plus registered `scopeExtensions` (work module: `project.memberIds contains actor.id` for projects and their tasks).
+Any active tenant member may assign a task to any active tenant member when creating it or updating a task within their existing scope. This does not grant access to tasks outside that scope or allow staff to change a task's group outside their own groups. Existing owner-only visibility restrictions remain unchanged.
 Adapters convert `FilterNode` → Payload `Where`, AND it into every query, and always pass `overrideAccess: false` with the user, except system jobs (explicit `SystemActor`).
 Sensitive custom fields (`sensitive: true`) are readable by manager_up only.
 

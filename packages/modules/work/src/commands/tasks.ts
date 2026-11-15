@@ -27,10 +27,17 @@ const updateOwnerOnlyAllowed = (deps: WorkDeps, value: boolean | undefined): boo
 export const canUpdateTask = (deps: Pick<WorkDeps, 'actor' | 'can'>, task: WorkTaskRecord) =>
   deps.can(deps.actor, 'update', taskResource(task))
 const canUpdate = canUpdateTask
-/** Owners and managers may assign anyone in any group; staff may only assign themselves, inside their own groups. */
-const assignmentAllowed = (deps: WorkDeps, ids: readonly Id[], groupId: Id | null) =>
-  isManagerUp(deps.actor) ||
-  (ids.every((id) => id === deps.actor.id) && (groupId === null || deps.actor.groupIds.includes(groupId)))
+/** Assignment does not change the actor's task scope; targets must be active tenant members. */
+async function activeAssignees(deps: WorkDeps, ids: readonly Id[]): Promise<boolean> {
+  for (const id of ids) {
+    if (id === deps.actor.id) {
+      if (!deps.actor.active) return false
+      continue
+    }
+    if (deps.isActiveUser === undefined || !(await deps.isActiveUser(id))) return false
+  }
+  return true
+}
 async function relatedAllowed(deps: WorkDeps, type: string | null, id: Id | null): Promise<boolean> {
   return (
     (type === null && id === null) ||
@@ -85,11 +92,16 @@ async function resolveProject(
   return visible.ok ? ok(projectId) : visible
 }
 
-function authorizeAssignment(deps: WorkDeps, draft: ParsedTaskDraft): WorkResult<readonly Id[]> {
+function groupAssignmentAllowed(deps: WorkDeps, groupId: Id | null): boolean {
+  return isManagerUp(deps.actor) || groupId === null || deps.actor.groupIds.includes(groupId)
+}
+
+async function authorizeAssignment(deps: WorkDeps, draft: ParsedTaskDraft): Promise<WorkResult<readonly Id[]>> {
   const assigneeIds = draft.assigneeIds.length ? draft.assigneeIds : [deps.actor.id]
-  return assignmentAllowed(deps, assigneeIds, draft.groupId)
+  if (!groupAssignmentAllowed(deps, draft.groupId)) return fail('FORBIDDEN', 'cannot assign task outside your group')
+  return (await activeAssignees(deps, assigneeIds))
     ? ok(assigneeIds)
-    : fail('FORBIDDEN', 'cannot assign task outside your scope')
+    : fail('FORBIDDEN', 'assignees must be active tenant members')
 }
 
 async function validateTaskCreation(
@@ -102,7 +114,7 @@ async function validateTaskCreation(
   const projectId = await resolveProject(deps, draft, parent.value)
   if (!projectId.ok) return projectId
 
-  const assigneeIds = authorizeAssignment(deps, draft)
+  const assigneeIds = await authorizeAssignment(deps, draft)
   if (!assigneeIds.ok) return assigneeIds
 
   if (!createOwnerOnlyAllowed(deps, draft.ownerOnly)) return fail('FORBIDDEN', OWNER_ONLY_FORBIDDEN)
@@ -174,15 +186,17 @@ async function checkRelated(deps: WorkDeps, patch: TaskPatch, task: WorkTaskReco
   return relatedAllowed(deps, type, id)
 }
 
-function checkAssignment(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): boolean {
-  if (patch.assigneeIds === undefined && patch.groupId === undefined) return true
-  const ids = patch.assigneeIds ?? task.assigneeIds
+async function checkAssignment(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<WorkResult<null>> {
+  if (patch.assigneeIds === undefined && patch.groupId === undefined) return ok(null)
   const groupId = patch.groupId === undefined ? task.groupId : patch.groupId
-  return assignmentAllowed(deps, ids, groupId)
+  if (!groupAssignmentAllowed(deps, groupId)) return fail('FORBIDDEN', 'cannot assign task outside your group')
+  const ids = patch.assigneeIds ?? task.assigneeIds
+  return (await activeAssignees(deps, ids)) ? ok(null) : fail('FORBIDDEN', 'assignees must be active tenant members')
 }
 
 async function authorizeTaskUpdate(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<WorkResult<null>> {
-  if (!checkAssignment(deps, patch, task)) return fail('FORBIDDEN', 'cannot assign task outside your scope')
+  const assignment = await checkAssignment(deps, patch, task)
+  if (!assignment.ok) return assignment
   if (!updateOwnerOnlyAllowed(deps, patch.ownerOnly)) return fail('FORBIDDEN', OWNER_ONLY_FORBIDDEN)
   if (!(await checkRelated(deps, patch, task))) return fail('FORBIDDEN', 'related record is outside your scope')
   return ok(null)

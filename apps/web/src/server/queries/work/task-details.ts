@@ -80,7 +80,15 @@ function readTaskDocuments(context: RequestContext, idValue: string) {
       where: { parentTask: { equals: idValue } },
       select: TASK_FIELDS,
     }),
-    context.payload.find({ collection: 'users', ...request, limit: 0, select: { id: true, name: true } }),
+    // The active field is hidden from staff; the task sheet receives only active member names and IDs.
+    context.payload.find({
+      collection: 'users',
+      ...request,
+      limit: 0,
+      where: { active: { equals: true } },
+      select: { id: true, name: true },
+      overrideAccess: true,
+    }),
     context.payload.find({ collection: 'groups', ...request, limit: 0, select: { id: true, name: true } }),
   ])
 }

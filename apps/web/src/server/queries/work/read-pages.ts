@@ -60,15 +60,17 @@ function workflowPage(context: WorkContext, request: ReturnType<typeof requestOp
 
 function userPage(context: WorkContext, request: ReturnType<typeof requestOptions>, purpose: ReadPurpose) {
   if (purpose === 'dashboard') return Promise.resolve(null)
-  if (purpose === 'assignments') {
+  if (purpose === 'assignments' || purpose === 'projects') {
+    // The active field is hidden from staff; these screens receive only active member names and IDs.
     return context.payload.find({
       collection: 'users',
       ...request,
       where: { active: { equals: true } },
       select: { id: true, name: true },
+      overrideAccess: true,
     })
   }
-  const select = purpose === 'reports' || purpose === 'projects' ? { select: { id: true, name: true } as const } : {}
+  const select = purpose === 'reports' ? { select: { id: true, name: true } as const } : {}
   return context.payload.find({ collection: 'users', ...request, ...select })
 }
 

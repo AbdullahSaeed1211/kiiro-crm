@@ -39,7 +39,7 @@ export function TaskCoreFields({
   )
 }
 
-/** Who the task is for and which client it belongs to. Owners and managers may assign anyone; staff keep their own. */
+/** Who the task is for and which client it belongs to. Any active tenant member may assign a teammate. */
 export function TaskWhoFields({
   copy,
   people,

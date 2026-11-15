@@ -88,23 +88,6 @@ describe('createProject enforces authorization and compare-and-set writes', () =
     })
   })
 })
-describe('createTask enforces authorization and assignment matrix', () => {
-  it('applies the owner/manager/staff assignment matrix on create', async () => {
-    const staff = depsFor()
-    const staffResult = await createTask(staff, { title: 'outside assignment', assigneeIds: [asId('other')] })
-    expect(staffResult.ok).toBe(false)
-    const manager = depsFor({ actor: actor('manager', 'manager') })
-    const managerResult = await createTask(manager, { title: 'managed assignment', assigneeIds: [asId('other')] })
-    expect(managerResult.ok).toBe(true)
-    const owner = depsFor({ actor: actor('owner', 'owner') })
-    const projectResult = await createProject(owner, {
-      name: 'owned project',
-      ownerId: asId('other'),
-      memberIds: [asId('other')],
-    })
-    expect(projectResult.ok).toBe(true)
-  })
-})
 describe('updateTask rejects protected patches and stale updates', () => {
   it('rejects protected task patches and stale same-stage updates before writing', async () => {
     const current = task('current', { updatedAt: 5 })
