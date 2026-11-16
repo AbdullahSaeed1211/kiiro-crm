@@ -4,6 +4,7 @@ export {
   MAX_ATTACHMENT_BYTES,
   sanitizeFileName,
   validateAttachment,
+  validAudioFileHeader,
   type AttachmentKeyInput,
 } from './files'
 export { escapeMarkdownHtml, renderMarkdownLite } from './markdown'

@@ -14,6 +14,7 @@ export const INTAKE_BOOKING_COPY: Readonly<
       chooseOption: string
       send: string
       sending: string
+      audioHelp: string
     }
   >
 > = {
@@ -28,6 +29,7 @@ export const INTAKE_BOOKING_COPY: Readonly<
     chooseOption: 'Choose an option',
     send: 'Send',
     sending: 'Sending…',
+    audioHelp: 'MP3, M4A, WAV, OGG or WebM · Up to 10 MB',
   },
   es: {
     date: 'Fecha',
@@ -41,5 +43,6 @@ export const INTAKE_BOOKING_COPY: Readonly<
     chooseOption: 'Elige una opción',
     send: 'Enviar',
     sending: 'Enviando…',
+    audioHelp: 'MP3, M4A, WAV, OGG o WebM · Hasta 10 MB',
   },
 }

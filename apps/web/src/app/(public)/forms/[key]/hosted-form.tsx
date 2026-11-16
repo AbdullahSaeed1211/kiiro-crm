@@ -28,7 +28,8 @@ async function sendHostedFormAnswers(
   }>,
 ) {
   event.preventDefault()
-  const answers = checkedFormAnswers(input.fields, answersOf(event.currentTarget, input.visible))
+  const form = event.currentTarget
+  const answers = checkedFormAnswers(input.fields, answersOf(form, input.visible))
   if (answers === undefined) {
     input.setError(INTAKE_BOOKING_COPY[input.locale].invalid)
     return
@@ -36,17 +37,26 @@ async function sendHostedFormAnswers(
   input.setState('sending')
   input.setError(null)
   try {
-    const response = await fetch(`/api/v1/intake/${input.formKey}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(answers),
-    })
-    if (!response.ok) throw new Error('Could not send. Please check your answers and try again.')
+    await submitHostedAnswers({ formKey: input.formKey, form, answers, fields: input.visible })
     input.setState('done')
   } catch (failure) {
     input.setError(failure instanceof Error ? failure.message : 'Could not send. Please try again.')
     input.setState('idle')
   }
+}
+
+async function submitHostedAnswers(input: {
+  formKey: string
+  form: HTMLFormElement
+  answers: Readonly<Record<string, unknown>>
+  fields: readonly Field[]
+}) {
+  const request = requestBody(input)
+  const response = await fetch(`/api/v1/intake/${input.formKey}`, { method: 'POST', ...request })
+  if (response.ok) return
+  const failure = (await response.json().catch(() => null)) as { error?: string | { message?: string } } | null
+  const message = typeof failure?.error === 'string' ? failure.error : failure?.error?.message
+  throw new Error(message ?? 'Could not send. Please check your answers and try again.')
 }
 
 function TurnstileWidget({ siteKey }: Readonly<{ siteKey: string }>) {
@@ -88,6 +98,22 @@ function Control({ field, id, locale }: Readonly<{ field: Field; id: string; loc
           </option>
         ))}
       </NativeSelect>
+    )
+  if (field.type === 'audio')
+    return (
+      <div className="grid gap-1.5">
+        <Input
+          id={id}
+          name={field.key}
+          type="file"
+          accept=".mp3,.m4a,.wav,.ogg,.webm,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm"
+          required={field.required}
+          aria-describedby={`${id}-help`}
+        />
+        <p id={`${id}-help`} className="text-xs text-muted-foreground">
+          {INTAKE_BOOKING_COPY[locale].audioHelp}
+        </p>
+      </div>
     )
   return (
     <Input
@@ -135,15 +161,46 @@ function Question({ field, timeZone, locale }: Readonly<{ field: Field }> & Pres
 function answersOf(form: HTMLFormElement, fields: readonly Field[]): Record<string, string | number> {
   const data = new FormData(form)
   const token = data.get('cf-turnstile-response')
-  const answers = fields.flatMap((field): [string, string | number][] => {
-    const value = data.get(field.key)
-    if (field.type === 'checkbox') return value === null ? [] : [[field.key, 'yes']]
-    if (field.type === 'datetime') return typeof value === 'string' && value !== '' ? [[field.key, Number(value)]] : []
-    return typeof value === 'string' && value.trim() !== '' ? [[field.key, value.trim()]] : []
-  })
+  const answers = fields.flatMap((field) => answerForField(field, data))
   return Object.fromEntries(
     typeof token === 'string' && token !== '' ? [...answers, ['cf-turnstile-response', token]] : answers,
   )
+}
+
+function answerForField(field: Field, data: FormData): [string, string | number][] {
+  const value = data.get(field.key)
+  if (field.type === 'checkbox') return checkedAnswer(field.key, value)
+  if (field.type === 'audio') return []
+  return textAnswer({ key: field.key, type: field.type, value })
+}
+
+function checkedAnswer(key: string, value: FormDataEntryValue | null): [string, string][] {
+  return value === null ? [] : [[key, 'yes']]
+}
+
+function textAnswer(input: {
+  key: string
+  type: Field['type']
+  value: FormDataEntryValue | null
+}): [string, string | number][] {
+  const { key, type, value } = input
+  if (typeof value !== 'string' || value.trim() === '') return []
+  return [[key, type === 'datetime' ? Number(value) : value.trim()]]
+}
+
+function requestBody(input: {
+  form: HTMLFormElement
+  answers: Readonly<Record<string, unknown>>
+  fields: readonly Field[]
+}): { body: BodyInit; headers?: HeadersInit } {
+  const audioField = input.fields.find((field) => field.type === 'audio')
+  const fileValue = audioField === undefined ? null : new FormData(input.form).get(audioField.key)
+  if (audioField === undefined || !(fileValue instanceof File) || fileValue.size === 0)
+    return { body: JSON.stringify(input.answers), headers: { 'content-type': 'application/json' } }
+  const body = new FormData()
+  for (const [key, value] of Object.entries(input.answers)) body.set(key, String(value))
+  body.set(audioField.key, fileValue)
+  return { body }
 }
 
 /** The public form: shows the questions, posts the answers to the intake endpoint, then shows the success message. */

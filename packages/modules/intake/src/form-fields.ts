@@ -22,7 +22,7 @@ export const formFieldsSchema = z
           .trim()
           .regex(/^[a-z]\w{0,39}$/u),
         label: z.string().trim().min(1).max(80),
-        type: z.enum(['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'datetime']),
+        type: z.enum(['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'datetime', 'audio']),
         required: z.boolean(),
         options: z.array(z.string().trim().min(1).max(80)).max(MAX_OPTIONS),
         showWhen: z
@@ -38,6 +38,10 @@ export const formFieldsSchema = z
   .refine(
     (fields) => new Set(fields.map((field) => field.key)).size === fields.length,
     'Each question needs its own key.',
+  )
+  .refine(
+    (fields) => fields.filter((field) => field.type === 'audio').length <= 1,
+    'Only one audio recording is allowed.',
   )
   .refine(
     (fields) =>

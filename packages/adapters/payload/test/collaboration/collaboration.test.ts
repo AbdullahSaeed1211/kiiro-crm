@@ -7,6 +7,7 @@ import {
   fanOutMentions,
   parseMentions,
   sanitizeFileName,
+  validAudioFileHeader,
   unreadCount,
   validateAttachment,
 } from '../../src/collaboration'
@@ -58,6 +59,25 @@ describe('markdown-lite and attachments', () => {
     expect(validateAttachment({ type: 'application/x-msdownload', size: 10 })).toBeTypeOf('string')
     expect(validateAttachment({ type: pdf, size: tenMiB })).toBeUndefined()
     expect(validateAttachment({ type: pdf, size: tenMiB + 1 })).toBeTypeOf('string')
+  })
+
+  it('checks audio file extension, declared MIME and container signature together', () => {
+    expect(
+      validAudioFileHeader({ name: 'call.mp3', type: 'audio/mpeg', header: new TextEncoder().encode('ID3') }),
+    ).toBe(true)
+    expect(
+      validAudioFileHeader({
+        name: 'call.m4a',
+        type: 'audio/mp4',
+        header: new TextEncoder().encode('\0\0\0\x18ftypmp42'),
+      }),
+    ).toBe(true)
+    expect(
+      validAudioFileHeader({ name: 'call.mp3', type: 'audio/mpeg', header: new TextEncoder().encode('%PDF-1.7') }),
+    ).toBe(false)
+    expect(validAudioFileHeader({ name: 'call.mp3', type: 'audio/wav', header: new TextEncoder().encode('ID3') })).toBe(
+      false,
+    )
   })
 })
 

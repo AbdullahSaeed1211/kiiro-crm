@@ -89,6 +89,17 @@ export const ATTACHMENT_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/zip',
   'application/x-zip-compressed',
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/wave',
+  'audio/vnd.wave',
+  'audio/ogg',
+  'application/ogg',
+  'audio/webm',
 ] as const
 
 /** Email directions of spec §10.4. */
