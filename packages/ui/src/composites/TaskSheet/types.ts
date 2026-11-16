@@ -96,6 +96,8 @@ export type TaskSheetLabels = Readonly<{
   description: string
   descriptionPlaceholder: string
   saveDescription: string
+  autoSaveHint: string
+  saveOrDiscardBeforeComplete: string
   saving: string
   saved: string
   saveFailed: string

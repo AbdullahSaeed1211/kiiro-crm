@@ -79,17 +79,15 @@ export function TaskResponsibilityControls({
         ) : null}
       </div>
       {assigner ? <p className="text-xs text-muted-foreground">{copy.assignedBy.replace('{name}', assigner)}</p> : null}
-      {!canUpdate ? (
-        <ReadonlyRoleDetails
-          primaryAssigneeId={primaryAssigneeId}
-          collaboratorIds={collaboratorIds}
-          watcherIds={watcherIds}
-          blockedReason={blockedReason}
-          waitingOnId={waitingOnId}
-          people={people}
-          copy={copy}
-        />
-      ) : null}
+      <ReadonlyRoleDetails
+        primaryAssigneeId={primaryAssigneeId}
+        collaboratorIds={collaboratorIds}
+        watcherIds={watcherIds}
+        blockedReason={blockedReason}
+        waitingOnId={waitingOnId}
+        people={people}
+        copy={copy}
+      />
       {canUpdate ? (
         <>
           <TaskAssignmentSection

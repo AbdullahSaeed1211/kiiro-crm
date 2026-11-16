@@ -5,11 +5,12 @@ import { Checkbox } from '@ops/ui/components/ui/checkbox'
 import { NativeSelect } from '@ops/ui/components/ui/native-select'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useTaskSheetDirtyChange } from '@ops/ui/composites/TaskSheet'
 import { TASK_RESPONSIBILITY_COPY } from '../../../../i18n/task-responsibility-copy'
 import {
-  membership,
-  saveTaskPatch,
-  withoutPerson,
+  assignmentIsDirty,
+  saveAssignmentWithFeedback,
+  useAssignmentRoleHandlers,
   type TaskPerson,
   type TaskResponsibilityProps,
 } from './task-responsibility-shared'
@@ -46,6 +47,42 @@ function PeopleChecks({
   )
 }
 
+function AssignmentSaveFeedback({
+  copy,
+  dirty,
+  pending,
+  saved,
+  failed,
+  onSave,
+}: Readonly<{
+  copy: (typeof TASK_RESPONSIBILITY_COPY)['en']
+  dirty: boolean
+  pending: boolean
+  saved: boolean
+  failed: boolean
+  onSave: () => void
+}>) {
+  return (
+    <>
+      {dirty ? (
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={onSave}>
+          {pending ? copy.saving : copy.saveAssignment}
+        </Button>
+      ) : null}
+      {saved && !dirty ? (
+        <p className="text-xs text-muted-foreground" role="status">
+          {copy.saved}
+        </p>
+      ) : null}
+      {failed ? (
+        <p role="alert" className="text-xs text-destructive">
+          {copy.failed}
+        </p>
+      ) : null}
+    </>
+  )
+}
+
 function AssignmentForm({
   copy,
   people,
@@ -54,6 +91,8 @@ function AssignmentForm({
   watchers,
   pending,
   failed,
+  saved,
+  dirty,
   changeResponsible,
   toggleCollaborator,
   toggleWatcher,
@@ -66,63 +105,60 @@ function AssignmentForm({
   watchers: ReadonlySet<string>
   pending: boolean
   failed: boolean
+  saved: boolean
+  dirty: boolean
   changeResponsible: (id: string) => void
   toggleCollaborator: (id: string, checked: boolean) => void
   toggleWatcher: (id: string, checked: boolean) => void
   save: () => void
 }>) {
   return (
-    <div className="mt-3 grid gap-3">
-      <label className="grid gap-1.5 text-sm font-medium">
-        {copy.responsible}
-        <NativeSelect
-          value={responsible}
-          onChange={(event) => {
-            changeResponsible(event.target.value)
-          }}
-          className="w-full font-normal"
-        >
-          <option value="">{copy.unassigned}</option>
-          {people.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </NativeSelect>
-      </label>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <PeopleChecks
-          title={copy.collaborators}
-          people={people}
-          selected={collaborators}
-          disabledId={responsible}
-          onToggle={toggleCollaborator}
-        />
-        <PeopleChecks
-          title={copy.watchers}
-          people={people}
-          selected={watchers}
-          disabledId={responsible}
-          onToggle={toggleWatcher}
+    <details>
+      <summary className="cursor-pointer text-sm text-muted-foreground">{copy.assignmentDetails}</summary>
+      <div className="mt-3 grid gap-3">
+        <label className="grid gap-1.5 text-sm font-medium">
+          {copy.responsible}
+          <NativeSelect
+            value={responsible}
+            onChange={(event) => {
+              changeResponsible(event.target.value)
+            }}
+            className="w-full font-normal"
+          >
+            <option value="">{copy.unassigned}</option>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PeopleChecks
+            title={copy.collaborators}
+            people={people}
+            selected={collaborators}
+            disabledId={responsible}
+            onToggle={toggleCollaborator}
+          />
+          <PeopleChecks
+            title={copy.watchers}
+            people={people}
+            selected={watchers}
+            disabledId={responsible}
+            onToggle={toggleWatcher}
+          />
+        </div>
+        <AssignmentSaveFeedback
+          copy={copy}
+          dirty={dirty}
+          pending={pending}
+          saved={saved}
+          failed={failed}
+          onSave={save}
         />
       </div>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={pending}
-        onClick={() => {
-          save()
-        }}
-      >
-        {copy.saveAssignment}
-      </Button>
-      {failed ? (
-        <p role="alert" className="text-xs text-destructive">
-          {copy.failed}
-        </p>
-      ) : null}
-    </div>
+    </details>
   )
 }
 
@@ -147,59 +183,58 @@ export function TaskAssignmentSection({
   const [watchers, setWatchers] = useState(() => new Set(watcherIds))
   const [pending, setPending] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const { setResponsibleAndRemoveOverlap, toggleCollaborator, toggleWatcher } = useAssignmentRoleHandlers({
+    setSaved,
+    setResponsible,
+    setCollaborators,
+    setWatchers,
+  })
+  const dirty =
+    !saved &&
+    assignmentIsDirty({
+      responsible,
+      primaryAssigneeId,
+      collaborators,
+      collaboratorIds,
+      watchers,
+      watcherIds,
+    })
+  useTaskSheetDirtyChange('assignment', dirty)
 
-  function setResponsibleAndRemoveOverlap(id: string) {
-    setResponsible(id)
-    setCollaborators((current) => withoutPerson(current, id))
-    setWatchers((current) => withoutPerson(current, id))
-  }
-
-  function toggleCollaborator(id: string, checked: boolean) {
-    setCollaborators((current) => membership({ current, id, checked }))
-    if (checked) setWatchers((current) => withoutPerson(current, id))
-  }
-
-  function toggleWatcher(id: string, checked: boolean) {
-    setWatchers((current) => membership({ current, id, checked }))
-    if (checked) setCollaborators((current) => withoutPerson(current, id))
-  }
-
-  async function save() {
-    if (pending) return
-    setPending(true)
-    setFailed(false)
-    const ok = await saveTaskPatch({
+  function save() {
+    return saveAssignmentWithFeedback({
+      pending,
+      setPending,
+      setFailed,
+      setSaved,
+      onSuccess: () => {
+        router.refresh()
+      },
       taskId,
       updatedAt,
-      patch: {
-        primaryAssigneeId: responsible || null,
-        collaboratorIds: [...collaborators].filter((id) => id !== responsible),
-        watcherIds: [...watchers].filter((id) => id !== responsible && !collaborators.has(id)),
-      },
+      responsible,
+      collaborators,
+      watchers,
     })
-    if (ok) router.refresh()
-    else setFailed(true)
-    setPending(false)
   }
 
-  return (
-    <details>
-      <summary className="cursor-pointer text-sm text-muted-foreground">{copy.assignmentDetails}</summary>
-      <AssignmentForm
-        copy={copy}
-        people={people}
-        responsible={responsible}
-        collaborators={collaborators}
-        watchers={watchers}
-        pending={pending}
-        failed={failed}
-        changeResponsible={setResponsibleAndRemoveOverlap}
-        toggleCollaborator={toggleCollaborator}
-        toggleWatcher={toggleWatcher}
-        save={() => {
-          void save()
-        }}
-      />
-    </details>
-  )
+  const form = {
+    copy,
+    people,
+    responsible,
+    collaborators,
+    watchers,
+    pending,
+    failed,
+    saved,
+    dirty,
+    changeResponsible: setResponsibleAndRemoveOverlap,
+    toggleCollaborator,
+    toggleWatcher,
+    save: () => {
+      void save()
+    },
+  }
+  return <AssignmentForm {...form} />
 }

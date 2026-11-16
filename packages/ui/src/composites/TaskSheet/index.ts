@@ -1,4 +1,5 @@
 export { TaskSheet, TaskPage } from './TaskSheet'
+export { useTaskSheetDirtyChange } from './task-sheet-dirty'
 export {
   TASK_PRIORITIES,
   TASK_REPEATS,
