@@ -54,22 +54,37 @@ describe('can', () => {
 })
 
 describe('profile access', () => {
-  it('limits sales staff to sales records and standalone tasks', () => {
+  it('limits sales staff to leads', () => {
     const sales = actor('staff', {
       workProfile: 'sales',
-      recordTypes: ['organization', 'contact', 'lead', 'deal', 'task'],
-      unlinkedRecordTypes: ['task'],
-      relatedRecordTypes: ['lead', 'contact', 'deal'],
+      recordTypes: ['lead'],
     })
     expect(can(sales, 'read', { type: 'lead', ownerId: sales.id })).toBe(true)
-    expect(can(sales, 'create', { type: 'deal' })).toBe(true)
+    expect(can(sales, 'read', { type: 'lead', createdById: sales.id })).toBe(true)
+    expect(can(sales, 'create', { type: 'lead' })).toBe(true)
+    expect(can(sales, 'read', { type: 'lead', ownerId: asId('another-user') })).toBe(false)
+    expect(can(sales, 'read', { type: 'lead', assigneeIds: [sales.id] })).toBe(true)
+    expect(can(sales, 'read', { type: 'lead', assignedById: sales.id })).toBe(false)
+    expect(can(sales, 'read', { type: 'lead', watcherIds: [sales.id] })).toBe(false)
+    expect(can(sales, 'create', { type: 'deal' })).toBe(false)
+    expect(can(sales, 'read', { type: 'contact', ownerId: sales.id })).toBe(false)
+    expect(can(sales, 'read', { type: 'task', assigneeIds: [sales.id] })).toBe(false)
     expect(can(sales, 'read', { type: 'project' })).toBe(false)
-    expect(can(sales, 'create', { type: 'task', parentId: asId('project-1') })).toBe(false)
-    expect(can(sales, 'create', { type: 'task', parentId: null })).toBe(true)
-    expect(can(sales, 'create', { type: 'task', parentId: null, relatedRecordType: 'unknown' })).toBe(false)
-    expect(can(sales, 'create', { type: 'task', parentId: null, relatedRecordType: 'lead' })).toBe(true)
   })
 
+  it('does not extend the sales lead scope through reports or groups', () => {
+    const sales = actor('staff', {
+      workProfile: 'sales',
+      recordTypes: ['lead'],
+      reportIds: [asId('report-1')],
+      groupIds: [asId('group-a')],
+    })
+    expect(can(sales, 'read', { type: 'lead', ownerId: asId('report-1') })).toBe(false)
+    expect(can(sales, 'read', { type: 'lead', groupId: asId('group-a') })).toBe(false)
+  })
+})
+
+describe('delivery profile access', () => {
   it('limits delivery and consultant staff to delivery records while preserving agency-wide manager access', () => {
     const delivery = actor('staff', {
       workProfile: 'delivery',

@@ -81,6 +81,7 @@ Each one caused a real defect here.
 - Task detail changes belong in shared content used by both the canonical page and intercepted drawer. Verify a real task-row click as well as direct navigation; checking only `/tasks/:id` misses controls absent from the more common drawer path.
 - Open a persisted event from the sales desk during calendar verification. Rendering an empty calendar missed a server callback passed into a client dialog; cross-boundary props must remain serializable.
 - Multi-record scheduling follows the non-transactional recovery contract in decision D-36. Check interrupted submission retry and duplicate prevention; a returned error does not itself roll back prior writes.
+- Intake lead data uses domain keys (`ownerId`, `assigneeIds`, `sourceId`); map them through the CRM Payload codecs before persistence (`owner`, `assignees`, `source`). Verify the saved lead routing and scheduled recipients, since an accepted response can hide a dropped relationship mapping.
 - Prove scheduled occurrence uniqueness against the real local database. Payload's UUID create path discarded a supplied `data.id` during monthly-work verification while the fake accepted it. Use a persisted unique occurrence key and make the fake assign its own IDs; confirm concurrent and later-window replays create one occurrence.
 
 ## Verifying a change

@@ -13,9 +13,13 @@ const lastLoad = { at: 0 }
  * The counts beside sidebar links. They load after the page and refresh when the person changes page or returns to the
  * tab; until then the links show no count, and a count never takes layout space.
  */
-export function useNavCounts(pathname: string): Counts {
+export function useNavCounts(pathname: string, enabled = true): Counts {
   const [counts, setCounts] = useState<Counts>(NONE)
   useEffect(() => {
+    if (!enabled) {
+      setCounts(NONE)
+      return
+    }
     let live = true
     const load = () => {
       // A person moving between pages should not cost a request each time.
@@ -37,6 +41,6 @@ export function useNavCounts(pathname: string): Counts {
       live = false
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [pathname])
+  }, [enabled, pathname])
   return counts
 }

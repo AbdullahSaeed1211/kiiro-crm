@@ -180,8 +180,13 @@ async function prepare(
     ok: true,
     channel: channel.channel,
     payload: parsed.value,
-    dedupeKey: await intakeDedupeKey(deps.form.id, parsed.value, deps.localDate),
+    dedupeKey: await namespacedDedupeKey(deps, parsed.value),
   }
+}
+
+async function namespacedDedupeKey(deps: SubmitIntakeDeps, payload: IntakePayload): Promise<string> {
+  const key = await intakeDedupeKey(deps.form.id, payload, deps.localDate)
+  return deps.dedupeNamespace === undefined ? key : sha256Hex(`${deps.dedupeNamespace}:${key}`)
 }
 
 function validateAnswers(deps: SubmitIntakeDeps, payload: unknown, channel: string) {

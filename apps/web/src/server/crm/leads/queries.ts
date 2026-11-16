@@ -149,6 +149,19 @@ async function loadLeadPeople(context: RequestContext, leads: readonly LeadRecor
   )
 }
 
+async function leadPagePeople(context: RequestContext, lead: LeadRecord) {
+  if (!isManagerUp(context.actor)) return loadLeadPeople(context, [lead])
+  const users = await context.payload.find({
+    collection: 'users',
+    where: { active: { equals: true } },
+    depth: 0,
+    limit: 0,
+    overrideAccess: false,
+    req: context.req,
+  })
+  return personMap(users.docs)
+}
+
 /** The people a lead can be assigned to; only owners and managers assign, and staff may not read who is active. */
 export async function loadOwnerOptions(context: Awaited<ReturnType<typeof getRequestContext>>): Promise<LeadPerson[]> {
   if (!isManagerUp(context.actor)) return []
@@ -203,22 +216,14 @@ export async function getLeadPage(id: string, tab: LeadTab = 'notes'): Promise<L
   const repo = createCrmRepository(context.req)
   const lead = await getLeadRecord(id)
   if (lead === undefined) return null
-  const [workflow, sources, lostReasons, users, tabData] = await Promise.all([
+  const [workflow, sources, lostReasons, people, tabData] = await Promise.all([
     repo.loadWorkflow(lead.workflowId),
     repo.listLookups('source'),
     repo.listLookups('lostReason'),
-    context.payload.find({
-      collection: 'users',
-      where: { active: { equals: true } },
-      depth: 0,
-      limit: 0,
-      overrideAccess: false,
-      req: context.req,
-    }),
+    leadPagePeople(context, lead),
     leadTabData(context, id, tab),
   ])
   const stages = workflow === undefined ? [] : toStages(workflow)
-  const people = personMap(users.docs)
   const item = makeListItem({
     lead,
     stages,

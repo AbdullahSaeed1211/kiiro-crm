@@ -1,9 +1,9 @@
 import config from '@payload-config'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { createRateLimiter, handleIntakeRequest, verifyTurnstile } from '@ops/adapter-cloudflare'
-import { createIntakeStore, findIntakeForm, SETTINGS_GLOBAL } from '@ops/adapter-payload'
+import { createIntakeStore, findIntakeForm, resolveActor, SETTINGS_GLOBAL } from '@ops/adapter-payload'
 import { formFieldsSchema, isAllowedOrigin, normalizeOrigin, sha256Hex } from '@ops/module-intake'
-import { getPayload } from 'payload'
+import { createLocalReq, getPayload } from 'payload'
 import { captureIntakeSubmission, parsePublicSubmission } from '../public-recording'
 import { persistIntakeRecording } from '../public-recording-store'
 
@@ -63,7 +63,14 @@ async function processParsedSubmission(input: {
   rateLimiter: ReturnType<typeof createRateLimiter>
 }): Promise<Response> {
   const { request, parsed, env, form, settings, payload, rateLimiter } = input
-  const uploader = parsed.recording === undefined ? undefined : await activeDefaultOwner(payload, form)
+  const salesActor = await authenticatedSalesActor(request, payload)
+  const requestForm =
+    salesActor === undefined || form === undefined ? form : { ...form, defaultOwnerId: String(salesActor.id) }
+  const uploader =
+    parsed.recording === undefined
+      ? undefined
+      : ((salesActor as unknown as Record<string, unknown> | undefined) ??
+        (await activeDefaultOwner(payload, requestForm)))
   if (parsed.recording !== undefined && uploader === undefined)
     return intakeError({ request, form, status: 503, message: 'Call recording is not available for this form.' })
   const hostnames = env.TURNSTILE_HOSTNAMES.split(',')
@@ -72,9 +79,31 @@ async function processParsedSubmission(input: {
   const capture: { submissionId?: string; leadId?: string } = {}
   const response = await handleIntakeRequest(
     parsed.request,
-    intakeDependencies({ env, form, settings, payload, capture, rateLimiter, hostnames }),
+    intakeDependencies({
+      env,
+      form: requestForm,
+      settings,
+      payload,
+      capture,
+      rateLimiter,
+      hostnames,
+      salesActorId: salesActor === undefined ? undefined : String(salesActor.id),
+    }),
   )
   return finishIntakeResponse({ request, form, parsed, response, env, payload, uploader, capture })
+}
+
+/** Authenticated sales submissions are owned by the session actor, never a caller-supplied form field. */
+async function authenticatedSalesActor(request: Request, payload: Awaited<ReturnType<typeof getPayload>>) {
+  try {
+    const auth = await payload.auth({ headers: request.headers })
+    if (auth.user === null) return undefined
+    const req = await createLocalReq({ user: auth.user }, payload)
+    const actor = await resolveActor(req)
+    return actor?.active === true && actor.role === 'staff' && actor.workProfile === 'sales' ? actor : undefined
+  } catch {
+    return undefined
+  }
 }
 
 async function finishIntakeResponse(input: {
@@ -176,10 +205,15 @@ function intakeDependencies(input: {
   capture: { submissionId?: string; leadId?: string }
   rateLimiter: ReturnType<typeof createRateLimiter>
   hostnames: string[]
+  salesActorId?: string
 }) {
+  const actorId = input.salesActorId
   return {
     form: input.form,
-    store: captureIntakeSubmission(createIntakeStore(input.payload), input.capture),
+    store: captureIntakeSubmission(
+      createIntakeStore(input.payload, actorId === undefined ? {} : { actorId }),
+      input.capture,
+    ),
     rateLimiter: input.rateLimiter,
     turnstile: {
       verify: (data: Parameters<typeof verifyTurnstile>[0]) =>
@@ -188,6 +222,7 @@ function intakeDependencies(input: {
     production: process.env.NODE_ENV === 'production',
     turnstileHostnames: input.hostnames,
     timeZone: typeof input.settings.timezone === 'string' ? input.settings.timezone : 'UTC',
+    ...(actorId === undefined ? {} : { dedupeNamespace: `sales:${actorId}` }),
   }
 }
 

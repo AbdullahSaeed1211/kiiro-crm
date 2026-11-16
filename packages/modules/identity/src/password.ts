@@ -1,10 +1,19 @@
-const MIN_LENGTH = 12
+const MIN_LENGTH = 8
 const MAX_LENGTH = 128
 const MIN_DISTINCT = 5
 const MIN_NAME_LENGTH = 4
 
 /** Passwords that are long enough to pass a length check and are still in every attacker's first guesses. */
 const COMMON = new Set([
+  'password',
+  'password1',
+  '12345678',
+  'qwerty123',
+  'qwerty12',
+  'welcome1',
+  'letmein1',
+  'admin123',
+  'abc12345',
   'passwordpassword',
   'password1234',
   'password12345',

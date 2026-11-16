@@ -66,6 +66,7 @@ const PIPELINE: Codecs<Omit<PipelineFields, 'createdAt' | 'updatedAt'>, FieldOf<
 
 const LEAD: Codecs<CrmDrafts['lead'], FieldOf<'lead'>> = {
   ...PIPELINE,
+  createdById: optionalRef('createdBy'),
   title: text('title'),
   firstName: optionalText('firstName'),
   lastName: optionalText('lastName'),

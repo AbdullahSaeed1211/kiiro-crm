@@ -52,6 +52,36 @@ it('reuses an unambiguous lead with the same normalized email', async () => {
   expect(calls.some((call) => call.method === 'create' && call.args['collection'] === LEADS)).toBe(false)
 })
 
+it('matches authenticated sales intake only against leads owned, created or assigned to the session actor', async () => {
+  const { payload, calls } = fakePayload({
+    find: () => ({ docs: [] }),
+  })
+
+  await createIntakeStore(payload, { actorId: 'sales-1' }).createLead({
+    email: PERSON_EMAIL,
+    ownerId: 'sales-1',
+    assigneeIds: ['sales-1'],
+    sourceId: 'source-1',
+  })
+
+  expect(calls.find((call) => call.method === 'find' && call.args['collection'] === LEADS)?.args['where']).toEqual({
+    or: [
+      { owner: { equals: 'sales-1' } },
+      { createdBy: { equals: 'sales-1' } },
+      { assignees: { contains: 'sales-1' } },
+    ],
+  })
+  expect(
+    calls.find((call) => call.method === 'create' && call.args['collection'] === LEADS)?.args['data'],
+  ).toMatchObject({
+    email: PERSON_EMAIL,
+    owner: 'sales-1',
+    assignees: ['sales-1'],
+    source: 'source-1',
+    createdBy: 'sales-1',
+  })
+})
+
 it('continues paginated contact matching past the first page', async () => {
   const { payload, calls } = fakePayload({
     find: (args) => {

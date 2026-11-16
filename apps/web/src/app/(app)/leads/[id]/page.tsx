@@ -15,6 +15,7 @@ import { RecordCustomFields } from '../../record-custom-fields'
 import { ArchiveRecordControl } from '../../archive-record-control'
 import { RecordNotesTab } from '../../record-notes-tab'
 import { RecordCallLogsTab } from '../../record-call-logs-tab'
+import { getProductContext } from '../../../../server/auth/context'
 
 export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ id: string }> }>): Promise<Metadata> {
@@ -23,6 +24,11 @@ export async function generateMetadata({ params }: Readonly<{ params: Promise<{ 
 }
 
 const TABS: readonly LeadTab[] = ['notes', 'calls', 'activity', 'tasks', 'files', 'email']
+
+function visibleTab(query: Record<string, string | string[] | undefined>, canUseAllTabs: boolean): LeadTab {
+  const requested = TABS.find((candidate) => candidate === firstParam(query.tab)) ?? 'notes'
+  return !canUseAllTabs && (requested === 'tasks' || requested === 'email') ? 'notes' : requested
+}
 
 /** A lead's page; the server builds only the tab in the address (the first, Notes, when there is none). */
 export default async function LeadPage({
@@ -34,9 +40,12 @@ export default async function LeadPage({
 }>) {
   const label = await shellLabels()
   const query = await searchParams
-  const tab = TABS.find((candidate) => candidate === firstParam(query.tab)) ?? 'notes'
+  const context = await getProductContext()
+  const canConvert = context.actor.role !== 'staff' || context.actor.workProfile !== 'sales'
+  const tab = visibleTab(query, canConvert)
+  const { id } = await params
   const [data, outboundEmailEnabled, settings] = await Promise.all([
-    getLeadPage((await params).id, tab),
+    getLeadPage(id, tab),
     getOutboundEmailEnabled(),
     getWorkspaceSettings(),
   ])
@@ -49,6 +58,7 @@ export default async function LeadPage({
         <LeadRecordClient
           data={data}
           outboundEmailEnabled={outboundEmailEnabled}
+          canConvert={canConvert}
           currency={typeof settings.currency === 'string' ? settings.currency : 'USD'}
           slots={{
             details: <RecordDetails type="lead" id={data.item.lead.id} />,

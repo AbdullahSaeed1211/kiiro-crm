@@ -12,13 +12,24 @@ function ownsOrManagesOwner(actor: Actor, ownerId: Id | undefined): boolean {
   return ownerId !== undefined && (ownerId === actor.id || actor.reportIds.includes(ownerId))
 }
 
+function directSalesScope(actor: Actor, resource: AccessResource): boolean {
+  return (
+    resource.ownerId === actor.id ||
+    resource.createdById === actor.id ||
+    (resource.assigneeIds ?? []).includes(actor.id)
+  )
+}
+
 /** True when the actor or a transitive report owns `resource`, the actor is assigned, or it belongs to one of the actor's groups. */
 export function inScope(actor: Actor, resource: AccessResource): boolean {
+  if (actor.role === 'staff' && actor.workProfile === 'sales') {
+    return directSalesScope(actor, resource)
+  }
   const assigned = (resource.assigneeIds ?? []).includes(actor.id)
   const assignedBy = resource.assignedById === actor.id
   const watching = (resource.watcherIds ?? []).includes(actor.id)
   const inGroup = resource.groupId !== undefined && actor.groupIds.includes(resource.groupId)
-  return ownsOrManagesOwner(actor, resource.ownerId) || assigned || assignedBy || watching || inGroup
+  return [ownsOrManagesOwner(actor, resource.ownerId), assigned, assignedBy, watching, inGroup].some(Boolean)
 }
 
 function recordTypeAllowed(actor: Actor, resource: AccessResource): boolean {
@@ -52,12 +63,15 @@ export function workProfileAllows(actor: Actor, resource: AccessResource): boole
 }
 
 const scoped: Rule = (actor, resource) => isManagerUp(actor) || inScope(actor, resource)
-const editable: Rule = (actor, resource) =>
-  isManagerUp(actor) ||
-  ownsOrManagesOwner(actor, resource.ownerId) ||
-  resource.assignedById === actor.id ||
-  (resource.assigneeIds ?? []).includes(actor.id) ||
-  (resource.groupId !== undefined && actor.groupIds.includes(resource.groupId))
+function editable(actor: Actor, resource: AccessResource): boolean {
+  if (actor.role === 'staff' && actor.workProfile === 'sales') return directSalesScope(actor, resource)
+  return [
+    isManagerUp(actor) || ownsOrManagesOwner(actor, resource.ownerId),
+    resource.assignedById === actor.id,
+    (resource.assigneeIds ?? []).includes(actor.id),
+    resource.groupId !== undefined && actor.groupIds.includes(resource.groupId),
+  ].some(Boolean)
+}
 const managerUp: Rule = (actor) => isManagerUp(actor)
 
 const RULES: Readonly<Record<Action, Rule>> = {

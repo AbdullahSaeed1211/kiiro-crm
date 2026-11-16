@@ -103,6 +103,8 @@ export interface SubmitIntakeDeps {
   readonly turnstileHostnames?: readonly string[]
   readonly turnstileAction?: string
   readonly channel?: IntakeChannel
+  /** Partitions authenticated idempotency keys, such as a sales user submitting the hosted form. */
+  readonly dedupeNamespace?: string
 }
 /** Successful command result. */
 export interface IntakeAccepted {

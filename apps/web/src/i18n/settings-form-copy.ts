@@ -104,8 +104,8 @@ const en: Readonly<Record<string, string>> = {
   'Unable to change password.': 'Unable to change password.',
   'Password changed successfully.': 'Password changed successfully.',
   'Unable to reach the server. Try again.': 'Unable to reach the server. Try again.',
-  'Use 12–128 characters. Your new password cannot equal your email.':
-    'Use 12–128 characters. Your new password cannot equal your email.',
+  'Use 8–128 characters. Your new password cannot equal or contain your email name.':
+    'Use 8–128 characters. Your new password cannot equal or contain your email name.',
   'Changing…': 'Changing…',
   ...SETTINGS_PROFILE_COPY.en,
   owner: 'Owner',
@@ -218,8 +218,8 @@ const es: Readonly<Record<string, string>> = {
   'Unable to change password.': 'No se pudo cambiar la contraseña.',
   'Password changed successfully.': 'La contraseña se cambió correctamente.',
   'Unable to reach the server. Try again.': 'No se pudo conectar con el servidor. Inténtalo de nuevo.',
-  'Use 12–128 characters. Your new password cannot equal your email.':
-    'Usa entre 12 y 128 caracteres. La nueva contraseña no puede ser igual a tu correo.',
+  'Use 8–128 characters. Your new password cannot equal or contain your email name.':
+    'Usa entre 8 y 128 caracteres. La nueva contraseña no puede ser igual ni contener el nombre de tu correo.',
   'Changing…': 'Cambiando…',
   ...SETTINGS_PROFILE_COPY.es,
   owner: 'Propietario',

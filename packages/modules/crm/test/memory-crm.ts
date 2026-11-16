@@ -30,6 +30,7 @@ export const dealWorkflow: Workflow = {
 
 export const seedLead: LeadRecord & { customData?: Record<string, unknown> } = {
   id: asId('lead-1'),
+  createdById: asId('owner-1'),
   title: 'Acme website',
   firstName: 'Ada',
   lastName: 'Lovelace',

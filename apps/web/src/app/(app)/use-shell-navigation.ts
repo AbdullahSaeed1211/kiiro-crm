@@ -28,7 +28,7 @@ export function useShellNavigation({
   const sections = useMemo(() => navSections(viewer), [viewer])
   const entries = useMemo(() => navEntries(sections), [sections])
   const creates = useMemo(() => createLinks(viewer), [viewer])
-  const counts = useNavCounts(pathname)
+  const counts = useNavCounts(pathname, role !== 'staff' || workProfile !== 'sales')
   const countLabels = useMemo(() => {
     const copy = NAV_COPY[locale]
     return {

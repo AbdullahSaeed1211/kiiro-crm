@@ -87,7 +87,7 @@ function passwordResetScopeFailure(
 }
 
 export function passwordPolicy(password: unknown, email: unknown): true | string {
-  if (typeof password !== 'string') return 'Password must be 12 to 128 characters.'
+  if (typeof password !== 'string') return 'Password must be 8 to 128 characters.'
   return passwordProblem(password, typeof email === 'string' ? email : undefined) ?? true
 }
 

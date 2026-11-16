@@ -60,6 +60,15 @@ function emailActionFor({
   return disabledAction({ label: copy.email, icon: <MailWarning aria-hidden />, title: copy.sendingUnavailableBody })
 }
 
+function newTaskAction({
+  show,
+  href,
+  copy,
+  primary,
+}: Readonly<{ show: boolean; href: string; copy: RecordCopy; primary: boolean }>): ReactNode {
+  return show ? actionLink({ href, label: copy.newTask, icon: <ClipboardPlus aria-hidden />, primary }) : null
+}
+
 export function RecordActionLinks({
   recordType,
   recordId,
@@ -70,6 +79,7 @@ export function RecordActionLinks({
   outboundEmailEnabled = true,
   archive,
   primary = false,
+  showNewTask = true,
   copy,
 }: Readonly<{
   copy: RecordCopy
@@ -82,6 +92,8 @@ export function RecordActionLinks({
   outboundEmailEnabled?: boolean
   /** The Archive control, already gated on the viewer's role by the page. */
   archive?: ReactNode
+  /** Hides task creation for viewers whose workspace excludes tasks. */
+  showNewTask?: boolean
   /** Makes New task the page's one primary button, for records where following up is the daily action. */
   primary?: boolean
 }>) {
@@ -101,7 +113,7 @@ export function RecordActionLinks({
       {phoneNumber === null || recordType === 'deal' ? null : (
         <SendTextDialog recordType={recordType} recordId={recordId} recipient={phoneNumber} />
       )}
-      {actionLink({ href: taskHref, label: copy.newTask, icon: <ClipboardPlus aria-hidden />, primary })}
+      {newTaskAction({ show: showNewTask, href: taskHref, copy, primary })}
       {editHref === undefined ? null : actionLink({ href: editHref, label: copy.edit, icon: <Pencil aria-hidden /> })}
       {archive}
     </div>

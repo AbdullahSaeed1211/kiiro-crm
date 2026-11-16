@@ -32,6 +32,7 @@ import { catalogFor, type Locale } from '../../../i18n/locale'
 import { loadWorkspaceLocale } from '../../../server/queries/work/read-models'
 import { LEAD_VIEWS_COPY, type LeadViewsCopy } from '../../../i18n/lead-views-copy'
 import { LEAD_MORE_COPY } from '../../../i18n/lead-more-copy'
+import { SALES_COPY } from '../../../i18n/sales-copy'
 export const dynamic = 'force-dynamic'
 
 const tableColumns = (copy: ListCopy): DataTableColumn[] => [
@@ -229,7 +230,8 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
   const moreCopy = catalogFor(LEAD_MORE_COPY, locale)
   const params = await searchParams
   const { actor } = await getProductContext()
-  const canBulk = actor.role === 'owner' || actor.role === 'manager'
+  const canBulk = actor.role !== 'staff'
+  const isSalesStaff = actor.role === 'staff' && actor.workProfile === 'sales'
   const views = viewLinks(await listSavedViews('lead'))
   const result = await listLeads({
     q: parseLeadSearch(params.q),
@@ -244,15 +246,18 @@ export default async function LeadsPage({ searchParams }: Readonly<{ searchParam
       <PageContent>
         <PageHeader
           title="Leads"
-          description={help.leads}
+          description={isSalesStaff ? catalogFor(SALES_COPY, locale).leadListDescription : help.leads}
           count={result.total}
-          tabs={viewSwitcher(params, leadViewsCopy)}
+          tabs={
+            actor.role === 'staff' && actor.workProfile === 'sales' ? undefined : viewSwitcher(params, leadViewsCopy)
+          }
           actions={
             <>
               <LeadCreateDialogClient />
               <LeadViewControls
                 views={[{ id: 'all', label: moreCopy.allOpenLeads, query: '' }, ...views]}
                 canImportExport={canBulk}
+                visible={!isSalesStaff}
               />
             </>
           }

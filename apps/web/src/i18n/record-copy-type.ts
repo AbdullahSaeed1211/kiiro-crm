@@ -100,6 +100,7 @@ export interface RecordCopy {
   readonly updated: string
   readonly stageEntered: string
   readonly convert: string
+  readonly convertAdminOnly: string
   readonly markLost: string
   readonly breadcrumb: string
   readonly saveTitle: string

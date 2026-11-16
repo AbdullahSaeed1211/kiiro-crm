@@ -31,6 +31,7 @@ const TODAY: readonly NavLink[] = [
 ]
 const MY_TASKS = { key: 'myTasks', href: '/my-tasks', icon: CircleCheckBig, shortcut: 'm' }
 const SALES_DESK = { key: 'salesWorkspace', href: '/sales', icon: PhoneCall, shortcut: 'w' }
+const SALES_INTAKE = { key: 'intake', href: '/leads/intake', icon: FileText }
 const SALES: readonly NavLink[] = [
   { key: 'leads', href: '/leads', icon: UserPlus, shortcut: 'l' },
   { key: 'deals', href: '/deals', icon: Handshake, shortcut: 'e' },
@@ -64,6 +65,8 @@ export type NavSection = Readonly<{ id: string; label?: string; entries: readonl
 export function isNavActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/'
   if (href === '/tasks') return isTaskRouteActive(pathname)
+  if (href === '/leads')
+    return pathname === '/leads' || (pathname.startsWith('/leads/') && pathname !== '/leads/intake')
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
@@ -97,7 +100,7 @@ const BILLING: NavLink = { key: 'billing', href: '/billing', icon: ReceiptText, 
 
 function workLinks(viewer: NavViewer): readonly NavLink[] {
   const admin = isAdminRole(viewer.role)
-  if (viewer.workProfile === 'sales' && !admin) return [MY_TASKS]
+  if (viewer.workProfile === 'sales' && !admin) return []
   return [MY_TASKS, ...WORK, ...(admin ? [TEAM] : [])]
 }
 
@@ -109,6 +112,10 @@ function sectionLinks(
 ): readonly Readonly<{ id: string; label?: string; links: readonly NavLink[] }>[] {
   const { modules, role, workProfile } = viewer
   const admin = isAdminRole(role)
+  if (workProfile === 'sales' && !admin) {
+    const leadLink: NavLink = { key: 'leads', href: '/leads', icon: UserPlus, shortcut: 'l' }
+    return [{ id: 'sales', label: termLabel(viewer, 'salesGroup'), links: only(modules.crm, [leadLink, SALES_INTAKE]) }]
+  }
   const tools = [...only(modules.work, [REPORTS]), ...only(modules.mail, [INBOX]), ...only(modules.work, [BILLING])]
   const groups = [
     { id: 'today', links: modules.work ? TODAY : [...TODAY, MY_TASKS] },
@@ -172,13 +179,13 @@ export function navGroups({
 }
 
 /** What the "New" menu and the command menu's Create group offer, by module. */
-export function createLinks(viewer: NavViewer): readonly Readonly<{ key: string; href: string; icon: LucideIcon }>[] {
-  const { modules } = viewer
+function standardCreateLinks(viewer: NavViewer): readonly Readonly<{ key: string; href: string; icon: LucideIcon }>[] {
+  const { modules, role, workProfile } = viewer
   return [
     ...(modules.work ? [{ key: 'newTask', href: '/tasks/new', icon: ListTodo }] : []),
     ...(modules.work ? [{ key: 'newProject', href: '/projects/new', icon: FolderKanban }] : []),
     // Leads belong to the sales desk, so they are offered wherever the Leads link is.
-    ...(modules.crm && (isAdminRole(viewer.role) || viewer.workProfile === 'sales')
+    ...(modules.crm && (isAdminRole(role) || workProfile === 'sales')
       ? [{ key: 'newLead', href: '/leads/new', icon: UserPlus }]
       : []),
     ...(modules.crm
@@ -188,6 +195,12 @@ export function createLinks(viewer: NavViewer): readonly Readonly<{ key: string;
         ]
       : []),
   ]
+}
+
+export function createLinks(viewer: NavViewer): readonly Readonly<{ key: string; href: string; icon: LucideIcon }>[] {
+  if (viewer.role === 'staff' && viewer.workProfile === 'sales')
+    return viewer.modules.crm ? [{ key: 'newLead', href: '/leads/new', icon: UserPlus }] : []
+  return standardCreateLinks(viewer)
 }
 
 export function routeCopyKey(segment: string | undefined): string | undefined {

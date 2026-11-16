@@ -88,6 +88,7 @@ export const RECORD_COPY_EN: RecordCopy = {
   updated: 'Updated',
   stageEntered: 'Stage entered',
   convert: 'Convert',
+  convertAdminOnly: 'An owner or manager must convert leads into deals.',
   markLost: 'Mark lost',
   breadcrumb: 'Breadcrumb',
   saveTitle: 'Save title',

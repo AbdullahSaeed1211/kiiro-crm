@@ -29,6 +29,7 @@ async function taskReadAccess(args: Parameters<Access>[0]): Promise<boolean | Wh
   const actor = await resolveActor(args.req)
   if (!actor?.active) return false
   if (isManagerUp(actor)) return base
+  if (!workProfileAllows(actor, { type: RECORD_TYPES.tasks })) return false
   const extras: Where[] = [{ assignedById: { equals: actor.id } }, { watcherIds: { contains: actor.id } }]
   const profile: Where[] = [{ ownerOnly: { not_equals: true } }]
   if (actor.workProfile === 'sales')
@@ -47,6 +48,7 @@ async function taskUpdateAccess(args: Parameters<Access>[0]): Promise<boolean | 
   const actor = await resolveActor(args.req)
   if (!actor?.active) return false
   if (isManagerUp(actor)) return base
+  if (!workProfileAllows(actor, { type: RECORD_TYPES.tasks })) return false
   const profile: Where[] = [{ ownerOnly: { not_equals: true } }]
   if (actor.workProfile === 'sales')
     profile.push(
@@ -80,8 +82,7 @@ function scheduleReadRule(actor: Actor): Where {
   if (isManagerUp(actor)) return {}
   if (actor.workProfile !== 'sales') return { id: { exists: false } }
   const assignedToActor: Where = { assignees: { contains: actor.id } }
-  const salesRecord: Where = { recordType: { in: ['lead', 'contact'] as string[] } }
-  return { and: [assignedToActor, salesRecord] }
+  return { and: [assignedToActor, { recordType: { equals: 'lead' } }] }
 }
 
 export const personalScheduleRead = allow(scheduleReadRule)

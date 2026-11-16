@@ -12,15 +12,8 @@ const PROFILE_ACCESS: Readonly<
   >
 > = {
   sales: {
-    records: [
-      RECORD_TYPES.organizations,
-      RECORD_TYPES.contacts,
-      RECORD_TYPES.leads,
-      RECORD_TYPES.deals,
-      RECORD_TYPES.tasks,
-    ],
-    unlinked: [RECORD_TYPES.tasks],
-    related: [RECORD_TYPES.leads, RECORD_TYPES.contacts, RECORD_TYPES.deals],
+    records: [RECORD_TYPES.leads],
+    unlinked: [],
   },
   delivery: {
     records: [RECORD_TYPES.organizations, RECORD_TYPES.contacts, RECORD_TYPES.projects, RECORD_TYPES.tasks],

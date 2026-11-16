@@ -26,13 +26,18 @@ const form: IntakeForm = {
   notifyGroupIds: [],
   successMessage: 'Thanks',
 }
-function store(): IntakeStore & { leads: number; submissions: number } {
-  const state = { leads: 0, submissions: 0 }
+function store(): IntakeStore & { leads: number; submissions: number; dedupeKeys: string[] } {
+  const state: { leads: number; submissions: number; dedupeKeys: string[] } = {
+    leads: 0,
+    submissions: 0,
+    dedupeKeys: [],
+  }
   return {
     ...state,
     findByDedupeKey: () => Promise.resolve(undefined),
     insertSubmission: (submission) => {
       state.submissions += 1
+      state.dedupeKeys.push(submission.dedupeKey)
       return Promise.resolve({
         ok: true as const,
         value: { id: `submission-${String(state.submissions)}`, ...submission },
@@ -50,6 +55,9 @@ function store(): IntakeStore & { leads: number; submissions: number } {
     },
     get submissions() {
       return state.submissions
+    },
+    get dedupeKeys() {
+      return state.dedupeKeys
     },
   }
 }
@@ -218,4 +226,26 @@ it('accepts a valid server key without origin or Turnstile', async () => {
     { phone: '+1 555 0100' },
   )
   expect(result.ok).toBe(true)
+})
+
+it('partitions authenticated sales intake retries by the session actor', async () => {
+  const payload = { email: 'person@example.test', phone: '+15555550100' }
+  const keys: string[] = []
+  for (const actorId of ['sales-1', 'sales-2']) {
+    const saved = store()
+    await submitIntake(
+      {
+        form: { ...form, serverKeyHashes: [await sha256Hex(SERVER_KEY)] },
+        store: saved,
+        rateLimiter: allowed,
+        serverKey: SERVER_KEY,
+        now: 1,
+        localDate: LOCAL_DATE,
+        dedupeNamespace: `sales:${actorId}`,
+      },
+      payload,
+    )
+    keys.push(saved.dedupeKeys[0] ?? '')
+  }
+  expect(keys[0]).not.toBe(keys[1])
 })

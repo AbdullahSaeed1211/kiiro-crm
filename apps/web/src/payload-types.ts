@@ -361,6 +361,7 @@ export interface Lead {
   source?: (string | null) | Source;
   owner?: (string | null) | User;
   assignees?: (string | User)[] | null;
+  createdBy?: (string | null) | User;
   workflow?: (string | null) | Workflow;
   stageId?: string | null;
   /**
@@ -1745,6 +1746,7 @@ export interface LeadsSelect<T extends boolean = true> {
   source?: T;
   owner?: T;
   assignees?: T;
+  createdBy?: T;
   workflow?: T;
   stageId?: T;
   stageEnteredAt?: T;

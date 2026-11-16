@@ -181,6 +181,7 @@ runtime white-label; lead intake from existing websites; inbound + outbound emai
 | D-49 | Custom tenant domains | Phase 2, when a customer asks: Cloudflare for SaaS custom hostnames on the `PLATFORM_DOMAIN` zone (100 included, then $0.10 each); the customer CNAMEs its hostname to `tenants.<PLATFORM_DOMAIN>`; an `ops-edge-router` Worker on route `*/*` forwards by `request.cf.hostMetadata.slug` to the tenant Worker through a service binding; email still uses the platform sender with the tenant display name |
 | D-50 | Platform operator | Owns the Cloudflare account, GitHub organization, `PLATFORM_DOMAIN`, Email Service domains and all secrets. Customers are tenants: their owners and managers are users inside their own instance and never receive platform credentials |
 | D-51 | Task due dates | A due date is a calendar date: stored as 00:00 UTC of that date and shown as that date in every time zone (the exception to D-09's display rule). "Today" is today's date in the tenant timezone; a task is overdue when its date is before today and due today when it equals it. `packages/modules/work/src/domain/due-dates.ts` owns the comparison. |
+| D-52 | Password length | Supersedes D-46's 12-character minimum: passwords are 8 to 128 characters, must not equal or contain the account email name, and retain the distinct-character and common-password checks. |
 
 ---
 
@@ -658,6 +659,7 @@ Actor: `{ id; role; groupIds; reportIds (transitive via reportsTo, depth ≤ 5);
 | admin_panel (`/admin`) | yes | yes | no |
 **Staff scope** `scopeFilter(actor, recordType)` = OR of: `ownerId ∈ {actor.id, ...reportIds}`; `assigneeIds contains actor.id`; `groupId ∈ actor.groupIds` (when the type has a group field);
 plus registered `scopeExtensions` (work module: `project.memberIds contains actor.id` for projects and their tasks).
+Sales-profile staff have access to leads only, and their lead scope is exactly owner equals actor, creator equals actor or assignee contains actor. Creator is immutable after lead creation, including when an owner or manager reassigns the lead. They have no access to deals, contacts, organizations, tasks, reports or the sales workspace. A lead created through an authenticated sales session is owned by that session actor; submitted owner identity is ignored. Owners and managers keep their existing access.
 Any active tenant member may assign a task to any active tenant member when creating it or updating a task within their existing scope. This does not grant access to tasks outside that scope or allow staff to change a task's group outside their own groups. Existing owner-only visibility restrictions remain unchanged.
 Task watchers may read the watched task; watching alone grants no editing, completion or assignment rights. Responsible people, collaborators and the recorded assigner retain task access within their work profile. Independent project, group and administrative permissions still apply.
 Adapters convert `FilterNode` → Payload `Where`, AND it into every query, and always pass `overrideAccess: false` with the user, except system jobs (explicit `SystemActor`).
@@ -1012,7 +1014,8 @@ Groups and links come from one model (`navSections`, [navigation design](design/
 | Work | Tasks, Projects, Calendar, Content, Repeating | `lucide:ListTodo`, `FolderKanban`, `CalendarDays`, `FileText`, `Repeat2` | `/tasks`, `/projects`, `/calendar`, `/content-calendar`, `/tasks/repeating` | module work; not for sales-profile staff | — |
 | Work | Team assignments | `lucide:Users` | `/team` | module work, owner or manager | — |
 | Clients (label from terminology) | Organizations, Contacts | `lucide:Building2`, `Contact` | `/organizations`, `/contacts` | module crm | — |
-| Sales | Sales workspace, Leads, Deals | `lucide:PhoneCall`, `UserPlus`, `Handshake` | `/sales`, `/leads`, `/deals` | module crm; owner, manager or sales profile | Leads: leads waiting on you (alert tone) if > 0 |
+| Sales | Sales workspace, Leads, Deals | `lucide:PhoneCall`, `UserPlus`, `Handshake` | `/sales`, `/leads`, `/deals` | module crm; owner or manager | Leads: leads waiting on you (alert tone) if > 0 |
+| Sales (staff) | Leads, Intake | `lucide:UserPlus`, `FileText` | `/leads`, `/leads/intake` | module crm; sales profile | Leads: leads waiting on you (alert tone) if > 0 |
 | Utilities | Reports, Inbox, Billing | `lucide:ChartNoAxesCombined`, `Mail`, `ReceiptText` | `/reports`, `/inbox`, `/billing` | owner or manager, and the link's module | — |
 
 Badge counts come from `GET /api/v1/nav/counts`, load after the page, refresh when the tab is shown again and take no layout space; a collapsed sidebar shows a dot. Pinned saved views are not built.

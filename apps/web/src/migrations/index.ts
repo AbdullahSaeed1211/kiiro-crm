@@ -37,6 +37,8 @@ import * as migration_20261113_090000_current_focus from './20261113_090000_curr
 import * as migration_20261113_120000_presence from './20261113_120000_presence';
 import * as migration_20261116_090000_task_responsibility from './20261116_090000_task_responsibility';
 
+import * as migration_20261117_090000_lead_creator from './20261117_090000_lead_creator';
+
 export const migrations = [
   {
     up: migration_20260913_131654_initial.up,
@@ -191,4 +193,5 @@ export const migrations = [
   { up: migration_20261113_090000_current_focus.up, down: migration_20261113_090000_current_focus.down, name: '20261113_090000_current_focus' },
   { up: migration_20261113_120000_presence.up, down: migration_20261113_120000_presence.down, name: '20261113_120000_presence' },
   { up: migration_20261116_090000_task_responsibility.up, down: migration_20261116_090000_task_responsibility.down, name: '20261116_090000_task_responsibility' },
+  { up: migration_20261117_090000_lead_creator.up, down: migration_20261117_090000_lead_creator.down, name: '20261117_090000_lead_creator' },
 ];

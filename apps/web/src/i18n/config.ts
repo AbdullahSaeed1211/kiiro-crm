@@ -7,6 +7,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
   en: {
     dashboard: 'Today',
     salesWorkspace: 'Sales workspace',
+    intake: 'Intake',
     myTasks: 'My tasks',
     teamAssignments: 'Team assignments',
     attendance: 'Attendance',
@@ -23,8 +24,6 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     timeline: 'Timeline',
     reports: 'Reports',
     billing: 'Billing',
-    crm: 'CRM',
-    crmGroup: 'CRM',
     clientsGroup: 'Clients',
     salesGroup: 'Sales',
     work: 'Work',
@@ -37,6 +36,7 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
   es: {
     dashboard: 'Hoy',
     salesWorkspace: 'Espacio de ventas',
+    intake: 'Captura',
     myTasks: 'Mis tareas',
     teamAssignments: 'Asignaciones del equipo',
     attendance: 'Asistencia',
@@ -53,8 +53,6 @@ export const SHELL_COPY: Readonly<Record<Locale, Readonly<Record<string, string>
     timeline: 'Cronología',
     reports: 'Informes',
     billing: 'Facturación',
-    crm: 'CRM',
-    crmGroup: 'CRM',
     clientsGroup: 'Clientes',
     salesGroup: 'Ventas',
     work: 'Trabajo',

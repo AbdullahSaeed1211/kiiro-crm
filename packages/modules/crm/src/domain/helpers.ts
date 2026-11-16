@@ -59,20 +59,34 @@ export function accessDenied<T>(input: {
   readonly deps: CrmDeps
   readonly record: {
     readonly ownerId?: Id | null
+    readonly createdById?: Id | null
     readonly assigneeIds?: readonly Id[]
     readonly groupId?: Id | null
   }
   readonly action?: 'create' | 'update' | 'convert' | 'delete'
 }): CrmResult<T> | undefined {
   const { type, deps, record, action = 'update' } = input
-  return deps.can(deps.actor, action, {
-    type,
-    ...(record.ownerId === null || record.ownerId === undefined ? {} : { ownerId: record.ownerId }),
-    ...(record.assigneeIds === undefined ? {} : { assigneeIds: record.assigneeIds }),
-    ...(record.groupId === null || record.groupId === undefined ? {} : { groupId: record.groupId }),
-  })
+  return deps.can(deps.actor, action, accessResource(type, record))
     ? undefined
     : failure('FORBIDDEN', `not allowed to ${action} this ${type}`)
+}
+
+function accessResource(
+  type: CrmRecordType,
+  record: {
+    readonly ownerId?: Id | null
+    readonly createdById?: Id | null
+    readonly assigneeIds?: readonly Id[]
+    readonly groupId?: Id | null
+  },
+) {
+  return {
+    type,
+    ...(record.ownerId === null || record.ownerId === undefined ? {} : { ownerId: record.ownerId }),
+    ...(record.createdById !== null && record.createdById !== undefined ? { createdById: record.createdById } : {}),
+    ...(record.assigneeIds === undefined ? {} : { assigneeIds: record.assigneeIds }),
+    ...(record.groupId === null || record.groupId === undefined ? {} : { groupId: record.groupId }),
+  }
 }
 
 function internalFailure<T>(error: unknown): CrmResult<T> {

@@ -51,6 +51,7 @@ export interface PipelineFields {
 /** A prospect before conversion into a deal. */
 export interface LeadRecord extends PipelineFields {
   readonly id: Id
+  readonly createdById: Id | null
   readonly title: string
   readonly firstName: string | null
   readonly lastName: string | null

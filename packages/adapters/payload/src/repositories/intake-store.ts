@@ -6,6 +6,8 @@ import { insertUnique } from './unique-insert'
 import { toWorkflow } from './workflow-mapping'
 import { createIntakeSubmissionStore } from './intake-submission-store'
 import { findLeadByContact, findLeadBySubmission } from './intake-lead-matching'
+import { toCrmData } from './crm/record-codecs'
+import type { CrmDrafts } from '@ops/module-crm'
 
 export { findIntakeForm, toIntakeForm } from './intake-submission-store'
 
@@ -39,10 +41,11 @@ async function startingStage(payload: Payload) {
 async function createLead(
   payload: Payload,
   data: Readonly<Record<string, unknown>>,
-  schedule?: Parameters<IntakeStore['createLead']>[1],
+  options: Readonly<{ schedule: Parameters<IntakeStore['createLead']>[1]; actorId?: string | undefined }>,
 ) {
+  const { schedule, actorId } = options
   const submissionId = schedule?.submissionId
-  const ensured = await ensureLead(payload, data, submissionId)
+  const ensured = await ensureLead(payload, data, { submissionId, actorId })
   const doc = ensured.lead
   const id = idOf(fieldOf(doc, 'id'))
   if (id === undefined) throw new Error('lead create returned no id')
@@ -92,19 +95,37 @@ async function ensureIntakeSchedule(input: {
 async function ensureLead(
   payload: Payload,
   data: Readonly<Record<string, unknown>>,
-  submissionId?: string,
+  options: Readonly<{ submissionId?: string | undefined; actorId?: string | undefined }>,
 ): Promise<{ readonly lead: Doc; readonly submissionLinked: boolean }> {
+  const { submissionId, actorId } = options
   if (submissionId !== undefined) {
     const linkedLead = await findLeadBySubmission(payload, submissionId)
     if (linkedLead !== undefined) return { lead: linkedLead, submissionLinked: true }
   }
-  const matchingLead = await findLeadByContact(payload, data)
+  const matchingLead = await findLeadByContact(payload, data, actorId)
   if (matchingLead !== undefined) return { lead: matchingLead, submissionLinked: false }
+  return persistLead(payload, { data, submissionId, actorId })
+}
+
+async function persistLead(
+  payload: Payload,
+  input: Readonly<{
+    data: Readonly<Record<string, unknown>>
+    submissionId?: string | undefined
+    actorId?: string | undefined
+  }>,
+): Promise<{ readonly lead: Doc; readonly submissionLinked: boolean }> {
+  const { data, submissionId, actorId } = input
+  const leadData = toCrmData('lead', data as Partial<CrmDrafts['lead']>)
   if (submissionId === undefined) {
     return {
       lead: await loose(payload).create({
         collection: COLLECTIONS.leads,
-        data: { ...data, ...(await startingStage(payload)) },
+        data: {
+          ...leadData,
+          ...(actorId === undefined ? {} : { createdBy: actorId }),
+          ...(await startingStage(payload)),
+        },
         overrideAccess: true,
         depth: 0,
       }),
@@ -115,7 +136,12 @@ async function ensureLead(
     collection: COLLECTIONS.leads,
     field: 'intakeSubmissionId',
     value: submissionId,
-    data: { ...data, intakeSubmissionId: submissionId, ...(await startingStage(payload)) },
+    data: {
+      ...leadData,
+      ...(actorId === undefined ? {} : { createdBy: actorId }),
+      intakeSubmissionId: submissionId,
+      ...(await startingStage(payload)),
+    },
   })
   const saved = await findLeadBySubmission(payload, submissionId)
   if (saved === undefined) throw new Error('lead create returned no document')
@@ -209,10 +235,10 @@ async function activeGroupMembers(payload: Payload, selectedGroupIds: readonly s
 }
 
 /** Payload-backed intake command store with unique-key dedupe and system-only writes. */
-export function createIntakeStore(payload: Payload): IntakeStore {
+export function createIntakeStore(payload: Payload, options: Readonly<{ actorId?: string }> = {}): IntakeStore {
   return {
     ...createIntakeSubmissionStore(payload),
-    createLead: (data, schedule) => createLead(payload, data, schedule),
+    createLead: (data, schedule) => createLead(payload, data, { schedule, actorId: options.actorId }),
     addComment: (input) => addOwnerNote(payload, input),
     notify: (input) => notifyUsers(payload, input),
   }

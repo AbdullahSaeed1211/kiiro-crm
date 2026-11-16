@@ -100,10 +100,13 @@ function SaveLeadViewDialog({
 export function LeadViewControls({
   views,
   canImportExport,
-}: Readonly<{ views: readonly LeadViewLink[]; canImportExport: boolean }>) {
+  visible = true,
+}: Readonly<{ views: readonly LeadViewLink[]; canImportExport: boolean; visible?: boolean }>) {
   const router = useRouter()
   const copy = catalogFor(LEAD_MORE_COPY, useLocale())
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  if (!visible) return null
 
   return (
     <>

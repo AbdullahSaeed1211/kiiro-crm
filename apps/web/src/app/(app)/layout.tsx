@@ -2,9 +2,10 @@ import { LocaleProvider } from '../../i18n/locale-context'
 import '@ops/ui/globals.css'
 import { ThemeProvider } from '@ops/ui'
 import { Toaster } from '@ops/ui/components/ui/sonner'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { getProductContext, getWorkspaceSettings } from '../../server/auth/context'
 import { AppFrame } from './app-frame'
 import { normalizeLocale } from '../../i18n/config'
@@ -12,6 +13,7 @@ import { brandPresentation } from '../../server/branding/presentation'
 import { tenantBrandDefaults } from '../../server/branding/tenant-defaults'
 import { themeStyle } from '../../server/branding/theme-style'
 import { FONT_CLASS } from '../fonts'
+import { salesRouteAllowed } from '../../server/auth/sales-route'
 
 // The vendored sidebar persists its open state in this cookie.
 const SIDEBAR_COOKIE = 'sidebar_state'
@@ -33,7 +35,14 @@ function textSetting(value: unknown, fallback: string): string {
 
 /** Root layout of the product UI with the application frame (spec §16). */
 export default async function AppLayout({ children, modal }: Readonly<{ children: ReactNode; modal: ReactNode }>) {
-  const [cookieStore, context, settings] = await Promise.all([cookies(), getProductContext(), getWorkspaceSettings()])
+  const [cookieStore, requestHeaders, context, settings] = await Promise.all([
+    cookies(),
+    headers(),
+    getProductContext(),
+    getWorkspaceSettings(),
+  ])
+  const pathname = requestHeaders.get('x-ops-pathname') ?? '/'
+  if (!salesRouteAllowed(context.actor, pathname)) redirect('/leads')
   const brand = brandPresentation({ ...settings, ...tenantBrandDefaults() })
   const appName = brand.appName
   const modulesValue = settingsRecord(settings.modules)

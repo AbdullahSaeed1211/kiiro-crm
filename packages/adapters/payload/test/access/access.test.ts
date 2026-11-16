@@ -64,6 +64,12 @@ describe('spike access', () => {
     expect(await SPIKE_ACCESS.tasks.read(staff)).toEqual(STAFF_TASK_READ)
   })
 
+  it('does not let sales staff regain task access through assigner or watcher fields', async () => {
+    const sales = request(user('s1', 'staff', { workProfile: 'sales' }))
+    expect(await SPIKE_ACCESS.tasks.read(sales)).toBe(false)
+    expect(await SPIKE_ACCESS.tasks.update(sales)).toBe(false)
+  })
+
   it('includes transitive reports in the owner branch and stops on reporting cycles', async () => {
     const chain = request(user('s1', 'staff'), { s1: ['r1'], r1: ['r2', 's1'] })
     expect(await SPIKE_ACCESS.organizations.read(chain)).toEqual({ or: [{ owner: { in: ['s1', 'r1', 'r2'] } }] })
@@ -123,9 +129,22 @@ describe('toActor', () => {
     })
     expect(toActor({ id: 's1', role: 'staff', active: true, workProfile: 'sales' })).toMatchObject({
       workProfile: 'sales',
-      recordTypes: ['organization', 'contact', 'lead', 'deal', 'task'],
-      unlinkedRecordTypes: ['task'],
-      relatedRecordTypes: ['lead', 'contact', 'deal'],
+      recordTypes: ['lead'],
+      unlinkedRecordTypes: [],
+    })
+  })
+
+  it('scopes sales lead reads to the actor as owner or assignee only', async () => {
+    const sales = request(user('s1', 'staff', { workProfile: 'sales' }))
+    expect(await SPIKE_ACCESS.leads.read(sales)).toEqual({
+      or: [{ assignees: { in: ['s1'] } }, { or: [{ owner: { equals: 's1' } }, { createdBy: { equals: 's1' } }] }],
+    })
+  })
+
+  it('limits sales schedule reads to assigned lead events', async () => {
+    const sales = request(user('s1', 'staff', { workProfile: 'sales' }))
+    expect(await SPIKE_ACCESS.scheduleItems.read(sales)).toEqual({
+      and: [{ assignees: { contains: 's1' } }, { recordType: { equals: 'lead' } }],
     })
   })
 })

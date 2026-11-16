@@ -89,6 +89,7 @@ export const RECORD_COPY_ES: RecordCopy = {
   updated: 'Actualizado',
   stageEntered: 'Entró a la etapa',
   convert: 'Convertir',
+  convertAdminOnly: 'Un propietario o gerente debe convertir los prospectos en oportunidades.',
   markLost: 'Marcar como perdido',
   breadcrumb: 'Ruta de navegación',
   saveTitle: 'Guardar título',

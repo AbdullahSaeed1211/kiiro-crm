@@ -50,12 +50,15 @@ export function AppFrame({
     locale,
   })
   const [trail, setTrail] = useState<ReportedTrail | null>(null)
+  const salesStaff = role === 'staff' && workProfile === 'sales'
   useDocumentTitle({ pathname, trail, appName, locale })
   useTaskFocusReturn(pathname)
   return (
     <AppShell
       defaultOpen={defaultOpen}
-      utilities={<WorkspaceTools locale={locale} entries={entries} creates={creates} openHelp={openHelp} />}
+      utilities={
+        salesStaff ? null : <WorkspaceTools locale={locale} entries={entries} creates={creates} openHelp={openHelp} />
+      }
       sidebar={
         <AppSidebar
           appName={appName}

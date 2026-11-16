@@ -17,6 +17,12 @@ const visibleProjectTask: ScopeExtension = (actor) => ({
 })
 
 const notOwnerOnly = { field: 'ownerOnly', op: 'neq', value: true } as const
+const ownedLeadByActor: ScopeExtension = (actor) => ({
+  or: [
+    { field: FIELDS.owner, op: 'eq', value: actor.id },
+    { field: 'createdBy', op: 'eq', value: actor.id },
+  ],
+})
 
 function taskProfileFilter(actor: Actor): FilterNode | undefined {
   if (actor.role !== 'staff') return undefined
@@ -48,7 +54,7 @@ export const SPIKE_SCOPES: Readonly<Record<string, ScopeDefinition>> = {
     managerFilter: notOwnerOnly,
   },
   [RECORD_TYPES.contacts]: { ownerField: FIELDS.owner },
-  [RECORD_TYPES.leads]: { ownerField: FIELDS.owner, assigneesField: FIELDS.assignees },
+  [RECORD_TYPES.leads]: { assigneesField: FIELDS.assignees, extensions: [ownedLeadByActor] },
   [RECORD_TYPES.deals]: { ownerField: FIELDS.owner, assigneesField: FIELDS.assignees },
 }
 

@@ -111,19 +111,23 @@ function LeadActions({
   isTerminal,
   onConvert,
   onLost,
+  canConvert,
   copy,
 }: Readonly<{
   isConverted: boolean
   isTerminal: boolean
   onConvert: () => void
   onLost: () => void
+  canConvert: boolean
   copy: RecordCopy
 }>) {
   return (
     <div className="flex gap-2">
-      <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onConvert}>
-        {copy.convert}
-      </Button>
+      {canConvert ? (
+        <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onConvert}>
+          {copy.convert}
+        </Button>
+      ) : null}
       <Button type="button" size="sm" variant="outline" disabled={isConverted || isTerminal} onClick={onLost}>
         {copy.markLost}
       </Button>
@@ -140,8 +144,9 @@ function leadTabs(
   outboundEmailEnabled: boolean,
   notes: ReactNode,
   calls: ReactNode,
+  canConvert: boolean,
 ) {
-  return recordTabs(
+  const tabs = recordTabs(
     copy,
     locale,
     <ActivityFeed
@@ -166,6 +171,7 @@ function leadTabs(
       attachments: data.attachments,
     },
   )
+  return canConvert ? tabs : tabs.filter((tab) => tab.id !== 'tasks' && tab.id !== 'email')
 }
 
 function leadOwner(owner: LeadPageData['item']['owner']) {
@@ -197,6 +203,53 @@ function LeadError({ message }: Readonly<{ message: string | undefined }>) {
   )
 }
 
+function LeadRecordActions({
+  data,
+  slots,
+  outboundEmailEnabled,
+  canConvert,
+  isConverted,
+  isTerminal,
+  onConvert,
+  onLost,
+  copy,
+}: Readonly<{
+  data: LeadPageData
+  slots: LeadSlots
+  outboundEmailEnabled: boolean
+  canConvert: boolean
+  isConverted: boolean
+  isTerminal: boolean
+  onConvert: () => void
+  onLost: () => void
+  copy: RecordCopy
+}>) {
+  const lead = data.item.lead
+  return (
+    <div className="flex flex-wrap gap-2">
+      <RecordActionLinks
+        copy={copy}
+        recordType="lead"
+        recordId={lead.id}
+        recordLabel={lead.title}
+        archive={slots.archive}
+        email={lead.email}
+        phone={lead.phone}
+        outboundEmailEnabled={outboundEmailEnabled}
+        showNewTask={canConvert}
+      />
+      <LeadActions
+        isConverted={isConverted}
+        isTerminal={isTerminal}
+        onConvert={onConvert}
+        onLost={onLost}
+        canConvert={canConvert}
+        copy={copy}
+      />
+    </div>
+  )
+}
+
 function LeadRecordLayout({
   data,
   isConverted,
@@ -209,6 +262,7 @@ function LeadRecordLayout({
   onChangeStage,
   outboundEmailEnabled,
   slots,
+  canConvert,
 }: Readonly<{
   data: LeadPageData
   slots: LeadSlots
@@ -221,6 +275,7 @@ function LeadRecordLayout({
   onSaveTitle: (title: string) => void
   onChangeStage: (stageId: string) => void
   outboundEmailEnabled: boolean
+  canConvert: boolean
 }>) {
   const lead = data.item.lead
   const locale = useLocale()
@@ -244,27 +299,19 @@ function LeadRecordLayout({
         }
         owner={leadOwner(data.item.owner)}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <RecordActionLinks
-              copy={copy}
-              recordType="lead"
-              recordId={lead.id}
-              recordLabel={lead.title}
-              archive={slots.archive}
-              email={lead.email}
-              phone={lead.phone}
-              outboundEmailEnabled={outboundEmailEnabled}
-            />
-            <LeadActions
-              isConverted={isConverted}
-              isTerminal={isTerminal}
-              onConvert={onConvert}
-              onLost={onLost}
-              copy={copy}
-            />
-          </div>
+          <LeadRecordActions
+            data={data}
+            slots={slots}
+            outboundEmailEnabled={outboundEmailEnabled}
+            canConvert={canConvert}
+            isConverted={isConverted}
+            isTerminal={isTerminal}
+            onConvert={onConvert}
+            onLost={onLost}
+            copy={copy}
+          />
         }
-        tabs={leadTabs(copy, locale, data, activity, outboundEmailEnabled, slots.notes, slots.calls)}
+        tabs={leadTabs(copy, locale, data, activity, outboundEmailEnabled, slots.notes, slots.calls, canConvert)}
         aside={
           <div className="grid gap-4">
             {slots.details}
@@ -282,14 +329,17 @@ export function LeadRecordClient({
   outboundEmailEnabled,
   currency,
   slots,
+  canConvert,
 }: Readonly<{
   data: LeadPageData
   outboundEmailEnabled: boolean
   currency: string
   slots: LeadSlots
+  canConvert: boolean
 }>) {
   // The board sends a card dropped on the converted column here with ?convert=1, so the dialog opens ready.
-  const [convertOpen, setConvertOpen] = useState(useSearchParams().get('convert') === '1')
+  const searchParams = useSearchParams()
+  const [convertOpen, setConvertOpen] = useState(canConvert && searchParams.get('convert') === '1')
   const [lostOpen, setLostOpen] = useState(false)
   const { run, error: actionError } = useVersionedAction({ refreshOnSuccess: true })
   const lead = data.item.lead
@@ -329,11 +379,14 @@ export function LeadRecordClient({
         onConvert={() => {
           setConvertOpen(true)
         }}
+        canConvert={canConvert}
         onLost={() => {
           setLostOpen(true)
         }}
       />
-      <ConvertDialog data={data} currency={currency} open={convertOpen} onOpenChange={setConvertOpen} />
+      {canConvert ? (
+        <ConvertDialog data={data} currency={currency} open={convertOpen} onOpenChange={setConvertOpen} />
+      ) : null}
       <LostDialog data={data} open={lostOpen} onOpenChange={setLostOpen} />
     </>
   )

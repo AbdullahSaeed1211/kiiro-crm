@@ -38,6 +38,7 @@ export interface Actor {
 export interface AccessResource {
   readonly type: string
   readonly ownerId?: Id
+  readonly createdById?: Id
   readonly assigneeIds?: readonly Id[]
   /** Watchers can read a record without inheriting its edit capability. */
   readonly watcherIds?: readonly Id[]

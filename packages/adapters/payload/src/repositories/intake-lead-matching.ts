@@ -24,13 +24,24 @@ function contactMatches(doc: Doc, identity: ContactIdentity): boolean {
   )
 }
 
-async function leadPages(payload: Payload): Promise<Doc[]> {
+async function leadPages(payload: Payload, actorId?: string): Promise<Doc[]> {
   const pageSize = 100
   let totalPages = 1
   const docs: Doc[] = []
   for (let page = 1; page <= totalPages; page += 1) {
     const result = await payload.find({
       collection: COLLECTIONS.leads,
+      ...(actorId === undefined
+        ? {}
+        : {
+            where: {
+              or: [
+                { owner: { equals: actorId } },
+                { createdBy: { equals: actorId } },
+                { assignees: { contains: actorId } },
+              ],
+            },
+          }),
       limit: pageSize,
       page,
       depth: 0,
@@ -48,10 +59,11 @@ async function leadPages(payload: Payload): Promise<Doc[]> {
 export async function findLeadByContact(
   payload: Payload,
   data: Readonly<Record<string, unknown>>,
+  actorId?: string,
 ): Promise<Doc | undefined> {
   const identity = contactIdentity(data)
   if (identity.email === '' && identity.phone === '') return undefined
-  const matches = (await leadPages(payload)).filter((doc) => contactMatches(doc, identity))
+  const matches = (await leadPages(payload, actorId)).filter((doc) => contactMatches(doc, identity))
   const ids = new Set(
     matches.flatMap((doc) => {
       const id = idOf(fieldOf(doc, 'id'))

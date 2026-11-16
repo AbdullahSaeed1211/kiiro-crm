@@ -36,7 +36,7 @@ function PasswordFields({
         name={field.name}
         type="password"
         autoComplete={field.autoComplete}
-        minLength={field.name === 'currentPassword' ? undefined : 12}
+        minLength={field.name === 'currentPassword' ? undefined : 8}
         required
         value={values[field.name]}
         onChange={(event) => {
@@ -105,7 +105,7 @@ export function ChangePasswordForm() {
         }}
       />
       <p className="text-xs text-muted-foreground">
-        {settingText('Use 12–128 characters. Your new password cannot equal your email.', locale)}
+        {settingText('Use 8–128 characters. Your new password cannot equal or contain your email name.', locale)}
       </p>
       {error === undefined ? null : (
         <p className="text-sm text-destructive" role="alert">
