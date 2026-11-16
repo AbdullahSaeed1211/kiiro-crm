@@ -21,6 +21,12 @@ const USER_FACING: Readonly<Record<string, ErrorCode>> = {
   NotFound: 'NOT_FOUND',
 }
 
+function statusCodeOf(error: unknown): number | undefined {
+  return typeof error === 'object' && error !== null && 'status' in error && typeof error.status === 'number'
+    ? error.status
+    : undefined
+}
+
 /** A successful action result. */
 export function actionOk(): ActionResult
 export function actionOk<T>(data: T): ActionResult<T>
@@ -62,6 +68,7 @@ export function actionFailure(
 ): { readonly ok: false; readonly error: ActionError } {
   const code = error instanceof Error ? USER_FACING[error.name] : undefined
   if (code !== undefined && error instanceof Error) return actionError(code, error.message)
+  if (statusCodeOf(error) === 403) return actionError('FORBIDDEN', 'You do not have permission to perform this action.')
   logger.error('server action failed', {
     context,
     error: error instanceof Error ? error.message : String(error),
