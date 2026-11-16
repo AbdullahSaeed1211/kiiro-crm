@@ -16,6 +16,18 @@ For a small tenant set, keep tenant data separate and generate an explicit bindi
 
 The frontend Worker should first act as the shared host router and proxy to existing tenant Workers through generated service bindings. This reversible step preserves the Payload boundary, but still has one backend Worker per tenant. Reaching two Workers requires separating Next.js rendering from direct Payload access: move server operations behind the shared backend API, then have frontend rendering and actions call it with trusted tenant context. Current `getPayload` calls and server actions make this a product-code change, not only a Wrangler change.
 
+## Website signup and sign-in
+
+The public website offers **Sign up** and **Sign in**. Both flows enter the customer's agency workspace through its verified platform address or custom domain.
+
+- **Sign up:** create the owner account and provision the agency workspace, database, file storage, default settings and workflows. Show provisioning progress, then open a short setup screen for the agency name, team and first task or lead. Provisioning retries resume the same workspace rather than creating duplicates. The workspace becomes available only after provisioning succeeds.
+- **Sign in:** returning owners and invited members authenticate into an existing workspace and land on Today. Sign-in does not create a tenant. Resolve the workspace securely before tenant-local authentication; where an authenticated identity belongs to multiple agencies, offer only its authorized workspaces. A verified tenant domain identifies that workspace directly.
+- **Recovery and invitations:** provide password recovery and team-invitation acceptance within the selected workspace. Preserve the intended destination after successful authentication and use host-scoped sessions with tenant-bound validation.
+
+The platform may record a signup in its own sales CRM for follow-up. That sales record is separate from the customer's operational workspace and must not block provisioning.
+
+Acceptance covers a new owner reaching a provisioned workspace, a returning member reaching Today, authorized workspace selection, invitation acceptance, password recovery, and interrupted-signup retry without duplicate tenants. Tenant A's session must not authenticate against tenant B.
+
 ## Delivery sequence and gates
 
 1. **Prove host resolution and routing.** `tenant:new` records a requested custom host and provisioning prints a manual domain-status checklist. Add an operator-confirmed verification state before generating an exact host-to-tenant registry; reject unknown, malformed, unverified, and ambiguous hosts before forwarding. The proxy uses the host only to look up a tenant, never as a database selector. Gate: two test tenants on distinct domains reach their existing backends; an unknown host reaches neither.
