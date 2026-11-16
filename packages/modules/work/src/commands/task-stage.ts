@@ -5,6 +5,7 @@ import { fail } from './input'
 import { nextOccurrence } from '../domain/recurrence'
 import { hasOpenChildren } from '../domain/rules'
 import { rankBetween } from '../domain/rank'
+import { recurringResponsibility } from './task-responsibility'
 import type { WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
 import { taskResource } from './task-access'
 
@@ -144,6 +145,7 @@ async function spawnNextOccurrence(deps: WorkDeps, done: WorkTaskRecord): Promis
     stageId: workflow.value.defaultStageId,
     priority: done.priority,
     assigneeIds: done.assigneeIds,
+    ...recurringResponsibility(done),
     groupId: done.groupId,
     ownerOnly: done.ownerOnly,
     startAt: done.startAt === null ? null : done.startAt + (dueAt - done.dueAt),
@@ -192,6 +194,7 @@ async function afterMove(
   category: StageCategory,
 ): Promise<WorkResult<WorkTaskRecord>> {
   if (saved === undefined) return conflict(CONFLICT_UPDATED)
+  if (category === 'done_success') await deps.repo.clearCurrentFocusForTask?.(deps.actor.id, saved.id)
   return ok(category === 'done_success' ? await spawnNextOccurrence(deps, saved) : saved)
 }
 /** Moves a task to the workflow's successful terminal stage. */
@@ -235,18 +238,15 @@ function validateDatesAreFinite(input: SetDatesInput): boolean {
     (input.dueAt === null || Number.isFinite(input.dueAt))
   )
 }
-
 function validateDateRange(startAt: number | null, dueAt: number | null): boolean {
   return !(startAt !== null && dueAt !== null && startAt > dueAt)
 }
-
 function validateDateInput(input: SetDatesInput): WorkResult<null> {
   if (!validateDatesAreFinite(input)) return fail('VALIDATION', 'task dates are invalid')
   if (!validateDateRange(input.startAt, input.dueAt)) return fail('VALIDATION', 'startAt must not be after dueAt')
   return ok(null)
 }
-
-/** Updates task dates through the compare-and-set repository path. */
+/** Saves a validated date range on an editable task while enforcing its optimistic version. */
 export async function setTaskDates(deps: WorkDeps, input: SetDatesInput): Promise<WorkResult<WorkTaskRecord>> {
   const validateDates = validateDateInput(input)
   if (!validateDates.ok) return validateDates

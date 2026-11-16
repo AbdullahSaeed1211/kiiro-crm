@@ -37,6 +37,7 @@ export default async function TaskPage({
           options={view.options}
           panel={panel}
           returnTo={returnTo}
+          responsibility={view.responsibility}
           extra={
             <>
               <TaskClientField

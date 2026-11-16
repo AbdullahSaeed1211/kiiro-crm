@@ -539,6 +539,28 @@ export interface Task {
   repeat: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
   ownerOnly?: boolean | null;
   assignees?: (string | User)[] | null;
+  primaryAssigneeId?: string | null;
+  collaboratorIds?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  watcherIds?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  assignedById?: string | null;
+  blockedReason?: string | null;
+  waitingOnId?: string | null;
   group?: (string | null) | Group;
   /**
    * UTC time in milliseconds since 1970-01-01
@@ -1803,6 +1825,12 @@ export interface TasksSelect<T extends boolean = true> {
   repeat?: T;
   ownerOnly?: T;
   assignees?: T;
+  primaryAssigneeId?: T;
+  collaboratorIds?: T;
+  watcherIds?: T;
+  assignedById?: T;
+  blockedReason?: T;
+  waitingOnId?: T;
   group?: T;
   startAt?: T;
   dueAt?: T;

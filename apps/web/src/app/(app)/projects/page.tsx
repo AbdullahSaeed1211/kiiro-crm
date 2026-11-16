@@ -11,6 +11,7 @@ import {
   type DataTableRow,
 } from '@ops/ui/composites/DataTable'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { TABLE_LABELS } from '../../../i18n/table-labels'
 import { formatDate } from '../../../i18n/format'
@@ -69,9 +70,9 @@ function rowOf(
     id: project.id,
     cells: {
       name: (
-        <a className="font-medium hover:underline" href={`/projects/${project.id}`}>
+        <Link className="font-medium hover:underline" href={`/projects/${project.id}`}>
           {project.name}
-        </a>
+        </Link>
       ),
       stage: <Badge variant="secondary">{project.stage}</Badge>,
       members: (

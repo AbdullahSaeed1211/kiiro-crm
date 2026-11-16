@@ -6,7 +6,11 @@ import { isManagerUp } from '@ops/platform'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getOrganizationLabel } from '../../../../server/crm/directory/data'
-import { loadWorkReadModel, type WorkListTask, type WorkReadModel } from '../../../../server/queries/work/read-models'
+import {
+  loadProjectRecordReadModel,
+  type WorkListTask,
+  type WorkReadModel,
+} from '../../../../server/queries/work/read-models'
 import { CLIENT_DASHBOARD_COPY, type ClientDashboardCopy } from '../../../../i18n/client-dashboard-copy'
 import { catalogFor } from '../../../../i18n/locale'
 import { PROJECT_PAGE_COPY, type ProjectPageCopy } from '../../../../i18n/project-page-copy'
@@ -156,13 +160,16 @@ function ProjectAside({
 /** Project record with overview, board, and list tabs. */
 export default async function ProjectPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params
-  const [model, context] = await Promise.all([loadWorkReadModel(), getRequestContext()])
-  const project = model.projects.find((item) => item.id === id)
+  const [model, context, monthlyDesign] = await Promise.all([
+    loadProjectRecordReadModel(id),
+    getRequestContext(),
+    loadProjectMonthlyDesign(id),
+  ])
+  const project = model.projects.at(0)
   if (project === undefined) notFound()
   const copy = catalogFor(PROJECT_PAGE_COPY, model.locale)
   const tasks = model.tasks.filter((task) => task.projectId === project.id)
-  const [monthlyDesign, organizationName, deliverables] = await Promise.all([
-    loadProjectMonthlyDesign(project.id),
+  const [organizationName, deliverables] = await Promise.all([
     project.organizationId === null ? Promise.resolve(null) : getOrganizationLabel(project.organizationId),
     DeliverablesTab({ projectId: project.id, people: model.people }),
   ])

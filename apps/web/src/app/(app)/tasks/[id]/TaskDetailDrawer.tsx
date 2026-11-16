@@ -11,10 +11,58 @@ import {
   type TaskChange,
 } from '@ops/ui/composites/TaskSheet'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react'
 import { taskSheetLabels } from '../../../../i18n/task-sheet-copy'
 import { changeTask, createSubtask } from '../../../../server/actions/work/tasks/changeTask'
 import { taskHref } from '../../task-navigation'
+import { TaskResponsibilityControls } from './TaskResponsibilityControls'
+import type { TaskView } from '../../../../server/queries/work/task-details'
+import { normalizeLocale } from '../../../../i18n/locale'
+
+function ResponsibilitySlot(
+  input: Readonly<{
+    task: TaskSheetTask
+    options: TaskSheetOptions
+    responsibility?: TaskView['responsibility']
+  }>,
+): ReactElement {
+  const { task, options, responsibility } = input
+  return (
+    <>
+      {responsibility === undefined ? null : (
+        <TaskResponsibilityControls
+          taskId={task.id}
+          updatedAt={task.updatedAt}
+          {...responsibility}
+          people={options.members}
+          canUpdate={options.canUpdate}
+          locale={normalizeLocale(options.locale)}
+        />
+      )}
+    </>
+  )
+}
+
+async function refreshAfter<T extends { ok: boolean }>(
+  pending: Promise<T>,
+  router: ReturnType<typeof useRouter>,
+): Promise<T> {
+  const result = await pending
+  if (result.ok) router.refresh()
+  return result
+}
+
+function taskSheetActions(input: {
+  handleChange: TaskSheetActions['onChange']
+  router: ReturnType<typeof useRouter>
+  returnTo: string
+}): TaskSheetActions {
+  return {
+    onChange: input.handleChange,
+    onCreateSubtask: (parentTaskId, title) => refreshAfter(createSubtask(parentTaskId, title), input.router),
+    taskHref: (taskId) => taskHref(taskId, input.returnTo),
+  }
+}
 
 function completedTask(input: {
   task: TaskSheetTask
@@ -70,6 +118,7 @@ export function TaskDetailDrawer({
   returnTo = '/tasks',
   panel = true,
   restoreFocus = false,
+  responsibility,
   extra,
 }: Readonly<{
   task: TaskSheetTask
@@ -77,6 +126,7 @@ export function TaskDetailDrawer({
   returnTo?: string
   panel?: boolean
   restoreFocus?: boolean
+  responsibility?: TaskView['responsibility']
   extra?: ReactNode
 }>) {
   const router = useRouter()
@@ -112,27 +162,29 @@ export function TaskDetailDrawer({
     [options.stages, router],
   )
 
-  const actions = useMemo<TaskSheetActions>(() => {
-    const refreshAfter = async <T extends { ok: boolean }>(pending: Promise<T>): Promise<T> => {
-      const result = await pending
-      if (result.ok) router.refresh()
-      return result
-    }
-    return {
-      onChange: handleChange,
-      onCreateSubtask: (parentTaskId: string, title: string) => refreshAfter(createSubtask(parentTaskId, title)),
-      taskHref: (taskId: string) => taskHref(taskId, returnTo),
-    }
-  }, [handleChange, router, returnTo])
+  const actions = useMemo(() => taskSheetActions({ handleChange, router, returnTo }), [handleChange, router, returnTo])
 
   const labels = taskSheetLabels(options.locale)
-  if (!panel) return <TaskPage task={visibleTask} options={options} actions={actions} labels={labels} extra={extra} />
+  const detailOptions = responsibility === undefined ? options : { ...options, hasResponsibilityControls: true }
+  const propertiesExtra = <ResponsibilitySlot task={task} options={options} responsibility={responsibility} />
+  if (!panel)
+    return (
+      <TaskPage
+        task={visibleTask}
+        options={detailOptions}
+        actions={actions}
+        labels={labels}
+        propertiesExtra={propertiesExtra}
+        extra={extra}
+      />
+    )
   return (
     <TaskSheet
       task={visibleTask}
-      options={options}
+      options={detailOptions}
       actions={actions}
       labels={labels}
+      propertiesExtra={propertiesExtra}
       extra={extra}
       onClose={() => {
         if (restoreFocus) router.back()

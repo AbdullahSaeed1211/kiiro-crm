@@ -96,6 +96,11 @@ export const createTaskSchema = z
     projectId: optionalRef,
     parentTaskId: optionalRef,
     assigneeIds: z.array(nonEmptyId).optional(),
+    primaryAssigneeId: optionalRef,
+    collaboratorIds: z.array(nonEmptyId).optional(),
+    watcherIds: z.array(nonEmptyId).optional(),
+    blockedReason: z.string().trim().min(1, 'Explain what is blocking this task.').max(1000).nullable().optional(),
+    waitingOnId: optionalRef,
     groupId: optionalRef,
     priority: priority.optional(),
     repeat: repeat.optional(),
@@ -106,6 +111,16 @@ export const createTaskSchema = z
     ownerOnly: z.boolean().optional(),
   })
   .refine(startNotAfterDue, { message: 'The start date must not be after the due date.', path: ['startAt'] })
+  .refine(
+    (value) =>
+      value.waitingOnId === null ||
+      value.waitingOnId === undefined ||
+      (value.blockedReason !== null && value.blockedReason !== undefined),
+    {
+      message: 'A waiting person requires a blocked reason.',
+      path: ['waitingOnId'],
+    },
+  )
 
 /** Editable task fields; stage, dates and completion have their own commands. */
 export const taskPatchSchema = z
@@ -115,6 +130,11 @@ export const taskPatchSchema = z
     priority: priority.optional(),
     repeat: repeat.optional(),
     assigneeIds: z.array(nonEmptyId).optional(),
+    primaryAssigneeId: optionalRef,
+    collaboratorIds: z.array(nonEmptyId).optional(),
+    watcherIds: z.array(nonEmptyId).optional(),
+    blockedReason: z.string().trim().min(1, 'Explain what is blocking this task.').max(1000).nullable().optional(),
+    waitingOnId: optionalRef,
     groupId: nonEmptyId.nullable().optional(),
     relatedType: z.string().nullable().optional(),
     relatedId: nonEmptyId.nullable().optional(),

@@ -181,9 +181,11 @@ export function TaskProperties({ task, options, labels, taskHref, busy, fields, 
       <Property label={labels.repeat} error={fields['repeat']}>
         <RepeatSelect task={task} labels={labels} disabled={disabled} onSave={onSave} />
       </Property>
-      <Property label={labels.assignees} error={fields['assigneeIds']}>
-        <AssigneeSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />
-      </Property>
+      {!options.hasResponsibilityControls ? (
+        <Property label={labels.assignees} error={fields['assigneeIds']}>
+          <AssigneeSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />
+        </Property>
+      ) : null}
       <Property label={labels.group} error={fields['groupId']}>
         <GroupSelect task={task} options={options} labels={labels} disabled={disabled} onSave={onSave} />
       </Property>

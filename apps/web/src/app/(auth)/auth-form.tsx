@@ -65,11 +65,16 @@ async function send(
 export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabled = false }: AuthFormProps) {
   const [error, setError] = useState<string | undefined>()
   const [pending, setPending] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [needsCode, setNeedsCode] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
   // A form that asks to confirm the password is setting a new one, so password managers should offer to generate it.
   const secretAutoComplete = fields.includes('confirm') ? 'new-password' : 'current-password'
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   // After a failed attempt the inputs come back from disabled; put the cursor where the fix usually is.
   useEffect(() => {
@@ -105,20 +110,22 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
       setPending(false)
     }
   }
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
+    if (!hydrated) {
+      event.preventDefault()
+      return
+    }
+    void submit(event)
+  }
   return (
     <Card className="w-full">
-      <form
-        ref={formRef}
-        onSubmit={(event) => {
-          void submit(event)
-        }}
-        className="ops-auth-form"
-      >
+      <form ref={formRef} method="post" onSubmit={handleSubmit} className="ops-auth-form">
         <CardHeader>
           <CardTitle className="text-xl">{submitLabel}</CardTitle>
           <CardDescription>Use your team account to continue.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* eslint-disable-next-line complexity -- each auth field shares the same password and hydration controls. */}
           {fields.map((field, index) => (
             <div className="space-y-2" key={field}>
               <Label htmlFor={`auth-${field}`}>{fieldLabel(field)}</Label>
@@ -131,7 +138,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
                   required
                   autoFocus={index === 0}
                   autoComplete={isSecretField(field) ? secretAutoComplete : field}
-                  disabled={disabled || pending}
+                  disabled={!hydrated || disabled || pending}
                 />
                 {isSecretField(field) ? (
                   <Button
@@ -141,7 +148,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
                     className="shrink-0"
                     aria-label={`${passwordVisible ? 'Hide' : 'Show'} ${fieldLabel(field).toLowerCase()}`}
                     aria-pressed={passwordVisible}
-                    disabled={disabled || pending}
+                    disabled={!hydrated || disabled || pending}
                     onClick={() => {
                       setPasswordVisible((visible) => !visible)
                     }}
@@ -164,7 +171,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
                 spellCheck={false}
                 required
                 autoFocus
-                disabled={disabled || pending}
+                disabled={!hydrated || disabled || pending}
               />
             </div>
           ) : null}
@@ -181,7 +188,7 @@ export function AuthForm({ endpoint, submitLabel, fields, hidden, footer, disabl
               {error}
             </p>
           )}
-          <Button className="w-full" disabled={disabled || pending} size="lg" type="submit">
+          <Button className="w-full" disabled={!hydrated || disabled || pending} size="lg" type="submit">
             {pending ? 'Working…' : submitLabel}
           </Button>
           {footer ?? (

@@ -14,6 +14,12 @@ export interface TaskRecord {
   readonly updatedAt: number
   readonly priority: TaskPriority
   readonly assigneeIds: readonly Id[]
+  readonly primaryAssigneeId?: Id | null
+  readonly collaboratorIds?: readonly Id[]
+  readonly watcherIds?: readonly Id[]
+  readonly assignedById?: Id | null
+  readonly blockedReason?: string | null
+  readonly waitingOnId?: Id | null
   readonly startAt: number | null
   readonly dueAt: number | null
   readonly projectId: Id | null

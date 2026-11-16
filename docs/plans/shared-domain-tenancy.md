@@ -1,0 +1,28 @@
+# Shared domain tenancy proposal
+
+**Status: proposal; no infrastructure changes made.** The target is one frontend Worker and one backend Worker serving tenant-specific UI and data by verified domain, while each tenant keeps its own D1 database and R2 bucket. Application code is shared; the domain selects tenant branding, configuration and data stores.
+
+## Current evidence
+
+The accepted [ADR-0002](../adr/0002-tenancy.md) describes one Worker, D1 database and R2 bucket per tenant. `scripts/gen-wrangler.ts` generates a custom-domain route and tenant-specific bindings per environment (lines 29-40, 58-90). `apps/web/src/payload.config.ts` constructs Payload against `env.D1` and `env.R2` (lines 123-131).
+
+Two process-local caches rely on that boundary: `apps/web/src/server/queries/nav-counts.ts` keys workflows only by record type and says each Worker serves one tenant (lines 12-24); `apps/web/src/server/queries/pipeline-insights.ts` keys summaries by actor ID (lines 37-52). A shared backend must validate the host before auth or cache lookup and include tenant ID in cache keys.
+
+Hyperzod demonstrates a related split. Its Vue client passes `window.location.hostname` to one SDK instance (`hyperzod-ui-ordering/src/plugins/hyperzod.js`, lines 17-58). Its Laravel frontend validates the request host through a tenant API and partitions validation and HTML caches by host and tenant ID (`frontend-server-ordering/app/Http/Controllers/HandleWebRequestController.php`, lines 58-84, 174-198, 268-281). This supports host bootstrap and cache partitioning; it does not establish that Hyperzod has one shared data backend.
+
+## Proposed shape
+
+For a small tenant set, keep tenant data separate and generate an explicit binding registry at deploy time. Each entry maps an exact verified hostname to a tenant ID and its statically declared D1 and R2 bindings. Construct Payload configuration with those bindings; cache reusable Payload clients by tenant ID with a fixed size limit. Do not mutate process-wide Payload configuration between requests. If Payload/OpenNext cannot safely host multiple configurations concurrently, retain per-tenant backend Workers until that gate passes.
+
+The frontend Worker should first act as the shared host router and proxy to existing tenant Workers through generated service bindings. This reversible step preserves the Payload boundary, but still has one backend Worker per tenant. Reaching two Workers requires separating Next.js rendering from direct Payload access: move server operations behind the shared backend API, then have frontend rendering and actions call it with trusted tenant context. Current `getPayload` calls and server actions make this a product-code change, not only a Wrangler change.
+
+## Delivery sequence and gates
+
+1. **Prove host resolution and routing.** `tenant:new` records a requested custom host and provisioning prints a manual domain-status checklist. Add an operator-confirmed verification state before generating an exact host-to-tenant registry; reject unknown, malformed, unverified, and ambiguous hosts before forwarding. The proxy uses the host only to look up a tenant, never as a database selector. Gate: two test tenants on distinct domains reach their existing backends; an unknown host reaches neither.
+2. **Prove shared backend isolation.** In a non-production spike, declare two tenant D1/R2 bindings and create one explicit Payload config per tenant. Exercise simultaneous requests, failures, auth lookup, and client eviction. Scope cache keys by tenant ID and preserve per-tenant rate-limit bindings. Gate: concurrent reads and writes remain in the selected tenant's D1; no mutable global config, cross-tenant cache hit, or binding fallback is possible. If this fails, stop at the proxy stage.
+3. **Separate frontend data access.** Move server-rendered queries and mutations behind backend routes with schemas, authorization, and tenant context. The backend derives tenant context from the exact host registry or an authenticated service call, and checks that it matches the request origin. User cookies remain host-scoped; ignore client-supplied tenant headers and bind session validation to the resolved tenant. A valid session from tenant A must be rejected when replayed against tenant B. Gate: page loads, server actions, API calls, invitation links, and logout behave on both tenant hosts with no shared-domain cookie or origin assumption.
+4. **Move background and file paths.** Dispatch scheduled work once per registered tenant with tenant-bound Payload clients and idempotency. Disable the old tenant scheduler before enabling its shared scheduler entry, so rollout cannot run both. Route inbound email by verified recipient/domain mapping. Select R2 from the resolved tenant entry and prefix object keys with tenant ID where objects can cross shared services. Keep rate-limit namespaces and secrets tenant-specific. Gate: cron replay, email delivery, file upload/download/delete, and rate-limit checks prove tenant ownership in logs and persisted records.
+
+## Rollback and migration boundary
+
+Start without production data moves or schema changes. Keep tenant Workers available while the shared frontend proxy is canaried; rollback by restoring domain routes to their existing Worker configuration. Retain tenant D1/R2 bindings during rollout. Later schema changes use additive migrations and a per-tenant restore point; stop on the first failed tenant and restore its Worker version before retrying. Database consolidation is separate because it replaces structural isolation with tenant predicates across collections, auth, jobs, uploads, and caches.

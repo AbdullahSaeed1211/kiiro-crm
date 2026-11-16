@@ -1,6 +1,6 @@
 import { asId, ok } from '@ops/kernel'
 import { TERMINAL_CATEGORIES } from '../domain/rules'
-import { todayAsDueAt } from '../domain/due-dates'
+import { DAY_MS, todayAsDueAt } from '../domain/due-dates'
 import type { WorkDeps, WorkResult } from '../ports/work'
 import { taskResource } from './task-access'
 import { taskDayPlanSchema } from '../schema'
@@ -36,5 +36,27 @@ export async function removeTaskFromTodayPlan(
   const taskId = asId(parsed.data.taskId)
   const day = todayAsDueAt(deps.clock.now(), timeZone)
   await deps.repo.removeTaskFromDayPlan({ taskId, userId: deps.actor.id, day })
+  return ok({ taskId, day })
+}
+
+/** Carries an assigned open task from today into the next workspace calendar day without changing its deadline. */
+export async function carryTaskToNextDay(
+  deps: WorkDeps,
+  input: unknown,
+  timeZone: string,
+): Promise<WorkResult<{ readonly taskId: string; readonly day: number }>> {
+  const parsed = taskDayPlanSchema.safeParse(input)
+  if (!parsed.success) return fail('VALIDATION', 'taskId is required')
+  const taskId = asId(parsed.data.taskId)
+  const task = await deps.repo.getTask(taskId)
+  if (task === undefined) return fail('NOT_FOUND', 'task not found')
+  if (!deps.can(deps.actor, 'read', taskResource(task))) return fail('FORBIDDEN', 'task is outside your scope')
+  if (!task.assigneeIds.includes(deps.actor.id)) return fail('FORBIDDEN', 'only an assignee can carry this task')
+  if (TERMINAL_CATEGORIES.has(task.stageCategory)) return fail('VALIDATION', 'completed tasks cannot be carried')
+  const today = todayAsDueAt(deps.clock.now(), timeZone)
+  const day = today + DAY_MS
+  await deps.repo.addTaskToDayPlan({ taskId, userId: deps.actor.id, day })
+  await deps.repo.removeTaskFromDayPlan({ taskId, userId: deps.actor.id, day: today })
+  await deps.repo.clearCurrentFocusForTask?.(deps.actor.id, taskId)
   return ok({ taskId, day })
 }

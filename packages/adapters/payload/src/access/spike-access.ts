@@ -24,6 +24,41 @@ function scopedRecord(recordType: string): CollectionAccess {
   }
 }
 
+async function taskReadAccess(args: Parameters<Access>[0]): Promise<boolean | Where> {
+  const base = await scoped(RECORD_TYPES.tasks)(args)
+  const actor = await resolveActor(args.req)
+  if (!actor?.active) return false
+  if (isManagerUp(actor)) return base
+  const extras: Where[] = [{ assignedById: { equals: actor.id } }, { watcherIds: { contains: actor.id } }]
+  const profile: Where[] = [{ ownerOnly: { not_equals: true } }]
+  if (actor.workProfile === 'sales')
+    profile.push(
+      { project: { exists: false } },
+      { or: [{ relatedType: { equals: null } }, { relatedType: { in: ['lead', 'contact', 'deal'] } }] },
+    )
+  const readableExtra: Where = { and: [...profile, { or: extras }] }
+  return typeof base === 'boolean'
+    ? { or: [base ? {} : { id: { exists: false } }, readableExtra] }
+    : { or: [base, readableExtra] }
+}
+
+async function taskUpdateAccess(args: Parameters<Access>[0]): Promise<boolean | Where> {
+  const base = await scoped(RECORD_TYPES.tasks)(args)
+  const actor = await resolveActor(args.req)
+  if (!actor?.active) return false
+  if (isManagerUp(actor)) return base
+  const profile: Where[] = [{ ownerOnly: { not_equals: true } }]
+  if (actor.workProfile === 'sales')
+    profile.push(
+      { project: { exists: false } },
+      { or: [{ relatedType: { equals: null } }, { relatedType: { in: ['lead', 'contact', 'deal'] } }] },
+    )
+  const assignedBy: Where = { and: [...profile, { assignedById: { equals: actor.id } }] }
+  return typeof base === 'boolean'
+    ? { or: [base ? {} : { id: { exists: false } }, assignedBy] }
+    : { or: [base, assignedBy] }
+}
+
 async function createScopedRecord(recordType: string, { req, data }: Parameters<Access>[0]): Promise<boolean> {
   const actor = await resolveActor(req)
   return actor?.active === true && mayCreateScopedRecord(actor, recordType, data)
@@ -106,7 +141,12 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.groups]: { read: anyActive, ...managedByLeads },
   [COLLECTIONS.organizations]: scopedRecord(RECORD_TYPES.organizations),
   [COLLECTIONS.projects]: scopedRecord(RECORD_TYPES.projects),
-  [COLLECTIONS.tasks]: scopedRecord(RECORD_TYPES.tasks),
+  [COLLECTIONS.tasks]: {
+    read: taskReadAccess,
+    create: (args) => createScopedRecord(RECORD_TYPES.tasks, args),
+    update: taskUpdateAccess,
+    delete: managerUp,
+  },
   [COLLECTIONS.taskDayPlans]: { read: personalTaskDayPlanRead, ...systemWrites },
   [COLLECTIONS.currentFocus]: {
     read: allow(currentFocusRead),

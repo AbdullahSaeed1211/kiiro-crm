@@ -91,6 +91,13 @@ const API_CONTRACTS = {
     summary: 'Remove your plan entry for a task today without changing the task.',
     success: 200,
   },
+  'tasks.plan.carry': {
+    method: 'POST',
+    path: '/api/v1/tasks/:id/plan/carry',
+    summary: 'Carry an assigned open task into your next workspace calendar day without changing its deadline.',
+    body: taskDayPlanSchema.omit({ taskId: true }),
+    success: 200,
+  },
   'current-focus.set': {
     method: 'POST',
     path: '/api/v1/current-focus',

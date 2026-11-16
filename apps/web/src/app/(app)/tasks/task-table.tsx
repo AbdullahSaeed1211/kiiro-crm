@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ops/ui/components/ui/avatar'
 import {
   type DataTableColumn,
   type DataTableLabels,
@@ -8,7 +7,6 @@ import {
   paginationFor,
 } from '@ops/ui/composites/DataTable'
 import { StagePill } from '@ops/ui/composites/StagePill'
-import { initials } from '@ops/ui/lib/initials'
 import Link from 'next/link'
 import { PriorityCell } from './priority-cell'
 import { TASK_COPY, type Locale } from '../../../i18n/config'
@@ -18,8 +16,6 @@ import type { TaskListItem, TaskListResult, TaskSort, TaskSortKey } from '../../
 import { taskHref } from '../task-navigation'
 import { DASHBOARD_TODAY_COPY } from '../../../i18n/dashboard-today-copy'
 import { CurrentFocusButton } from '../current-focus-button'
-
-const AVATAR_LIMIT = 3
 
 /** Translated strings of the task table. */
 export function labelsFor(locale: Locale): DataTableLabels {
@@ -35,18 +31,36 @@ export function labelsFor(locale: Locale): DataTableLabels {
   }
 }
 
-function AssigneesCell({ assignees }: Readonly<{ assignees: TaskListItem['assignees'] }>) {
-  if (assignees.length === 0) return <EmptyValue />
-  const extra = assignees.length - AVATAR_LIMIT
+function ResponsibilityCell({ task, locale }: Readonly<{ task: TaskListItem; locale: Locale }>) {
+  if (task.primaryAssignee === null) return <EmptyValue />
+  const collaborators = task.assignees.filter((person) => person.id !== task.primaryAssignee?.id).length
   return (
-    <AvatarGroup>
-      {assignees.slice(0, AVATAR_LIMIT).map((person) => (
-        <Avatar key={person.id} size="sm" title={person.name}>
-          <AvatarFallback>{initials(person.name)}</AvatarFallback>
-        </Avatar>
-      ))}
-      {extra > 0 ? <AvatarGroupCount className="text-xs">+{extra}</AvatarGroupCount> : null}
-    </AvatarGroup>
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span>{task.primaryAssignee.name}</span>
+      {collaborators > 0 ? (
+        <span
+          className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+          title={TASK_COPY[locale].collaborators}
+        >
+          +{collaborators}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+function BlockedCell({ task, locale }: Readonly<{ task: TaskListItem; locale: Locale }>) {
+  if (!task.blocked) return null
+  const label = TASK_COPY[locale].blocked
+  const detail = [task.blockedReason, task.waitingOn].filter(Boolean).join(' · ')
+  return (
+    <span
+      className="inline-flex max-w-full items-center rounded-md bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-800 dark:text-amber-300"
+      title={detail || label}
+    >
+      {label}
+      {task.waitingOn ? ` · ${task.waitingOn}` : ''}
+    </span>
   )
 }
 
@@ -93,7 +107,7 @@ export function toRow({
       ),
       stage: <StagePill name={task.stage.name} color={task.stage.color} size="sm" />,
       priority: <PriorityCell priority={task.priority} locale={locale} />,
-      assignees: <AssigneesCell assignees={task.assignees} />,
+      assignees: <ResponsibilityCell task={task} locale={locale} />,
       dueAt: <DueCell dueAt={task.dueAt} locale={locale} />,
       context:
         task.context === null ? (
@@ -107,6 +121,7 @@ export function toRow({
         active || (assignedToMe && !task.isFinished) ? (
           <CurrentFocusButton taskId={task.id} active={active} locale={locale} />
         ) : null,
+      blocker: <BlockedCell task={task} locale={locale} />,
     },
   }
 }
@@ -149,6 +164,7 @@ export function taskColumns({
     { id: 'stage', header: copy.stage, sortHref: sortHref('stage') },
     { id: 'priority', header: copy.priority, sortHref: sortHref('priority') },
     { id: 'assignees', header: copy.assignees },
+    { id: 'blocker', header: copy.blockers },
     { id: 'dueAt', header: copy.due, sortHref: sortHref('dueAt') },
     { id: 'context', header: copy.project, sortHref: sortHref('project') },
     { id: 'focus', header: focusCopy.focusColumn },

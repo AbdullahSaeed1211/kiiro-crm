@@ -70,6 +70,12 @@ function todayFocus({
   return profile === 'admin' && !work.team ? copy.personalFocus : profileFocus(profile, copy)
 }
 
+function assignedTaskLink(work: DashboardWork): { href: string; label: string }[] {
+  return work.workEnabled
+    ? [{ href: '/tasks?view=assigned-by-me', label: DASHBOARD_TODAY_COPY[work.locale].assignedByMe }]
+    : []
+}
+
 function todayLinks(profile: HomeProfile, work: DashboardWork): readonly { href: string; label: string }[] {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   const links: { href: string; label: string }[] = []
@@ -77,6 +83,7 @@ function todayLinks(profile: HomeProfile, work: DashboardWork): readonly { href:
   if (profile === 'sales') links.push({ href: '/sales', label: copy.salesWorkspace })
   if (profile === 'delivery' && work.workEnabled) links.push({ href: '/projects', label: copy.projects })
   if (profile === 'consultant') links.push({ href: '/my-tasks', label: copy.myTasks })
+  links.push(...assignedTaskLink(work))
   if (profile !== 'consultant' && work.workEnabled) links.push({ href: '/tasks/repeating', label: copy.repeating })
   if (profile === 'admin') links.push({ href: '/reports', label: copy.figures })
   return links

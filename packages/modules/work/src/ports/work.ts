@@ -31,6 +31,12 @@ export interface ProjectRecord {
 }
 
 export interface WorkTaskRecord extends TaskPortRecord {
+  readonly primaryAssigneeId: Id | null
+  readonly collaboratorIds: readonly Id[]
+  readonly watcherIds: readonly Id[]
+  readonly assignedById: Id | null
+  readonly blockedReason: string | null
+  readonly waitingOnId: Id | null
   readonly description: string | null
   readonly parentTaskId: Id | null
   readonly rank: string
@@ -99,6 +105,13 @@ export interface TaskDraft {
   readonly rank?: string
   readonly priority?: TaskPriority
   readonly assigneeIds?: readonly Id[]
+  readonly primaryAssigneeId?: Id | null
+  readonly collaboratorIds?: readonly Id[]
+  readonly watcherIds?: readonly Id[]
+  /** Internal only: supplied from the authenticated actor by createTask. */
+  readonly assignedById?: Id | null
+  readonly blockedReason?: string | null
+  readonly waitingOnId?: Id | null
   readonly groupId?: Id | null
   readonly startAt?: number | null
   readonly dueAt?: number | null
@@ -124,6 +137,13 @@ export interface TaskPatch {
   readonly description?: string | null
   readonly priority?: TaskPriority
   readonly assigneeIds?: readonly Id[]
+  readonly primaryAssigneeId?: Id | null
+  readonly collaboratorIds?: readonly Id[]
+  readonly watcherIds?: readonly Id[]
+  readonly blockedReason?: string | null
+  readonly waitingOnId?: Id | null
+  /** Set by the command when assignments change; never parsed from public input. */
+  readonly assignedById?: Id | null
   readonly groupId?: Id | null
   readonly relatedType?: string | null
   readonly relatedId?: Id | null
@@ -218,6 +238,7 @@ export interface WorkRepository extends StageStore {
   removeTaskFromDayPlan(entry: TaskDayIntentEntry): Promise<void>
   saveCurrentFocus(focus: CurrentFocus): Promise<void>
   clearCurrentFocus(userId: Id): Promise<void>
+  clearCurrentFocusForTask?(userId: Id, taskId: Id): Promise<void>
   updateTask(id: Id, patch: TaskPatch | TaskDatePatch, expectedUpdatedAt: number): Promise<WorkTaskRecord | undefined>
   saveTaskMove(input: TaskMoveWrite): Promise<WorkTaskRecord | undefined>
   deleteTask(id: Id): Promise<boolean>
@@ -241,6 +262,8 @@ export interface WorkDeps {
   readonly readProjectAttachment?: (projectId: Id, attachmentId: Id) => Promise<boolean>
   /** Confirms an assigned project member is an active staff account. */
   readonly isActiveUser?: (userId: Id) => Promise<boolean>
+  /** Emits deduplicated assignment notifications to newly added participants. */
+  readonly notifyAssignment?: (task: WorkTaskRecord, recipientIds: readonly Id[]) => Promise<void>
   /** Confirms an active project owner/member's work profile can read project tasks. */
   readonly canReadProjectAsUser?: (
     userId: Id,

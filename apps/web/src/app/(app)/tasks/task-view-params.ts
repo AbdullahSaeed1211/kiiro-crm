@@ -2,7 +2,7 @@ import type { SavedViewSummary } from '../../../server/queries/settings/listSave
 import { formatTaskSort } from '../../../server/queries/work/tasks/listTasks'
 import type { TaskSort, TaskSortKey } from '../../../server/queries/work/tasks/types'
 
-type TaskMode = 'all' | 'open' | 'mine'
+type TaskMode = 'all' | 'open' | 'mine' | 'assigned-by-me'
 
 const SORT_KEYS: readonly unknown[] = ['title', 'stage', 'priority', 'dueAt'] satisfies readonly TaskSortKey[]
 
@@ -15,7 +15,7 @@ function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined
 /** The selected view: a saved view id, or one of the built-in modes. With none chosen it is open tasks, so finished work does not crowd the list. */
 export function parseTaskView(value: string | undefined, savedViews: readonly SavedViewSummary[]): string {
   if (value !== undefined && savedViews.some((view) => view.id === value)) return value
-  return value === 'all' || value === 'mine' ? value : 'open'
+  return value === 'all' || value === 'mine' || value === 'assigned-by-me' ? value : 'open'
 }
 
 /** The sort a saved view stores, or `fallback` when it stores none. */
@@ -35,7 +35,7 @@ function savedViewMode(view: SavedViewSummary): TaskMode {
 /** Which tasks the view lists: a saved view's status filter, or the built-in mode. */
 export function taskModeOf(view: string, savedView: SavedViewSummary | undefined): TaskMode {
   if (savedView !== undefined) return savedViewMode(savedView)
-  return view === 'all' || view === 'mine' ? view : 'open'
+  return view === 'all' || view === 'mine' || view === 'assigned-by-me' ? view : 'open'
 }
 
 /** The tasks list address that shows this sort, page and view; a task opened from it returns here. */

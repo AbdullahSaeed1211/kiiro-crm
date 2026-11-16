@@ -2,7 +2,7 @@ import type { CurrentFocus, WorkRepository } from '@ops/module-work'
 import type { PayloadRequest } from 'payload'
 import { COLLECTIONS } from '../contracts/names'
 import { createAsSystem, findAsUser } from './local-api'
-import { textOf, type Doc } from './documents'
+import { fieldOf, idOf, textOf, type Doc } from './documents'
 
 function rowId(doc: Doc): string {
   const id = textOf(doc, 'id')
@@ -34,7 +34,7 @@ async function saveFocus(req: PayloadRequest, focus: CurrentFocus): Promise<void
 
 export function currentFocusMethods(
   req: PayloadRequest,
-): Pick<WorkRepository, 'saveCurrentFocus' | 'clearCurrentFocus'> {
+): Pick<WorkRepository, 'saveCurrentFocus' | 'clearCurrentFocus' | 'clearCurrentFocusForTask'> {
   return {
     saveCurrentFocus: (focus) => saveFocus(req, focus),
     clearCurrentFocus: async (userId) => {
@@ -46,6 +46,11 @@ export function currentFocusMethods(
         overrideAccess: true,
         req,
       })
+    },
+    clearCurrentFocusForTask: async (userId, taskId) => {
+      const [doc] = await findFocus(req, String(userId))
+      if (doc === undefined || String(idOf(fieldOf(doc, 'task'))) !== String(taskId)) return
+      await req.payload.delete({ collection: COLLECTIONS.currentFocus, id: rowId(doc), overrideAccess: true, req })
     },
   }
 }

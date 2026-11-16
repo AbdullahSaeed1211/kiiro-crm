@@ -1,12 +1,19 @@
 import { ok, type Id } from '@ops/kernel'
-import type { Actor } from '@ops/platform'
-import type { TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
+import type { Actor, Workflow } from '@ops/platform'
+import type { TaskDraft, TaskPatch, WorkDeps, WorkResult, WorkTaskRecord } from '../ports/work'
 import { fail, isManagerUp } from './input'
 import { parseCreate, parseUpdate, type ParsedTaskDraft } from './task-input'
 import { hasAncestorCycle, MAX_SUBTASK_DEPTH, subtaskDepth } from '../domain/rules'
 import { taskResource } from './task-access'
 import { createTodayTaskSchema } from '../schema'
 import { todayAsDueAt } from '../domain/due-dates'
+import {
+  authorizeNewResponsibility,
+  notifyAddedAssignees,
+  notifyCreatedAssignees,
+  prepareResponsibilityPatch,
+  withAssignmentActor,
+} from './task-responsibility'
 export { completeTask, moveTask, reopenTask, setTaskDates } from './task-stage'
 const OWNER_ONLY_FORBIDDEN = 'Only owners and managers can mark a task owner only.'
 
@@ -27,17 +34,6 @@ const updateOwnerOnlyAllowed = (deps: WorkDeps, value: boolean | undefined): boo
 export const canUpdateTask = (deps: Pick<WorkDeps, 'actor' | 'can'>, task: WorkTaskRecord) =>
   deps.can(deps.actor, 'update', taskResource(task))
 const canUpdate = canUpdateTask
-/** Assignment does not change the actor's task scope; targets must be active tenant members. */
-async function activeAssignees(deps: WorkDeps, ids: readonly Id[]): Promise<boolean> {
-  for (const id of ids) {
-    if (id === deps.actor.id) {
-      if (!deps.actor.active) return false
-      continue
-    }
-    if (deps.isActiveUser === undefined || !(await deps.isActiveUser(id))) return false
-  }
-  return true
-}
 async function relatedAllowed(deps: WorkDeps, type: string | null, id: Id | null): Promise<boolean> {
   return (
     (type === null && id === null) ||
@@ -92,18 +88,6 @@ async function resolveProject(
   return visible.ok ? ok(projectId) : visible
 }
 
-function groupAssignmentAllowed(deps: WorkDeps, groupId: Id | null): boolean {
-  return isManagerUp(deps.actor) || groupId === null || deps.actor.groupIds.includes(groupId)
-}
-
-async function authorizeAssignment(deps: WorkDeps, draft: ParsedTaskDraft): Promise<WorkResult<readonly Id[]>> {
-  const assigneeIds = draft.assigneeIds.length ? draft.assigneeIds : [deps.actor.id]
-  if (!groupAssignmentAllowed(deps, draft.groupId)) return fail('FORBIDDEN', 'cannot assign task outside your group')
-  return (await activeAssignees(deps, assigneeIds))
-    ? ok(assigneeIds)
-    : fail('FORBIDDEN', 'assignees must be active tenant members')
-}
-
 async function validateTaskCreation(
   deps: WorkDeps,
   draft: ParsedTaskDraft,
@@ -114,7 +98,7 @@ async function validateTaskCreation(
   const projectId = await resolveProject(deps, draft, parent.value)
   if (!projectId.ok) return projectId
 
-  const assigneeIds = await authorizeAssignment(deps, draft)
+  const assigneeIds = await authorizeNewResponsibility(deps, draft)
   if (!assigneeIds.ok) return assigneeIds
 
   if (!createOwnerOnlyAllowed(deps, draft.ownerOnly)) return fail('FORBIDDEN', OWNER_ONLY_FORBIDDEN)
@@ -123,6 +107,39 @@ async function validateTaskCreation(
     return fail('FORBIDDEN', 'related record is outside your scope')
 
   return ok({ projectId: projectId.value, assigneeIds: assigneeIds.value })
+}
+
+function taskDraftForCreate(input: {
+  readonly deps: WorkDeps
+  readonly draft: ParsedTaskDraft
+  readonly validation: { readonly projectId: Id | null; readonly assigneeIds: readonly Id[] }
+  readonly workflow: Workflow
+}): TaskDraft {
+  const { deps, draft, validation, workflow } = input
+  const primaryAssigneeId = draft.primaryAssigneeProvided
+    ? draft.primaryAssigneeId
+    : (draft.primaryAssigneeId ?? validation.assigneeIds[0] ?? null)
+  const collaboratorIds = draft.primaryAssigneeProvided ? draft.collaboratorIds : validation.assigneeIds.slice(1)
+  return {
+    ...draft,
+    projectId: validation.projectId,
+    assigneeIds: validation.assigneeIds,
+    primaryAssigneeId,
+    collaboratorIds,
+    watcherIds: draft.watcherIds,
+    assignedById: deps.actor.id,
+    workflowId: workflow.id,
+    stageId: workflow.defaultStageId,
+  }
+}
+
+async function resultAfterCreate(
+  deps: WorkDeps,
+  result: WorkResult<WorkTaskRecord>,
+): Promise<WorkResult<WorkTaskRecord>> {
+  if (!result.ok) return result
+  await notifyCreatedAssignees(deps, result.value)
+  return ok(result.value)
 }
 
 /** Creates a task after checking visibility, hierarchy, assignment, and related-record scope. */
@@ -147,14 +164,10 @@ export async function createTask(deps: WorkDeps, input: unknown): Promise<WorkRe
   const validation = await validateTaskCreation(deps, draft)
   if (!validation.ok) return validation
 
-  const createdResult: WorkResult<WorkTaskRecord> = await deps.repo.createTask({
-    ...draft,
-    projectId: validation.value.projectId,
-    assigneeIds: validation.value.assigneeIds,
-    workflowId: workflow.id,
-    stageId: workflow.defaultStageId,
-  })
-  return createdResult.ok ? ok(createdResult.value) : createdResult
+  return resultAfterCreate(
+    deps,
+    await deps.repo.createTask(taskDraftForCreate({ deps, draft, validation: validation.value, workflow })),
+  )
 }
 
 /** Creates one open, no-deadline task for the authenticated person's plan today. */
@@ -186,17 +199,7 @@ async function checkRelated(deps: WorkDeps, patch: TaskPatch, task: WorkTaskReco
   return relatedAllowed(deps, type, id)
 }
 
-async function checkAssignment(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<WorkResult<null>> {
-  if (patch.assigneeIds === undefined && patch.groupId === undefined) return ok(null)
-  const groupId = patch.groupId === undefined ? task.groupId : patch.groupId
-  if (!groupAssignmentAllowed(deps, groupId)) return fail('FORBIDDEN', 'cannot assign task outside your group')
-  const ids = patch.assigneeIds ?? task.assigneeIds
-  return (await activeAssignees(deps, ids)) ? ok(null) : fail('FORBIDDEN', 'assignees must be active tenant members')
-}
-
 async function authorizeTaskUpdate(deps: WorkDeps, patch: TaskPatch, task: WorkTaskRecord): Promise<WorkResult<null>> {
-  const assignment = await checkAssignment(deps, patch, task)
-  if (!assignment.ok) return assignment
   if (!updateOwnerOnlyAllowed(deps, patch.ownerOnly)) return fail('FORBIDDEN', OWNER_ONLY_FORBIDDEN)
   if (!(await checkRelated(deps, patch, task))) return fail('FORBIDDEN', 'related record is outside your scope')
   return ok(null)
@@ -229,7 +232,40 @@ export async function updateTask(deps: WorkDeps, input: unknown): Promise<WorkRe
   const update = parsed.value
   const task = await getAndCheckTask(deps, update.taskId, update.expectedUpdatedAt)
   if (!task.ok) return task
-  const authorized = await authorizeTaskUpdate(deps, update.patch, task.value)
+  const responsibility = await prepareResponsibilityPatch(deps, update.patch, task.value)
+  if (!responsibility.ok) return responsibility
+  const authorized = await authorizeTaskUpdate(deps, responsibility.value.patch, task.value)
   if (!authorized.ok) return authorized
-  return persistTaskUpdate(deps, { ...update, task: task.value })
+  return commitTaskUpdate(deps, {
+    update,
+    task: task.value,
+    responsibility: responsibility.value,
+  })
+}
+
+async function commitTaskUpdate(
+  deps: WorkDeps,
+  input: {
+    readonly update: { readonly taskId: Id; readonly expectedUpdatedAt: number }
+    readonly task: WorkTaskRecord
+    readonly responsibility: { readonly patch: TaskPatch; readonly changed: boolean }
+  },
+): Promise<WorkResult<WorkTaskRecord>> {
+  const { update, task, responsibility } = input
+  const effectivePatch = {
+    ...(responsibility.changed ? withAssignmentActor(task, responsibility.patch, deps.actor.id) : responsibility.patch),
+    ...(responsibility.patch.blockedReason === null && responsibility.patch.waitingOnId === undefined
+      ? { waitingOnId: null }
+      : {}),
+  }
+  const saved = await persistTaskUpdate(deps, { ...update, patch: effectivePatch, task })
+  if (saved.ok)
+    await notifyAddedAssignees(deps, {
+      before: task,
+      after: saved.value,
+      changed: responsibility.changed,
+    })
+  if (saved.ok && saved.value.blockedReason !== null)
+    await deps.repo.clearCurrentFocusForTask?.(deps.actor.id, saved.value.id)
+  return saved
 }

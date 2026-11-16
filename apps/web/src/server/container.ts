@@ -15,6 +15,7 @@ import { cache } from 'react'
 import { getProductContext } from './auth/context'
 import { dealWonPlaybook } from './crm/deal-won'
 import type { WorkDeps } from './work/task-repository'
+import { notifyTaskAssignment } from './work/task-notifications'
 
 /** The signed-in request: Payload, a local request carrying the user, and the actor. */
 export interface RequestContext {
@@ -119,6 +120,7 @@ export async function workCommandDeps(requestContext?: RequestContext): Promise<
       return result.totalDocs > 0
     },
     canReadProjectAsUser: (userId, project) => canReadProjectAsUser(context, userId, project),
+    notifyAssignment: (task, recipientIds) => notifyTaskAssignment(context, task, recipientIds),
   }
 }
 

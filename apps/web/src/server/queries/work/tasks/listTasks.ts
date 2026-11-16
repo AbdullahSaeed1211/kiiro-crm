@@ -38,6 +38,7 @@ export function parseTaskPage(value: string | undefined): number {
 
 function viewWhere(query: TaskListQuery, workflow: Workflow, actorId: string): Where {
   if (query.view === 'mine') return { assignees: { in: [actorId] } }
+  if (query.view === 'assigned-by-me') return { assignedById: { equals: actorId } }
   if (query.view !== 'open') return {}
   return {
     or: [
@@ -78,7 +79,14 @@ async function toListResult(
   { context, workflow, query }: PageArgs,
   page: Readonly<{ records: readonly TaskRecord[]; total: number }>,
 ): Promise<TaskListResult> {
-  const people = await loadPeople(context, [...new Set(page.records.flatMap((task) => task.assigneeIds))])
+  const people = await loadPeople(context, [
+    ...new Set(
+      page.records.flatMap((task) => [
+        ...task.assigneeIds,
+        ...(task.waitingOnId === undefined || task.waitingOnId === null ? [] : [String(task.waitingOnId)]),
+      ]),
+    ),
+  ])
   const contexts = await loadTaskContexts(context, page.records)
   return {
     items: page.records.map((task) =>

@@ -16,6 +16,8 @@ export type TaskViewProps = Readonly<{
   options: TaskSheetOptions
   actions: TaskSheetActions
   labels: TaskSheetLabels
+  /** Canonical responsibility controls belong beside the core task properties. */
+  propertiesExtra?: ReactNode
   /** Extra content the app adds below the subtasks, such as the time log. */
   extra?: ReactNode
 }>
@@ -99,6 +101,7 @@ export function TaskSheetContent({
   options,
   actions,
   labels,
+  propertiesExtra,
   extra,
   asPage,
   onClose,
@@ -121,6 +124,7 @@ export function TaskSheetContent({
             fields={fields}
             onSave={(change) => void save(change, labels.saved)}
           />
+          {propertiesExtra}
           <TaskMessage message={message} />
         </div>
         <DescriptionSection

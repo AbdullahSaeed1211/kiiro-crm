@@ -159,18 +159,18 @@ function mapProject(doc: object, stages: ReadonlyMap<string, StageLabel>): WorkL
 }
 
 /** Reads scoped work records and labels for Phase 1 pages. */
-export async function loadWorkReadModel(
-  context?: RequestContext,
-  purpose: ReadPurpose = 'full',
+async function createWorkReadModel(
+  requestContext: RequestContext,
+  purpose: ReadPurpose,
+  projectId?: string,
 ): Promise<WorkReadModel> {
-  const requestContext = context ?? (await getRequestContext())
   const {
     projects: projectDocs,
     tasks: taskDocs,
     workflows: workflowDocs,
     users: userDocs,
     settings,
-  } = await loadWorkPages(requestContext, purpose)
+  } = await loadWorkPages(requestContext, purpose, projectId)
   const stages = new Map<string, StageLabel>()
   for (const workflow of workflowDocs as readonly object[]) addStages(stages, workflow)
   const tasks = (taskDocs as readonly object[]).map((doc) => mapTask(doc, stages))
@@ -191,6 +191,18 @@ export async function loadWorkReadModel(
       (workflowDocs as readonly object[]).filter((doc) => value(doc, 'recordType') === 'task'),
     ),
   }
+}
+
+export async function loadWorkReadModel(
+  context?: RequestContext,
+  purpose: ReadPurpose = 'full',
+): Promise<WorkReadModel> {
+  return createWorkReadModel(context ?? (await getRequestContext()), purpose)
+}
+
+/** Reads a project record and all of its tasks without loading unrelated tenant work. */
+export async function loadProjectRecordReadModel(projectId: string, context?: RequestContext): Promise<WorkReadModel> {
+  return createWorkReadModel(context ?? (await getRequestContext()), 'project-record', projectId)
 }
 
 function mapPeople(documents: readonly object[]): ReadonlyMap<string, string> {

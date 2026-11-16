@@ -37,6 +37,18 @@ function projectName(task: Readonly<{ context: { type: string; label: string } |
   return task.context?.type === 'project' ? task.context.label : undefined
 }
 
+function titleFor(
+  input: Readonly<{
+    mode: ReturnType<typeof taskModeOf>
+    savedView: Awaited<ReturnType<typeof listSavedViews>>[number] | undefined
+    copy: typeof TASK_COPY.en
+  }>,
+) {
+  const { mode, savedView, copy } = input
+  if (savedView !== undefined) return savedView.name
+  return { all: copy.allTasks, mine: copy.myTasks, open: copy.openTasks, 'assigned-by-me': copy.assignedByMe }[mode]
+}
+
 /** What narrows the list, read from the address: the search text, the chosen assignee and the page. */
 function readFilters(params: Params, actorId: string) {
   const requested = firstParam(params.assignee) ?? ''
@@ -93,7 +105,7 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
   const selectedSavedView = savedViews.find((savedView) => savedView.id === view)
   const effectiveSort = selectedSavedView === undefined ? sort : savedViewSort(selectedSavedView, sort)
   const taskMode = taskModeOf(view, selectedSavedView)
-  const title = selectedSavedView?.name ?? { all: copy.allTasks, mine: copy.myTasks, open: copy.openTasks }[taskMode]
+  const title = titleFor({ mode: taskMode, savedView: selectedSavedView, copy })
   const returnTo = taskListHref({ sort, page, view, search, assignee, due })
   const [result, currentFocusTaskId] = await Promise.all([
     listTasks({ page, sort: effectiveSort, view: taskMode, search, assignee, due }, context),
@@ -152,7 +164,7 @@ export default async function TasksPage({ searchParams }: Readonly<{ searchParam
           pagination={paginationOf({ result, sort: effectiveSort, view, search, assignee, due })}
           labels={labelsFor(locale)}
           emptyState={<EmptyState icon={ListTodo} title={emptyTitle} description={emptyBody} />}
-          mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees', 'focus'] }}
+          mobileCard={{ cells: ['title', 'context', 'stage', 'dueAt', 'assignees', 'blocker', 'focus'] }}
         />
       </PageContent>
     </>

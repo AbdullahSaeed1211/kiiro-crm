@@ -14,6 +14,8 @@ export function dashboardTask(
     relatedType?: string | null
     relatedId?: unknown
     assignees?: unknown
+    blockedReason?: string | null
+    waitingOnId?: unknown
   },
   finishedStages: readonly string[],
 ): DashboardTask {
@@ -30,6 +32,8 @@ export function dashboardTask(
     relatedType: doc.relatedType ?? null,
     relatedId: relation(doc.relatedId),
     assigneeIds: assignees,
+    blockedReason: doc.blockedReason ?? null,
+    waitingOnId: typeof doc.waitingOnId === 'string' ? doc.waitingOnId : null,
     context: null,
     people: [],
   }

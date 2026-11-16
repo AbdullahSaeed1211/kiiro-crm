@@ -4,6 +4,7 @@ import { Skeleton } from '@ops/ui/components/ui/skeleton'
 import { AppHeader } from '@ops/ui/composites/AppHeader'
 import { PageContent } from '@ops/ui/composites/AppShell'
 import { PageHeader } from '@ops/ui/composites/PageHeader'
+import { useSearchParams } from 'next/navigation'
 import { SHELL_COPY, TASK_COPY } from '../../../i18n/config'
 import { catalogFor } from '../../../i18n/locale'
 import { SECTION_HELP_COPY } from '../../../i18n/section-help-copy'
@@ -29,15 +30,24 @@ function TaskRowsSkeleton({ label }: Readonly<{ label: string }>) {
 export default function TasksLoading() {
   const locale = useLocale()
   const copy = TASK_COPY[locale]
+  const requestedView = useSearchParams().get('view')
+  const view =
+    requestedView === 'all' || requestedView === 'mine' || requestedView === 'assigned-by-me' ? requestedView : 'open'
+  const title = {
+    all: copy.allTasks,
+    mine: copy.myTasks,
+    open: copy.openTasks,
+    'assigned-by-me': copy.assignedByMe,
+  }[view]
   return (
     <>
       <AppHeader breadcrumbs={[{ label: SHELL_COPY[locale].tasks }]} />
       <PageContent>
         <PageHeader
-          title={copy.openTasks}
+          title={title}
           description={catalogFor(SECTION_HELP_COPY, locale).tasks}
-          tabs={<TaskWorkspaceViews active="table" locale={locale} />}
-          actions={<TasksHeaderActions view="open" locale={locale} savedViews={[]} initial={{}} />}
+          tabs={<TaskWorkspaceViews active="table" locale={locale} mine={view === 'mine'} />}
+          actions={<TasksHeaderActions view={view} locale={locale} savedViews={[]} initial={{}} />}
         />
         <div className="flex flex-wrap items-center gap-2" aria-hidden="true">
           <Skeleton className="h-8 w-64" />

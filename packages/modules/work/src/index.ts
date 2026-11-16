@@ -45,6 +45,7 @@ export {
   updateTask,
 } from './commands/tasks'
 export { addTaskToTodayPlan, removeTaskFromTodayPlan } from './commands/task-day-plan'
+export { carryTaskToNextDay } from './commands/task-day-plan'
 export { setCurrentFocus } from './commands/current-focus'
 export { taskResource } from './commands/task-access'
 export { TASK_REPEATS, missedPeriods, nextOccurrence, nextRunAfter, type TaskRepeat } from './domain/recurrence'

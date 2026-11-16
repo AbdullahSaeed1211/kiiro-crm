@@ -5,6 +5,8 @@ export function taskResource(task: WorkTaskRecord) {
   return {
     type: 'task',
     assigneeIds: task.assigneeIds,
+    watcherIds: task.watcherIds,
+    ...(task.assignedById === null ? {} : { assignedById: task.assignedById }),
     parentId: task.projectId,
     relatedRecordType: task.relatedType,
     ownerOnly: task.ownerOnly,

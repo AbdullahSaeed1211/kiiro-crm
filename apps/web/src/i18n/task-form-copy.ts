@@ -28,6 +28,10 @@ export interface TaskFormLabels {
   readonly noClient: string
   readonly assignedTo: string
   readonly assignedToMe: string
+  readonly unassigned: string
+  readonly collaborators: string
+  readonly watchers: string
+  readonly peopleDetails: string
   readonly captureHelp: string
   readonly pageTitle: string
   /** `{name}` is the record the task will be linked to. */
@@ -66,6 +70,10 @@ const TASK_FORM_COPY: Readonly<Record<Locale, TaskFormLabels>> = {
     noClient: 'No client',
     assignedTo: 'Assigned to',
     assignedToMe: 'Me',
+    unassigned: 'Unassigned',
+    collaborators: 'Collaborators',
+    watchers: 'Followers',
+    peopleDetails: 'Collaborators and followers',
     captureHelp: 'A title is enough to start. Add dates, notes and other details when you know them.',
     pageTitle: 'New task',
     linkedTo: 'Linked to {name}',
@@ -101,6 +109,10 @@ const TASK_FORM_COPY: Readonly<Record<Locale, TaskFormLabels>> = {
     noClient: 'Sin cliente',
     assignedTo: 'Asignada a',
     assignedToMe: 'Yo',
+    unassigned: 'Sin asignar',
+    collaborators: 'Colaboradores',
+    watchers: 'Seguidores',
+    peopleDetails: 'Colaboradores y seguidores',
     captureHelp: 'Un título basta para empezar. Añade fechas, notas y otros detalles cuando los sepas.',
     pageTitle: 'Nueva tarea',
     linkedTo: 'Vinculada a {name}',

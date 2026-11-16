@@ -633,6 +633,7 @@ Types: `assigned | mentioned | due_soon | overdue | digest | intake_received | e
 `notify(deps, input)`: insert; unique-constraint conflict on `dedupeKey` → ok without a duplicate. Email delivery follows
 `NotificationPrefs { userId; channels: Record<type, { inApp: boolean; email: boolean }>; digestLocalTime: 'HH:mm' | null }`.
 Defaults: assigned, mentioned, intake_received, email_received, due_soon, overdue, stalled → in-app + email; digest → off for staff, `08:00` for owner/manager.
+Task assignment notifications go to newly assigned responsible people and collaborators, excluding the actor, and link to the task. Watcher changes and unrelated task edits do not produce assignment notifications. Notification preferences and delivery deduplication apply to task creation and reassignment.
 
 ### 9.9 Views & layouts
 `SavedView { id; recordType; ownerId: Id | null (null = shared); name; kind: 'table' | 'board' | 'calendar' | 'timeline'; filter: FilterNode | null; sort: SortSpec; columns: string[]; pinned: boolean; isDefault: boolean }`.
@@ -658,6 +659,7 @@ Actor: `{ id; role; groupIds; reportIds (transitive via reportsTo, depth ≤ 5);
 **Staff scope** `scopeFilter(actor, recordType)` = OR of: `ownerId ∈ {actor.id, ...reportIds}`; `assigneeIds contains actor.id`; `groupId ∈ actor.groupIds` (when the type has a group field);
 plus registered `scopeExtensions` (work module: `project.memberIds contains actor.id` for projects and their tasks).
 Any active tenant member may assign a task to any active tenant member when creating it or updating a task within their existing scope. This does not grant access to tasks outside that scope or allow staff to change a task's group outside their own groups. Existing owner-only visibility restrictions remain unchanged.
+Task watchers may read the watched task; watching alone grants no editing, completion or assignment rights. Responsible people, collaborators and the recorded assigner retain task access within their work profile. Independent project, group and administrative permissions still apply.
 Adapters convert `FilterNode` → Payload `Where`, AND it into every query, and always pass `overrideAccess: false` with the user, except system jobs (explicit `SystemActor`).
 Sensitive custom fields (`sensitive: true`) are readable by manager_up only.
 
@@ -707,6 +709,8 @@ stage = first `done_success` stage of the lead workflow → 8 activity `record.c
 | task | title (required, ≤ 300), description, projectId, relatedType + relatedId, parentTaskId (depth ≤ 2), workflowId, stageId, stageEnteredAt, rank, priority (`none \| low \| medium \| high \| urgent`), assigneeIds, groupId, startAt, dueAt, completedAt, customData | stageId, assigneeIds, dueAt, priority |
 | taskDependency (Phase 3) | predecessorId, successorId, type `finish_to_start`, lagMinutes | — |
 Invariants: personal tasks (no project, no related record) allowed; subtasks inherit `projectId`; entering `done_success` sets `completedAt`, leaving clears it; a parent cannot enter a terminal stage while children are open (CONFLICT listing open children).
+Task responsibility distinguishes one responsible person (`primaryAssigneeId`, nullable for unassigned work), `collaboratorIds` and read-only `watcherIds`. Legacy `assigneeIds` represents the responsible person and collaborators, excluding watchers. The server records `assignedById` on creation and actual responsibility changes; clients cannot supply an arbitrary assigner. Older tasks without reliable assignment provenance retain an unknown assigner. Existing imports retain their recorded responsibility metadata; other legacy assignments use their stored order.
+Blocked work records `blockedReason` and an optional active member `waitingOnId`. Clearing the blocker clears its waiting-person reference. A blocker does not rewrite the workflow stage or deadline. Personal closeout offers completion, carry forward or a blocker. Carry forward moves the person's plan entry to the next workspace calendar date, stops their focus on that task and preserves the task deadline; repeated requests do not duplicate the plan entry. Plan days use UTC-midnight Unix milliseconds as identifiers for workspace calendar dates.
 Commands: `createProject`, `updateProject`, `addProjectMember`, `removeProjectMember`, `createTask`, `updateTask`, `moveTask` (stage + rank), `completeTask`, `reopenTask`, `setTaskDates`.
 Query `myTasksBuckets(actor, timeZone, now)` → `{ overdue, today, next7Days, later, noDueDate }` (non-terminal stages only).
 
@@ -1074,6 +1078,7 @@ Sections (collapsible, with counts): Overdue, Today, Next 7 days, Later, No due 
 Empty: "Nothing assigned to you" + New task.
 
 ### 17.5 List pages — `/leads`, `/deals`, `/organizations`, `/contacts`, `/projects`, `/tasks`
+Tasks include an **Assigned by me** view at `/tasks?view=assigned-by-me`, filtered by the authenticated viewer's recorded assignments and paginated in the database. It shows the responsible person, workflow status, deadline and blocker without requiring a separate management screen.
 `PageHeader`: plural label + total · `SavedViewMenu` (default, personal, shared; Save as, Update, Pin) · `ViewSwitcher` (Table | Board; Board only for workflow types) · New button.
 `FilterBar`: search (debounce 300 ms) · Stage (multi) · Owner (multi, "Me") · Assignee (where applicable) · Source (leads, deals) · Created date range · Clear. URL keys: `q, stage, owner, assignee, source, from, to, sort, page, view`.
 **Table:** checkbox column; columns below; sortable core-field headers; row click → record; sticky header; pagination 50. Selection → `BulkActionBar`: Assign owner, Add assignee, Change stage, Delete (manager_up, `ConfirmDialog`).
@@ -1103,6 +1108,7 @@ Body `lg:grid-cols-[1fr_320px]`. **Main** tabs: Activity (default; `CommentCompo
 | project | Archive, Delete | Organization, Members | Main tabs: Overview (description + activity), Board, List, Timeline (Phase 3), Files |
 
 ### 17.7 Task sheet & page
+Responsibility controls separate the responsible person, collaborators and watchers. A blocked-work action records the reason and who is needed; clearing it restores the ordinary task presentation without changing its deadline or workflow stage. Read-only watchers see these details without edit controls.
 `TaskSheet` (`Sheet side="right"`, `w-[560px]`, full screen on mobile) opens from `?task=<id>` on any page; `/tasks/[id]` renders the same content as a page.
 Content: inline title, stage, priority, assignees, start/due, project or related picker, description (markdown-lite textarea + preview toggle), subtasks (list + add + progress x/y), attachments, activity + comments. Footer: Complete/Reopen, Delete (manager_up or creator within 24 h).
 

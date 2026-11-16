@@ -8,8 +8,9 @@ import { useState } from 'react'
 import type { TaskRepeat } from '@ops/module-work'
 import type { TaskFormLabels } from '../../../../i18n/task-form-copy'
 import { RecordPicker } from '../../RecordPicker'
+import { TaskPeopleFields } from './TaskPeopleFields'
+import type { Option } from './task-form-types'
 
-export type Option = Readonly<{ value: string; label: string }>
 export type FormProps = Readonly<{ projects: readonly Option[]; projectId: string; initialTitle: string }>
 
 export function TaskCoreFields({
@@ -39,13 +40,20 @@ export function TaskCoreFields({
   )
 }
 
-/** Who the task is for and which client it belongs to. Any active tenant member may assign a teammate. */
+/** Who owns the task, who helps and who follows its updates. */
 export function TaskWhoFields({
   copy,
   people,
+  actorId,
   showClient,
   onClient,
-}: Readonly<{ copy: TaskFormLabels; people: readonly Option[]; showClient: boolean; onClient: (id: string) => void }>) {
+}: Readonly<{
+  copy: TaskFormLabels
+  people: readonly Option[]
+  actorId: string
+  showClient: boolean
+  onClient: (id: string) => void
+}>) {
   if (people.length === 0 && !showClient) return null
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -63,19 +71,7 @@ export function TaskWhoFields({
           />
         </label>
       ) : null}
-      {people.length === 0 ? null : (
-        <label className="grid gap-1.5 text-sm font-medium" htmlFor="task-assignee">
-          {copy.assignedTo}
-          <NativeSelect id="task-assignee" name="assigneeId" defaultValue="" className="w-full font-normal">
-            <option value="">{copy.assignedToMe}</option>
-            {people.map((person) => (
-              <option key={person.value} value={person.value}>
-                {person.label}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-      )}
+      {people.length === 0 ? null : <TaskPeopleFields copy={copy} people={people} actorId={actorId} />}
     </div>
   )
 }

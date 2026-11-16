@@ -34,6 +34,10 @@ export interface TaskListItem {
   readonly isFinished: boolean
   readonly priority: TaskPriority
   readonly assignees: readonly TaskAssignee[]
+  readonly primaryAssignee: TaskAssignee | null
+  readonly blocked: boolean
+  readonly blockedReason: string | null
+  readonly waitingOn: string | null
   /** UTC epoch milliseconds (decision D-09); null when the task has no due date. */
   readonly dueAt: number | null
   /** Project or related record the task belongs to. */
@@ -48,7 +52,7 @@ export interface TaskListItem {
 export interface TaskListQuery {
   readonly page: number
   readonly sort: TaskSort
-  readonly view?: 'all' | 'open' | 'mine'
+  readonly view?: 'all' | 'open' | 'mine' | 'assigned-by-me'
   /** Only tasks whose title has this text, ignoring case. */
   readonly search?: string
   /** Only tasks assigned to this person (a user id). */

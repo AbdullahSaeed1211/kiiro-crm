@@ -50,37 +50,43 @@ const listedDocs = () => [
   taskDoc({ id: 't2', workflow: null }),
 ]
 
+const EXPECTED_LISTED_TASK = {
+  id: 't1',
+  title: 'Write brief',
+  workflowId: 'w1',
+  stageId: 's-open',
+  stageEnteredAt: 1000,
+  updatedAt: UPDATED_MS,
+  priority: 'high',
+  assigneeIds: ['u1', '7'],
+  primaryAssigneeId: 'u1',
+  collaboratorIds: ['7'],
+  watcherIds: [],
+  assignedById: null,
+  blockedReason: null,
+  waitingOnId: null,
+  startAt: 2000,
+  dueAt: null,
+  projectId: 'p1',
+  relatedType: 'organization',
+  relatedId: 'o1',
+  description: null,
+  parentTaskId: null,
+  rank: '',
+  groupId: 'g1',
+  completedAt: null,
+  createdAt: Date.parse(CREATED),
+  stageCategory: 'open',
+  repeat: 'none',
+  ownerOnly: false,
+}
+
 describe('createTaskRepository listTasks', () => {
   it('reads with the user access and maps ISO timestamps and relationship ids', async () => {
     const { repository, calls, req } = setup({
       find: (args) => ({ docs: args['collection'] === 'workflows' ? [workflowDoc] : listedDocs() }),
     })
-    expect(await repository.listTasks()).toEqual([
-      {
-        id: 't1',
-        title: 'Write brief',
-        workflowId: 'w1',
-        stageId: 's-open',
-        stageEnteredAt: 1000,
-        updatedAt: UPDATED_MS,
-        priority: 'high',
-        assigneeIds: ['u1', '7'],
-        startAt: 2000,
-        dueAt: null,
-        projectId: 'p1',
-        relatedType: 'organization',
-        relatedId: 'o1',
-        description: null,
-        parentTaskId: null,
-        rank: '',
-        groupId: 'g1',
-        completedAt: null,
-        createdAt: Date.parse(CREATED),
-        stageCategory: 'open',
-        repeat: 'none',
-        ownerOnly: false,
-      },
-    ])
+    expect(await repository.listTasks()).toEqual([EXPECTED_LISTED_TASK])
     expect(calls).toHaveLength(2)
     expect(calls[0]?.args).toMatchObject({ collection: 'tasks', ...SCOPED_READ })
     expect(calls[0]?.args['req']).toBe(req)

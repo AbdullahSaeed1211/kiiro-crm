@@ -68,6 +68,10 @@ Taken from the demo workspace, where every name, company and number is fictional
 | **Data**            | CSV import of organizations, contacts, leads and deals with a dry-run check and per-row report, CSV export of organizations, contacts, leads and deals, and an archive with restore.                                                                                                                       |
 | **Access**          | Owner, manager and staff roles with record-level scope, groups, invitations, and an audit trail of activity.                                                                                                                                                                                               |
 
+## Daily work
+
+Start in **Today** to plan your work and mark attendance. Each planned task offers completion, carry forward to tomorrow without changing its deadline, or a blocker with the person needed to help. Use **Tasks > Assigned by me** to follow work you handed off. Tasks distinguish one responsible person, collaborators and read-only watchers; in-app assignment alerts link recipients to the task and respect their notification preferences. The [work contract](docs/spec.md#102-work-opsmodule-work) defines responsibility, visibility and calendar-day behavior.
+
 ## UX standard
 
 Every screen must make the agency's next action obvious. This is an acceptance requirement for new and changed UI, not a claim that every existing screen meets it.

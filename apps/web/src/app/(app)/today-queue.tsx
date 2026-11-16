@@ -57,8 +57,49 @@ export function TodayQueue({
   )
 }
 
+function taskTitle({
+  title,
+  href,
+  taskId,
+  badge,
+}: Readonly<{ title: string; href?: string; taskId?: string; badge?: ReactNode }>) {
+  return (
+    <p className="flex flex-wrap items-center gap-2 break-words text-sm font-medium">
+      {href === undefined ? (
+        title
+      ) : (
+        <Link href={href} data-task-link-id={taskId} className="hover:text-primary hover:underline">
+          {title}
+        </Link>
+      )}
+      {badge}
+    </p>
+  )
+}
+
+function itemAction({
+  action,
+  href,
+  title,
+  taskId,
+}: Readonly<{ action?: string; href?: string; title: string; taskId?: string }>) {
+  if (action === undefined || href === undefined) return null
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="shrink-0"
+      nativeButton={false}
+      render={<Link href={href} data-task-link-id={taskId} aria-label={`${action}: ${title}`} />}
+    >
+      {action}
+    </Button>
+  )
+}
+
 export function TodayItem({
   title,
+  titleHref,
   detail,
   when,
   href,
@@ -67,16 +108,19 @@ export function TodayItem({
   taskId,
   accessory,
   compact = false,
+  badge,
 }: Readonly<{
   title: string
+  titleHref?: string
   detail: string
   when?: string
-  href: string
-  action: string
+  href?: string
+  action?: string
   overdue?: boolean
   taskId?: string
   accessory?: ReactNode
   compact?: boolean
+  badge?: ReactNode
 }>) {
   return (
     <li
@@ -87,7 +131,7 @@ export function TodayItem({
       )}
     >
       <div className="w-full min-w-0 flex-1">
-        <p className="break-words text-sm font-medium">{title}</p>
+        {taskTitle({ title, href: titleHref, taskId, badge })}
         <p className="mt-1 break-words text-xs text-muted-foreground">{detail}</p>
         {when === undefined ? null : (
           <p className={`mt-1 text-xs ${overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{when}</p>
@@ -95,15 +139,7 @@ export function TodayItem({
       </div>
       <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
         {accessory}
-        <Button
-          size="sm"
-          variant="outline"
-          className="shrink-0"
-          nativeButton={false}
-          render={<Link href={href} data-task-link-id={taskId} aria-label={`${action}: ${title}`} />}
-        >
-          {action}
-        </Button>
+        {itemAction({ action, href, title, taskId })}
       </div>
     </li>
   )

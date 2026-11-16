@@ -65,6 +65,7 @@ export default async function NewTaskPage({
         <NewTaskForm
           projects={model.projects.map(({ id, name }) => ({ value: id, label: name }))}
           people={assigneeOptions(model.people)}
+          actorId={String(context.actor.id)}
           projectId={projectId}
           relatedType={recordContext.type}
           relatedId={recordContext.id}

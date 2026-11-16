@@ -22,6 +22,7 @@ export default async function InterceptedTaskPage({
       options={view.options}
       returnTo={safeReturnTo(firstParam(query.returnTo), '/tasks')}
       restoreFocus
+      responsibility={view.responsibility}
       extra={
         <>
           <TaskClientField

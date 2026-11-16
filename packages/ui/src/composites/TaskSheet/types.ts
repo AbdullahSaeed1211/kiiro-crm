@@ -38,6 +38,8 @@ export interface TaskSheetOptions {
   readonly canUpdate: boolean
   /** True for owners and managers, who may set the owner-only mark. */
   readonly canMarkOwnerOnly: boolean
+  /** The app renders canonical responsibility controls outside the legacy assignee property. */
+  readonly hasResponsibilityControls?: boolean
   /** BCP 47 locale for dates. */
   readonly locale: string
 }

@@ -1,36 +1,19 @@
 'use client'
 
 import { Button } from '@ops/ui/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@ops/ui/components/ui/dialog'
-import { Check, Plus, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
-import { DAY_MS } from '@ops/module-work'
+import { Check } from 'lucide-react'
+import { useState } from 'react'
 import { DASHBOARD_TODAY_COPY } from '../../i18n/dashboard-today-copy'
-import type { DashboardPlanItem, DashboardTask, DashboardWork } from '../../server/queries/work/dashboard-work'
-import { addTaskToPlan, removeTaskFromPlan } from '../../server/actions/work/tasks/taskDayPlan'
+import type { DashboardPlanItem, DashboardWork } from '../../server/queries/work/dashboard-work'
 import { TodayItem } from './today-queue'
 import { taskHref } from './task-navigation'
-import { TaskCompleteButton } from './my-tasks/TaskCompleteButton'
 import { DueTodayDisclosure } from './today-due-today'
 import { UpcomingDisclosure } from './today-upcoming'
-import { CandidateList, TaskSearchField } from './today-plan-dialog-parts'
 import { CurrentFocusButton } from './current-focus-button'
+import { TodayCloseoutMenu } from './today-closeout-menu'
+import { ExistingTaskDialog, whenLabel } from './today-existing-task-dialog'
 
 const PLAN_PREVIEW = 5
-const CANDIDATE_PREVIEW = 5
-
-function whenLabel(task: DashboardTask, work: DashboardWork): string {
-  const copy = DASHBOARD_TODAY_COPY[work.locale]
-  if (task.dueAt === null) return copy.noDate
-  if (task.dueAt < work.dayStart) return copy.overdue
-  if (task.dueAt < work.dayStart + DAY_MS) return copy.dueToday
-  const date = new Intl.DateTimeFormat(work.locale, { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
-    task.dueAt,
-  )
-  return copy.due.replace('{date}', date)
-}
-
 function planDetail(item: DashboardPlanItem, work: DashboardWork): string {
   const copy = DASHBOARD_TODAY_COPY[work.locale]
   return [
@@ -46,8 +29,7 @@ function planAccessory(item: DashboardPlanItem, work: DashboardWork) {
   return (
     <>
       {focusControl(item, work)}
-      {completeControl(item, work)}
-      {removeControl(item, work)}
+      {closeoutControl(item, work)}
       {completedMark(item, work)}
     </>
   )
@@ -61,13 +43,15 @@ function focusControl(item: DashboardPlanItem, work: DashboardWork) {
   )
 }
 
-function completeControl(item: DashboardPlanItem, work: DashboardWork) {
-  if (work.team || item.task.isFinished || !item.task.assigneeIds.includes(work.actorId)) return null
-  return <TaskCompleteButton taskId={String(item.task.id)} title={item.task.title} updatedAt={item.task.updatedAt} />
-}
-
-function removeControl(item: DashboardPlanItem, work: DashboardWork) {
-  return !work.team && item.userId === work.actorId ? <RemovePlanButton item={item} work={work} /> : null
+function closeoutControl(item: DashboardPlanItem, work: DashboardWork) {
+  if (work.team || item.userId !== work.actorId) return null
+  return (
+    <TodayCloseoutMenu
+      task={item.task}
+      work={work}
+      canCloseout={!item.task.isFinished && item.task.assigneeIds.includes(work.actorId)}
+    />
+  )
 }
 
 function completedMark(item: DashboardPlanItem, work: DashboardWork) {
@@ -81,126 +65,24 @@ function PlanRow({ item, work }: Readonly<{ item: DashboardPlanItem; work: Dashb
   return (
     <TodayItem
       title={item.task.title}
+      titleHref={taskHref(String(item.task.id), '/')}
       detail={planDetail(item, work)}
       when={whenLabel(item.task, work)}
       overdue={item.task.dueAt !== null && item.task.dueAt < work.dayStart}
-      href={taskHref(String(item.task.id), '/')}
-      action={copy.openTask}
       taskId={String(item.task.id)}
       accessory={planAccessory(item, work)}
+      badge={
+        item.task.blockedReason ? (
+          <span
+            className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300"
+            title={item.task.blockedReason}
+          >
+            {copy.blockedBadge}
+          </span>
+        ) : null
+      }
       compact
     />
-  )
-}
-
-function RemovePlanButton({ item, work }: Readonly<{ item: DashboardPlanItem; work: DashboardWork }>) {
-  const router = useRouter()
-  const copy = DASHBOARD_TODAY_COPY[work.locale]
-  const [pending, setPending] = useState(false)
-  const [failed, setFailed] = useState(false)
-  async function remove() {
-    if (pending) return
-    setPending(true)
-    setFailed(false)
-    try {
-      const result = await removeTaskFromPlan(String(item.task.id))
-      if (result.ok) router.refresh()
-      else setFailed(true)
-    } catch {
-      setFailed(true)
-    } finally {
-      setPending(false)
-    }
-  }
-  return (
-    <Button
-      type="button"
-      size="icon-sm"
-      variant="ghost"
-      disabled={pending}
-      onClick={() => void remove()}
-      aria-label={copy.removeFromPlan}
-      title={failed ? copy.planFailed : copy.removeFromPlan}
-    >
-      <X aria-hidden className="size-4" />
-    </Button>
-  )
-}
-
-function ExistingTaskDialog({ work }: Readonly<{ work: DashboardWork }>) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const [pendingId, setPendingId] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
-  const router = useRouter()
-  const copy = DASHBOARD_TODAY_COPY[work.locale]
-  const plannedIds = useMemo(() => new Set(work.plan.items.map((item) => String(item.task.id))), [work.plan.items])
-  const candidates = useMemo(() => {
-    const value = search.trim().toLocaleLowerCase(work.locale)
-    return work.planCandidates.items
-      .filter((task) => !plannedIds.has(String(task.id)))
-      .filter((task) => value === '' || task.title.toLocaleLowerCase(work.locale).includes(value))
-      .slice(0, CANDIDATE_PREVIEW)
-  }, [plannedIds, search, work.locale, work.planCandidates.items])
-
-  async function add(taskId: string) {
-    if (pendingId !== null) return
-    setPendingId(taskId)
-    setFailed(false)
-    try {
-      const result = await addTaskToPlan(taskId)
-      if (result.ok) {
-        setSearch('')
-        setOpen(false)
-        router.refresh()
-      } else setFailed(true)
-    } catch {
-      setFailed(true)
-    } finally {
-      setPendingId(null)
-    }
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          setOpen(true)
-        }}
-      >
-        <Plus aria-hidden className="size-4" />
-        {copy.addExistingTask}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{copy.addExistingTask}</DialogTitle>
-            <DialogDescription>{copy.planHint}</DialogDescription>
-          </DialogHeader>
-          <TaskSearchField value={search} onChange={setSearch} work={work} />
-          <CandidateList
-            candidates={candidates}
-            pendingId={pendingId}
-            add={(taskId) => {
-              void add(taskId)
-            }}
-            work={work}
-            when={(task) => whenLabel(task, work)}
-          />
-          {work.planCandidates.count > CANDIDATE_PREVIEW ? (
-            <p className="text-xs text-muted-foreground">{copy.candidateHint}</p>
-          ) : null}
-          {failed ? (
-            <p role="alert" className="text-sm text-destructive">
-              {copy.planFailed}
-            </p>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-    </>
   )
 }
 

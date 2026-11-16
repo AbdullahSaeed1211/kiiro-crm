@@ -29,16 +29,9 @@ const user = (id: string, role: string, extra: UserDoc = {}): UserDoc => ({
   ...extra,
 })
 
-describe('spike access', () => {
-  it('denies anonymous requests and inactive users', async () => {
-    expect(await SPIKE_ACCESS.tasks.read(request(null))).toBe(false)
-    expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager', { active: false })))).toBe(false)
-  })
-
-  it('keeps owner-only tasks private and scopes staff to assignments, groups and project membership', async () => {
-    expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager')))).toEqual({ ownerOnly: { not_equals: true } })
-    const staff = request(user('s1', 'staff', { groups: [{ id: 'g1' }] }))
-    expect(await SPIKE_ACCESS.tasks.read(staff)).toEqual({
+const STAFF_TASK_READ = {
+  or: [
+    {
       and: [
         {
           or: [
@@ -49,7 +42,26 @@ describe('spike access', () => {
         },
         { ownerOnly: { not_equals: true } },
       ],
-    })
+    },
+    {
+      and: [
+        { ownerOnly: { not_equals: true } },
+        { or: [{ assignedById: { equals: 's1' } }, { watcherIds: { contains: 's1' } }] },
+      ],
+    },
+  ],
+}
+
+describe('spike access', () => {
+  it('denies anonymous requests and inactive users', async () => {
+    expect(await SPIKE_ACCESS.tasks.read(request(null))).toBe(false)
+    expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager', { active: false })))).toBe(false)
+  })
+
+  it('keeps owner-only tasks private and scopes staff to assignments, groups and project membership', async () => {
+    expect(await SPIKE_ACCESS.tasks.read(request(user('m1', 'manager')))).toEqual({ ownerOnly: { not_equals: true } })
+    const staff = request(user('s1', 'staff', { groups: [{ id: 'g1' }] }))
+    expect(await SPIKE_ACCESS.tasks.read(staff)).toEqual(STAFF_TASK_READ)
   })
 
   it('includes transitive reports in the owner branch and stops on reporting cycles', async () => {

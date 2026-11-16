@@ -24,6 +24,7 @@ export function TaskViewMenu({
         { id: 'open', label: copy.openTasks, pinned: true },
         { id: 'all', label: copy.allTasks },
         { id: 'mine', label: copy.myTasks },
+        { id: 'assigned-by-me', label: copy.assignedByMe },
         ...customViews,
       ]}
       onSelect={(id) => {

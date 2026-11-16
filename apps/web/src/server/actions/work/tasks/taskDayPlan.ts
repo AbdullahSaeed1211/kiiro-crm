@@ -1,6 +1,6 @@
 'use server'
 
-import { addTaskToTodayPlan, removeTaskFromTodayPlan } from '@ops/module-work'
+import { addTaskToTodayPlan, carryTaskToNextDay as carryTaskCommand, removeTaskFromTodayPlan } from '@ops/module-work'
 import { getWorkspaceSettings } from '@/server/auth/context'
 import { workCommandDeps } from '@/server/container'
 import { revalidateTaskViews } from './revalidate-task-views'
@@ -21,6 +21,14 @@ export async function addTaskToPlan(taskId: string) {
 export async function removeTaskFromPlan(taskId: string) {
   const [deps, settings] = await Promise.all([workCommandDeps(), getWorkspaceSettings()])
   const result = await removeTaskFromTodayPlan(deps, { taskId }, workspaceTimeZone(settings))
+  if (result.ok) revalidateTaskViews(taskId)
+  return result
+}
+
+/** Carries this signed-in assignee's plan entry to the next workspace day. */
+export async function carryTaskToNextDay(taskId: string) {
+  const [deps, settings] = await Promise.all([workCommandDeps(), getWorkspaceSettings()])
+  const result = await carryTaskCommand(deps, { taskId }, workspaceTimeZone(settings))
   if (result.ok) revalidateTaskViews(taskId)
   return result
 }

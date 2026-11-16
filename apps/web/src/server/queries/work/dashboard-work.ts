@@ -43,6 +43,8 @@ async function taskSection(
       relatedType: true,
       relatedId: true,
       assignees: true,
+      blockedReason: true,
+      waitingOnId: true,
     },
   })
   return {
@@ -79,8 +81,7 @@ type DashboardScope = Omit<
   'overdue' | 'dueToday' | 'upcoming' | 'plan' | 'planCandidates' | 'currentFocus' | 'presence' | 'refreshedAt'
 >
 
-async function teamPeople(context: RequestContext) {
-  if (!isManagerUp(context.actor)) return []
+async function activePeople(context: RequestContext) {
   const result = await context.payload.find({
     collection: 'users',
     where: { active: { equals: true } },
@@ -88,7 +89,7 @@ async function teamPeople(context: RequestContext) {
     limit: 0,
     pagination: false,
     depth: 0,
-    overrideAccess: false,
+    overrideAccess: true,
     req: context.req,
   })
   return result.docs.map((person) => ({ id: person.id, name: person.name }))
@@ -113,6 +114,7 @@ function dashboardScope(
     team: canSeeTeam && selection.requestedScope === 'team',
     personFilter: selection.personFilter,
     people: [],
+    taskPeople: [],
     crmEnabled: modules?.crm !== false,
     workEnabled: modules?.work !== false,
   }
@@ -230,10 +232,11 @@ export async function loadDashboardWork(
   requestedScope?: 'mine' | 'team',
   requestedPerson?: string,
 ): Promise<DashboardWork> {
-  const [settings, people] = await Promise.all([getWorkspaceSettings(), teamPeople(context)])
+  const [settings, taskPeople] = await Promise.all([getWorkspaceSettings(), activePeople(context)])
   const canSelectPerson = isManagerUp(context.actor) && requestedScope === 'team'
+  const people = isManagerUp(context.actor) ? taskPeople : []
   const personFilter = canSelectPerson ? authorizedPersonFilter(requestedPerson, people) : 'everyone'
-  const scope = { ...dashboardScope(settings, context, { requestedScope, personFilter }), people }
+  const scope = { ...dashboardScope(settings, context, { requestedScope, personFilter }), people, taskPeople }
   if (!scope.workEnabled)
     return {
       ...scope,

@@ -39,6 +39,10 @@ export interface AccessResource {
   readonly type: string
   readonly ownerId?: Id
   readonly assigneeIds?: readonly Id[]
+  /** Watchers can read a record without inheriting its edit capability. */
+  readonly watcherIds?: readonly Id[]
+  /** The authenticated assigner retains visibility after delegating a record. */
+  readonly assignedById?: Id
   readonly groupId?: Id
   readonly role?: Role
   readonly parentId?: Id | null

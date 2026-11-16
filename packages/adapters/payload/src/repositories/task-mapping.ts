@@ -33,6 +33,23 @@ function taskOwnership(doc: Doc): Ownership {
   return groupId === undefined ? { assigneeIds } : { assigneeIds, groupId }
 }
 
+function stringIds(value: unknown): Id[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => (typeof entry === 'string' && entry !== '' ? [asId(entry)] : []))
+}
+
+function taskResponsibility(doc: Doc, assigneeIds: readonly Id[]) {
+  const persistedCollaborators = stringIds(fieldOf(doc, 'collaboratorIds'))
+  return {
+    primaryAssigneeId: idOf(fieldOf(doc, 'primaryAssigneeId')) ?? assigneeIds[0] ?? null,
+    collaboratorIds: persistedCollaborators.length > 0 ? persistedCollaborators : assigneeIds.slice(1),
+    watcherIds: stringIds(fieldOf(doc, 'watcherIds')),
+    assignedById: idOf(fieldOf(doc, 'assignedById')) ?? null,
+    blockedReason: textOf(doc, 'blockedReason') ?? null,
+    waitingOnId: idOf(fieldOf(doc, 'waitingOnId')) ?? null,
+  }
+}
+
 // Project members pass the staff scope of projects, so `can` sees them as assignees.
 function projectOwnership(doc: Doc): Ownership {
   const assigneeIds = idsOf(fieldOf(doc, FIELDS.members))
@@ -44,11 +61,13 @@ function projectOwnership(doc: Doc): Ownership {
 export function toTaskRecord(doc: Doc): TaskRecord | undefined {
   const state = stageStateOf(doc)
   if (state === undefined) return undefined
+  const assigneeIds = idsOf(fieldOf(doc, FIELDS.assignees))
   return {
     ...state,
     title: textOf(doc, 'title') ?? '',
     priority: oneOf(PRIORITY_VALUES, fieldOf(doc, 'priority')) ?? 'none',
-    assigneeIds: idsOf(fieldOf(doc, FIELDS.assignees)),
+    assigneeIds,
+    ...taskResponsibility(doc, assigneeIds),
     startAt: numberOf(doc, 'startAt'),
     dueAt: numberOf(doc, 'dueAt'),
     projectId: idOf(fieldOf(doc, FIELDS.project)) ?? null,
@@ -94,6 +113,7 @@ export function toWorkTaskRecord(doc: Doc, stageCategory: StageCategory): WorkTa
   if (base === undefined || state === undefined) return undefined
   return {
     ...base,
+    ...taskResponsibility(doc, base.assigneeIds),
     description: textOf(doc, 'description') ?? null,
     parentTaskId: idOf(fieldOf(doc, 'parentTask')) ?? null,
     rank: textOf(doc, 'rank') ?? '',

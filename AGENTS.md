@@ -58,7 +58,7 @@ The static gates (`format:check`, `typecheck`, `lint`, `depcruise`, `knip`, `jsc
 
 Each one caused a real defect here.
 
-- Put shared types in a leaf contract module. Barrels only re-export, or dependency-cruiser reports a cycle.
+- Put shared types in a leaf contract module. Barrels only re-export, or dependency-cruiser reports a cycle. Run `pnpm depcruise` before handing off extracted helpers; type-only imports can create cycles that type checking accepts.
 - Scope predicates live in platform policy. Pass the authenticated request through every repository read.
 - Board drops into a lost stage defer the write and restore the source stage and version on failure.
 - Map a stage transition to the persisted Payload shape before writing the transition row; `stage-codecs.ts` in the Payload adapter owns that mapping.
@@ -71,9 +71,14 @@ Each one caused a real defect here.
 - User-facing copy is short, plain English and always localization-ready: no text in a component. Each page or feature has its own `*-copy.ts` in `apps/web/src/i18n/` (not one shared file) with an `en` and an `es` entry; server code picks it with `catalogFor(X_COPY, locale)` and client components with `catalogFor(X_COPY, useLocale())` from `locale-context.tsx`.
 - Never send a raw exception message to the browser. Catch with `actionFailure(error, context, fallback)`.
 - A collection with `systemOnly` update access rejects the generic user-checked CAS path. Command-authorized writes need their scoped system-write adapter; verify a real edit after creation, as required by the agency workflow acceptance checklist.
+- Task responsibility changes must persist the responsible person, collaborators and compatibility `assignees` together. CAS writes skip collection hooks; a form can show the new person while Today and permissions still use the old assignment if the command omits that relationship. Verify the persisted participants and test watcher read-only access through both the product API and generic Payload API.
+- Payload expands nullable fields during updates. Compare effective responsibility changes rather than treating a framework-added null as explicit unassignment. Verify that date-only updates preserve legacy assignees and scheduled reminder recipients.
+- Notification preference rows are optional; an absent row uses the documented defaults. Verify that the recipient's notification exists, not only that task creation returned success. Delivery errors must log a usable message and must not turn an already-saved task into an apparent failed creation.
+- Match the local `APP_ORIGIN` to the development server's actual port before browser verification. Include that `Origin` header in authenticated API checks: a manually supplied cookie without an origin can pass while browser server actions fail the origin check.
 - An HTTP 200 can contain an application error boundary. Browser gates must check the expected content and console, not only the response status; the reported localhost error exposed this gap.
 - Loading placeholders cover unresolved data, not stable page titles, navigation or available actions. Match the final content geometry; the task loaders obscured static controls and caused avoidable layout changes.
 - Check the pending transition, not only the loaded panel. The generic app loading boundary briefly replaced Today while an intercepted task panel loaded. Keep overlay loading in its parallel slot and retain the source workspace. Observe layout shifts with `PerformanceObserver`; `getEntriesByType('layout-shift')` did not measure them. Mark unsupported browsers as unmeasured and retain geometry checks.
+- Task detail changes belong in shared content used by both the canonical page and intercepted drawer. Verify a real task-row click as well as direct navigation; checking only `/tasks/:id` misses controls absent from the more common drawer path.
 - Open a persisted event from the sales desk during calendar verification. Rendering an empty calendar missed a server callback passed into a client dialog; cross-boundary props must remain serializable.
 - Multi-record scheduling follows the non-transactional recovery contract in decision D-36. Check interrupted submission retry and duplicate prevention; a returned error does not itself roll back prior writes.
 - Prove scheduled occurrence uniqueness against the real local database. Payload's UUID create path discarded a supplied `data.id` during monthly-work verification while the fake accepted it. Use a persisted unique occurrence key and make the fake assign its own IDs; confirm concurrent and later-window replays create one occurrence.

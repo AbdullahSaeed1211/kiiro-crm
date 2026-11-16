@@ -10,6 +10,8 @@ export interface DashboardTask {
   readonly relatedType: string | null
   readonly relatedId: Id | null
   readonly assigneeIds: readonly string[]
+  readonly blockedReason: string | null
+  readonly waitingOnId: string | null
   readonly context: string | null
   readonly people: readonly string[]
   readonly isFinished: boolean
@@ -50,6 +52,8 @@ export interface DashboardWork {
   readonly team: boolean
   readonly personFilter: string
   readonly people: readonly { readonly id: string; readonly name: string }[]
+  /** Active member names for selecting a person a task is waiting on. */
+  readonly taskPeople: readonly { readonly id: string; readonly name: string }[]
   readonly crmEnabled: boolean
   readonly workEnabled: boolean
   readonly overdue: TaskSection

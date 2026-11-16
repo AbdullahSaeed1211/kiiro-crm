@@ -22,6 +22,12 @@ const TASK_PATCH_FIELDS: FieldMap = {
   priority: ['priority'],
   repeat: ['repeat'],
   assigneeIds: ['assignees', toList],
+  primaryAssigneeId: ['primaryAssigneeId', orNull],
+  collaboratorIds: ['collaboratorIds', toList],
+  watcherIds: ['watcherIds', toList],
+  assignedById: ['assignedById', orNull],
+  blockedReason: ['blockedReason', orNull],
+  waitingOnId: ['waitingOnId', orNull],
   groupId: ['group', orNull],
   relatedType: ['relatedType'],
   relatedId: ['relatedId'],
@@ -52,7 +58,7 @@ export function projectData(draft: ProjectDraft): Record<string, unknown> {
   }
 }
 
-export function taskData(draft: TaskDraft): Record<string, unknown> {
+function taskCoreData(draft: TaskDraft): Record<string, unknown> {
   return {
     title: draft.title,
     description: orNull(draft.description),
@@ -65,12 +71,36 @@ export function taskData(draft: TaskDraft): Record<string, unknown> {
     rank: draft.rank ?? DEFAULT_RANK,
     priority: draft.priority ?? 'none',
     repeat: draft.repeat ?? 'none',
-    assignees: toList(draft.assigneeIds),
     group: orNull(draft.groupId),
+  }
+}
+
+function taskResponsibilityData(draft: TaskDraft): Record<string, unknown> {
+  return {
+    assignees: toList(draft.assigneeIds),
+    primaryAssigneeId: draft.primaryAssigneeId ?? draft.assigneeIds?.[0] ?? null,
+    collaboratorIds: toList(draft.collaboratorIds ?? draft.assigneeIds?.slice(1)),
+    watcherIds: toList(draft.watcherIds),
+    assignedById: draft.assignedById ?? null,
+  }
+}
+
+function taskScheduleData(draft: TaskDraft): Record<string, unknown> {
+  return {
     startAt: orNull(draft.startAt),
     dueAt: orNull(draft.dueAt),
     completedAt: orNull(draft.completedAt),
     ownerOnly: draft.ownerOnly ?? false,
+    blockedReason: draft.blockedReason ?? null,
+    waitingOnId: draft.waitingOnId ?? null,
+  }
+}
+
+export function taskData(draft: TaskDraft): Record<string, unknown> {
+  return {
+    ...taskCoreData(draft),
+    ...taskResponsibilityData(draft),
+    ...taskScheduleData(draft),
     ...(draft.monthlyOrigin === undefined ? {} : { customData: { monthlyOrigin: draft.monthlyOrigin } }),
     ...(draft.monthlyOccurrenceKey === undefined ? {} : { monthlyOccurrenceKey: draft.monthlyOccurrenceKey }),
   }

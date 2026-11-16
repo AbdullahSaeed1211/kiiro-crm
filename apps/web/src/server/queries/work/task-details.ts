@@ -43,6 +43,14 @@ export interface TaskView {
   readonly task: TaskSheetTask
   readonly options: TaskSheetOptions
   readonly related: TaskRelated | null
+  readonly responsibility: {
+    readonly primaryAssigneeId: string | null
+    readonly collaboratorIds: readonly string[]
+    readonly watcherIds: readonly string[]
+    readonly assignedById: string | null
+    readonly blockedReason: string | null
+    readonly waitingOnId: string | null
+  }
 }
 
 const TASK_FIELDS = { id: true, title: true, stageId: true, updatedAt: true } as const
@@ -54,6 +62,12 @@ const DETAIL_FIELDS = {
   startAt: true,
   dueAt: true,
   assignees: true,
+  primaryAssigneeId: true,
+  collaboratorIds: true,
+  watcherIds: true,
+  assignedById: true,
+  blockedReason: true,
+  waitingOnId: true,
   parentTask: true,
   group: true,
   ownerOnly: true,
@@ -91,6 +105,18 @@ function readTaskDocuments(context: RequestContext, idValue: string) {
     }),
     context.payload.find({ collection: 'groups', ...request, limit: 0, select: { id: true, name: true } }),
   ])
+}
+
+function relationId(value: unknown): string | null {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (typeof value !== 'object' || value === null) return null
+  const id = (value as Record<string, unknown>).id
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : null
+}
+
+function relationIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.map(relationId).filter((id): id is string => id !== null)
 }
 
 async function loadParent(context: RequestContext, value: unknown): Promise<TaskSheetTask['parent']> {
@@ -197,9 +223,18 @@ export async function loadTaskView(idValue: string): Promise<TaskView | undefine
   const canUpdate = canUpdateTaskFromDoc(context, doc)
   const [parent, related] = await Promise.all([loadParent(context, doc.parentTask), loadRelated(context, doc)])
   const subtasks = subtasksOf(subtaskPage.docs, terminal)
+  const blockedReason = typeof doc.blockedReason === 'string' ? doc.blockedReason : null
   return {
     related,
     task: sheetTask({ doc, task, parent, subtasks }),
+    responsibility: {
+      primaryAssigneeId: relationId(doc.primaryAssigneeId) ?? task.assigneeIds.at(0) ?? null,
+      collaboratorIds: relationIds(doc.collaboratorIds),
+      watcherIds: relationIds(doc.watcherIds),
+      assignedById: relationId(doc.assignedById),
+      blockedReason,
+      waitingOnId: relationId(doc.waitingOnId),
+    },
     options: {
       stages,
       members: memberPage.docs.map(({ id, name }) => ({ id, name })),

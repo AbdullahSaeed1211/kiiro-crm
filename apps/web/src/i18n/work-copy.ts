@@ -1,8 +1,10 @@
 import type { Locale } from './locale'
+import { TASK_LIST_EXTRA_COPY } from './task-list-extra-copy'
 
 /** Shared copy for the task workspace and its alternate representations. */
 export const TASK_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
+    ...TASK_LIST_EXTRA_COPY.en,
     table: 'Table',
     board: 'Kanban',
     calendar: 'Calendar',
@@ -72,6 +74,7 @@ export const TASK_COPY: Readonly<Record<Locale, Readonly<Record<string, string>>
     newTask: 'New task',
   },
   es: {
+    ...TASK_LIST_EXTRA_COPY.es,
     table: 'Tabla',
     board: 'Kanban',
     calendar: 'Calendario',
