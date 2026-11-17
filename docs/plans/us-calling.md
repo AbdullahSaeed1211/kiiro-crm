@@ -50,6 +50,12 @@ Checked on 2026-11-18 using the development app, product API and local D1. The l
 - D1 event leases can be completed and are not reclaimed afterward. Wrap-up updates an existing callback date instead of creating a duplicate. A callback outcome without a date is rejected.
 - The dialer fits desktop and 390-pixel mobile viewports; Escape closes it and restores focus. Live microphone audio, provider number orders, recordings arriving from Telnyx and deployed queue delivery remain activation checks below.
 
+## Provider configuration status
+
+On 2026-11-18, the Telnyx API key was validated and installed as a Cloudflare Worker secret together with the webhook verification key, webhook URL and offer signing secret. The tenant now uses a US-only outbound voice profile, an active Call Control application and an active browser credential connection with call parking enabled. The isolated voice queue has one producer and one consumer, both the tenant Worker. The deployed voice processor returned HTTP 200 with an empty inbox; production login, R2 and email acceptance probes passed. Worker version: `39347c4d-c327-4eaf-b88d-1fd70f1b7fd7`.
+
+This supersedes the disabled provider configuration recorded above. No number is purchased or assigned, and real carrier audio remains unverified. The account is still Trial, has no verified numbers and returns redacted US number search results. Telnyx [trial restrictions](https://developers.telnyx.com/docs/account-setup/levels-and-capabilities/trial) limit calling to the verified number and number ordering to the account's country of origin. Upgrade the account for normal staff calling, approve a concrete US number quote, then complete the activation evidence below. Provider identifiers and secrets remain outside the repository.
+
 ## Activation evidence
 
 Before enabling staff calling, record the following against the actual tenant and account:
