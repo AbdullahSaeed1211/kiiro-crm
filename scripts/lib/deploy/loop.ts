@@ -38,7 +38,7 @@ export function rollbackCommand(tenant: Tenant, tag: string): string {
   return `${WRANGLER} rollback --name ops-${tenant.slug} --message "${safeTag} failed smoke" --yes`
 }
 
-/** Runs restore point, migration, deployment and smoke in deploy order, stopping and rolling back on failure. */
+/** Runs restore point, migration, deployment and smoke in deploy order. */
 export async function deployTenants(
   tenants: readonly Tenant[],
   tag: string,
@@ -68,31 +68,81 @@ async function deployOne(tenant: Tenant, tag: string, deps: DeploymentDependenci
     const error = restore.exitCode === 0 ? 'restore point output did not include a bookmark' : restore.output.trim()
     return { slug: tenant.slug, status: 'failed', error, rolledBack: false }
   }
+  const migrationError = await runMigration(tenant, deps.run)
+  if (migrationError !== undefined) return failedResult(tenant, bookmark, migrationError)
+  const uploadError = await runUpload(tenant, deps.run, tag)
+  if (uploadError !== undefined) return failedResult(tenant, bookmark, uploadError)
+  return runSmokeAndRollback({ tenant, tag, bookmark, deps })
+}
+
+async function runMigration(tenant: Tenant, run: CommandRunner): Promise<string | undefined> {
+  const migrate = `PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`
   try {
-    await runMigrationAndDeploy(tenant, deps.run, tag)
-    const smoke = await (deps.smoke ?? ((current) => smokeTenant(current, {})))(tenant)
-    if (!smoke.ok) throw new Error('smoke failed')
-    return { slug: tenant.slug, status: 'deployed', bookmark, rolledBack: false, smoke }
+    assertCommand(
+      await run(migrate, {
+        CLOUDFLARE_ENV: tenant.slug,
+        PAYLOAD_REMOTE_BINDINGS: '1',
+        // Payload only needs a secret to initialize the migration process; the deployed Worker secret is unchanged.
+        PAYLOAD_SECRET: process.env['PAYLOAD_SECRET'] ?? randomBytes(32).toString('base64url'),
+      }),
+      migrate,
+    )
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const rollbackResult = await deps.run(rollbackCommand(tenant, tag))
-    return { slug: tenant.slug, status: 'failed', bookmark, error: message, rolledBack: rollbackResult.exitCode === 0 }
+    return errorMessage(error)
+  }
+  return undefined
+}
+
+async function runUpload(tenant: Tenant, run: CommandRunner, tag: string): Promise<string | undefined> {
+  const deploy = `${OPENNEXT} deploy --env=${tenant.slug} --var APP_VERSION:${tag}`
+  try {
+    assertCommand(await run(deploy), deploy)
+  } catch (error) {
+    return errorMessage(error)
+  }
+  return undefined
+}
+
+async function runSmokeAndRollback(input: {
+  tenant: Tenant
+  tag: string
+  bookmark: string
+  deps: DeploymentDependencies
+}): Promise<DeploymentResult> {
+  let smoke: SmokeResult
+  try {
+    smoke = await (input.deps.smoke ?? ((current) => smokeTenant(current, {})))(input.tenant)
+  } catch (error) {
+    return rollbackAfterSmoke({ ...input, run: input.deps.run, error: errorMessage(error) })
+  }
+  if (smoke.ok)
+    return { slug: input.tenant.slug, status: 'deployed', bookmark: input.bookmark, rolledBack: false, smoke }
+  return rollbackAfterSmoke({ ...input, run: input.deps.run, error: 'smoke failed' })
+}
+
+async function rollbackAfterSmoke(input: {
+  tenant: Tenant
+  tag: string
+  bookmark: string
+  run: CommandRunner
+  error: string
+}): Promise<DeploymentResult> {
+  const rollbackResult = await input.run(rollbackCommand(input.tenant, input.tag))
+  return {
+    slug: input.tenant.slug,
+    status: 'failed',
+    bookmark: input.bookmark,
+    error: input.error,
+    rolledBack: rollbackResult.exitCode === 0,
   }
 }
 
-async function runMigrationAndDeploy(tenant: Tenant, run: CommandRunner, tag: string): Promise<void> {
-  const migrate = `PAYLOAD_REMOTE_BINDINGS=1 CLOUDFLARE_ENV=${tenant.slug} pnpm --filter web exec payload migrate`
-  assertCommand(
-    await run(migrate, {
-      CLOUDFLARE_ENV: tenant.slug,
-      PAYLOAD_REMOTE_BINDINGS: '1',
-      // Payload only needs a secret to initialize the migration process; the deployed Worker secret is unchanged.
-      PAYLOAD_SECRET: process.env['PAYLOAD_SECRET'] ?? randomBytes(32).toString('base64url'),
-    }),
-    migrate,
-  )
-  const deploy = `${OPENNEXT} deploy --env=${tenant.slug} --var APP_VERSION:${tag}`
-  assertCommand(await run(deploy), deploy)
+function failedResult(tenant: Tenant, bookmark: string, error: string): DeploymentResult {
+  return { slug: tenant.slug, status: 'failed', bookmark, error, rolledBack: false }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 function blockedResult(tenant: Tenant, print: (line: string) => void): DeploymentResult {

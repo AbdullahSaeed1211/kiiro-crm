@@ -51,6 +51,8 @@ Records you create while checking live only in the local database. Name them so 
 
 For external-provider features, distinguish local simulation, deployed configuration and a real provider operation. Report each separately. A rendered dialer does not prove two-way audio, inbound routing or carrier permissions. Verify those against the configured provider before calling the integration live. Never spend money to obtain proof without the user's purchase authorization.
 
+Exercise shared-work lifecycles as an ordinary staff member as well as an owner. Check visibility before assignment or claim, during work and after completion. An owner-only call walkthrough cannot prove that assigned staff see an unclaimed inbound ring; check both allowed and unrelated records through the same snapshot the UI consumes.
+
 For new Payload persistence, verify create, reload and update against local D1 before relying on a fake repository. Confirm persisted identifiers match the domain identifiers used by later commands. Test generic collection access separately from product API access: a scoped repository cannot redact a raw JSON field returned through another route.
 
 When an adapter narrows a library to a structural interface, verify each invoked operation against the installed implementation. Include event leasing, lease completion and state claims in the real database walkthrough; TypeScript cannot detect an invented method hidden behind an assertion.
@@ -58,6 +60,8 @@ When an adapter narrows a library to a structural interface, verify each invoked
 Keep the running application compilable during refactors. Create replacement modules before changing imports, and remove old modules only after their imports are gone. Write complete files atomically rather than exposing a partially written module to the development server. After moving an application-shell or adapter import, load an authenticated page and check runtime errors before continuing.
 
 Format owned files before the final lint check. The line and function limits apply to Prettier's output; compressed JSX or multiple statements on one line cannot establish a passing handoff. Split cohesive components or helpers when the formatted file exceeds a limit.
+
+Use a Cloudflare compatibility date no later than the current UTC date. The developer's local date can be a day ahead of the deployment API; validate the generated date before uploading a Worker.
 
 ## 4. Record the gates
 

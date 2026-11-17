@@ -64,6 +64,26 @@ describe('deployment failure handling', () => {
     expect(commands).toContain(`${WRANGLER} rollback --name ops-alpha --message "v1.0.0 failed smoke" --yes`)
     expect(commands.some((command) => command.includes('ops-beta'))).toBe(false)
   })
+
+  it.each([
+    ['migration', 'payload migrate'],
+    ['upload', OPENNEXT],
+  ])('does not roll back when the %s command fails', async (_stage, failedCommand) => {
+    const commands: string[] = []
+    const result = await deployTenants([makeTenant('alpha', 0)], 'v1.1.0', {
+      run: (command) => {
+        commands.push(command)
+        return Promise.resolve(
+          command.includes(failedCommand)
+            ? { exitCode: 1, output: `${failedCommand} rejected` }
+            : { exitCode: 0, output: 'bookmark: stable' },
+        )
+      },
+      smoke: () => Promise.resolve(okay),
+    })
+    expect(result).toMatchObject([{ status: 'failed', rolledBack: false }])
+    expect(commands.some((command) => command.includes('rollback'))).toBe(false)
+  })
 })
 
 describe('deployment safety', () => {

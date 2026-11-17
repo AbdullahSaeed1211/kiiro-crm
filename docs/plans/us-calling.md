@@ -2,6 +2,8 @@
 
 **Status: implemented and locally verified in simulation; live carrier calls are unverified.** The scope is browser calling with US numbers, inbound routing, administrator number assignment, call history and private recordings. SMS, native mobile applications and customer usage billing are outside this change.
 
+Deployed to `https://crm.mirchmedia.com` as `v0.11.12` on 2026-11-17 UTC, with calling disabled pending provider activation. Worker version: `dfef6440-b4bd-4abb-a136-2e3b337269f1`; application code: `965e0c70`. Production health reports migration `20261118_100000_voice_recovery`. Login and R2 probes pass; the email probe was accepted, which does not prove inbox delivery. The Cloudflare compatibility date is 2026-11-17. No production database reset was performed.
+
 ## Acceptance contract
 
 The phone stays accessible from the application header for eligible users. The dialer survives page navigation, minimizes without hanging up, and shows a distinct hang-up action. Sales staff keep their Leads and Intake navigation. The phone does not add unrelated application access.
@@ -43,6 +45,7 @@ Checked on 2026-11-18 using the development app, product API and local D1. The l
 
 - An outbound reservation survives a retry with the same request key; a second concurrent call is rejected. Simulated provider events move the call through connecting, active and ended. A different provider leg cannot reuse the capability to replace the original call legs.
 - Two device answer requests racing for one inbound call produce one success and one conflict. The winning leg becomes active; hanging up a losing device leaves the accepted call active.
+- An ordinary staff snapshot includes an unclaimed inbound ring on an active assigned line and excludes unrelated calls. Owner access alone does not establish this behavior.
 - Staff cannot administer numbers or settings, call from an unassigned line, act on another user's call or download its recording. Generic Payload call, device, event and leg reads are denied for staff and managers. A manager can assign a number to staff.
 - D1 event leases can be completed and are not reclaimed afterward. Wrap-up updates an existing callback date instead of creating a duplicate. A callback outcome without a date is rejected.
 - The dialer fits desktop and 390-pixel mobile viewports; Escape closes it and restores focus. Live microphone audio, provider number orders, recordings arriving from Telnyx and deployed queue delivery remain activation checks below.
