@@ -61,6 +61,9 @@ export async function voiceSnapshot(deps: VoiceEngineDeps): Promise<VoiceResult<
     manager ? deps.repo.listActiveMembers() : Promise.resolve([]),
     manager ? deps.repo.listDevices([]) : Promise.resolve([]),
   ])
+  const accessibleCalls = await Promise.all(
+    calls.map(async (call) => ((await canAccessCall(deps, call, manager)) ? call : undefined)),
+  )
   return ok({
     configured: deps.configured,
     mode: deps.configured ? deps.mode : 'disabled',
@@ -68,7 +71,7 @@ export async function voiceSnapshot(deps: VoiceEngineDeps): Promise<VoiceResult<
     userId,
     settings,
     numbers: numbers.filter((number) => manager || number.assigneeIds.includes(userId)),
-    calls: calls.filter((call) => visibleCall(call, deps.actor, manager)),
+    calls: accessibleCalls.filter((call): call is VoiceCall => call !== undefined),
     ...(manager ? { devices: [...devices] } : {}),
     members: [...members],
   })
