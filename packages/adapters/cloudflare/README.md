@@ -7,6 +7,8 @@ Cloudflare adapters: Email Service, Turnstile, rate limits, R2 streams, cron and
 ## Public API
 
 - `dispatchCron(env, scheduledTime)`: forwards a cron trigger to `POST /api/v1/internal/cron` through the `WORKER_SELF_REFERENCE` service binding with the internal secret (spec §13).
+- `dispatchVoiceQueue(batch, env)`: forwards private voice processing jobs through the same service binding. A job is acknowledged after a successful processor response; processing failures retry with bounded backoff.
+- `TelnyxVoiceProvider` and `verifyTelnyxWebhook`: server-side carrier commands, parked-connection readiness checks and fresh Ed25519 webhook validation. `SimulatorVoiceProvider` performs local state checks without carrier calls or number purchases.
 - `bridgeInboundEmail(env, message)`: reads the raw Email Routing stream once and forwards it with `x-envelope-from` and `x-envelope-to` to `POST /api/v1/internal/email/inbound`; rejects messages over `MAX_INBOUND_BYTES` (25 MiB) or refused by the route (spec §14.4).
 - `INTERNAL_ROUTES`, `INTERNAL_SECRET_HEADER`: paths and header shared by the Worker entry and the internal route handlers.
 - `payloadEmailAdapter({ sender, fromAddress, fromName })`: Payload `email` adapter over a `MailSender` (spec §14.3); throws when the send fails.

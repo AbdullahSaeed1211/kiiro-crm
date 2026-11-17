@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
   // `next dev` would otherwise write AGENTS.md and CLAUDE.md into the app directory.
   agentRules: false,
+  // Next 16.4 incorrectly combines modal catch-alls with sibling root layouts (vercel/next.js#99830).
+  deprecated: { looseRouteMatching: true },
   // Workspace packages ship TypeScript source.
   transpilePackages: [
     '@ops/ui',

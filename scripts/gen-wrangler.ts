@@ -47,10 +47,14 @@ export function baseConfig(): Config {
     $schema: 'node_modules/wrangler/config-schema.json',
     name: 'ops-dev',
     main: 'worker.ts',
-    compatibility_date: '2025-08-15',
+    compatibility_date: '2026-11-18',
     compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
     assets: { directory: '.open-next/assets', binding: 'ASSETS' },
     observability: { enabled: true },
+    queues: {
+      producers: [{ binding: 'VOICE_EVENTS', queue: 'ops-dev-voice' }],
+      consumers: [{ queue: 'ops-dev-voice', max_batch_size: 1, max_batch_timeout: 1, max_retries: 8 }],
+    },
     ...bindings({ worker: 'ops-dev', d1, bucket: 'ops-dev', intakeNamespace: '1', authNamespace: '2', remote: false }),
   }
 }
@@ -58,6 +62,15 @@ export function baseConfig(): Config {
 function routing(tenant: Tenant): Config {
   if (tenant.hostType === 'workers_dev') return { workers_dev: true }
   return { workers_dev: false, routes: [{ pattern: tenant.host, custom_domain: true }] }
+}
+
+function voiceVars(tenant: Tenant): Record<string, string> {
+  const voice = tenant.voice ?? { mode: 'disabled' }
+  return {
+    VOICE_MODE: voice.mode,
+    TELNYX_CONNECTION_ID: voice.connectionId ?? '',
+    TELNYX_CALL_CONTROL_APPLICATION_ID: voice.callControlApplicationId ?? '',
+  }
 }
 
 function vars(tenant: Tenant): Record<string, string> {
@@ -73,6 +86,7 @@ function vars(tenant: Tenant): Record<string, string> {
     MAIL_FROM_ADDRESS: tenant.email.fromAddress,
     MAIL_FROM_NAME: tenant.email.fromName,
     MAIL_PROBE_RECIPIENT: tenant.email.probeRecipient ?? '',
+    ...voiceVars(tenant),
   }
 }
 
@@ -87,6 +101,14 @@ export function tenantEnv(tenant: Tenant): Config {
     ...bindings({ worker, d1, bucket: tenant.r2.bucket, intakeNamespace: intake, authNamespace: auth, remote: true }),
     vars: vars(tenant),
     triggers: { crons: [CRON_EVERY_15_MINUTES] },
+    ...(tenant.voice?.queue === undefined
+      ? {}
+      : {
+          queues: {
+            producers: [{ binding: 'VOICE_EVENTS', queue: tenant.voice.queue }],
+            consumers: [{ queue: tenant.voice.queue, max_batch_size: 1, max_batch_timeout: 1, max_retries: 8 }],
+          },
+        }),
   }
 }
 
@@ -96,6 +118,7 @@ export function assertIsolated(tenants: readonly Tenant[]): void {
     tenant.slug,
     `d1:${tenant.d1.name}`,
     `r2:${tenant.r2.bucket}`,
+    ...(tenant.voice?.queue === undefined ? [] : [`voice-queue:${tenant.voice.queue}`]),
     `ratelimit:${tenant.rateLimitNamespaces.intake}`,
     `ratelimit:${tenant.rateLimitNamespaces.auth}`,
   ])
@@ -133,7 +156,7 @@ export function renderMailRouterConfig(tenants: readonly Tenant[]): string {
     $schema: 'node_modules/wrangler/config-schema.json',
     name: 'ops-mail-router',
     main: 'src/index.ts',
-    compatibility_date: '2025-08-15',
+    compatibility_date: '2026-11-18',
     compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
     observability: { enabled: true },
     ...(inboundDomain === undefined ? {} : { routes: [{ pattern: inboundDomain, custom_domain: true }] }),

@@ -14,6 +14,7 @@ import {
   ListOrdered,
   Mail,
   Megaphone,
+  Phone,
   Palette,
   Puzzle,
   TrendingUp,
@@ -67,6 +68,7 @@ const GROUPS: readonly SettingsGroup[] = [
       ['sales', '/settings/sales', TrendingUp, ['owner', 'manager']],
       ['automation', '/settings/automation', Workflow, ['owner', 'manager']],
       ['intake', '/settings/intake', FileInput, ['owner', 'manager']],
+      ['calling', '/settings/calling', Phone, ['owner', 'manager']],
     ],
   ],
   [

@@ -25,6 +25,7 @@ export const SETTINGS_PAGE_COPY: Readonly<Record<Locale, SettingsPageCopy>> = {
       Newsletter: 'Newsletter',
       Sales: 'Sales',
       Intake: 'Intake',
+      Calling: 'Calling',
       'Import & export': 'Import & export',
       Archive: 'Archive',
       Activity: 'Activity',
@@ -54,6 +55,8 @@ export const SETTINGS_PAGE_COPY: Readonly<Record<Locale, SettingsPageCopy>> = {
         'How new leads are assigned, how fast they should be answered, and the emails you send most.',
       'Configure secure public lead forms, routing, email intake, and delivery review.':
         'Configure secure public lead forms, routing, email intake, and delivery review.',
+      'Manage phone numbers, call routing, and browser calling for your team.':
+        'Manage phone numbers, call routing, and browser calling for your team.',
       'Bring organizations, contacts, leads and deals in from a spreadsheet, or download everything as CSV.':
         'Bring organizations, contacts, leads and deals in from a spreadsheet, or download everything as CSV.',
       'Leads, deals, contacts, organizations, projects and tasks that were archived. Restore one to put it back in its lists.':
@@ -82,6 +85,7 @@ export const SETTINGS_PAGE_COPY: Readonly<Record<Locale, SettingsPageCopy>> = {
       Newsletter: 'Boletín',
       Sales: 'Ventas',
       Intake: 'Captura',
+      Calling: 'Llamadas',
       'Import & export': 'Importar y exportar',
       Archive: 'Archivo',
       Activity: 'Actividad',
@@ -111,6 +115,8 @@ export const SETTINGS_PAGE_COPY: Readonly<Record<Locale, SettingsPageCopy>> = {
         'Cómo se asignan los prospectos, en cuánto tiempo responder y los correos que más envías.',
       'Configure secure public lead forms, routing, email intake, and delivery review.':
         'Configura formularios públicos seguros, asignación, recepción por correo y revisión de entregas.',
+      'Manage phone numbers, call routing, and browser calling for your team.':
+        'Administra números de teléfono, enrutamiento y llamadas en el navegador para tu equipo.',
       'Bring organizations, contacts, leads and deals in from a spreadsheet, or download everything as CSV.':
         'Importa organizaciones, contactos, prospectos y oportunidades desde una hoja de cálculo o descarga todo como CSV.',
       'Leads, deals, contacts, organizations, projects and tasks that were archived. Restore one to put it back in its lists.':

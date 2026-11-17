@@ -1,0 +1,81 @@
+import {
+  voiceCallActionSchema,
+  voiceDialSchema,
+  voiceNumberPurchaseSchema,
+  voiceNumberReleaseSchema,
+  voiceNumberUpdateSchema,
+  voiceSessionSchema,
+  voiceSettingsSchema,
+} from '@ops/module-crm'
+
+export const VOICE_CONTRACTS = {
+  'voice.snapshot': {
+    method: 'GET',
+    path: '/api/v1/voice',
+    summary: 'Calling settings, assigned numbers and readable recent calls.',
+    success: 200,
+  },
+  'voice.session': {
+    method: 'POST',
+    path: '/api/v1/voice/session',
+    summary: 'Create a per-user, per-device WebRTC session.',
+    body: voiceSessionSchema,
+    success: 200,
+  },
+  'voice.session.stop': {
+    method: 'DELETE',
+    path: '/api/v1/voice/session',
+    summary: 'Stop call routing to a browser device and revoke its provider credential.',
+    body: voiceSessionSchema,
+    success: 200,
+  },
+  'voice.calls.create': {
+    method: 'POST',
+    path: '/api/v1/voice/calls',
+    summary: 'Authorize a browser leg for a server-controlled outbound US call.',
+    body: voiceDialSchema,
+    success: 201,
+  },
+  'voice.calls.action': {
+    method: 'PATCH',
+    path: '/api/v1/voice/calls/:id',
+    summary: 'Answer, decline, end or wrap up a voice call.',
+    body: voiceCallActionSchema,
+    success: 200,
+  },
+  'voice.numbers.search': {
+    method: 'GET',
+    path: '/api/v1/voice/numbers/search',
+    summary: 'Search available US local numbers by area code; managers only.',
+    query: [{ name: 'areaCode', description: 'A US three-digit area code.' }],
+    success: 200,
+  },
+  'voice.numbers.purchase': {
+    method: 'POST',
+    path: '/api/v1/voice/numbers',
+    summary: 'Purchase a verified, expiring US number offer; managers only.',
+    body: voiceNumberPurchaseSchema,
+    success: 201,
+  },
+  'voice.numbers.update': {
+    method: 'PATCH',
+    path: '/api/v1/voice/numbers/:id',
+    summary: 'Update a number label, assignment and call capabilities; managers only.',
+    body: voiceNumberUpdateSchema,
+    success: 200,
+  },
+  'voice.numbers.release': {
+    method: 'DELETE',
+    path: '/api/v1/voice/numbers/:id',
+    summary: 'Release an assigned number; managers only.',
+    body: voiceNumberReleaseSchema,
+    success: 200,
+  },
+  'voice.settings.update': {
+    method: 'PATCH',
+    path: '/api/v1/voice/settings',
+    summary: 'Update tenant calling limits and fallback routing; managers only.',
+    body: voiceSettingsSchema,
+    success: 200,
+  },
+} as const

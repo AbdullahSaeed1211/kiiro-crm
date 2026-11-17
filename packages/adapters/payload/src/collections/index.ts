@@ -36,6 +36,15 @@ import { currentFocusCollection } from './current-focus'
 import { presenceCollection } from './presence'
 import { invitationsCollection, peopleGroupsCollection, peopleUsersCollection } from './people'
 import { workflowsCollection } from './workflows'
+import {
+  voiceCallsCollection,
+  voiceCallLegsCollection,
+  voiceDevicesCollection,
+  voiceEventsCollection,
+  voiceNumbersCollection,
+  voiceOperationsCollection,
+  voiceSettingsCollection,
+} from './voice'
 
 export { ADMIN_GROUPS } from './fields'
 export { settingsGlobal } from './settings'
@@ -86,4 +95,11 @@ export const spikeCollections: readonly CollectionConfig[] = [
   deliverablesCollection,
   contentItemsCollection,
   scheduleItemsCollection,
+  voiceSettingsCollection,
+  voiceNumbersCollection,
+  voiceCallsCollection,
+  voiceCallLegsCollection,
+  voiceDevicesCollection,
+  voiceEventsCollection,
+  voiceOperationsCollection,
 ]

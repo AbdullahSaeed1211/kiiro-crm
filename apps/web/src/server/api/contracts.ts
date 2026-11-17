@@ -22,6 +22,7 @@ import { EXPORT_CONTRACTS } from './contracts-export'
 import { EXTRA_CONTRACTS, listQuery } from './contracts-extra'
 import { ATTENDANCE_CONTRACTS } from './contracts-attendance'
 import { PROJECT_CONTRACTS } from './contracts-projects'
+import { VOICE_CONTRACTS } from './contracts-voice'
 
 /** One endpoint of the product API: the single source for its route, its body validation and `GET /api/v1`. */
 
@@ -29,6 +30,7 @@ import { PROJECT_CONTRACTS } from './contracts-projects'
 const API_CONTRACTS = {
   ...ATTENDANCE_CONTRACTS,
   ...PROJECT_CONTRACTS,
+  ...VOICE_CONTRACTS,
   'tasks.list': {
     method: 'GET',
     path: '/api/v1/tasks',

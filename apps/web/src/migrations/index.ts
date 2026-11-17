@@ -1,4 +1,7 @@
 import * as migration_20260913_131654_initial from './20260913_131654_initial';
+import * as migration_20261117_150000_voice from './20261117_150000_voice';
+import * as migration_20261118_090000_voice_activity from './20261118_090000_voice_activity';
+import * as migration_20261118_100000_voice_recovery from './20261118_100000_voice_recovery';
 import * as migration_20260913_192616_m2_crm from './20260913_192616_m2_crm';
 import * as migration_20260914_101142_m3_completion from './20260914_101142_m3_completion';
 import * as migration_20260914_160000_brand_assets from './20260914_160000_brand_assets';
@@ -194,4 +197,7 @@ export const migrations = [
   { up: migration_20261113_120000_presence.up, down: migration_20261113_120000_presence.down, name: '20261113_120000_presence' },
   { up: migration_20261116_090000_task_responsibility.up, down: migration_20261116_090000_task_responsibility.down, name: '20261116_090000_task_responsibility' },
   { up: migration_20261117_090000_lead_creator.up, down: migration_20261117_090000_lead_creator.down, name: '20261117_090000_lead_creator' },
+  { up: migration_20261117_150000_voice.up, down: migration_20261117_150000_voice.down, name: '20261117_150000_voice' },
+  { up: migration_20261118_090000_voice_activity.up, down: migration_20261118_090000_voice_activity.down, name: '20261118_090000_voice_activity' },
+  { up: migration_20261118_100000_voice_recovery.up, down: migration_20261118_100000_voice_recovery.down, name: '20261118_100000_voice_recovery' },
 ];

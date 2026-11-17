@@ -20,6 +20,9 @@ export type { EmailServiceMessage, EmailServiceResult, SendEmailBinding } from '
 export { isSenderNotVerified, mapSendError } from './mail/send-errors'
 export { withPlatformSenderFallback, type SenderFallbackOptions } from './mail/sender-fallback'
 export { ResendMailSender, type ResendMailSenderOptions } from './mail/resend-mail-sender'
+export { TelnyxVoiceProvider, verifyTelnyxWebhook, type VerifiedTelnyxEvent } from './voice/telnyx'
+export { SimulatorVoiceProvider } from './voice/simulator'
+export { dispatchVoiceQueue, type VoiceQueueJob } from './worker/voice-queue'
 export { routePlatformInbound, type MailRouterEnv, type MailRouterTarget } from './mail/router'
 export {
   TURNSTILE_VERIFY_URL,

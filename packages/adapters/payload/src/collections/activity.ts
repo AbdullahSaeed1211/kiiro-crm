@@ -1,6 +1,15 @@
 import { sendActivityWebhooks } from '../hooks/webhooks'
 import { COLLECTIONS } from '../contracts/names'
-import { ADMIN_GROUPS, epochMs, jsonField, recordReference, relationshipTo, selectOf, spikeCollection } from './fields'
+import {
+  ADMIN_GROUPS,
+  epochMs,
+  jsonField,
+  recordReference,
+  relationshipTo,
+  selectOf,
+  spikeCollection,
+  textField,
+} from './fields'
 import { ACTIVITY_VERB_VALUES } from './values'
 
 /** Append-only record history (spec §9.5); only system writes through the Local API reach it. */
@@ -13,6 +22,7 @@ export const activityCollection = spikeCollection({
     // Empty for system actions such as jobs and intake.
     relationshipTo('actor', COLLECTIONS.users),
     jsonField('data'),
+    textField('sourceKey', { unique: true, index: true, maxLength: 250 }),
     epochMs('occurredAt', { required: true }),
   ],
   indexes: [{ fields: ['recordType', 'recordId', 'occurredAt'] }],

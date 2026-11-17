@@ -1,4 +1,4 @@
-import { bridgeInboundEmail, dispatchCron, type InternalForwardEnv } from '@ops/adapter-cloudflare'
+import { bridgeInboundEmail, dispatchCron, dispatchVoiceQueue, type InternalForwardEnv } from '@ops/adapter-cloudflare'
 import openNext from './.open-next/worker.js'
 import { isBlockedPayloadRoute, withSecurityHeaders } from './src/server/http-policy'
 
@@ -20,6 +20,7 @@ const worker: ExportedHandler<InternalForwardEnv> = {
   },
   // Awaited rather than waitUntil so a failed forward can still reject the message before the handler returns.
   email: (message, env) => bridgeInboundEmail(env, message),
+  queue: (batch, env) => dispatchVoiceQueue(batch, env),
 }
 
 /** Tenant Worker entry: OpenNext serves HTTP; cron and inbound email are forwarded to internal routes (spec §13). */

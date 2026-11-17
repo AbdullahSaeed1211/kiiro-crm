@@ -68,6 +68,17 @@ export { toWhere, withScope } from './where/to-where'
 export { installPagedFind } from './paged-find'
 export { createAttendanceRepository } from './repositories/attendance'
 export { createPresenceRepository, type PresenceRow } from './repositories/presence-repository'
+export { insertUnique } from './repositories/unique-insert'
+export { createSystemVoiceRepository, createVoiceRepository } from './repositories/voice/repository'
+export {
+  voiceCallsCollection,
+  voiceCallLegsCollection,
+  voiceDevicesCollection,
+  voiceEventsCollection,
+  voiceNumbersCollection,
+  voiceOperationsCollection,
+  voiceSettingsCollection,
+} from './collections/voice'
 export { setWebhookScheduler } from './hooks/webhooks'
 export {
   appendDemoEntries,

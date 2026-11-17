@@ -22,9 +22,11 @@ import { runDailyBackup } from '../../../../backup/daily-backup'
 import { runAutomationRules } from '../../../../automation/run-rules'
 import { sendNextRound } from '../../../../newsletter/queue'
 import { catchUpRepeatingTasks } from '../../../../work/repeat-catch-up'
+import { enqueueVoiceRecovery } from '../../../../voice/recovery'
 
 function agencyJobs(payload: Payload, timeZone: string): readonly CronJob[] {
   return [
+    { name: 'voice.recovery', run: async () => ok(await enqueueVoiceRecovery()) },
     {
       name: 'work.monthlyDesign',
       run: async (window) => ok(await runMonthlyDesignOrders(payload, window.end, timeZone)),

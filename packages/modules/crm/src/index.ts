@@ -57,3 +57,51 @@ export {
   type Webhook,
   type WebhookEvent,
 } from './webhooks/webhooks'
+
+export type {
+  VoiceMode,
+  VoiceCallState,
+  VoiceOutcome,
+  VoiceSettings,
+  VoiceNumber,
+  VoiceCall,
+  VoiceDevice,
+  VoiceEvent,
+  VoiceOperation,
+  VoiceOffer,
+  VoiceSnapshot,
+  VoiceClientSession,
+  VoiceDialResult,
+  VoiceProviderConfig,
+} from './voice-contracts'
+export type { VoiceCallLeg, VoiceRepository } from './ports/voice'
+export type { VoiceProvider } from './ports/voice-provider'
+export {
+  actionVoiceCall,
+  isVoiceManager,
+  purchaseVoiceNumber,
+  releaseVoiceNumber,
+  searchVoiceNumbers,
+  signVoiceClientState,
+  signVoiceOffer,
+  startVoiceCall,
+  stopVoiceSession,
+  updateVoiceNumber,
+  updateVoiceSettings,
+  verifyParkedCallClientState,
+  verifyVoiceClientState,
+  voiceModeFor,
+  voiceSession,
+  voiceSnapshot,
+} from './voice-engine'
+export type { VoiceEngineDeps } from './voice-engine'
+export {
+  voiceCallActionSchema,
+  voiceDialSchema,
+  voiceNumberPurchaseSchema,
+  voiceNumberReleaseSchema,
+  voiceNumberSearchSchema,
+  voiceNumberUpdateSchema,
+  voiceSessionSchema,
+  voiceSettingsSchema,
+} from './voice-schema'

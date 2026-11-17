@@ -3,7 +3,10 @@ import { ClipboardPlus, Mail, MailWarning, Pencil, Phone } from 'lucide-react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { SendTextDialog } from './send-text-dialog'
+import { LeadCallAction } from './calling/lead-call-action'
 import type { RecordCopy } from '../../i18n/record-copy'
+
+type RecordActionType = 'contact' | 'organization' | 'lead' | 'deal'
 
 function actionLink({
   href,
@@ -69,6 +72,38 @@ function newTaskAction({
   return show ? actionLink({ href, label: copy.newTask, icon: <ClipboardPlus aria-hidden />, primary }) : null
 }
 
+function phoneActionFor({
+  phone,
+  recordType,
+  recordId,
+  recordLabel,
+  copy,
+}: Readonly<{
+  phone: string | null
+  recordType: RecordActionType
+  recordId: string
+  recordLabel: string
+  copy: RecordCopy
+}>): ReactNode {
+  if (phone === null) return null
+  if (recordType === 'lead')
+    return <LeadCallAction phone={phone} leadId={recordId} leadName={recordLabel} label={copy.call} />
+  return actionLink({ href: `tel:${phone}`, label: copy.call, icon: <Phone aria-hidden /> })
+}
+
+function textAction({
+  phone,
+  recordType,
+  recordId,
+}: Readonly<{
+  phone: string | null
+  recordType: RecordActionType
+  recordId: string
+}>): ReactNode {
+  if (phone === null || recordType === 'deal') return null
+  return <SendTextDialog recordType={recordType} recordId={recordId} recipient={phone} />
+}
+
 export function RecordActionLinks({
   recordType,
   recordId,
@@ -83,7 +118,7 @@ export function RecordActionLinks({
   copy,
 }: Readonly<{
   copy: RecordCopy
-  recordType: 'contact' | 'organization' | 'lead' | 'deal'
+  recordType: RecordActionType
   recordId: string
   recordLabel: string
   editHref?: string
@@ -107,12 +142,8 @@ export function RecordActionLinks({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {emailActionFor({ address: emailAddress, enabled: outboundEmailEnabled, copy })}
-      {phoneNumber === null
-        ? null
-        : actionLink({ href: `tel:${phoneNumber}`, label: copy.call, icon: <Phone aria-hidden /> })}
-      {phoneNumber === null || recordType === 'deal' ? null : (
-        <SendTextDialog recordType={recordType} recordId={recordId} recipient={phoneNumber} />
-      )}
+      {phoneActionFor({ phone: phoneNumber, recordType, recordId, recordLabel, copy })}
+      {textAction({ phone: phoneNumber, recordType, recordId })}
       {newTaskAction({ show: showNewTask, href: taskHref, copy, primary })}
       {editHref === undefined ? null : actionLink({ href: editHref, label: copy.edit, icon: <Pencil aria-hidden /> })}
       {archive}

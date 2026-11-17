@@ -35,6 +35,13 @@ export const COLLECTIONS = {
   scheduleItems: 'scheduleItems',
   deliverables: 'deliverables',
   contentItems: 'contentItems',
+  voiceSettings: 'voiceSettings',
+  voiceNumbers: 'voiceNumbers',
+  voiceCalls: 'voiceCalls',
+  voiceCallLegs: 'voiceCallLegs',
+  voiceDevices: 'voiceDevices',
+  voiceEvents: 'voiceEvents',
+  voiceOperations: 'voiceOperations',
 } as const
 
 /** One of the spike collection slugs. */

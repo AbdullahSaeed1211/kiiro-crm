@@ -40,9 +40,24 @@ export const tenantSchema = z
       /** The public key of the Turnstile widget that hosted forms show; hosted forms are off in production without it. */
       turnstileSiteKey: text.optional(),
     }),
+    voice: z
+      .object({
+        mode: z.enum(['disabled', 'telnyx']).default('disabled'),
+        queue: cloudflareName.optional(),
+        connectionId: text.optional(),
+        callControlApplicationId: text.optional(),
+      })
+      .optional(),
     deployOrder: z.number().int().min(0),
   })
   .superRefine((tenant, context) => {
+    if (tenant.voice?.mode === 'telnyx' && tenant.voice.queue === undefined) {
+      context.addIssue({
+        code: 'custom',
+        message: 'voice queue is required when Telnyx is enabled',
+        path: ['voice', 'queue'],
+      })
+    }
     if (tenant.hostType !== 'workers_dev' && tenant.host === undefined) {
       context.addIssue({ code: 'custom', message: 'host is required unless hostType is workers_dev', path: ['host'] })
     }

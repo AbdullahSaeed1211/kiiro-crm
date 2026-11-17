@@ -108,6 +108,13 @@ export interface Config {
     deliverables: Deliverable;
     contentItems: ContentItem;
     scheduleItems: ScheduleItem;
+    voiceSettings: VoiceSetting;
+    voiceNumbers: VoiceNumber;
+    voiceCalls: VoiceCall;
+    voiceCallLegs: VoiceCallLeg;
+    voiceDevices: VoiceDevice;
+    voiceEvents: VoiceEvent;
+    voiceOperations: VoiceOperation;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -156,6 +163,13 @@ export interface Config {
     deliverables: DeliverablesSelect<false> | DeliverablesSelect<true>;
     contentItems: ContentItemsSelect<false> | ContentItemsSelect<true>;
     scheduleItems: ScheduleItemsSelect<false> | ScheduleItemsSelect<true>;
+    voiceSettings: VoiceSettingsSelect<false> | VoiceSettingsSelect<true>;
+    voiceNumbers: VoiceNumbersSelect<false> | VoiceNumbersSelect<true>;
+    voiceCalls: VoiceCallsSelect<false> | VoiceCallsSelect<true>;
+    voiceCallLegs: VoiceCallLegsSelect<false> | VoiceCallLegsSelect<true>;
+    voiceDevices: VoiceDevicesSelect<false> | VoiceDevicesSelect<true>;
+    voiceEvents: VoiceEventsSelect<false> | VoiceEventsSelect<true>;
+    voiceOperations: VoiceOperationsSelect<false> | VoiceOperationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -882,6 +896,7 @@ export interface Activity {
     | number
     | boolean
     | null;
+  sourceKey?: string | null;
   /**
    * UTC time in milliseconds since 1970-01-01
    */
@@ -1406,6 +1421,178 @@ export interface ScheduleItem {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceSettings".
+ */
+export interface VoiceSetting {
+  id: string;
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceNumbers".
+ */
+export interface VoiceNumber {
+  id: string;
+  e164: string;
+  assignees?: (string | User)[] | null;
+  status: 'pending' | 'active' | 'failed' | 'released';
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceCalls".
+ */
+export interface VoiceCall {
+  id: string;
+  requestKey: string;
+  direction: 'inbound' | 'outbound';
+  state: 'authorizing' | 'ringing' | 'connecting' | 'active' | 'ended' | 'failed' | 'missed';
+  number: string | VoiceNumber;
+  user?: (string | null) | User;
+  assignedUsers?: (string | User)[] | null;
+  providerCallId?: string | null;
+  recoveryError?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  voiceUpdatedAt: number;
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceCallLegs".
+ */
+export interface VoiceCallLeg {
+  id: string;
+  legKey: string;
+  call: string | VoiceCall;
+  deviceId?: string | null;
+  kind: 'inbound-caller' | 'inbound-device' | 'outbound-browser' | 'outbound-pstn';
+  state: 'dialing' | 'ringing' | 'answered' | 'bridged' | 'ended' | 'failed';
+  providerCallId?: string | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  voiceUpdatedAt: number;
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceDevices".
+ */
+export interface VoiceDevice {
+  id: string;
+  key: string;
+  user: string | User;
+  deviceId: string;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  expiresAt: number;
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceEvents".
+ */
+export interface VoiceEvent {
+  id: string;
+  eventKey: string;
+  status: 'pending' | 'processing' | 'processed' | 'failed';
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  leaseUntil?: number | null;
+  /**
+   * UTC time in milliseconds since 1970-01-01
+   */
+  receivedAt: number;
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceOperations".
+ */
+export interface VoiceOperation {
+  id: string;
+  key: string;
+  user: string | User;
+  kind: 'purchase' | 'release';
+  status: 'pending' | 'complete' | 'failed' | 'uncertain';
+  value:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1591,6 +1778,34 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'scheduleItems';
         value: string | ScheduleItem;
+      } | null)
+    | ({
+        relationTo: 'voiceSettings';
+        value: string | VoiceSetting;
+      } | null)
+    | ({
+        relationTo: 'voiceNumbers';
+        value: string | VoiceNumber;
+      } | null)
+    | ({
+        relationTo: 'voiceCalls';
+        value: string | VoiceCall;
+      } | null)
+    | ({
+        relationTo: 'voiceCallLegs';
+        value: string | VoiceCallLeg;
+      } | null)
+    | ({
+        relationTo: 'voiceDevices';
+        value: string | VoiceDevice;
+      } | null)
+    | ({
+        relationTo: 'voiceEvents';
+        value: string | VoiceEvent;
+      } | null)
+    | ({
+        relationTo: 'voiceOperations';
+        value: string | VoiceOperation;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2025,6 +2240,7 @@ export interface ActivitySelect<T extends boolean = true> {
   verb?: T;
   actor?: T;
   data?: T;
+  sourceKey?: T;
   occurredAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2352,6 +2568,100 @@ export interface ScheduleItemsSelect<T extends boolean = true> {
   title?: T;
   notes?: T;
   sourceKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceSettings_select".
+ */
+export interface VoiceSettingsSelect<T extends boolean = true> {
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceNumbers_select".
+ */
+export interface VoiceNumbersSelect<T extends boolean = true> {
+  e164?: T;
+  assignees?: T;
+  status?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceCalls_select".
+ */
+export interface VoiceCallsSelect<T extends boolean = true> {
+  requestKey?: T;
+  direction?: T;
+  state?: T;
+  number?: T;
+  user?: T;
+  assignedUsers?: T;
+  providerCallId?: T;
+  recoveryError?: T;
+  voiceUpdatedAt?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceCallLegs_select".
+ */
+export interface VoiceCallLegsSelect<T extends boolean = true> {
+  legKey?: T;
+  call?: T;
+  deviceId?: T;
+  kind?: T;
+  state?: T;
+  providerCallId?: T;
+  voiceUpdatedAt?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceDevices_select".
+ */
+export interface VoiceDevicesSelect<T extends boolean = true> {
+  key?: T;
+  user?: T;
+  deviceId?: T;
+  expiresAt?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceEvents_select".
+ */
+export interface VoiceEventsSelect<T extends boolean = true> {
+  eventKey?: T;
+  status?: T;
+  leaseUntil?: T;
+  receivedAt?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voiceOperations_select".
+ */
+export interface VoiceOperationsSelect<T extends boolean = true> {
+  key?: T;
+  user?: T;
+  kind?: T;
+  status?: T;
+  value?: T;
   updatedAt?: T;
   createdAt?: T;
 }

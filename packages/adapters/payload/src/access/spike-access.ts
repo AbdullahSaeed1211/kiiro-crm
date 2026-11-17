@@ -204,6 +204,13 @@ export const SPIKE_ACCESS: Readonly<Record<SpikeCollectionSlug, CollectionAccess
   [COLLECTIONS.lostReasons]: { read: anyActive, ...managedByLeads },
   // Transitions inherit the parent record's access in the full design; staff read them through record queries.
   [COLLECTIONS.stageTransitions]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.voiceSettings]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.voiceNumbers]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.voiceCalls]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.voiceCallLegs]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.voiceDevices]: { read: ownerOnly, ...systemWrites },
+  [COLLECTIONS.voiceEvents]: { read: managerUp, ...systemWrites },
+  [COLLECTIONS.voiceOperations]: { read: managerUp, ...systemWrites },
 }
 
 /** Access for the settings global: every active user reads, only owners update. */
